@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/shared/lib/logger';
 
 /**
@@ -256,15 +256,19 @@ export function logError(error: unknown, context?: Record<string, unknown>): voi
   const isOperational = isOperationalError(error);
   const logLevel = isOperational ? 'warn' : 'error';
 
-  logger[logLevel as 'warn' | 'error'](
-    {
-      error: errorInfo,
-      context,
-      stack: error instanceof Error ? error.stack : undefined,
-      operational: isOperational,
-    },
-    isOperational ? 'Operational error occurred' : 'Programming error occurred'
-  );
+  const logMessage = isOperational ? 'Operational error occurred' : 'Programming error occurred';
+  const logData = {
+    error: errorInfo,
+    context,
+    stack: error instanceof Error ? error.stack : undefined,
+    operational: isOperational,
+  };
+
+  if (logLevel === 'warn') {
+    logger.warn(logMessage, logData);
+  } else {
+    logger.error(logMessage, logData);
+  }
 }
 
 /**
@@ -334,9 +338,9 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
  * Usage: export const GET = withErrorHandling(myHandlerFunction);
  */
 export function withErrorHandling(
-  handler: (req?: Request, params?: unknown) => Promise<NextResponse<ApiResponse | unknown>>
+  handler: (req: NextRequest, params?: unknown) => Promise<Response>
 ) {
-  return async (req?: Request, params?: unknown) => {
+  return async (req: NextRequest, params?: unknown) => {
     try {
       return await handler(req, params);
     } catch (error) {
@@ -364,7 +368,7 @@ export function successResponse<T>(
 /**
  * Assert authentication - throw error if user is not authenticated
  */
-export function assertAuthenticated(userId?: string): void {
+export function assertAuthenticated(userId?: string | null): void {
   if (!userId) {
     throw new AuthenticationError();
   }
@@ -374,7 +378,7 @@ export function assertAuthenticated(userId?: string): void {
  * Assert authorization - throw error if user doesn't have required role
  */
 export function assertAuthorized(
-  userRole?: string,
+  userRole?: string | null,
   requiredRoles: string[] = ['OWNER', 'ADMIN']
 ): void {
   if (!userRole || !requiredRoles.includes(userRole)) {

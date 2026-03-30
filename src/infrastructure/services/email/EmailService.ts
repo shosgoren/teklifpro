@@ -19,19 +19,24 @@ interface EmailOptions {
 }
 
 export class EmailService {
-  private resend: Resend;
+  private _resend: Resend | null = null;
   private logger: Logger;
   private fromEmail: string;
 
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY environment variable is required');
-    }
-
-    this.resend = new Resend(apiKey);
     this.logger = new Logger('EmailService');
     this.fromEmail = process.env.EMAIL_FROM || 'noreply@teklifpro.com';
+  }
+
+  private get resend(): Resend {
+    if (!this._resend) {
+      const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) {
+        throw new Error('RESEND_API_KEY environment variable is required');
+      }
+      this._resend = new Resend(apiKey);
+    }
+    return this._resend;
   }
 
   /**
