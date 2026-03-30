@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -19,6 +19,7 @@ import { cn } from '@/shared/utils/cn';
 
 const LandingPage = () => {
   const t = useTranslations('site');
+  const locale = useLocale();
   const [isMonthly, setIsMonthly] = useState(true);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(0);
 
@@ -76,10 +77,10 @@ const LandingPage = () => {
   ];
 
   const steps = [
-    { number: 1, title: 'Kayıt ol', icon: '📝' },
-    { number: 2, title: 'Paraşüt bağla', icon: '🔗' },
-    { number: 3, title: 'Teklif oluştur', icon: '📄' },
-    { number: 4, title: "WhatsApp'tan gönder", icon: '📱' },
+    { number: 1, title: 'KayÄ±t ol', icon: 'ð' },
+    { number: 2, title: 'ParaÅÃ¼t baÄla', icon: 'ð' },
+    { number: 3, title: 'Teklif oluÅtur', icon: 'ð' },
+    { number: 4, title: "WhatsApp'tan gÃ¶nder", icon: 'ð±' },
   ];
 
   const faqItems = t.raw('faq.items') as Array<{ q: string; a: string }>;
@@ -92,7 +93,7 @@ const LandingPage = () => {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
+          <Link href={`/${locale}`} className="text-2xl font-bold text-blue-600">
             TeklifPro
           </Link>
           <div className="hidden md:flex gap-8">
@@ -107,10 +108,10 @@ const LandingPage = () => {
             </a>
           </div>
           <Link
-            href="/login"
+            href={`/${locale}/login`}
             className="inline-flex items-center justify-center px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
           >
-            Giriş Yap
+            {t('nav.login')}
           </Link>
         </div>
       </nav>
@@ -140,15 +141,18 @@ const LandingPage = () => {
 
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link
-              href="/register"
+              href={`/${locale}/register`}
               className="inline-flex items-center justify-center px-8 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
             >
               {t('hero.cta')}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
-            <button className="inline-flex items-center justify-center px-8 py-3 rounded-lg border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors">
+            <a
+              href="#features"
+              className="inline-flex items-center justify-center px-8 py-3 rounded-lg border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors"
+            >
               {t('hero.ctaSecondary')}
-            </button>
+            </a>
           </motion.div>
 
           <motion.p variants={itemVariants} className="text-sm text-gray-500">
@@ -212,10 +216,10 @@ const LandingPage = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Nasıl Çalışır?
+              NasÄ±l ÃalÄ±ÅÄ±r?
             </h2>
             <p className="text-lg text-gray-600">
-              4 basit adımda başlayın
+              4 basit adÄ±mda baÅlayÄ±n
             </p>
           </motion.div>
 
@@ -235,10 +239,10 @@ const LandingPage = () => {
                   {step.number}. {step.title}
                 </h3>
                 <p className="text-center text-gray-600 text-sm">
-                  {step.number === 1 && 'E-posta ve şirket bilgilerinizi girin'}
-                  {step.number === 2 && 'Paraşüt hesabınızı bağlayın'}
-                  {step.number === 3 && 'Müşteri ve ürün seçerek teklif oluşturun'}
-                  {step.number === 4 && 'Tek tuşla WhatsApp\'tan gönderin'}
+                  {step.number === 1 && 'E-posta ve Åirket bilgilerinizi girin'}
+                  {step.number === 2 && 'ParaÅÃ¼t hesabÄ±nÄ±zÄ± baÄlayÄ±n'}
+                  {step.number === 3 && 'MÃ¼Återi ve Ã¼rÃ¼n seÃ§erek teklif oluÅturun'}
+                  {step.number === 4 && 'Tek tuÅla WhatsApp\'tan gÃ¶nderin'}
                 </p>
 
                 {index < steps.length - 1 && (
@@ -328,7 +332,7 @@ const LandingPage = () => {
               </div>
 
               <Link
-                href="/register"
+                href={`/${locale}/register`}
                 className="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors mb-8"
               >
                 {t('pricing.starter.cta')}
@@ -370,7 +374,7 @@ const LandingPage = () => {
               </div>
 
               <Link
-                href="/register"
+                href={`/${locale}/register`}
                 className="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg bg-white text-blue-600 font-semibold hover:bg-blue-50 transition-colors mb-8"
               >
                 {t('pricing.professional.cta')}
@@ -467,7 +471,7 @@ const LandingPage = () => {
             {t('cta.subtitle')}
           </p>
           <Link
-            href="/register"
+            href={`/${locale}/register`}
             className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-white text-blue-600 font-semibold hover:bg-blue-50 transition-colors shadow-lg hover:shadow-xl text-lg"
           >
             {t('cta.button')}
@@ -551,7 +555,7 @@ const LandingPage = () => {
                 TeklifPro
               </h3>
               <p className="text-sm text-gray-400">
-                Paraşüt entegrasyonlu teklif yönetim platformu
+                ParaÅÃ¼t entegrasyonlu teklif yÃ¶netim platformu
               </p>
             </div>
           </div>
