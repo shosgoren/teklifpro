@@ -6,7 +6,7 @@ import {
   Badge,
   Button,
   Textarea,
-} from '@/components/ui/';
+} from '@/components/ui';
 import {
   Select,
   SelectContent,

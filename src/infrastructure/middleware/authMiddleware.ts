@@ -35,9 +35,9 @@ export async function getServerSessionWithAuth(): Promise<AuthSession | null> {
     // For now, we return empty array and rely on permission checks
     return {
       user: {
-        id: session.user.id || '',
+        id: (session.user as any).id || '',
         email: session.user.email || '',
-        name: session.user.name,
+        name: session.user.name ?? undefined,
         tenantId: (session.user as any).tenantId || '',
       },
       tenant: {

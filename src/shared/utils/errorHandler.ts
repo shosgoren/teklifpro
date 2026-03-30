@@ -290,15 +290,16 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse> {
     // Handle Prisma errors
     if (err.name === 'PrismaClientKnownRequestError') {
       const code = err.code as string;
+      const meta = err.meta as Record<string, unknown> | undefined;
       if (code === 'P2002') {
         apiError = new ConflictError('Unique constraint violation', {
-          field: err.meta?.['target'],
+          field: meta?.['target'],
         });
       } else if (code === 'P2025') {
         apiError = new NotFoundError('Record not found');
       } else if (code === 'P2003') {
         apiError = new ValidationError('Foreign key constraint violation', {
-          field: err.meta?.['field_name'],
+          field: meta?.['field_name'],
         });
       } else {
         apiError = new DatabaseError('Database operation failed');

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/shared/utils/prisma';
 
 // Validation schemas
 const UpdateProposalSchema = z.object({
@@ -11,53 +9,25 @@ const UpdateProposalSchema = z.object({
   status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED']).optional(),
   items: z.array(z.object({
     id: z.string().optional(),
-    productId: z.string(),
+    productId: z.string().optional(),
+    name: z.string(),
+    description: z.string().optional(),
+    unit: z.string().default('Adet'),
     quantity: z.number().positive(),
-    unitPrice: z.number().positive(),
-    discount: z.number().min(0).max(100).default(0),
+    unitPrice: z.number().nonnegative(),
+    discountRate: z.number().min(0).max(100).default(0),
     vatRate: z.number().min(0).max(100).default(18),
   })).optional(),
   notes: z.string().optional(),
-  terms: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  deliveryTerms: z.string().optional(),
   customerId: z.string().optional(),
 });
 
 type UpdateProposalInput = z.infer<typeof UpdateProposalSchema>;
 
-interface ProposalItem {
-  id: string;
-  productId: string;
-  quantity: number;
-  unitPrice: number;
-  discount: number;
-  vatRate: number;
-  lineTotal?: number;
-}
-
-interface ProposalResponse {
-  id: string;
-  number: string;
-  status: string;
-  customerId: string;
-  title: string;
-  description: string;
-  subtotal: number;
-  discountAmount: number;
-  vatAmount: number;
-  total: number;
-  notes: string;
-  terms: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  items?: ProposalItem[];
-  activities?: object[];
-  revisions?: object[];
-}
-
 /**
  * GET /api/v1/proposals/[id]
- * Retrieve a single proposal by ID with all relations
  */
 export async function GET(
   request: NextRequest,
@@ -65,14 +35,6 @@ export async function GET(
 ) {
   try {
     const proposalId = params.id;
-
-    // Validate UUID format
-    if (!isValidUUID(proposalId)) {
-      return NextResponse.json(
-        { error: 'Invalid proposal ID format' },
-        { status: 400 }
-      );
-    }
 
     const proposal = await prisma.proposal.findUnique({
       where: { id: proposalId, deletedAt: null },
@@ -83,7 +45,6 @@ export async function GET(
             name: true,
             email: true,
             phone: true,
-            companyName: true,
           },
         },
         items: {
@@ -92,10 +53,11 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                price: true,
+                listPrice: true,
               },
             },
           },
+          orderBy: { sortOrder: 'asc' },
         },
         activities: {
           orderBy: { createdAt: 'desc' },
@@ -116,7 +78,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: formatProposal(proposal),
+      data: proposal,
     });
   } catch (error) {
     console.error('GET /api/v1/proposals/[id] error:', error);
@@ -129,7 +91,6 @@ export async function GET(
 
 /**
  * PUT /api/v1/proposals/[id]
- * Update proposal with recalculation of totals and revision snapshot
  */
 export async function PUT(
   request: NextRequest,
@@ -139,18 +100,8 @@ export async function PUT(
     const proposalId = params.id;
     const body = await request.json();
 
-    // Validate UUID format
-    if (!isValidUUID(proposalId)) {
-      return NextResponse.json(
-        { error: 'Invalid proposal ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Validate input
     const validatedData = UpdateProposalSchema.parse(body);
 
-    // Check if proposal exists
     const existingProposal = await prisma.proposal.findUnique({
       where: { id: proposalId, deletedAt: null },
     });
@@ -163,42 +114,39 @@ export async function PUT(
     }
 
     // Calculate totals if items are provided
-    let subtotal = existingProposal.subtotal;
-    let discountAmount = existingProposal.discountAmount;
-    let vatAmount = existingProposal.vatAmount;
-    let total = existingProposal.total;
+    let subtotal = Number(existingProposal.subtotal);
+    let discountAmount = Number(existingProposal.discountAmount);
+    let vatTotal = Number(existingProposal.vatTotal);
+    let grandTotal = Number(existingProposal.grandTotal);
 
     if (validatedData.items && validatedData.items.length > 0) {
-      const calculations = calculateProposalTotals(validatedData.items);
+      const calculations = calculateTotals(validatedData.items);
       subtotal = calculations.subtotal;
       discountAmount = calculations.discountAmount;
-      vatAmount = calculations.vatAmount;
-      total = calculations.total;
+      vatTotal = calculations.vatTotal;
+      grandTotal = calculations.grandTotal;
     }
 
-    // Start transaction for atomic update
     const updatedProposal = await prisma.$transaction(async (tx) => {
       // Create revision snapshot if content changed
-      if (
-        validatedData.title ||
-        validatedData.items ||
-        validatedData.notes ||
-        validatedData.terms
-      ) {
+      if (validatedData.title || validatedData.items || validatedData.notes) {
+        const revisionCount = await tx.proposalRevision.count({
+          where: { proposalId },
+        });
         await tx.proposalRevision.create({
           data: {
             proposalId,
-            previousData: {
+            version: revisionCount + 1,
+            snapshot: {
               title: existingProposal.title,
               description: existingProposal.description,
-              subtotal: existingProposal.subtotal,
-              discountAmount: existingProposal.discountAmount,
-              vatAmount: existingProposal.vatAmount,
-              total: existingProposal.total,
+              subtotal: Number(existingProposal.subtotal),
+              discountAmount: Number(existingProposal.discountAmount),
+              vatTotal: Number(existingProposal.vatTotal),
+              grandTotal: Number(existingProposal.grandTotal),
               notes: existingProposal.notes,
-              terms: existingProposal.terms,
             },
-            changedBy: 'system', // Should be replaced with actual user ID
+            changedBy: 'system',
           },
         });
       }
@@ -210,7 +158,6 @@ export async function PUT(
         });
       }
 
-      // Update proposal
       const updated = await tx.proposal.update({
         where: { id: proposalId },
         data: {
@@ -218,22 +165,26 @@ export async function PUT(
           description: validatedData.description ?? undefined,
           status: validatedData.status ?? undefined,
           notes: validatedData.notes ?? undefined,
-          terms: validatedData.terms ?? undefined,
+          paymentTerms: validatedData.paymentTerms ?? undefined,
+          deliveryTerms: validatedData.deliveryTerms ?? undefined,
           subtotal,
           discountAmount,
-          vatAmount,
-          total,
-          updatedAt: new Date(),
-          // Create new items if provided
+          vatTotal,
+          grandTotal,
           ...(validatedData.items && {
             items: {
               createMany: {
-                data: validatedData.items.map((item) => ({
+                data: validatedData.items.map((item, index) => ({
                   productId: item.productId,
+                  name: item.name,
+                  description: item.description,
+                  unit: item.unit,
                   quantity: item.quantity,
                   unitPrice: item.unitPrice,
-                  discount: item.discount,
+                  discountRate: item.discountRate,
                   vatRate: item.vatRate,
+                  lineTotal: item.quantity * item.unitPrice * (1 - item.discountRate / 100),
+                  sortOrder: index,
                 })),
               },
             },
@@ -241,22 +192,17 @@ export async function PUT(
         },
         include: {
           customer: true,
-          items: {
-            include: {
-              product: true,
-            },
-          },
+          items: { orderBy: { sortOrder: 'asc' } },
           activities: true,
           revisions: { take: 5 },
         },
       });
 
-      // Create activity log
       await tx.proposalActivity.create({
         data: {
           proposalId,
           type: 'UPDATED',
-          description: 'Teklif güncellendi',
+          description: 'Teklif guncellendi',
           metadata: {
             changes: Object.keys(validatedData).filter(
               (key) => validatedData[key as keyof UpdateProposalInput] !== undefined
@@ -270,16 +216,13 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      data: formatProposal(updatedProposal),
+      data: updatedProposal,
       message: 'Proposal updated successfully',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          error: 'Validation error',
-          details: error.errors,
-        },
+        { error: 'Validation error', details: error.errors },
         { status: 400 }
       );
     }
@@ -294,7 +237,6 @@ export async function PUT(
 
 /**
  * DELETE /api/v1/proposals/[id]
- * Soft delete proposal (set deletedAt timestamp)
  */
 export async function DELETE(
   request: NextRequest,
@@ -303,15 +245,6 @@ export async function DELETE(
   try {
     const proposalId = params.id;
 
-    // Validate UUID format
-    if (!isValidUUID(proposalId)) {
-      return NextResponse.json(
-        { error: 'Invalid proposal ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Check if proposal exists
     const existingProposal = await prisma.proposal.findUnique({
       where: { id: proposalId, deletedAt: null },
     });
@@ -323,26 +256,21 @@ export async function DELETE(
       );
     }
 
-    // Soft delete
-    const deletedProposal = await prisma.proposal.update({
+    await prisma.proposal.update({
       where: { id: proposalId },
-      data: {
-        deletedAt: new Date(),
-      },
+      data: { deletedAt: new Date() },
     });
 
-    // Create activity log
     await prisma.proposalActivity.create({
       data: {
         proposalId,
-        type: 'DELETED',
+        type: 'CANCELLED',
         description: 'Teklif silindi',
       },
     });
 
     return NextResponse.json({
       success: true,
-      data: formatProposal(deletedProposal),
       message: 'Proposal deleted successfully',
     });
   } catch (error) {
@@ -356,33 +284,19 @@ export async function DELETE(
 
 // Helper functions
 
-function isValidUUID(uuid: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-}
-
-interface ProposalItemInput {
+function calculateTotals(items: Array<{
   quantity: number;
   unitPrice: number;
-  discount: number;
+  discountRate: number;
   vatRate: number;
-}
-
-interface TotalCalculation {
-  subtotal: number;
-  discountAmount: number;
-  vatAmount: number;
-  total: number;
-}
-
-function calculateProposalTotals(items: ProposalItemInput[]): TotalCalculation {
+}>) {
   let subtotal = 0;
   let totalDiscount = 0;
   let totalVat = 0;
 
   items.forEach((item) => {
     const itemSubtotal = item.quantity * item.unitPrice;
-    const itemDiscount = (itemSubtotal * item.discount) / 100;
+    const itemDiscount = (itemSubtotal * item.discountRate) / 100;
     const itemBeforeVat = itemSubtotal - itemDiscount;
     const itemVat = (itemBeforeVat * item.vatRate) / 100;
 
@@ -394,30 +308,7 @@ function calculateProposalTotals(items: ProposalItemInput[]): TotalCalculation {
   return {
     subtotal,
     discountAmount: totalDiscount,
-    vatAmount: totalVat,
-    total: subtotal - totalDiscount + totalVat,
-  };
-}
-
-function formatProposal(proposal: any): ProposalResponse {
-  return {
-    id: proposal.id,
-    number: proposal.number,
-    status: proposal.status,
-    customerId: proposal.customerId,
-    title: proposal.title,
-    description: proposal.description,
-    subtotal: proposal.subtotal,
-    discountAmount: proposal.discountAmount,
-    vatAmount: proposal.vatAmount,
-    total: proposal.total,
-    notes: proposal.notes,
-    terms: proposal.terms,
-    createdAt: proposal.createdAt.toISOString(),
-    updatedAt: proposal.updatedAt.toISOString(),
-    deletedAt: proposal.deletedAt ? proposal.deletedAt.toISOString() : null,
-    ...(proposal.items && { items: proposal.items }),
-    ...(proposal.activities && { activities: proposal.activities }),
-    ...(proposal.revisions && { revisions: proposal.revisions }),
+    vatTotal: totalVat,
+    grandTotal: subtotal - totalDiscount + totalVat,
   };
 }

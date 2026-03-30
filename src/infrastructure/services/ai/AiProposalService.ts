@@ -433,14 +433,10 @@ ${text}
         where: {
           customerId,
           tenantId,
-          status: { in: ['accepted', 'completed'] },
+          status: { in: ['ACCEPTED'] },
         },
-        select: {
-          id: true,
+        include: {
           items: true,
-          total: true,
-          status: true,
-          createdAt: true,
         },
         take: 10,
         orderBy: { createdAt: 'desc' },
@@ -449,7 +445,7 @@ ${text}
       return proposals.map((p) => ({
         proposalId: p.id,
         items: p.items,
-        total: p.total,
+        total: Number(p.grandTotal),
         status: p.status,
         date: p.createdAt.toISOString(),
       }));
@@ -470,8 +466,7 @@ ${text}
           id: true,
           name: true,
           category: true,
-          unitPrice: true,
-          margin: true,
+          listPrice: true,
         },
         take: 50,
       });

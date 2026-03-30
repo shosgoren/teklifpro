@@ -2,134 +2,137 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProposalPdfService } from '@/infrastructure/services/pdf/ProposalPdfService';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/shared/auth/authOptions';
+import { prisma } from '@/shared/utils/prisma';
+import type { Proposal } from '@/domain/entities/Proposal';
+import type { Tenant } from '@/domain/entities/Tenant';
 
-// Type definitions for proposal and tenant
-interface ProposalItem {
-  id: string;
-  name: string;
-  description?: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  discount?: number;
-  tax?: number;
-  total: number;
+/**
+ * Map a Prisma proposal record to the Proposal domain entity used by ProposalPdfService.
+ */
+function mapToProposalEntity(
+  dbProposal: Awaited<ReturnType<typeof fetchProposal>>
+): Proposal | null {
+  if (!dbProposal) return null;
+
+  return {
+    id: dbProposal.id,
+    number: dbProposal.proposalNumber,
+    date: dbProposal.createdAt,
+    validUntil: dbProposal.expiresAt || dbProposal.createdAt,
+    status: dbProposal.status,
+    customer: {
+      companyName: dbProposal.customer.name,
+      name: dbProposal.customer.name,
+      address: dbProposal.customer.address || undefined,
+      phone: dbProposal.customer.phone || undefined,
+      email: dbProposal.customer.email || undefined,
+      taxNumber: dbProposal.customer.taxNumber || undefined,
+    },
+    items: dbProposal.items.map((item) => ({
+      name: item.name,
+      description: item.description || undefined,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      unitPrice: Number(item.unitPrice),
+      discount: Number(item.discountRate),
+      tax: Number(item.vatRate),
+      total: Number(item.lineTotal),
+    })),
+    subtotal: Number(dbProposal.subtotal),
+    discountAmount: Number(dbProposal.discountAmount),
+    taxAmount: Number(dbProposal.vatTotal),
+    total: Number(dbProposal.grandTotal),
+    paymentTerms: dbProposal.paymentTerms || undefined,
+    deliveryTerms: dbProposal.deliveryTerms || undefined,
+    notes: dbProposal.notes || undefined,
+  };
 }
 
-interface Customer {
-  id: string;
-  name: string;
-  companyName: string;
-  title?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  taxNumber?: string;
+function mapToTenantEntity(
+  dbTenant: { id: string; name: string; address: string | null; phone: string | null; email: string; taxNumber: string | null; logo: string | null }
+): Tenant {
+  return {
+    id: dbTenant.id,
+    name: dbTenant.name,
+    address: dbTenant.address || undefined,
+    phone: dbTenant.phone || undefined,
+    email: dbTenant.email,
+    taxNumber: dbTenant.taxNumber || undefined,
+    logo: dbTenant.logo || undefined,
+  };
 }
 
-interface Proposal {
-  id: string;
-  number: string;
-  date: Date;
-  validUntil: Date;
-  status: string;
-  customer: Customer;
-  items: ProposalItem[];
-  subtotal: number;
-  discountAmount?: number;
-  taxAmount?: number;
-  total: number;
-  paymentTerms?: string;
-  deliveryTerms?: string;
-  notes?: string;
-  tenantId: string;
+async function fetchProposal(id: string, tenantId: string) {
+  return prisma.proposal.findFirst({
+    where: {
+      id,
+      tenantId,
+      deletedAt: null,
+    },
+    include: {
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          taxNumber: true,
+        },
+      },
+      items: {
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+  });
 }
-
-interface Tenant {
-  id: string;
-  name: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  phone?: string;
-  email?: string;
-  taxNumber?: string;
-}
-
-interface ProposalRepository {
-  findById(id: string, tenantId: string): Promise<Proposal | null>;
-}
-
-interface TenantRepository {
-  findById(id: string): Promise<Tenant | null>;
-}
-
-// Mock repositories - replace with actual implementations
-const proposalRepository: ProposalRepository = {
-  async findById(id: string, tenantId: string): Promise<Proposal | null> {
-    // Implementation would query actual database
-    return null;
-  },
-};
-
-const tenantRepository: TenantRepository = {
-  async findById(id: string): Promise<Tenant | null> {
-    // Implementation would query actual database
-    return null;
-  },
-};
 
 /**
  * GET /api/v1/proposals/[id]/pdf
  *
  * Generate and download PDF for a proposal
- *
- * Query Parameters:
- * - download: boolean (default: true) - whether to trigger download or inline display
- *
- * Response:
- * - 200: PDF file as binary
- * - 401: Unauthorized
- * - 403: Forbidden (no read permission)
- * - 404: Proposal not found
- * - 500: Internal server error
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
     // Authentication check
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get proposal ID from params
-    const { id } = await params;
+    const id = params.id;
 
-    // Get tenant ID from session (adjust based on your session structure)
-    const tenantId = (session.user as any).tenantId;
+    // Get tenant ID from session
+    const tenantId = (session.user as any).tenantId as string | undefined;
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 401 });
     }
 
-    // Fetch proposal
-    const proposal = await proposalRepository.findById(id, tenantId);
+    // Fetch proposal from DB
+    const dbProposal = await fetchProposal(id, tenantId);
+    if (!dbProposal) {
+      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    }
+
+    // Map to domain entity
+    const proposal = mapToProposalEntity(dbProposal);
     if (!proposal) {
       return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
     }
 
-    // Verify proposal belongs to user's tenant
-    if (proposal.tenantId !== tenantId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     // Fetch tenant data
-    const tenant = await tenantRepository.findById(tenantId);
-    if (!tenant) {
+    const dbTenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
+    });
+    if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
+
+    const tenant = mapToTenantEntity(dbTenant);
 
     // Generate PDF
     const pdfBuffer = ProposalPdfService.generateProposalPdf(proposal, tenant);
@@ -141,8 +144,9 @@ export async function GET(
     const url = new URL(request.url);
     const isDownload = url.searchParams.get('download') !== 'false';
 
-    // Return PDF
-    return new NextResponse(pdfBuffer, {
+    // Return PDF - convert Buffer to Uint8Array for NextResponse compatibility
+    const pdfBytes = new Uint8Array(pdfBuffer);
+    return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -175,34 +179,40 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ): Promise<NextResponse> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
-    const tenantId = (session.user as any).tenantId;
+    const id = params.id;
+    const tenantId = (session.user as any).tenantId as string | undefined;
 
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 401 });
     }
 
-    const proposal = await proposalRepository.findById(id, tenantId);
+    const dbProposal = await fetchProposal(id, tenantId);
+    if (!dbProposal) {
+      return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
+    }
+
+    const proposal = mapToProposalEntity(dbProposal);
     if (!proposal) {
       return NextResponse.json({ error: 'Proposal not found' }, { status: 404 });
     }
 
-    if (proposal.tenantId !== tenantId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const tenant = await tenantRepository.findById(tenantId);
-    if (!tenant) {
+    const dbTenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
+    });
+    if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
+
+    const tenant = mapToTenantEntity(dbTenant);
 
     // Generate PDF
     const pdfBuffer = ProposalPdfService.generateProposalPdf(proposal, tenant);

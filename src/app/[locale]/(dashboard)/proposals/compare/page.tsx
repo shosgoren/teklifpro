@@ -343,7 +343,7 @@ export default function ProposalComparePage() {
               id,
               number: `TK-2024-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
               date: new Date(),
-              status: ['draft', 'sent', 'accepted'][Math.floor(Math.random() * 3)],
+              status: (['draft', 'sent', 'accepted'] as const)[Math.floor(Math.random() * 3)],
               customerName: `Müşteri ${id}`,
               customerEmail: `customer${id}@example.com`,
               items: [
@@ -371,7 +371,7 @@ export default function ProposalComparePage() {
               sentDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
               responseDate: Math.random() > 0.5 ? new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) : undefined,
               expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-              customerResponse: Math.random() > 0.5 ? ['accepted', 'revised', 'rejected'][Math.floor(Math.random() * 3)] : undefined,
+              customerResponse: Math.random() > 0.5 ? (['accepted', 'revised', 'rejected'] as const)[Math.floor(Math.random() * 3)] : undefined,
               responseNotes: Math.random() > 0.7 ? 'Fiyat konusunda görüşmek istiyoruz.' : undefined,
             };
           })
@@ -405,7 +405,7 @@ export default function ProposalComparePage() {
       id,
       number: `TK-2024-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
       date: new Date(),
-      status: 'sent',
+      status: 'sent' as const,
       customerName: `Müşteri ${id}`,
       customerEmail: `customer${id}@example.com`,
       items: [

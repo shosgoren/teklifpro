@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/shared/utils/prisma';
-import { ApiResponse } from '@/shared/types';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
 
 // Validation schema
@@ -10,8 +10,6 @@ const SendProposalSchema = z.object({
   method: z.enum(['whatsapp', 'email', 'sms']).default('whatsapp'),
   message: z.string().optional(),
 });
-
-type SendProposalRequest = z.infer<typeof SendProposalSchema>;
 
 interface SendResult {
   proposalId: string;
@@ -24,46 +22,29 @@ interface SendResult {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse<ApiResponse<SendResult>>> {
+  { params }: { params: { id: string } }
+): Promise<NextResponse> {
   try {
-    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
-    if (!userId) {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          data: null,
-        },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const { id: proposalId } = await params;
+    const proposalId = params.id;
     const body = await request.json();
     const payload = SendProposalSchema.parse(body);
 
-    // Get tenant
-    const tenant = await prisma.tenant.findFirst({
-      where: {
-        members: {
-          some: { userId },
-        },
-      },
-      include: {
-        integrations: {
-          where: { provider: 'WHATSAPP' },
-        },
-      },
+    // Get tenant with WhatsApp config
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.tenant.id },
     });
 
     if (!tenant) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Tenant not found',
-          data: null,
-        },
+        { success: false, error: 'Tenant not found' },
         { status: 404 }
       );
     }
@@ -73,117 +54,99 @@ export async function POST(
       where: {
         id: proposalId,
         tenantId: tenant.id,
+        deletedAt: null,
       },
       include: {
-        client: true,
+        customer: true,
         items: true,
       },
     });
 
     if (!proposal) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Proposal not found',
-          data: null,
-        },
+        { success: false, error: 'Proposal not found' },
         { status: 404 }
       );
     }
 
-    let sentTo: string;
+    let sentTo = '';
     let messageId: string | undefined;
 
     // Send via appropriate channel
     if (payload.method === 'whatsapp') {
-      sentTo = proposal.clientPhone || proposal.client.phone || '';
+      sentTo = proposal.customer.phone || '';
 
       if (!sentTo) {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'Client phone number not available',
-            data: null,
-          },
+          { success: false, error: 'Customer phone number not available' },
           { status: 400 }
         );
       }
 
-      const whatsappIntegration = tenant.integrations[0];
-      if (!whatsappIntegration?.accessToken) {
+      if (!tenant.whatsappPhoneId || !tenant.whatsappAccessToken) {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'WhatsApp integration not configured',
-            data: null,
-          },
+          { success: false, error: 'WhatsApp integration not configured' },
           { status: 400 }
         );
       }
 
-      const whatsappService = new WhatsAppService({
-        accessToken: whatsappIntegration.accessToken,
-        businessAccountId: whatsappIntegration.metadata?.businessAccountId,
+      const whatsappService = WhatsAppService.fromTenantConfig({
+        whatsappPhoneId: tenant.whatsappPhoneId,
+        whatsappAccessToken: tenant.whatsappAccessToken,
       });
 
       const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.publicToken}`;
 
       const messageText =
         payload.message ||
-        `
-Merhaba ${proposal.client.name},
+        `Merhaba ${proposal.customer.name},
 
-Teknoloji çözümlerimiz hakkında size bir teklif hazırladık.
+Teknoloji cozumlerimiz hakkinda size bir teklif hazirladik.
 
-Teklif Numarası: ${proposal.proposalNumber}
-Toplam Tutar: ₺${proposal.total.toLocaleString('tr-TR')}
+Teklif Numarasi: ${proposal.proposalNumber}
+Toplam Tutar: ${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY
 
-Teklifi görüntülemek için lütfen aşağıdaki linke tıklayınız:
+Teklifi goruntulemek icin lutfen asagidaki linke tiklayiniz:
 ${proposalUrl}
 
-Sorularınız için bizimle iletişime geçmekten çekinmeyin.
+Sorulariniz icin bizimle iletisime gecmekten cekinmeyin.
 
-İyi çalışmalar!
-      `.trim();
+Iyi calismalar!`.trim();
 
-      messageId = await whatsappService.sendMessage({
-        phoneNumber: sentTo,
-        message: messageText,
-        mediaUrl: undefined,
+      const result = await whatsappService.sendProposalLink({
+        to: sentTo,
+        customerName: proposal.customer.name,
+        proposalNumber: proposal.proposalNumber,
+        proposalTitle: proposal.title,
+        grandTotal: `${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY`,
+        proposalUrl,
+        companyName: tenant.name,
       });
+
+      messageId = result.messageId;
     } else if (payload.method === 'email') {
-      sentTo = proposal.clientEmail || proposal.client.email || '';
+      sentTo = proposal.customer.email || '';
 
       if (!sentTo) {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'Client email not available',
-            data: null,
-          },
+          { success: false, error: 'Customer email not available' },
           { status: 400 }
         );
       }
 
       // TODO: Implement email sending
-      // For now, we'll just log it
       console.log('Email sending would be implemented here');
     } else if (payload.method === 'sms') {
-      sentTo = proposal.clientPhone || proposal.client.phone || '';
+      sentTo = proposal.customer.phone || '';
 
       if (!sentTo) {
         return NextResponse.json(
-          {
-            success: false,
-            error: 'Client phone number not available',
-            data: null,
-          },
+          { success: false, error: 'Customer phone number not available' },
           { status: 400 }
         );
       }
 
       // TODO: Implement SMS sending
-      // For now, we'll just log it
       console.log('SMS sending would be implemented here');
     }
 
@@ -199,28 +162,12 @@ Sorularınız için bizimle iletişime geçmekten çekinmeyin.
     });
 
     // Create activity log
-    await prisma.activity.create({
+    await prisma.proposalActivity.create({
       data: {
         proposalId: proposal.id,
         type: 'SENT',
-        description: `Teklif ${payload.method} aracılığıyla ${sentTo} adresine gönderildi`,
+        description: `Teklif ${payload.method} araciligiyla ${sentTo} adresine gonderildi`,
         metadata: {
-          method: payload.method,
-          sentTo,
-          messageId,
-        },
-      },
-    });
-
-    // Log integration event
-    await prisma.integrationLog.create({
-      data: {
-        integrationId: tenant.integrations[0]?.id || '',
-        event: 'PROPOSAL_SENT',
-        status: 'SUCCESS',
-        metadata: {
-          proposalId: proposal.id,
-          proposalNumber: proposal.proposalNumber,
           method: payload.method,
           sentTo,
           messageId,
@@ -247,22 +194,13 @@ Sorularınız için bizimle iletişime geçmekten çekinmeyin.
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation error',
-          details: error.errors,
-          data: null,
-        },
+        { success: false, error: 'Validation error', details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        data: null,
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

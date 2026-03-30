@@ -26,7 +26,5 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: 'https://teklifpro.com/sitemap.xml',
-    crawlDelay: 1,
-    host: 'https://teklifpro.com',
   };
 }

@@ -1,30 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
-import { ApiResponse } from '@/shared/types';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 
-import { generateProposalNumber, generatePublicToken } from '@/shared/utils/generators';
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 // Validation schemas
 const CreateProposalSchema = z.object({
-  clientId: z.string().uuid(),
+  customerId: z.string(),
+  contactId: z.string().optional(),
   title: z.string().min(1).max(255),
   description: z.string().optional(),
   items: z.array(
     z.object({
-      description: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      unit: z.string().default('Adet'),
       quantity: z.number().positive(),
       unitPrice: z.number().nonnegative(),
-      tax: z.number().nonnegative().optional(),
+      discountRate: z.number().min(0).max(100).default(0),
+      vatRate: z.number().min(0).max(100).default(18),
     })
   ),
-  clientEmail: z.string().email(),
-  clientPhone: z.string().optional(),
-  expiresAt: z.date().optional(),
+  expiresAt: z.string().optional(),
   notes: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  deliveryTerms: z.string().optional(),
 });
-
-type CreateProposalInput = z.infer<typeof CreateProposalSchema>;
 
 const GetProposalsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -33,18 +39,12 @@ const GetProposalsSchema = z.object({
   status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED']).optional(),
 });
 
-type GetProposalsQuery = z.infer<typeof GetProposalsSchema>;
-
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
-    if (!userId) {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          data: null,
-        },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -59,21 +59,15 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     const skip = (queryParams.page - 1) * queryParams.limit;
 
-    // Build where clause
     const whereClause: any = {
-      tenant: {
-        members: {
-          some: {
-            userId: userId,
-          },
-        },
-      },
+      tenantId: session.tenant.id,
+      deletedAt: null,
     };
 
     if (queryParams.search) {
       whereClause.OR = [
         { title: { contains: queryParams.search, mode: 'insensitive' } },
-        { client: { name: { contains: queryParams.search, mode: 'insensitive' } } },
+        { customer: { name: { contains: queryParams.search, mode: 'insensitive' } } },
         { proposalNumber: { contains: queryParams.search, mode: 'insensitive' } },
       ];
     }
@@ -86,7 +80,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       prisma.proposal.findMany({
         where: whereClause,
         include: {
-          client: true,
+          customer: true,
           items: true,
           activities: {
             take: 1,
@@ -119,22 +113,13 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation error',
-          details: error.errors,
-          data: null,
-        },
+        { success: false, error: 'Validation error' },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        data: null,
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -142,14 +127,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
-    if (!userId) {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          data: null,
-        },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -157,109 +138,66 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     const body = await request.json();
     const payload = CreateProposalSchema.parse(body);
 
-    // Get tenant from user membership
-    const tenant = await prisma.tenant.findFirst({
-      where: {
-        members: {
-          some: { userId },
-        },
-      },
-    });
-
-    if (!tenant) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Tenant not found',
-          data: null,
-        },
-        { status: 404 }
-      );
-    }
-
-    // Get or create client
-    let client = await prisma.customer.findFirst({
-      where: {
-        tenantId: tenant.id,
-        id: payload.clientId,
-      },
-    });
-
-    if (!client) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Client not found',
-          data: null,
-        },
-        { status: 404 }
-      );
-    }
-
     // Calculate totals
-    const itemsTotal = payload.items.reduce((sum, item) => {
-      const itemTotal = item.quantity * item.unitPrice;
-      const tax = item.tax ?? 0;
-      return sum + itemTotal + (itemTotal * tax) / 100;
-    }, 0);
+    let subtotal = 0;
+    let vatTotal = 0;
+    for (const item of payload.items) {
+      const lineTotal = item.quantity * item.unitPrice * (1 - item.discountRate / 100);
+      subtotal += lineTotal;
+      vatTotal += lineTotal * (item.vatRate / 100);
+    }
 
-    const taxAmount = payload.items.reduce((sum, item) => {
-      const itemTotal = item.quantity * item.unitPrice;
-      const tax = item.tax ?? 0;
-      return sum + (itemTotal * tax) / 100;
-    }, 0);
+    const { nanoid } = await import('nanoid');
+    const proposalNumber = `TKL-${new Date().getFullYear()}-${nanoid(6).toUpperCase()}`;
+    const publicToken = nanoid(24);
 
-    const subtotal = itemsTotal - taxAmount;
-
-    // Generate proposal number and token
-    const proposalNumber = await generateProposalNumber(tenant.id);
-    const publicToken = generatePublicToken();
-
-    // Create proposal with items
     const proposal = await prisma.proposal.create({
       data: {
-        tenantId: tenant.id,
-        clientId: client.id,
+        tenantId: session.tenant.id,
+        userId: session.user.id,
+        customerId: payload.customerId,
+        contactId: payload.contactId,
         proposalNumber,
         publicToken,
         title: payload.title,
         description: payload.description,
-        clientEmail: payload.clientEmail,
-        clientPhone: payload.clientPhone,
         status: 'DRAFT',
         subtotal,
-        taxAmount,
-        total: itemsTotal,
-        expiresAt: payload.expiresAt,
+        vatTotal,
+        grandTotal: subtotal + vatTotal,
+        expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : undefined,
         notes: payload.notes,
+        paymentTerms: payload.paymentTerms,
+        deliveryTerms: payload.deliveryTerms,
         items: {
-          create: payload.items.map((item) => ({
+          create: payload.items.map((item, index) => ({
+            name: item.name,
             description: item.description,
+            unit: item.unit,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            tax: item.tax ?? 0,
-            total: item.quantity * item.unitPrice,
+            discountRate: item.discountRate,
+            vatRate: item.vatRate,
+            lineTotal: item.quantity * item.unitPrice * (1 - item.discountRate / 100),
+            sortOrder: index,
           })),
         },
         activities: {
           create: {
             type: 'CREATED',
-            description: 'Teklif oluşturuldu',
+            description: 'Teklif olusturuldu',
           },
         },
       },
       include: {
-        client: true,
+        customer: true,
         items: true,
         activities: true,
       },
     });
 
     return NextResponse.json(
-      {
-        success: true,
-        data: proposal,
-      },
+      { success: true, data: proposal },
       { status: 201 }
     );
   } catch (error) {
@@ -267,22 +205,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Validation error',
-          details: error.errors,
-          data: null,
-        },
+        { success: false, error: 'Validation error' },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        data: null,
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

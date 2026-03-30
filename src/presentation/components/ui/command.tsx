@@ -4,8 +4,12 @@ import * as React from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 
-const Command = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface CommandProps extends React.HTMLAttributes<HTMLDivElement> {
+  shouldFilter?: boolean;
+}
+
+const Command = React.forwardRef<HTMLDivElement, CommandProps>(
+  ({ className, shouldFilter: _shouldFilter, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
@@ -18,8 +22,12 @@ const Command = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEle
 );
 Command.displayName = 'Command';
 
-const CommandInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
+interface CommandInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  onValueChange?: (value: string) => void;
+}
+
+const CommandInput = React.forwardRef<HTMLInputElement, CommandInputProps>(
+  ({ className, onValueChange, onChange, ...props }, ref) => (
     <div className="flex items-center border-b px-3" data-cmdk-input-wrapper="">
       <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
       <input
@@ -28,6 +36,10 @@ const CommandInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
           'flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
+        onChange={(e) => {
+          onChange?.(e);
+          onValueChange?.(e.target.value);
+        }}
         {...props}
       />
     </div>
@@ -72,14 +84,26 @@ const CommandSeparator = React.forwardRef<HTMLDivElement, React.HTMLAttributes<H
 );
 CommandSeparator.displayName = 'CommandSeparator';
 
-const CommandItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface CommandItemProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onSelect'> {
+  disabled?: boolean;
+  onSelect?: (value: string) => void;
+}
+
+const CommandItem = React.forwardRef<HTMLDivElement, CommandItemProps>(
+  ({ className, disabled, onSelect, onClick, ...props }, ref) => (
     <div
       ref={ref}
+      data-disabled={disabled || undefined}
       className={cn(
         'relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className
       )}
+      onClick={(e) => {
+        onClick?.(e);
+        if (!disabled) {
+          onSelect?.('');
+        }
+      }}
       {...props}
     />
   )

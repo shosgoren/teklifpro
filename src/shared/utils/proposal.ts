@@ -30,14 +30,32 @@ export function formatCurrency(amount: number, currency = 'TRY'): string {
 
 /**
  * Teklif satirinin toplam tutarini hesapla
+ * Accepts either (quantity, unitPrice, discountRate) or (item, mode)
  */
 export function calculateLineTotal(
-  quantity: number,
-  unitPrice: number,
-  discountRate: number
+  quantityOrItem: number | { quantity: number; unitPrice: number; discountPercent?: number; discountRate?: number; vatPercent?: number; vatRate?: number },
+  unitPriceOrMode?: number | string,
+  discountRate?: number
 ): number {
+  if (typeof quantityOrItem === 'object') {
+    const item = quantityOrItem
+    const discount = item.discountPercent ?? item.discountRate ?? 0
+    const vat = item.vatPercent ?? item.vatRate ?? 0
+    const subtotal = item.quantity * item.unitPrice
+    const discountAmount = subtotal * (discount / 100)
+    const afterDiscount = subtotal - discountAmount
+    if (unitPriceOrMode === 'with_vat') {
+      return afterDiscount + (afterDiscount * (vat / 100))
+    }
+    return afterDiscount
+  }
+
+  // Original 3-arg signature
+  const quantity = quantityOrItem
+  const unitPrice = unitPriceOrMode as number
+  const dr = discountRate ?? 0
   const subtotal = quantity * unitPrice
-  const discount = subtotal * (discountRate / 100)
+  const discount = subtotal * (dr / 100)
   return subtotal - discount
 }
 
@@ -48,23 +66,28 @@ export function calculateProposalTotals(
   items: Array<{
     quantity: number
     unitPrice: number
-    discountRate: number
-    vatRate: number
+    discountRate?: number
+    discountPercent?: number
+    vatRate?: number
+    vatPercent?: number
   }>,
-  generalDiscount?: { type: 'PERCENTAGE' | 'FIXED'; value: number }
+  generalDiscount?: { type: 'PERCENTAGE' | 'FIXED' | 'percent' | 'fixed'; value: number }
 ) {
   let subtotal = 0
   let vatTotal = 0
 
   for (const item of items) {
-    const lineTotal = calculateLineTotal(item.quantity, item.unitPrice, item.discountRate)
+    const dr = item.discountRate ?? item.discountPercent ?? 0
+    const vr = item.vatRate ?? item.vatPercent ?? 0
+    const lineTotal = calculateLineTotal(item.quantity, item.unitPrice, dr)
     subtotal += lineTotal
-    vatTotal += lineTotal * (item.vatRate / 100)
+    vatTotal += lineTotal * (vr / 100)
   }
 
   let discountAmount = 0
   if (generalDiscount) {
-    if (generalDiscount.type === 'PERCENTAGE') {
+    const discountType = generalDiscount.type.toUpperCase()
+    if (discountType === 'PERCENTAGE' || discountType === 'PERCENT') {
       discountAmount = subtotal * (generalDiscount.value / 100)
     } else {
       discountAmount = generalDiscount.value
@@ -79,6 +102,7 @@ export function calculateProposalTotals(
     subtotal: Math.round(subtotal * 100) / 100,
     discountAmount: Math.round(discountAmount * 100) / 100,
     vatTotal: Math.round(adjustedVat * 100) / 100,
+    vatAmount: Math.round(adjustedVat * 100) / 100,
     grandTotal: Math.round(grandTotal * 100) / 100,
   }
 }

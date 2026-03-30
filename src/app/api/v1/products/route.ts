@@ -11,14 +11,12 @@ interface ApiResponse<T> {
 }
 
 const createProductSchema = z.object({
-  code: z.string().min(1, 'Ürün kodu gerekli').max(50),
-  name: z.string().min(1, 'Ürün adı gerekli').max(255),
-  category: z.string().min(1, 'Kategori gerekli').max(100),
+  code: z.string().min(1, 'Urun kodu gerekli').max(50),
+  name: z.string().min(1, 'Urun adi gerekli').max(255),
+  category: z.string().max(100).optional(),
   unit: z.string().min(1, 'Birim gerekli').max(50),
-  listPrice: z.number().positive('Liste fiyatı pozitif olmalı'),
-  costPrice: z.number().nonnegative('Maliyet fiyatı negatif olamaz').optional().default(0),
+  listPrice: z.number().nonnegative('Liste fiyati negatif olamaz'),
   vatRate: z.number().min(0).max(100).default(18),
-  stock: z.number().nonnegative('Stok negatif olamaz').default(0),
   isActive: z.boolean().default(true),
   description: z.string().optional().default(''),
 });
@@ -36,18 +34,16 @@ type QueryInput = z.infer<typeof querySchema>;
 
 interface ProductResponse {
   id: string;
-  code: string;
+  code: string | null;
   name: string;
-  category: string;
+  category: string | null;
   unit: string;
   listPrice: number;
-  costPrice: number;
   vatRate: number;
-  stock: number;
   isActive: boolean;
-  description: string;
+  description: string | null;
   syncedFromParasut: boolean;
-  lastSync: string | null;
+  lastSyncAt: string | null;
   createdAt: string;
 }
 
@@ -123,13 +119,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         category: true,
         unit: true,
         listPrice: true,
-        costPrice: true,
         vatRate: true,
-        stock: true,
         isActive: true,
         description: true,
-        syncedFromParasut: true,
-        lastSync: true,
+        parasutId: true,
+        lastSyncAt: true,
         createdAt: true,
       },
     });
@@ -141,13 +135,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       category: p.category,
       unit: p.unit,
       listPrice: p.listPrice?.toNumber?.() || 0,
-      costPrice: p.costPrice?.toNumber?.() || 0,
-      vatRate: p.vatRate || 18,
-      stock: p.stock || 0,
+      vatRate: Number(p.vatRate) || 18,
       isActive: p.isActive,
-      description: p.description || '',
-      syncedFromParasut: p.syncedFromParasut || false,
-      lastSync: p.lastSync?.toISOString?.() || null,
+      description: p.description,
+      syncedFromParasut: !!p.parasutId,
+      lastSyncAt: p.lastSyncAt?.toISOString?.() || null,
       createdAt: p.createdAt.toISOString(),
     }));
 
@@ -216,7 +208,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       return NextResponse.json(
         {
           success: false,
-          error: 'Bu ürün kodu zaten kullanılıyor',
+          error: 'Bu urun kodu zaten kullaniliyor',
           code: 'DUPLICATE_CODE',
         } as ApiResponse<ProductResponse>,
         { status: 409 }
@@ -227,7 +219,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       data: {
         ...data,
         tenantId: session.user.tenantId,
-        syncedFromParasut: false,
       },
       select: {
         id: true,
@@ -236,13 +227,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         category: true,
         unit: true,
         listPrice: true,
-        costPrice: true,
         vatRate: true,
-        stock: true,
         isActive: true,
         description: true,
-        syncedFromParasut: true,
-        lastSync: true,
+        parasutId: true,
+        lastSyncAt: true,
         createdAt: true,
       },
     });
@@ -254,13 +243,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       category: product.category,
       unit: product.unit,
       listPrice: product.listPrice?.toNumber?.() || 0,
-      costPrice: product.costPrice?.toNumber?.() || 0,
-      vatRate: product.vatRate || 18,
-      stock: product.stock || 0,
+      vatRate: Number(product.vatRate) || 18,
       isActive: product.isActive,
-      description: product.description || '',
-      syncedFromParasut: product.syncedFromParasut || false,
-      lastSync: product.lastSync?.toISOString?.() || null,
+      description: product.description,
+      syncedFromParasut: !!product.parasutId,
+      lastSyncAt: product.lastSyncAt?.toISOString?.() || null,
       createdAt: product.createdAt.toISOString(),
     };
 

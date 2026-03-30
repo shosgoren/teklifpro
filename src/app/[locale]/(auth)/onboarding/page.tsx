@@ -16,7 +16,7 @@ import {
   AlertCircle,
   Zap,
   ArrowRight,
-  Confetti as ConfettiIcon,
+  PartyPopper as ConfettiIcon,
 } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
@@ -566,7 +566,7 @@ export default function OnboardingPage() {
                 <FormField
                   control={companyForm.control}
                   name="logo"
-                  render={({ field: { onChange, ...field } }) => (
+                  render={({ field: { onChange, value: _value, ...field } }) => (
                     <FormItem>
                       <FormLabel className="text-gray-700 text-sm font-medium">
                         {t('step1.logo')} ({t('step1.optional')})

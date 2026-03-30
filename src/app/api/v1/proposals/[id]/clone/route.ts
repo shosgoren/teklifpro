@@ -7,7 +7,7 @@ import { generateProposalNumber, generatePublicToken } from '@/shared/utils/prop
 
 /**
  * POST /api/v1/proposals/[id]/clone
- * Teklifi kopyala - yeni teklif numarası ve token ile deep copy oluştur
+ * Teklifi kopyala - yeni teklif numarasi ve token ile deep copy olustur
  */
 
 // Validation schemas
@@ -21,24 +21,8 @@ const CloneProposalBodySchema = z.object({
 
 type CloneProposalInput = z.infer<typeof CloneProposalBodySchema>;
 
-interface ClonedProposalResponse {
-  id: string;
-  number: string;
-  title: string;
-  status: string;
-  customerId: string;
-  publicToken: string;
-  subtotal: number;
-  discountAmount: number;
-  vatAmount: number;
-  total: number;
-  items?: any[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 /**
- * Helper: UUID formatı kontrol et
+ * Helper: UUID formati kontrol et
  */
 function isValidUUID(uuid: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -46,7 +30,7 @@ function isValidUUID(uuid: string): boolean {
 }
 
 /**
- * Helper: Teklif sayfa İlişkilerini getir
+ * Helper: Teklif iliskilerini getir
  */
 async function getProposalWithRelations(proposalId: string) {
   return prisma.proposal.findUnique({
@@ -91,31 +75,31 @@ export async function POST(
   try {
     const sourceProposalId = params.id;
 
-    // ============ 1. DOĞRULAMA ============
+    // ============ 1. DOGRULAMA ============
 
-    // UUID formatı kontrol et
+    // UUID formati kontrol et
     if (!isValidUUID(sourceProposalId)) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           error: {
             code: 'INVALID_ID',
-            message: 'Geçersiz teklif ID formatı',
+            message: 'Gecersiz teklif ID formati',
           },
         },
         { status: 400 }
       );
     }
 
-    // Kullanıcı kimliğini kontrol et
-    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
+    // Kullanici kimligini kontrol et
+    const userId = request.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           error: {
             code: 'UNAUTHORIZED',
-            message: 'Kimlik doğrulama gerekli',
+            message: 'Kimlik dogrulama gerekli',
           },
         },
         { status: 401 }
@@ -134,7 +118,7 @@ export async function POST(
             success: false,
             error: {
               code: 'VALIDATION_ERROR',
-              message: 'İstek verisi doğrulama hatası',
+              message: 'Istek verisi dogrulama hatasi',
               details: error.flatten().fieldErrors as any,
             },
           },
@@ -144,7 +128,7 @@ export async function POST(
       throw error;
     }
 
-    // ============ 2. KAYNAK TEKLİF VERİLERİ ============
+    // ============ 2. KAYNAK TEKLIF VERILERI ============
 
     // Kaynak teklifi getir
     const sourceProposal = await getProposalWithRelations(sourceProposalId);
@@ -155,25 +139,20 @@ export async function POST(
           success: false,
           error: {
             code: 'NOT_FOUND',
-            message: 'Kaynak teklif bulunamadı',
+            message: 'Kaynak teklif bulunamadi',
           },
         },
         { status: 404 }
       );
     }
 
-    // Kullanıcının kiracısını kontrol et
-    const userTenant = await prisma.tenant.findFirst({
-      where: {
-        members: {
-          some: {
-            userId: userId,
-          },
-        },
-      },
+    // Kullanicinin kiracisini kontrol et
+    const userRecord = await prisma.user.findFirst({
+      where: { id: userId },
+      select: { tenantId: true },
     });
 
-    if (!userTenant || userTenant.id !== sourceProposal.customer.tenantId) {
+    if (!userRecord || userRecord.tenantId !== sourceProposal.customer.tenantId) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -186,32 +165,34 @@ export async function POST(
       );
     }
 
-    // ============ 3. HEDEFİ MÜŞTERİYİ DOĞRULA ============
+    const tenantId = userRecord.tenantId;
+
+    // ============ 3. HEDEF MUSTERIYI DOGRULA ============
 
     const targetCustomerId = validatedData.customerId || sourceProposal.customerId;
     const targetContactId = validatedData.contactId || sourceProposal.contactId;
 
-    // Hedef müşterinin var olduğunu ve kiracıya ait olduğunu doğrula
+    // Hedef musterinin var oldugunu ve kiraciya ait oldugunu dogrula
     const targetCustomer = await prisma.customer.findUnique({
       where: { id: targetCustomerId },
     });
 
-    if (!targetCustomer || targetCustomer.tenantId !== userTenant.id) {
+    if (!targetCustomer || targetCustomer.tenantId !== tenantId) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           error: {
             code: 'INVALID_CUSTOMER',
-            message: 'Hedef müşteri bulunamadı veya kiracıya ait değil',
+            message: 'Hedef musteri bulunamadi veya kiraciya ait degil',
           },
         },
         { status: 404 }
       );
     }
 
-    // Hedef iletişi doğrula (varsa)
+    // Hedef iletisiyi dogrula (varsa)
     if (targetContactId) {
-      const targetContact = await prisma.contact.findUnique({
+      const targetContact = await prisma.customerContact.findUnique({
         where: { id: targetContactId },
       });
 
@@ -221,7 +202,7 @@ export async function POST(
             success: false,
             error: {
               code: 'INVALID_CONTACT',
-              message: 'İletişi kişi bulunamadı veya müşteriye ait değil',
+              message: 'Iletisi kisi bulunamadi veya musteriye ait degil',
             },
           },
           { status: 404 }
@@ -229,13 +210,13 @@ export async function POST(
       }
     }
 
-    // ============ 4. FIYAT ÇARPICISI UYGULA ============
+    // ============ 4. FIYAT CARPICISI UYGULA ============
 
-    let clonedItems = sourceProposal.items.map((item) => {
-      let newUnitPrice = item.unitPrice;
+    const clonedItems = sourceProposal.items.map((item) => {
+      let newUnitPrice = Number(item.unitPrice);
 
       if (validatedData.priceMultiplier) {
-        newUnitPrice = item.unitPrice * validatedData.priceMultiplier;
+        newUnitPrice = newUnitPrice * validatedData.priceMultiplier;
       }
 
       return {
@@ -243,18 +224,18 @@ export async function POST(
         name: item.name,
         description: item.description,
         unit: item.unit,
-        quantity: item.quantity,
+        quantity: Number(item.quantity),
         unitPrice: newUnitPrice,
-        discountRate: item.discountRate,
-        vatRate: item.vatRate,
+        discountRate: Number(item.discountRate),
+        vatRate: Number(item.vatRate),
       };
     });
 
-    // ============ 5. YENİ TOPLAMLAR HESAPLA ============
+    // ============ 5. YENI TOPLAMLAR HESAPLA ============
 
     let newSubtotal = 0;
     let newDiscountAmount = 0;
-    let newVatAmount = 0;
+    let newVatTotal = 0;
 
     clonedItems.forEach((item) => {
       const itemSubtotal = item.quantity * item.unitPrice;
@@ -264,44 +245,44 @@ export async function POST(
 
       newSubtotal += itemSubtotal;
       newDiscountAmount += itemDiscount;
-      newVatAmount += itemVat;
+      newVatTotal += itemVat;
     });
 
-    const newTotal = newSubtotal - newDiscountAmount + newVatAmount;
+    const newGrandTotal = newSubtotal - newDiscountAmount + newVatTotal;
 
-    // ============ 6. KOPYALAMA İŞLEMİ (TRANSACTION) ============
+    // ============ 6. KOPYALAMA ISLEMI (TRANSACTION) ============
 
     const clonedProposal = await prisma.$transaction(async (tx) => {
-      // Yeni teklif oluştur
+      // Yeni teklif olustur
       const newProposal = await tx.proposal.create({
         data: {
-          number: generateProposalNumber(),
+          proposalNumber: generateProposalNumber(),
           publicToken: generatePublicToken(),
           title: validatedData.title || sourceProposal.title,
           description: sourceProposal.description,
           status: 'DRAFT',
           customerId: targetCustomerId,
           contactId: targetContactId || undefined,
-          tenantId: userTenant.id,
+          tenantId: tenantId,
+          userId: userId,
           subtotal: newSubtotal,
           discountAmount: newDiscountAmount,
-          vatAmount: newVatAmount,
-          total: newTotal,
+          vatTotal: newVatTotal,
+          grandTotal: newGrandTotal,
           notes: validatedData.includeNotes ? sourceProposal.notes : '',
-          terms: sourceProposal.terms,
           validityDays: sourceProposal.validityDays,
           discountType: sourceProposal.discountType,
-          discountValue: sourceProposal.discountValue,
+          discountValue: sourceProposal.discountValue ? Number(sourceProposal.discountValue) : undefined,
           paymentTerms: sourceProposal.paymentTerms,
           deliveryTerms: sourceProposal.deliveryTerms,
           termsConditions: sourceProposal.termsConditions,
         },
       });
 
-      // Teklif öğelerini kopyala (sadece veri tabanı kayıtları)
+      // Teklif ogelerini kopyala
       if (clonedItems.length > 0) {
         await tx.proposalItem.createMany({
-          data: clonedItems.map((item) => ({
+          data: clonedItems.map((item, index) => ({
             proposalId: newProposal.id,
             productId: item.productId,
             name: item.name,
@@ -311,19 +292,20 @@ export async function POST(
             unitPrice: item.unitPrice,
             discountRate: item.discountRate,
             vatRate: item.vatRate,
+            lineTotal: item.quantity * item.unitPrice * (1 - item.discountRate / 100),
+            sortOrder: index,
           })),
         });
       }
 
-      // Audit log oluştur
+      // Audit log olustur
       await tx.auditLog.create({
         data: {
-          tenantId: userTenant.id,
+          tenantId: tenantId,
           userId: userId,
-          action: `Teklif kopyalandı: ${sourceProposalId} -> ${newProposal.id}`,
-          status: 'SUCCESS',
-          resource: 'proposal',
-          timestamp: new Date(),
+          action: `Teklif kopyalandi: ${sourceProposalId} -> ${newProposal.id}`,
+          entity: 'proposal',
+          entityId: newProposal.id,
           metadata: {
             sourceProposalId,
             newProposalId: newProposal.id,
@@ -340,7 +322,7 @@ export async function POST(
         });
       });
 
-      // Tamamlanmış teklifi ilişkilerle beraber getir
+      // Tamamlanmis teklifi iliskilerle beraber getir
       return tx.proposal.findUnique({
         where: { id: newProposal.id },
         include: {
@@ -372,29 +354,26 @@ export async function POST(
       });
     });
 
-    // ============ 7. BAŞARILI YANIT ============
-
-    const response: ClonedProposalResponse = {
-      id: clonedProposal!.id,
-      number: clonedProposal!.number,
-      title: clonedProposal!.title,
-      status: clonedProposal!.status,
-      customerId: clonedProposal!.customerId,
-      publicToken: clonedProposal!.publicToken,
-      subtotal: clonedProposal!.subtotal,
-      discountAmount: clonedProposal!.discountAmount,
-      vatAmount: clonedProposal!.vatAmount,
-      total: clonedProposal!.total,
-      items: clonedProposal!.items,
-      createdAt: clonedProposal!.createdAt.toISOString(),
-      updatedAt: clonedProposal!.updatedAt.toISOString(),
-    };
+    // ============ 7. BASARILI YANIT ============
 
     return NextResponse.json<ApiResponse>(
       {
         success: true,
-        data: response,
-        error: undefined,
+        data: {
+          id: clonedProposal!.id,
+          proposalNumber: clonedProposal!.proposalNumber,
+          title: clonedProposal!.title,
+          status: clonedProposal!.status,
+          customerId: clonedProposal!.customerId,
+          publicToken: clonedProposal!.publicToken,
+          subtotal: Number(clonedProposal!.subtotal),
+          discountAmount: Number(clonedProposal!.discountAmount),
+          vatTotal: Number(clonedProposal!.vatTotal),
+          grandTotal: Number(clonedProposal!.grandTotal),
+          items: clonedProposal!.items,
+          createdAt: clonedProposal!.createdAt.toISOString(),
+          updatedAt: clonedProposal!.updatedAt.toISOString(),
+        },
       },
       { status: 201 }
     );
@@ -406,7 +385,7 @@ export async function POST(
         success: false,
         error: {
           code: 'INTERNAL_ERROR',
-          message: 'Teklif kopyalanırken hata oluştu',
+          message: 'Teklif kopyalanirken hata olustu',
         },
       },
       { status: 500 }

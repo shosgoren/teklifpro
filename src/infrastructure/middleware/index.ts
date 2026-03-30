@@ -57,9 +57,9 @@ export function createApiHandler(
   return async (request: NextRequest, context?: any): Promise<NextResponse> => {
     try {
       // Chain 1: Rate limiting (if enabled)
-      let limitedHandler = handler
+      let limitedHandler: (request: NextRequest, context?: any) => Promise<NextResponse> = handler as any
       if (rateLimit) {
-        limitedHandler = withRateLimit(handler, { requestsPerMinute })
+        limitedHandler = withRateLimit(handler as any, { requestsPerMinute })
       }
 
       // Chain 2: Authentication (unless public)
@@ -151,9 +151,8 @@ async function logAuditAsync(data: {
           tenantId: data.tenantId,
           userId: data.userId,
           action: data.action,
-          status: data.status,
-          resource: data.resource,
-          timestamp: new Date(),
+          entity: data.resource,
+          metadata: { status: data.status },
         },
       })
     } catch (error) {

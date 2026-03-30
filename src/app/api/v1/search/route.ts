@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/shared/utils/prisma';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 
 /**
- * Arama sonuçlarının veri yapısı
+ * Arama sonuclarinin veri yapisi
  */
 interface SearchResult {
   id: string;
@@ -16,7 +17,7 @@ interface SearchResult {
 }
 
 /**
- * Arama API yanıt formatı
+ * Arama API yanit formati
  */
 interface SearchResponse {
   success: boolean;
@@ -34,7 +35,7 @@ interface SearchResponse {
 }
 
 /**
- * Metni vurgula - eşleşen kısımları işaretler
+ * Metni vurgula - eslesen kisimlari isaretler
  */
 function highlightMatch(text: string, query: string, limit: number = 100): string {
   if (!text || !query) return text.substring(0, limit);
@@ -58,22 +59,22 @@ function highlightMatch(text: string, query: string, limit: number = 100): strin
 }
 
 /**
- * Teklif başlığında kısmi eşleşme skoru
+ * Teklif basliginda kismi esleme skoru
  */
 function calculateRelevanceScore(text: string, query: string): number {
   const lowerText = text.toLowerCase();
   const lowerQuery = query.toLowerCase();
 
-  // Tam eşleşme
+  // Tam esleme
   if (lowerText === lowerQuery) return 100;
 
-  // Başında başlıyor
+  // Basinda basliyor
   if (lowerText.startsWith(lowerQuery)) return 80;
 
-  // Kelime başında başlıyor
+  // Kelime basinda basliyor
   if (new RegExp(`\\b${query}`).test(lowerText)) return 60;
 
-  // İçinde var
+  // Icinde var
   return 30;
 }
 
@@ -82,16 +83,17 @@ function calculateRelevanceScore(text: string, query: string): number {
  */
 async function searchProposals(
   query: string,
-  organizationId: string,
+  tenantId: string,
   limit: number,
   offset: number
 ) {
-  const searchFilter = {
+  const searchFilter: any = {
     AND: [
-      { organizationId },
+      { tenantId },
+      { deletedAt: null },
       {
         OR: [
-          { number: { contains: query, mode: 'insensitive' } },
+          { proposalNumber: { contains: query, mode: 'insensitive' } },
           { title: { contains: query, mode: 'insensitive' } },
           { notes: { contains: query, mode: 'insensitive' } },
           {
@@ -112,11 +114,11 @@ async function searchProposals(
       where: searchFilter,
       select: {
         id: true,
-        number: true,
+        proposalNumber: true,
         title: true,
         notes: true,
         status: true,
-        amount: true,
+        grandTotal: true,
         customer: {
           select: { name: true, id: true },
         },
@@ -131,7 +133,7 @@ async function searchProposals(
   return {
     results: proposals.map((p) => {
       const relevance = Math.max(
-        calculateRelevanceScore(p.number, query),
+        calculateRelevanceScore(p.proposalNumber, query),
         calculateRelevanceScore(p.title, query),
         calculateRelevanceScore(p.notes || '', query),
         calculateRelevanceScore(p.customer.name, query)
@@ -139,21 +141,21 @@ async function searchProposals(
 
       const highlightText =
         highlightMatch(p.title, query) ||
-        highlightMatch(p.number, query) ||
+        highlightMatch(p.proposalNumber, query) ||
         highlightMatch(p.notes || '', query) ||
         highlightMatch(p.customer.name, query);
 
       return {
         id: p.id,
         type: 'proposal' as const,
-        title: p.number,
+        title: p.proposalNumber,
         subtitle: p.title,
         highlight: highlightText,
         url: `/proposals/${p.id}`,
         metadata: {
           customerName: p.customer.name,
           status: p.status,
-          amount: p.amount,
+          grandTotal: Number(p.grandTotal),
           relevance,
         },
       };
@@ -163,24 +165,25 @@ async function searchProposals(
 }
 
 /**
- * Müşterilerde ara
+ * Musterilerde ara
  */
 async function searchCustomers(
   query: string,
-  organizationId: string,
+  tenantId: string,
   limit: number,
   offset: number
 ) {
-  const searchFilter = {
+  const searchFilter: any = {
     AND: [
-      { organizationId },
+      { tenantId },
+      { deletedAt: null },
       {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { email: { contains: query, mode: 'insensitive' } },
           { phone: { contains: query, mode: 'insensitive' } },
           { taxNumber: { contains: query, mode: 'insensitive' } },
-          { companyName: { contains: query, mode: 'insensitive' } },
+          { shortName: { contains: query, mode: 'insensitive' } },
         ],
       },
     ],
@@ -195,7 +198,7 @@ async function searchCustomers(
         email: true,
         phone: true,
         taxNumber: true,
-        companyName: true,
+        shortName: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -209,20 +212,20 @@ async function searchCustomers(
       const relevance = Math.max(
         calculateRelevanceScore(c.name, query),
         calculateRelevanceScore(c.email || '', query),
-        calculateRelevanceScore(c.companyName || '', query),
+        calculateRelevanceScore(c.shortName || '', query),
         calculateRelevanceScore(c.taxNumber || '', query)
       );
 
       const highlightText =
         highlightMatch(c.name, query) ||
         highlightMatch(c.email || '', query) ||
-        highlightMatch(c.companyName || '', query);
+        highlightMatch(c.shortName || '', query);
 
       return {
         id: c.id,
         type: 'customer' as const,
         title: c.name,
-        subtitle: c.companyName || c.email || c.phone || '',
+        subtitle: c.shortName || c.email || c.phone || '',
         highlight: highlightText,
         url: `/customers/${c.id}`,
         metadata: {
@@ -238,23 +241,23 @@ async function searchCustomers(
 }
 
 /**
- * Ürünlerde ara
+ * Urunlerde ara
  */
 async function searchProducts(
   query: string,
-  organizationId: string,
+  tenantId: string,
   limit: number,
   offset: number
 ) {
-  const searchFilter = {
+  const searchFilter: any = {
     AND: [
-      { organizationId },
+      { tenantId },
+      { deletedAt: null },
       {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { code: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
-          { barcode: { contains: query, mode: 'insensitive' } },
         ],
       },
     ],
@@ -268,8 +271,7 @@ async function searchProducts(
         name: true,
         code: true,
         description: true,
-        barcode: true,
-        price: true,
+        listPrice: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
@@ -282,27 +284,25 @@ async function searchProducts(
     results: products.map((p) => {
       const relevance = Math.max(
         calculateRelevanceScore(p.name, query),
-        calculateRelevanceScore(p.code, query),
-        calculateRelevanceScore(p.description || '', query),
-        calculateRelevanceScore(p.barcode || '', query)
+        calculateRelevanceScore(p.code || '', query),
+        calculateRelevanceScore(p.description || '', query)
       );
 
       const highlightText =
         highlightMatch(p.name, query) ||
-        highlightMatch(p.code, query) ||
+        highlightMatch(p.code || '', query) ||
         highlightMatch(p.description || '', query);
 
       return {
         id: p.id,
         type: 'product' as const,
         title: p.name,
-        subtitle: p.code,
+        subtitle: p.code || '',
         highlight: highlightText,
         url: `/products/${p.id}`,
         metadata: {
           code: p.code,
-          barcode: p.barcode,
-          price: p.price,
+          listPrice: Number(p.listPrice),
           relevance,
         },
       };
@@ -316,21 +316,22 @@ async function searchProducts(
  *
  * Sorgu parametreleri:
  * - q: arama terimi (zorunlu)
- * - type: 'all' | 'proposals' | 'customers' | 'products' (varsayılan: 'all')
- * - page: sayfa numarası (varsayılan: 1)
- * - limit: sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 50)
+ * - type: 'all' | 'proposals' | 'customers' | 'products' (varsayilan: 'all')
+ * - page: sayfa numarasi (varsayilan: 1)
+ * - limit: sayfa basina sonuc sayisi (varsayilan: 10, maksimum: 50)
  */
 export async function GET(request: NextRequest): Promise<NextResponse<SearchResponse>> {
   try {
-    // Kullanıcı kimliğini doğrula
-    const { userId, orgId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
-
-    if (!userId || !orgId) {
+    // Kullanici kimligini dogrula
+    const session = await getServerSessionWithAuth();
+    if (!session) {
       return NextResponse.json(
-        { success: false, error: 'Yetkisiz erişim' },
+        { success: false, error: 'Yetkisiz erisim' },
         { status: 401 }
       );
     }
+
+    const tenantId = session.tenant.id;
 
     // Sorgu parametrelerini al
     const searchParams = request.nextUrl.searchParams;
@@ -353,26 +354,26 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       });
     }
 
-    // Paralel aramaları çalıştır
+    // Paralel aramalari calistir
     const searchPromises = [];
 
     if (type === 'all' || type === 'proposals') {
-      searchPromises.push(searchProposals(q, orgId, limit, offset));
+      searchPromises.push(searchProposals(q, tenantId, limit, offset));
     }
 
     if (type === 'all' || type === 'customers') {
-      searchPromises.push(searchCustomers(q, orgId, limit, offset));
+      searchPromises.push(searchCustomers(q, tenantId, limit, offset));
     }
 
     if (type === 'all' || type === 'products') {
-      searchPromises.push(searchProducts(q, orgId, limit, offset));
+      searchPromises.push(searchProducts(q, tenantId, limit, offset));
     }
 
     const searchResults = await Promise.all(searchPromises);
 
-    // Sonuçları birleştir ve ilgiye göre sırala
+    // Sonuclari birlestir ve ilgiye gore sirala
     let allResults: SearchResult[] = [];
-    let facets = { proposals: 0, customers: 0, products: 0 };
+    const facets = { proposals: 0, customers: 0, products: 0 };
 
     if (type === 'all' || type === 'proposals') {
       const proposalResults = searchResults[0];
@@ -400,7 +401,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       }
     }
 
-    // İlgi derecesine göre sırala (yüksekten düşüğe)
+    // Ilgi derecesine gore sirala (yuksekten dusuge)
     allResults.sort((a, b) => {
       const scoreA = (a.metadata.relevance as number) || 0;
       const scoreB = (b.metadata.relevance as number) || 0;
@@ -420,12 +421,12 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       },
     });
   } catch (error) {
-    console.error('Arama hatası:', error);
+    console.error('Arama hatasi:', error);
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Arama işlemi sırasında bir hata oluştu',
+        error: 'Arama islemi sirasinda bir hata olustu',
       },
       { status: 500 }
     );

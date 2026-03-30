@@ -228,7 +228,7 @@ const SettingsPage = () => {
     return `${diffDays} gün önce`;
   };
 
-  const togglePasswordVisibility = (field: string) => {
+  const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
     setShowPasswords(prev => ({
       ...prev,
       [field]: !prev[field],

@@ -11,13 +11,13 @@ interface ApiResponse<T> {
 }
 
 const createCustomerSchema = z.object({
-  companyName: z.string().min(1, 'Firma adı gerekli').max(255),
-  contactName: z.string().min(1, 'İlgili kişi gerekli').max(255),
-  phone: z.string().min(1, 'Telefon gerekli').max(20),
-  email: z.string().email('Geçerli e-posta adresi girin'),
-  city: z.string().min(1, 'Şehir gerekli').max(100),
-  address: z.string().optional().default(''),
-  taxNumber: z.string().optional().default(''),
+  name: z.string().min(1, 'Firma adı gerekli').max(255),
+  shortName: z.string().max(255).optional(),
+  phone: z.string().max(20).optional(),
+  email: z.string().email('Geçerli e-posta adresi girin').optional(),
+  city: z.string().max(100).optional(),
+  address: z.string().optional(),
+  taxNumber: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -33,16 +33,16 @@ type QueryInput = z.infer<typeof querySchema>;
 
 interface CustomerResponse {
   id: string;
-  companyName: string;
-  contactName: string;
-  phone: string;
-  email: string;
-  city: string;
-  address: string;
-  taxNumber: string;
+  name: string;
+  shortName: string | null;
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  address: string | null;
+  taxNumber: string | null;
   isActive: boolean;
   balance: number;
-  lastSync: string | null;
+  lastSyncAt: string | null;
   syncedFromParasut: boolean;
   createdAt: string;
 }
@@ -89,8 +89,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     if (queryData.search) {
       where.OR = [
-        { companyName: { contains: queryData.search, mode: 'insensitive' } },
-        { contactName: { contains: queryData.search, mode: 'insensitive' } },
+        { name: { contains: queryData.search, mode: 'insensitive' } },
+        { shortName: { contains: queryData.search, mode: 'insensitive' } },
         { email: { contains: queryData.search, mode: 'insensitive' } },
         { phone: { contains: queryData.search, mode: 'insensitive' } },
       ];
@@ -111,8 +111,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
-        companyName: true,
-        contactName: true,
+        name: true,
+        shortName: true,
         phone: true,
         email: true,
         city: true,
@@ -120,16 +120,16 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         taxNumber: true,
         isActive: true,
         balance: true,
-        lastSync: true,
-        syncedFromParasut: true,
+        lastSyncAt: true,
+        parasutId: true,
         createdAt: true,
       },
     });
 
     const formattedCustomers: CustomerResponse[] = customers.map((c) => ({
       id: c.id,
-      companyName: c.companyName,
-      contactName: c.contactName,
+      name: c.name,
+      shortName: c.shortName,
       phone: c.phone,
       email: c.email,
       city: c.city,
@@ -137,8 +137,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       taxNumber: c.taxNumber || '',
       isActive: c.isActive,
       balance: c.balance?.toNumber?.() || 0,
-      lastSync: c.lastSync?.toISOString?.() || null,
-      syncedFromParasut: c.syncedFromParasut || false,
+      lastSyncAt: c.lastSyncAt?.toISOString?.() || null,
+      syncedFromParasut: !!c.parasutId,
       createdAt: c.createdAt.toISOString(),
     }));
 
@@ -200,13 +200,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       data: {
         ...data,
         tenantId: session.user.tenantId,
-        balance: 0,
-        syncedFromParasut: false,
       },
       select: {
         id: true,
-        companyName: true,
-        contactName: true,
+        name: true,
+        shortName: true,
         phone: true,
         email: true,
         city: true,
@@ -214,16 +212,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         taxNumber: true,
         isActive: true,
         balance: true,
-        lastSync: true,
-        syncedFromParasut: true,
+        lastSyncAt: true,
+        parasutId: true,
         createdAt: true,
       },
     });
 
     const formattedCustomer: CustomerResponse = {
       id: customer.id,
-      companyName: customer.companyName,
-      contactName: customer.contactName,
+      name: customer.name,
+      shortName: customer.shortName,
       phone: customer.phone,
       email: customer.email,
       city: customer.city,
@@ -231,8 +229,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       taxNumber: customer.taxNumber || '',
       isActive: customer.isActive,
       balance: customer.balance?.toNumber?.() || 0,
-      lastSync: customer.lastSync?.toISOString?.() || null,
-      syncedFromParasut: customer.syncedFromParasut || false,
+      lastSyncAt: customer.lastSyncAt?.toISOString?.() || null,
+      syncedFromParasut: !!customer.parasutId,
       createdAt: customer.createdAt.toISOString(),
     };
 

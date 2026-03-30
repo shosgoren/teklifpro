@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // Find user by email
-          const user = await prisma.user.findUnique({
+          const user = await prisma.user.findFirst({
             where: { email: credentials.email },
             include: { tenant: true },
           })
@@ -91,7 +91,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string
+        ;(session.user as any).id = token.id as string
         ;(session.user as any).tenantId = token.tenantId as string
         ;(session.user as any).role = token.role as string
       }

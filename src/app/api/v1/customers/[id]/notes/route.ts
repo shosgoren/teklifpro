@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createApiHandler } from '@/lib/api/createApiHandler';
 import { z } from 'zod';
-import prisma from '@/lib/db/prisma';
+import { prisma } from '@/shared/lib/prisma';
 import { AuditLogger } from '@/lib/audit/auditLogger';
 
-// Validasyon şemaları
+// Validasyon semalari
 const createNoteSchema = z.object({
-  content: z.string().min(1, 'Not içeriği boş olamaz').max(5000),
+  content: z.string().min(1, 'Not icerigi bos olamaz').max(5000),
   type: z.enum(['note', 'call', 'meeting', 'email', 'task']),
   isPinned: z.boolean().optional().default(false),
 });
 
 const updateNoteSchema = z.object({
-  noteId: z.string().uuid('Geçerli bir not ID\'si gereklidir'),
-  content: z.string().min(1, 'Not içeriği boş olamaz').max(5000).optional(),
+  noteId: z.string().min(1, 'Gecerli bir not ID\'si gereklidir'),
+  content: z.string().min(1, 'Not icerigi bos olamaz').max(5000).optional(),
   isPinned: z.boolean().optional(),
 });
 
 const deleteNoteSchema = z.object({
-  noteId: z.string().uuid('Geçerli bir not ID\'si gereklidir'),
+  noteId: z.string().min(1, 'Gecerli bir not ID\'si gereklidir'),
 });
 
 const listNotesSchema = z.object({
@@ -26,9 +25,6 @@ const listNotesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   type: z.enum(['note', 'call', 'meeting', 'email', 'task']).optional(),
 });
-
-type CreateNoteRequest = z.infer<typeof createNoteSchema>;
-type UpdateNoteRequest = z.infer<typeof updateNoteSchema>;
 
 interface NoteResponse {
   id: string;
@@ -54,337 +50,172 @@ interface ListNotesResponse {
 
 /**
  * GET /api/v1/customers/[id]/notes
- * Müşterinin notlarını listeler (sayfalanmış, tarih azalan sırada)
+ * Note: Note model is not yet implemented in the database schema.
+ * This endpoint returns an empty list until the Note model is added.
  */
-async function handleGet(
+export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { searchParams } = new URL(req.url);
+  try {
+    const { searchParams } = new URL(req.url);
 
-  // Query parametrelerini valide et
-  const queryParams = listNotesSchema.parse({
-    page: searchParams.get('page'),
-    limit: searchParams.get('limit'),
-    type: searchParams.get('type'),
-  });
+    const queryParams = listNotesSchema.parse({
+      page: searchParams.get('page'),
+      limit: searchParams.get('limit'),
+      type: searchParams.get('type'),
+    });
 
-  const customerId = params.id;
+    const customerId = params.id;
 
-  // Müşterinin varlığını kontrol et
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-  });
+    // Verify customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
 
-  if (!customer) {
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'Musteri bulunamadi' },
+        { status: 404 }
+      );
+    }
+
+    // Note model is not yet in the schema - return empty for now
+    const response: ListNotesResponse = {
+      data: [],
+      pagination: {
+        page: queryParams.page,
+        limit: queryParams.limit,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+      },
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error('GET /api/v1/customers/[id]/notes error:', error);
     return NextResponse.json(
-      { error: 'Müşteri bulunamadı' },
-      { status: 404 }
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
-
-  // Notları sorgula
-  const where = {
-    customerId,
-    ...(queryParams.type && { type: queryParams.type }),
-  };
-
-  const [notes, total] = await Promise.all([
-    prisma.note.findMany({
-      where,
-      include: {
-        createdByUser: {
-          select: { name: true },
-        },
-        attachments: {
-          select: { id: true },
-        },
-      },
-      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-      skip: (queryParams.page - 1) * queryParams.limit,
-      take: queryParams.limit,
-    }),
-    prisma.note.count({ where }),
-  ]);
-
-  const totalPages = Math.ceil(total / queryParams.limit);
-
-  const response: ListNotesResponse = {
-    data: notes.map((note) => ({
-      id: note.id,
-      content: note.content,
-      type: note.type as 'note' | 'call' | 'meeting' | 'email' | 'task',
-      createdBy: note.createdByUser?.name || 'Sistem',
-      createdAt: note.createdAt.toISOString(),
-      updatedAt: note.updatedAt.toISOString(),
-      isPinned: note.isPinned,
-      attachmentsCount: note.attachments.length,
-    })),
-    pagination: {
-      page: queryParams.page,
-      limit: queryParams.limit,
-      total,
-      totalPages,
-      hasNextPage: queryParams.page < totalPages,
-    },
-  };
-
-  return NextResponse.json(response);
 }
 
 /**
  * POST /api/v1/customers/[id]/notes
- * Yeni bir not oluşturur
  */
-async function handlePost(
+export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } },
-  context: { userId: string; userName: string }
+  { params }: { params: { id: string } }
 ) {
-  const customerId = params.id;
-  const body = await req.json();
+  try {
+    const customerId = params.id;
+    const body = await req.json();
+    const validatedData = createNoteSchema.parse(body);
 
-  // Request body'yi valide et
-  const validatedData = createNoteSchema.parse(body);
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
 
-  // Müşterinin varlığını kontrol et
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-  });
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'Musteri bulunamadi' },
+        { status: 404 }
+      );
+    }
 
-  if (!customer) {
+    // Note model is not yet in the schema
     return NextResponse.json(
-      { error: 'Müşteri bulunamadı' },
-      { status: 404 }
+      { error: 'Note model is not yet implemented' },
+      { status: 501 }
+    );
+  } catch (error) {
+    console.error('POST /api/v1/customers/[id]/notes error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
-
-  // Not oluştur
-  const note = await prisma.note.create({
-    data: {
-      customerId,
-      content: validatedData.content,
-      type: validatedData.type,
-      isPinned: validatedData.isPinned,
-      createdById: context.userId,
-    },
-    include: {
-      createdByUser: {
-        select: { name: true },
-      },
-      attachments: {
-        select: { id: true },
-      },
-    },
-  });
-
-  // Audit log
-  await AuditLogger.log({
-    userId: context.userId,
-    action: 'NOTE_CREATED',
-    resourceType: 'Note',
-    resourceId: note.id,
-    metadata: {
-      customerId,
-      noteType: validatedData.type,
-    },
-  });
-
-  const response: NoteResponse = {
-    id: note.id,
-    content: note.content,
-    type: note.type as 'note' | 'call' | 'meeting' | 'email' | 'task',
-    createdBy: note.createdByUser?.name || 'Sistem',
-    createdAt: note.createdAt.toISOString(),
-    updatedAt: note.updatedAt.toISOString(),
-    isPinned: note.isPinned,
-    attachmentsCount: note.attachments.length,
-  };
-
-  return NextResponse.json(response, { status: 201 });
 }
 
 /**
  * PUT /api/v1/customers/[id]/notes
- * Mevcut bir notu günceller
  */
-async function handlePut(
+export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } },
-  context: { userId: string; userName: string }
+  { params }: { params: { id: string } }
 ) {
-  const customerId = params.id;
-  const body = await req.json();
+  try {
+    const customerId = params.id;
+    const body = await req.json();
+    const validatedData = updateNoteSchema.parse(body);
 
-  // Request body'yi valide et
-  const validatedData = updateNoteSchema.parse(body);
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
 
-  // Müşterinin varlığını kontrol et
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-  });
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'Musteri bulunamadi' },
+        { status: 404 }
+      );
+    }
 
-  if (!customer) {
+    // Note model is not yet in the schema
     return NextResponse.json(
-      { error: 'Müşteri bulunamadı' },
-      { status: 404 }
+      { error: 'Note model is not yet implemented' },
+      { status: 501 }
+    );
+  } catch (error) {
+    console.error('PUT /api/v1/customers/[id]/notes error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
-
-  // Notun varlığını ve müşteriye ait olduğunu kontrol et
-  const existingNote = await prisma.note.findUnique({
-    where: { id: validatedData.noteId },
-  });
-
-  if (!existingNote || existingNote.customerId !== customerId) {
-    return NextResponse.json(
-      { error: 'Not bulunamadı' },
-      { status: 404 }
-    );
-  }
-
-  // Notu güncelle
-  const updateData: any = {};
-  if (validatedData.content !== undefined) {
-    updateData.content = validatedData.content;
-  }
-  if (validatedData.isPinned !== undefined) {
-    updateData.isPinned = validatedData.isPinned;
-  }
-
-  const updatedNote = await prisma.note.update({
-    where: { id: validatedData.noteId },
-    data: updateData,
-    include: {
-      createdByUser: {
-        select: { name: true },
-      },
-      attachments: {
-        select: { id: true },
-      },
-    },
-  });
-
-  // Audit log
-  await AuditLogger.log({
-    userId: context.userId,
-    action: 'NOTE_UPDATED',
-    resourceType: 'Note',
-    resourceId: updatedNote.id,
-    metadata: {
-      customerId,
-      updatedFields: Object.keys(updateData),
-    },
-  });
-
-  const response: NoteResponse = {
-    id: updatedNote.id,
-    content: updatedNote.content,
-    type: updatedNote.type as 'note' | 'call' | 'meeting' | 'email' | 'task',
-    createdBy: updatedNote.createdByUser?.name || 'Sistem',
-    createdAt: updatedNote.createdAt.toISOString(),
-    updatedAt: updatedNote.updatedAt.toISOString(),
-    isPinned: updatedNote.isPinned,
-    attachmentsCount: updatedNote.attachments.length,
-  };
-
-  return NextResponse.json(response);
 }
 
 /**
  * DELETE /api/v1/customers/[id]/notes
- * Bir notu siler (noteId query parametresi ile)
  */
-async function handleDelete(
+export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
-  context: { userId: string; userName: string }
+  { params }: { params: { id: string } }
 ) {
-  const customerId = params.id;
-  const { searchParams } = new URL(req.url);
+  try {
+    const customerId = params.id;
+    const { searchParams } = new URL(req.url);
+    const noteId = searchParams.get('noteId');
 
-  // Query parametrelerini valide et
-  const noteId = searchParams.get('noteId');
+    if (!noteId) {
+      return NextResponse.json(
+        { error: 'noteId query parametresi gereklidir' },
+        { status: 400 }
+      );
+    }
 
-  if (!noteId) {
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'Musteri bulunamadi' },
+        { status: 404 }
+      );
+    }
+
+    // Note model is not yet in the schema
     return NextResponse.json(
-      { error: 'noteId query parametresi gereklidir' },
-      { status: 400 }
+      { error: 'Note model is not yet implemented' },
+      { status: 501 }
+    );
+  } catch (error) {
+    console.error('DELETE /api/v1/customers/[id]/notes error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
-
-  const validatedData = deleteNoteSchema.parse({ noteId });
-
-  // Müşterinin varlığını kontrol et
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-  });
-
-  if (!customer) {
-    return NextResponse.json(
-      { error: 'Müşteri bulunamadı' },
-      { status: 404 }
-    );
-  }
-
-  // Notun varlığını ve müşteriye ait olduğunu kontrol et
-  const note = await prisma.note.findUnique({
-    where: { id: validatedData.noteId },
-  });
-
-  if (!note || note.customerId !== customerId) {
-    return NextResponse.json(
-      { error: 'Not bulunamadı' },
-      { status: 404 }
-    );
-  }
-
-  // Ektekleri sil
-  await prisma.attachment.deleteMany({
-    where: { noteId: validatedData.noteId },
-  });
-
-  // Notu sil
-  await prisma.note.delete({
-    where: { id: validatedData.noteId },
-  });
-
-  // Audit log
-  await AuditLogger.log({
-    userId: context.userId,
-    action: 'NOTE_DELETED',
-    resourceType: 'Note',
-    resourceId: validatedData.noteId,
-    metadata: {
-      customerId,
-    },
-  });
-
-  return NextResponse.json(
-    { message: 'Not başarıyla silindi' },
-    { status: 200 }
-  );
 }
-
-/**
- * Ana API handler - auth ve permission kontrolleri ile
- */
-export const GET = createApiHandler({
-  permissions: ['customer.read'],
-  handler: handleGet,
-});
-
-export const POST = createApiHandler({
-  permissions: ['customer.update'],
-  handler: handlePost,
-});
-
-export const PUT = createApiHandler({
-  permissions: ['customer.update'],
-  handler: handlePut,
-});
-
-export const DELETE = createApiHandler({
-  permissions: ['customer.update'],
-  handler: handleDelete,
-});

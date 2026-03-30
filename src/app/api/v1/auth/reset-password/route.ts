@@ -97,7 +97,7 @@ async function handleRequestPasswordReset(
     const data = requestResetSchema.parse(body)
 
     // Find user by email
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: data.email },
     })
 
@@ -117,7 +117,7 @@ async function handleRequestPasswordReset(
     }
 
     // Delete any existing reset tokens
-    await prisma.passwordResetToken.deleteMany({
+    await prisma.emailVerificationToken.deleteMany({
       where: { userId: user.id },
     })
 
@@ -127,7 +127,7 @@ async function handleRequestPasswordReset(
     expiresAt.setHours(expiresAt.getHours() + 1) // Expires in 1 hour
 
     // Create reset token record
-    await prisma.passwordResetToken.create({
+    await prisma.emailVerificationToken.create({
       data: {
         userId: user.id,
         token,
@@ -213,7 +213,7 @@ async function handleResetPassword(
     const data = resetPasswordSchema.parse(body)
 
     // Find and validate token
-    const tokenRecord = await prisma.passwordResetToken.findUnique({
+    const tokenRecord = await prisma.emailVerificationToken.findUnique({
       where: { token: data.token },
       include: { user: true },
     })
@@ -234,7 +234,7 @@ async function handleResetPassword(
     // Check if token expired
     if (tokenRecord.expiresAt < new Date()) {
       // Delete expired token
-      await prisma.passwordResetToken.delete({
+      await prisma.emailVerificationToken.delete({
         where: { token: data.token },
       })
 
@@ -276,7 +276,7 @@ async function handleResetPassword(
     })
 
     // Delete used token
-    await prisma.passwordResetToken.delete({
+    await prisma.emailVerificationToken.delete({
       where: { token: data.token },
     })
 

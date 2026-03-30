@@ -77,6 +77,10 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
       status: proposal.status === 'SENT' ? 'VIEWED' : proposal.status,
     },
     include: {
+      tenant: true,
+      customer: true,
+      contact: true,
+      user: true,
       items: { orderBy: { sortOrder: 'asc' } },
     },
   })

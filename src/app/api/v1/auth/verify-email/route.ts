@@ -37,7 +37,7 @@ async function handleSendVerificationEmail(
     const data = sendVerificationEmailSchema.parse(body)
 
     // Find user by email
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { email: data.email },
     })
 
@@ -201,32 +201,13 @@ async function handleVerifyEmailToken(
     // Update user email verification status
     const user = await prisma.user.update({
       where: { id: tokenRecord.userId },
-      data: { emailVerified: true },
+      data: { emailVerified: new Date() },
     })
 
     // Delete used token
     await prisma.emailVerificationToken.delete({
       where: { token: data.token },
     })
-
-    // Update tenant to enable email features
-    if (user.tenantId) {
-      await prisma.tenant.update({
-        where: { id: user.tenantId },
-        data: {
-          features: {
-            proposals: true,
-            customers: true,
-            products: true,
-            templates: true,
-            emailVerification: true,
-            twoFactor: true,
-            api: false,
-            whatsapp: false,
-          },
-        },
-      })
-    }
 
     console.log('[EMAIL_VERIFIED]', {
       userId: user.id,

@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/shared/utils/prisma';
-import { ApiResponse } from '@/shared/types';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
-import { EmailService } from '@/infrastructure/services/email/EmailService';
+import { emailService } from '@/infrastructure/services/email/EmailService';
 
-// Bulk gönderim için validasyon şeması
+// Bulk gonderim icin validasyon semasi
 const BulkSendSchema = z.object({
   proposalIds: z.array(z.string().min(1), {
     errorMap: () => ({ message: 'En az bir teklif ID\'si gerekli' }),
@@ -16,9 +16,7 @@ const BulkSendSchema = z.object({
   message: z.string().max(1000).optional(),
 });
 
-type BulkSendRequest = z.infer<typeof BulkSendSchema>;
-
-// Gönderim sonucu arayüzü
+// Gonderim sonucu arayuzu
 interface SendResultItem {
   proposalId: string;
   proposalNumber: string;
@@ -31,7 +29,7 @@ interface SendResultItem {
   };
 }
 
-// API yanıt arayüzü
+// API yanit arayuzu
 interface BulkSendResponse {
   total: number;
   sent: number;
@@ -41,60 +39,38 @@ interface BulkSendResponse {
 
 /**
  * POST /api/v1/proposals/bulk-send
- * Çoklu teklifi bir sefer gönder
- *
- * Özellikler:
- * - Birden fazla teklifi WhatsApp ve/veya Email aracılığıyla gönder
- * - Promise.allSettled ile maksimum 10 eşzamanlı gönderi
- * - Her gönderilen teklif için denetim günlüğü oluştur
- * - Teklif durumunu SENT olarak güncelle
- * - Detaylı sonuç bilgisi döndür
+ * Coklu teklifi bir sefer gonder
  */
 export async function POST(
   request: NextRequest
-): Promise<NextResponse<ApiResponse<BulkSendResponse>>> {
+): Promise<NextResponse> {
   try {
-    // Kimlik doğrulamayı kontrol et
-    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
-    if (!userId) {
+    // Kimlik dogrulamayi kontrol et
+    const session = await getServerSessionWithAuth();
+    if (!session) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Yetkisiz erişim',
-          data: null,
-        },
+        { success: false, error: 'Yetkisiz erisim' },
         { status: 401 }
       );
     }
 
-    // İstek gövdesini işle
+    // Istek govdesini isle
     const body = await request.json();
     const payload = BulkSendSchema.parse(body);
 
-    // Kiracı bilgisini al
-    const tenant = await prisma.tenant.findFirst({
-      where: {
-        members: {
-          some: { userId },
-        },
-      },
-      include: {
-        integrations: true,
-      },
+    // Kiraci bilgisini al
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.tenant.id },
     });
 
     if (!tenant) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Kiracı bulunamadı',
-          data: null,
-        },
+        { success: false, error: 'Kiraci bulunamadi' },
         { status: 404 }
       );
     }
 
-    // Teklif durumunu kontrol et ve geçerli teklifleri al
+    // Teklif durumunu kontrol et ve gecerli teklifleri al
     const proposals = await prisma.proposal.findMany({
       where: {
         id: {
@@ -104,132 +80,113 @@ export async function POST(
         status: {
           in: ['DRAFT', 'REVISED'],
         },
+        deletedAt: null,
       },
       include: {
-        client: true,
+        customer: true,
         items: true,
       },
     });
 
-    // Bulunan tekliflerin sayısını kontrol et
+    // Bulunan tekliflerin sayisini kontrol et
     if (proposals.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Geçerli teklif bulunamadı (DRAFT veya REVISED durumunda)',
-          data: null,
+          error: 'Gecerli teklif bulunamadi (DRAFT veya REVISED durumunda)',
         },
         { status: 400 }
       );
     }
 
-    // Gönderim görevlerini oluştur
+    // Gonderim gorevlerini olustur
     const sendTasks = proposals.map(async (proposal) => {
       const result: SendResultItem = {
         proposalId: proposal.id,
         proposalNumber: proposal.proposalNumber,
-        customerName: proposal.client.name,
+        customerName: proposal.customer.name,
         status: 'sent',
         channels: {},
       };
 
       try {
-        const sentAt = new Date();
         const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.publicToken}`;
 
-        // WhatsApp aracılığıyla gönder
+        // WhatsApp araciligiyla gonder
         if (payload.channel === 'whatsapp' || payload.channel === 'both') {
-          const phone = proposal.clientPhone || proposal.client.phone;
+          const phone = proposal.customer.phone;
 
-          if (phone) {
+          if (phone && tenant.whatsappPhoneId && tenant.whatsappAccessToken) {
             try {
-              const whatsappIntegration = tenant.integrations.find(
-                (i) => i.provider === 'WHATSAPP'
-              );
+              const whatsappService = WhatsAppService.fromTenantConfig({
+                whatsappPhoneId: tenant.whatsappPhoneId,
+                whatsappAccessToken: tenant.whatsappAccessToken,
+              });
 
-              if (whatsappIntegration?.accessToken) {
-                const whatsappService = new WhatsAppService({
-                  accessToken: whatsappIntegration.accessToken,
-                  businessAccountId:
-                    whatsappIntegration.metadata?.businessAccountId,
-                });
+              const whatsappResult = await whatsappService.sendProposalLink({
+                to: phone,
+                customerName: proposal.customer.name,
+                proposalNumber: proposal.proposalNumber,
+                proposalTitle: proposal.title,
+                grandTotal: `${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY`,
+                proposalUrl,
+                companyName: tenant.name,
+              });
 
-                const defaultMessage = `
-Merhaba ${proposal.client.name},
-
-Teknoloji çözümlerimiz hakkında size bir teklif hazırladık.
-
-Teklif Numarası: ${proposal.proposalNumber}
-Toplam Tutar: ₺${proposal.total.toLocaleString('tr-TR')}
-
-Teklifi görüntülemek için lütfen aşağıdaki linke tıklayınız:
-${proposalUrl}
-
-Sorularınız için bizimle iletişime geçmekten çekinmeyin.
-
-İyi çalışmalar!
-                `.trim();
-
-                const messageText = payload.message || defaultMessage;
-
-                await whatsappService.sendMessage({
-                  phoneNumber: phone,
-                  message: messageText,
-                  mediaUrl: undefined,
-                });
-
+              if (whatsappResult.success) {
                 result.channels.whatsapp = true;
               }
             } catch (whatsappError) {
               console.error(
-                `WhatsApp gönderi hatası (${proposal.id}):`,
+                `WhatsApp gonderi hatasi (${proposal.id}):`,
                 whatsappError
               );
               if (!result.error) {
-                result.error = 'WhatsApp gönderi başarısız';
+                result.error = 'WhatsApp gonderi basarisiz';
               }
             }
           }
         }
 
-        // Email aracılığıyla gönder
+        // Email araciligiyla gonder
         if (payload.channel === 'email' || payload.channel === 'both') {
-          const email = proposal.clientEmail || proposal.client.email;
+          const email = proposal.customer.email;
 
           if (email) {
             try {
-              const emailService = new EmailService();
-
-              await emailService.sendProposalEmail({
-                to: email,
-                proposalNumber: proposal.proposalNumber,
-                customerName: proposal.client.name,
-                proposalUrl: proposalUrl,
-                totalAmount: proposal.total.toLocaleString('tr-TR'),
-                customMessage: payload.message,
+              const emailSent = await emailService.sendProposalNotification(email, {
+                id: proposal.id,
+                number: proposal.proposalNumber,
+                clientName: proposal.customer.name,
+                clientEmail: email,
+                amount: Number(proposal.grandTotal),
+                currency: proposal.currency,
+                validUntil: proposal.expiresAt || new Date(),
               });
 
-              result.channels.email = true;
+              if (emailSent) {
+                result.channels.email = true;
+              }
             } catch (emailError) {
               console.error(
-                `Email gönderi hatası (${proposal.id}):`,
+                `Email gonderi hatasi (${proposal.id}):`,
                 emailError
               );
               if (!result.error) {
-                result.error = 'Email gönderi başarısız';
+                result.error = 'Email gonderi basarisiz';
               }
             }
           }
         }
 
-        // Eğer hiç kanal başarılı olmadıysa, hata durumuna ayarla
+        // Eger hic kanal basarili olmadiysa, hata durumuna ayarla
         if (Object.keys(result.channels).length === 0) {
           result.status = 'failed';
           result.error =
-            result.error || 'Hiçbir iletişim kanalı mevcut değil';
+            result.error || 'Hicbir iletisim kanali mevcut degil';
         }
 
-        // Teklif durumunu SENT olarak güncelle
+        // Teklif durumunu SENT olarak guncelle
         if (result.status === 'sent') {
           await prisma.proposal.update({
             where: { id: proposal.id },
@@ -239,42 +196,21 @@ Sorularınız için bizimle iletişime geçmekten çekinmeyin.
             },
           });
 
-          // Denetim günlüğü oluştur
-          await prisma.activity.create({
+          // Aktivite kaydi olustur
+          await prisma.proposalActivity.create({
             data: {
               proposalId: proposal.id,
               type: 'SENT',
-              description: `Teklif toplu gönderim işlemiyle ${Object.keys(result.channels).join('/')} aracılığıyla gönderildi`,
+              description: `Teklif toplu gonderim islemiyle ${Object.keys(result.channels).join('/')} araciligiyla gonderildi`,
               metadata: {
                 channels: result.channels,
                 bulkSend: true,
               },
             },
           });
-
-          // İntegrasyon günlüğü oluştur
-          const integrationId = tenant.integrations.find(
-            (i) => i.provider === 'WHATSAPP' || i.provider === 'EMAIL'
-          )?.id;
-
-          if (integrationId) {
-            await prisma.integrationLog.create({
-              data: {
-                integrationId,
-                event: 'PROPOSAL_BULK_SENT',
-                status: 'SUCCESS',
-                metadata: {
-                  proposalId: proposal.id,
-                  proposalNumber: proposal.proposalNumber,
-                  channels: result.channels,
-                  bulkSend: true,
-                },
-              },
-            });
-          }
         }
       } catch (error) {
-        console.error(`Teklif gönderimi hatası (${proposal.id}):`, error);
+        console.error(`Teklif gonderimi hatasi (${proposal.id}):`, error);
         result.status = 'failed';
         result.error =
           error instanceof Error ? error.message : 'Bilinmeyen hata';
@@ -283,7 +219,7 @@ Sorularınız için bizimle iletişime geçmekten çekinmeyin.
       return result;
     });
 
-    // Maksimum 10 eşzamanlı gönderim ile Promise.allSettled çalıştır
+    // Maksimum 10 eszamanli gonderim ile Promise.allSettled calistir
     const maxConcurrent = 10;
     const results: SendResultItem[] = [];
 
@@ -295,59 +231,49 @@ Sorularınız için bizimle iletişime geçmekten çekinmeyin.
         if (settledResult.status === 'fulfilled') {
           results.push(settledResult.value);
         } else {
-          // Promise reddedilerse, hata kaydı oluştur
+          // Promise reddedilirse, hata kaydi olustur
           const proposalId = payload.proposalIds[i];
           results.push({
             proposalId,
             proposalNumber: '',
             customerName: '',
             status: 'failed',
-            error: 'Gönderim işlemi sırasında hata oluştu',
+            error: 'Gonderim islemi sirasinda hata olustu',
             channels: {},
           });
         }
       }
     }
 
-    // Özet istatistikleri hesapla
+    // Ozet istatistikleri hesapla
     const sent = results.filter((r) => r.status === 'sent').length;
     const failed = results.filter((r) => r.status === 'failed').length;
 
+    const responseData: BulkSendResponse = {
+      total: results.length,
+      sent,
+      failed,
+      results,
+    };
+
     return NextResponse.json(
-      {
-        success: true,
-        data: {
-          total: results.length,
-          sent,
-          failed,
-          results,
-        },
-      },
+      { success: true, data: responseData },
       { status: 200 }
     );
   } catch (error) {
     console.error('POST /api/v1/proposals/bulk-send error:', error);
 
-    // Zod validasyon hatası
+    // Zod validasyon hatasi
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Validasyon hatası',
-          details: error.errors,
-          data: null,
-        },
+        { success: false, error: 'Validasyon hatasi', details: error.errors },
         { status: 400 }
       );
     }
 
-    // Genel sunucu hatası
+    // Genel sunucu hatasi
     return NextResponse.json(
-      {
-        success: false,
-        error: 'İç sunucu hatası',
-        data: null,
-      },
+      { success: false, error: 'Ic sunucu hatasi' },
       { status: 500 }
     );
   }

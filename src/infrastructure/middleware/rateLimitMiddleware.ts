@@ -135,7 +135,7 @@ export function withRateLimit(
                 status: 429,
                 headers: {
                   'Retry-After': Math.ceil(
-                    (response.resetMs ?? 0) / 1000,
+                    (response.reset ?? 0) / 1000,
                   ).toString(),
                   'X-RateLimit-Limit': limit.toString(),
                   'X-RateLimit-Remaining': Math.max(
@@ -143,7 +143,7 @@ export function withRateLimit(
                     response.remaining ?? 0,
                   ).toString(),
                   'X-RateLimit-Reset': new Date(
-                    response.resetMs ?? 0,
+                    response.reset ?? 0,
                   ).toISOString(),
                 },
               },
@@ -186,7 +186,7 @@ export function withRateLimit(
               status: 429,
               headers: {
                 'Retry-After': Math.ceil(
-                  (response.resetMs ?? 0) / 1000,
+                  (response.reset ?? 0) / 1000,
                 ).toString(),
                 'X-RateLimit-Limit': limit.toString(),
                 'X-RateLimit-Remaining': Math.max(
@@ -194,7 +194,7 @@ export function withRateLimit(
                   response.remaining ?? 0,
                 ).toString(),
                 'X-RateLimit-Reset': new Date(
-                  response.resetMs ?? 0,
+                  response.reset ?? 0,
                 ).toISOString(),
               },
             },
@@ -205,7 +205,7 @@ export function withRateLimit(
         ;(request as any).rateLimitInfo = {
           limit,
           remaining: response.remaining ?? 0,
-          reset: response.resetMs,
+          reset: response.reset,
         }
       }
 
