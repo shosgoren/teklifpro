@@ -82,10 +82,10 @@ const LandingPage = () => {
     { number: 4, title: "WhatsApp'tan gönder", icon: '📱' },
   ];
 
-  const faqItems = t('faq.items') as Array<{ q: string; a: string }>;
+  const faqItems = t.raw('faq.items') as Array<{ q: string; a: string }>;
 
-  const starterFeatures = t('pricing.starter.features') as string[];
-  const professionalFeatures = t('pricing.professional.features') as string[];
+  const starterFeatures = t.raw('pricing.starter.features') as string[];
+  const professionalFeatures = t.raw('pricing.professional.features') as string[];
 
   return (
     <div className="min-h-screen bg-white">
@@ -93,7 +93,7 @@ const LandingPage = () => {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold text-blue-600">
-            {t('common.appName')}
+            TeklifPro
           </Link>
           <div className="hidden md:flex gap-8">
             <a href="#features" className="text-gray-700 hover:text-gray-900 text-sm font-medium">
@@ -110,7 +110,7 @@ const LandingPage = () => {
             href="/login"
             className="inline-flex items-center justify-center px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
           >
-            {t('auth.login.title')}
+            Giriş Yap
           </Link>
         </div>
       </nav>
@@ -548,7 +548,7 @@ const LandingPage = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">
-                {t('common.appName')}
+                TeklifPro
               </h3>
               <p className="text-sm text-gray-400">
                 Paraşüt entegrasyonlu teklif yönetim platformu
