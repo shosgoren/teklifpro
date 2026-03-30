@@ -86,9 +86,10 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
 
-  tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  proposals     Proposal[]
-  auditLogs     AuditLog[]
+  tenant                  Tenant    @relation(fields: [tenantId], references: [id])
+  proposals               Proposal[]
+  auditLogs               AuditLog[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@unique([tenantId, email])
   @@map("users")
@@ -99,6 +100,18 @@ enum UserRole {
   ADMIN
   USER
   VIEWER
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("email_verification_tokens")
 }
 
 // ==================== CUSTOMERS (Parasut Sync) ====================
