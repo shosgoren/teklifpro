@@ -20,6 +20,156 @@
     "error": "An error occurred",
     "success": "Operation successful",
     "required": "This field is required",
+    "currency": "âº",
+    "actions": "Actions"
+  },
+  "site": {
+    "nav": {
+      "login": "Sign In",
+      "register": "Sign Up"
+    },
+    "hero": {
+      "title": "Create Proposals in Seconds",
+      "subtitle": "Integrated with Parasut, send instantly via WhatsApp. Your customers accept with a single click.",
+      "cta": "Start 14-Day Free Trial",
+      "ctaSecondary": "Watch Live Demo",
+      "trustedBy": "Trusted by leading companies in Turkey"
+    },
+    "features": {
+      "title": "Why TeklifPro?",
+      "parasut": {
+        "title": "Parasut Integration",
+        "desc": "Your customer and product cards sync automatically. Create proposals with one click."
+      },
+      "whatsapp": {
+        "title": "Send via WhatsApp",
+        "desc": "Prepare your proposal, send it instantly via WhatsApp. Your customer responds through an interactive link."
+      },
+      "tracking": {
+        "title": "Live Tracking",
+        "desc": "When did your customer open the proposal? How many times did they review it? See all activities in real-time."
+      },
+      "fast": {
+        "title": "Proposal in 60 Seconds",
+        "desc": "Drag-and-drop product selection, automatic pricing. Even someone who never used a system can easily prepare it."
+      },
+      "response": {
+        "title": "Accept / Revise / Reject",
+        "desc": "Your customer responds directly from the proposal link. You are instantly notified."
+      },
+      "analytics": {
+        "title": "Detailed Analytics",
+        "desc": "Acceptance rates, average response times, most preferred products. Make data-driven decisions."
+      }
+    },
+    "pricing": {
+      "title": "Simple and Transparent Pricing",
+      "subtitle": "Try free for 14 days, no credit card required.",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "Save 20%",
+      "starter": {
+        "name": "Starter",
+        "price": "299",
+        "priceYearly": "239",
+        "period": "/mo",
+        "desc": "Ideal start for small businesses",
+        "features": [
+          "50 proposals/month",
+          "Parasut integration",
+          "WhatsApp delivery",
+          "Basic analytics",
+          "1 user",
+          "Email support"
+        ],
+        "cta": "Start Free Trial"
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "599",
+        "priceYearly": "479",
+        "period": "/mo",
+        "desc": "Full-featured for growing teams",
+        "features": [
+          "Unlimited proposals",
+          "Parasut integration",
+          "WhatsApp delivery",
+          "Advanced analytics",
+          "5 users",
+          "Proposal templates",
+          "Priority support",
+          "API access"
+        ],
+        "cta": "Start Free Trial",
+        "popular": "Most Popular"
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to your account",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign In",
+      "google": "Sign in with Google",
+      "forgotPassword": "Forgot Password",
+      "noAccount": "Don't have an account?",
+      "register": "Sign Up"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Try free for 14 days",
+      "name": "Full Name",
+      "email": "Email",
+      "companyName": "Company Name",
+      "phone": "Phone",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "submit": "Sign Up",
+      "google": "Sign up with Google",
+      "hasAccount": "Already have an account?",
+      "login": "Sign In"
+    }
+  },
+  "proposals": {
+    "title": "Proposals",
+    "new": "New Proposal",
+    "status": {
+      "DRAFT": "Draft",
+      "SENT": "Sent",
+      "VIEWED": "Viewed",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "REVISION_REQUESTED": "Revision Requested",
+      "REVISED": "Revised",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled"
+    }
+  }
+}
+{
+  "common": {
+    "appName": "TeklifPro",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search...",
+    "filter": "Filter",
+    "export": "Export",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "noData": "No data found",
+    "error": "An error occurred",
+    "success": "Operation successful",
+    "required": "This field is required",
     "currency": "₺",
     "actions": "Actions"
   },
