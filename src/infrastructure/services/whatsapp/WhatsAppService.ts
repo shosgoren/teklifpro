@@ -1,0 +1,280 @@
+/**
+ * WhatsAppService - WhatsApp Business Cloud API
+ *
+ * Teklif linklerini WhatsApp uzerinden musteri ilgili kisilerine gonderir
+ * Template mesaj + interaktif buton destegi
+ *
+ * API: https://developers.facebook.com/docs/whatsapp/cloud-api
+ */
+
+import crypto from 'crypto'
+import type { WhatsAppSendTemplateParams, WhatsAppMessageResponse } from '@/shared/types'
+
+const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v18.0'
+
+export class WhatsAppService {
+  private phoneNumberId: string
+  private accessToken: string
+  private appSecret: string
+
+  constructor(phoneNumberId: string, accessToken: string, appSecret: string) {
+    this.phoneNumberId = phoneNumberId
+    this.accessToken = accessToken
+    this.appSecret = appSecret
+  }
+
+  /**
+   * Tenant'in WhatsApp bilgileriyle service olustur
+   */
+  static fromTenantConfig(config: {
+    whatsappPhoneId: string
+    whatsappAccessToken: string
+  }): WhatsAppService {
+    return new WhatsAppService(
+      config.whatsappPhoneId,
+      config.whatsappAccessToken,
+      process.env.WHATSAPP_APP_SECRET || ''
+    )
+  }
+
+  // ==================== MESAJ GONDERME ====================
+
+  /**
+   * Interaktif teklif linki gonder
+   * Musteri linke tiklayarak teklifi goruntuler
+   */
+  async sendProposalLink(params: {
+    to: string
+    customerName: string
+    proposalNumber: string
+    proposalTitle: string
+    grandTotal: string
+    proposalUrl: string
+    companyName: string
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      // Interactive mesaj — CTA butonlu
+      const response = await this.sendInteractiveMessage({
+        to: this.formatPhoneNumber(params.to),
+        type: 'button',
+        header: {
+          type: 'text',
+          text: `${params.companyName} - Teklif`,
+        },
+        body: {
+          text: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek icin asagidaki butona tiklayiniz.`,
+        },
+        footer: {
+          text: 'TeklifPro ile gonderildi',
+        },
+        action: {
+          buttons: [
+            {
+              type: 'reply',
+              reply: {
+                id: `view_proposal_${params.proposalNumber}`,
+                title: 'Teklifi Goruntule',
+              },
+            },
+          ],
+        },
+      })
+
+      return {
+        success: true,
+        messageId: response?.messages?.[0]?.id,
+      }
+    } catch (error) {
+      // Fallback: Template mesaj gonder
+      try {
+        const templateResult = await this.sendTemplate({
+          to: this.formatPhoneNumber(params.to),
+          templateName: 'proposal_notification',
+          language: 'tr',
+          parameters: {
+            '1': params.customerName,
+            '2': params.proposalNumber,
+            '3': params.grandTotal,
+          },
+          buttonParams: [params.proposalUrl],
+        })
+
+        return {
+          success: true,
+          messageId: templateResult?.messages?.[0]?.id,
+        }
+      } catch (templateError) {
+        console.error('[WhatsApp] Template mesaj hatasi:', templateError)
+        return {
+          success: false,
+          error: templateError instanceof Error ? templateError.message : 'Mesaj gonderilemedi',
+        }
+      }
+    }
+  }
+
+  /**
+   * Serbest metin mesaji gonder (24 saat penceresi icinde)
+   */
+  async sendTextMessage(to: string, text: string): Promise<WhatsAppMessageResponse> {
+    return this.request<WhatsAppMessageResponse>(
+      `${this.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: this.formatPhoneNumber(to),
+          type: 'text',
+          text: { body: text },
+        }),
+      }
+    )
+  }
+
+  /**
+   * Template mesaj gonder
+   */
+  async sendTemplate(params: WhatsAppSendTemplateParams): Promise<WhatsAppMessageResponse> {
+    const components: Array<Record<string, unknown>> = []
+
+    // Header parametreleri
+    if (params.headerParams?.length) {
+      components.push({
+        type: 'header',
+        parameters: params.headerParams.map((p) => ({ type: 'text', text: p })),
+      })
+    }
+
+    // Body parametreleri
+    const bodyParams = Object.values(params.parameters)
+    if (bodyParams.length) {
+      components.push({
+        type: 'body',
+        parameters: bodyParams.map((p) => ({ type: 'text', text: p })),
+      })
+    }
+
+    // Button parametreleri (URL buton)
+    if (params.buttonParams?.length) {
+      params.buttonParams.forEach((url, index) => {
+        components.push({
+          type: 'button',
+          sub_type: 'url',
+          index,
+          parameters: [{ type: 'text', text: url }],
+        })
+      })
+    }
+
+    return this.request<WhatsAppMessageResponse>(
+      `${this.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: 'template',
+          template: {
+            name: params.templateName,
+            language: { code: params.language },
+            components,
+          },
+        }),
+      }
+    )
+  }
+
+  /**
+   * Interaktif mesaj gonder (butonlu)
+   */
+  private async sendInteractiveMessage(params: {
+    to: string
+    type: string
+    header?: Record<string, unknown>
+    body: { text: string }
+    footer?: { text: string }
+    action: Record<string, unknown>
+  }): Promise<WhatsAppMessageResponse> {
+    return this.request<WhatsAppMessageResponse>(
+      `${this.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: 'interactive',
+          interactive: {
+            type: params.type,
+            header: params.header,
+            body: params.body,
+            footer: params.footer,
+            action: params.action,
+          },
+        }),
+      }
+    )
+  }
+
+  // ==================== WEBHOOK ====================
+
+  /**
+   * Webhook imza dogrulama
+   */
+  verifyWebhookSignature(rawBody: string, signature: string): boolean {
+    const expectedSignature = crypto
+      .createHmac('sha256', this.appSecret)
+      .update(rawBody)
+      .digest('hex')
+
+    const expected = `sha256=${expectedSignature}`
+
+    try {
+      return crypto.timingSafeEqual(
+        Buffer.from(expected),
+        Buffer.from(signature)
+      )
+    } catch {
+      return false
+    }
+  }
+
+  // ==================== HELPERS ====================
+
+  /**
+   * Telefon numarasini WhatsApp formatina cevir
+   * +90 5XX -> 905XX (basi sifirsa at, + isareti varsa at)
+   */
+  private formatPhoneNumber(phone: string): string {
+    let cleaned = phone.replace(/[\s\-\(\)\+]/g, '')
+
+    // Turkiye numarasi: basinda 0 varsa kaldir, 90 ekle
+    if (cleaned.startsWith('0') && cleaned.length === 11) {
+      cleaned = '90' + cleaned.substring(1)
+    }
+
+    // 90 ile baslamiyorsa ekle
+    if (!cleaned.startsWith('90') && cleaned.length === 10) {
+      cleaned = '90' + cleaned
+    }
+
+    return cleaned
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${WHATSAPP_API_URL}/${endpoint}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(`WhatsApp API Error: ${response.status} - ${JSON.stringify(error)}`)
+    }
+
+    return response.json()
+  }
+}

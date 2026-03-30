@@ -1,0 +1,326 @@
+{
+  "common": {
+    "appName": "TeklifPro",
+    "loading": "Yükleniyor...",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "create": "Oluştur",
+    "search": "Ara...",
+    "filter": "Filtrele",
+    "export": "Dışa Aktar",
+    "back": "Geri",
+    "next": "İleri",
+    "confirm": "Onayla",
+    "close": "Kapat",
+    "yes": "Evet",
+    "no": "Hayır",
+    "noData": "Veri bulunamadı",
+    "error": "Bir hata oluştu",
+    "success": "İşlem başarılı",
+    "required": "Bu alan zorunludur",
+    "currency": "₺",
+    "actions": "İşlemler"
+  },
+  "site": {
+    "hero": {
+      "title": "Tekliflerinizi Saniyeler İçinde Oluşturun",
+      "subtitle": "Paraşüt entegrasyonlu, WhatsApp üzerinden anında gönderin. Müşterileriniz tek tıkla kabul etsin.",
+      "cta": "14 Gün Ücretsiz Deneyin",
+      "ctaSecondary": "Canlı Demo İzle",
+      "trustedBy": "Türkiye'nin önde gelen firmalarının tercihi"
+    },
+    "features": {
+      "title": "Neden TeklifPro?",
+      "parasut": {
+        "title": "Paraşüt Entegrasyonu",
+        "desc": "Müşteri ve ürün kartlarınız otomatik senkronize olur. Tek tuşla teklif oluşturun."
+      },
+      "whatsapp": {
+        "title": "WhatsApp ile Gönderim",
+        "desc": "Teklifinizi hazırlayın, WhatsApp'tan anında gönderin. Müşteriniz interaktif link ile yanıtlasın."
+      },
+      "tracking": {
+        "title": "Canlı Takip",
+        "desc": "Müşteriniz teklifi ne zaman açtı, kaç kez inceledi? Tüm aktiviteler anlık olarak görün."
+      },
+      "fast": {
+        "title": "60 Saniyede Teklif",
+        "desc": "Sürükle-bırak ürün seçimi, otomatik fiyatlandırma. Hiç sistem kullanmamış biri bile kolayca hazırlar."
+      },
+      "response": {
+        "title": "Kabul / Revize / Red",
+        "desc": "Müşteriniz teklif linkinden doğrudan yanıt verir. Siz anında bilgilendirilirsiniz."
+      },
+      "analytics": {
+        "title": "Detaylı Analitik",
+        "desc": "Kabul oranları, ortalama yanıt süreleri, en çok tercih edilen ürünler. Veriye dayalı kararlar alın."
+      }
+    },
+    "pricing": {
+      "title": "Basit ve Şeffaf Fiyatlandırma",
+      "subtitle": "14 gün ücretsiz deneyin, kredi kartı gerekmez.",
+      "monthly": "Aylık",
+      "yearly": "Yıllık",
+      "yearlyDiscount": "%20 tasarruf edin",
+      "starter": {
+        "name": "Starter",
+        "price": "299",
+        "priceYearly": "239",
+        "period": "/ay",
+        "desc": "Küçük işletmeler için ideal başlangıç",
+        "features": [
+          "Aylık 50 teklif",
+          "Paraşüt entegrasyonu",
+          "WhatsApp gönderim",
+          "Temel analitik",
+          "1 kullanıcı",
+          "E-posta destek"
+        ],
+        "cta": "Ücretsiz Dene"
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "599",
+        "priceYearly": "479",
+        "period": "/ay",
+        "desc": "Büyüyen ekipler için tam donanımlı",
+        "features": [
+          "Sınırsız teklif",
+          "Paraşüt entegrasyonu",
+          "WhatsApp gönderim",
+          "Gelişmiş analitik",
+          "5 kullanıcı",
+          "Teklif şablonları",
+          "Öncelikli destek",
+          "API erişimi"
+        ],
+        "cta": "Ücretsiz Dene",
+        "popular": "En Popüler"
+      }
+    },
+    "faq": {
+      "title": "Sıkça Sorulan Sorular",
+      "items": [
+        {
+          "q": "Paraşüt hesabım olmadan kullanabilir miyim?",
+          "a": "Evet! Paraşüt entegrasyonu opsiyoneldir. Müşteri ve ürün bilgilerinizi manuel de girebilirsiniz. Ancak Paraşüt bağlarsanız tüm verileriniz otomatik senkronize olur."
+        },
+        {
+          "q": "WhatsApp entegrasyonu nasıl çalışır?",
+          "a": "WhatsApp Business API kullanıyoruz. Teklif hazırladığınızda, müşterinin ilgili kişisine tek tıkla interaktif bir teklif linki gönderilir. Müşteri bu linkten teklifi inceleyip kabul, revize veya red yapabilir."
+        },
+        {
+          "q": "14 günlük deneme nasıl işler?",
+          "a": "Kayıt olduktan sonra 14 gün boyunca Professional paketin tüm özelliklerini ücretsiz kullanabilirsiniz. Kredi kartı gerekmez. Deneme süresi bittiğinde bir paket seçmeniz yeterli."
+        },
+        {
+          "q": "Verilerim güvende mi?",
+          "a": "Tüm verileriniz SSL/TLS ile şifrelenir. KVKK uyumlu altyapı kullanıyoruz. Verileriniz Avrupa (Frankfurt) bölgesindeki sunucularda barındırılır."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Hemen Başlayın",
+      "subtitle": "14 gün ücretsiz, kredi kartı gerekmez.",
+      "button": "Ücretsiz Hesap Oluştur"
+    },
+    "footer": {
+      "product": "Ürün",
+      "company": "Şirket",
+      "legal": "Yasal",
+      "features": "Özellikler",
+      "pricing": "Fiyatlandırma",
+      "integrations": "Entegrasyonlar",
+      "about": "Hakkımızda",
+      "blog": "Blog",
+      "contact": "İletişim",
+      "privacy": "Gizlilik Politikası",
+      "terms": "Kullanım Koşulları",
+      "kvkk": "KVKK Aydınlatma",
+      "copyright": "© 2026 TeklifPro. Tüm hakları saklıdır."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Hoş Geldiniz",
+      "subtitle": "Hesabınıza giriş yapın",
+      "email": "E-posta",
+      "password": "Şifre",
+      "submit": "Giriş Yap",
+      "google": "Google ile Giriş",
+      "forgotPassword": "Şifremi Unuttum",
+      "noAccount": "Hesabınız yok mu?",
+      "register": "Kayıt Olun"
+    },
+    "register": {
+      "title": "Hesap Oluşturun",
+      "subtitle": "14 gün ücretsiz deneyin",
+      "name": "Ad Soyad",
+      "email": "E-posta",
+      "companyName": "Şirket Adı",
+      "phone": "Telefon",
+      "password": "Şifre",
+      "confirmPassword": "Şifre Tekrar",
+      "submit": "Kayıt Ol",
+      "google": "Google ile Kayıt",
+      "hasAccount": "Zaten hesabınız var mı?",
+      "login": "Giriş Yapın",
+      "terms": "Kayıt olarak {terms} ve {privacy} kabul etmiş olursunuz.",
+      "termsLink": "Kullanım Koşulları",
+      "privacyLink": "Gizlilik Politikası"
+    }
+  },
+  "onboarding": {
+    "title": "Hesabınızı Kuralım",
+    "steps": {
+      "company": "Şirket Bilgileri",
+      "parasut": "Paraşüt Entegrasyonu",
+      "whatsapp": "WhatsApp Ayarları",
+      "done": "Hazırsınız!"
+    },
+    "parasut": {
+      "title": "Paraşüt Hesabınızı Bağlayın",
+      "subtitle": "Müşteri ve ürün kartlarınız otomatik senkronize edilecek",
+      "companyId": "Şirket ID",
+      "companyIdHelp": "Paraşüt ana sayfanızdaki URL'den bulabilirsiniz: app.parasut.com/{şirketID}",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "credentialHelp": "Paraşüt > Ayarlar > API Entegrasyonları sayfasından oluşturabilirsiniz",
+      "username": "Paraşüt E-posta",
+      "password": "Paraşüt Şifre",
+      "testConnection": "Bağlantıyı Test Et",
+      "testing": "Test ediliyor...",
+      "connected": "Bağlantı başarılı!",
+      "failed": "Bağlantı başarısız. Lütfen bilgileri kontrol edin.",
+      "skip": "Şimdilik Atla",
+      "skipNote": "Daha sonra Ayarlar > Paraşüt bölümünden bağlayabilirsiniz."
+    },
+    "complete": {
+      "title": "Her Şey Hazır!",
+      "subtitle": "İlk teklifinizi oluşturmaya başlayabilirsiniz.",
+      "startButton": "İlk Teklifi Oluştur",
+      "dashboardButton": "Dashboard'a Git"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Hoş geldin, {name}!",
+    "stats": {
+      "totalProposals": "Toplam Teklif",
+      "sent": "Gönderilen",
+      "accepted": "Kabul Edilen",
+      "acceptanceRate": "Kabul Oranı",
+      "totalRevenue": "Toplam Tutar",
+      "avgResponseTime": "Ort. Yanıt Süresi"
+    },
+    "recentProposals": "Son Teklifler",
+    "quickActions": {
+      "title": "Hızlı İşlemler",
+      "newProposal": "Yeni Teklif",
+      "syncParasut": "Paraşüt Senkronize Et",
+      "viewAll": "Tüm Teklifleri Gör"
+    }
+  },
+  "proposals": {
+    "title": "Teklifler",
+    "new": "Yeni Teklif",
+    "list": {
+      "number": "Teklif No",
+      "customer": "Müşteri",
+      "title": "Başlık",
+      "total": "Tutar",
+      "status": "Durum",
+      "date": "Tarih",
+      "actions": "İşlemler"
+    },
+    "status": {
+      "DRAFT": "Taslak",
+      "SENT": "Gönderildi",
+      "VIEWED": "Görüntülendi",
+      "ACCEPTED": "Kabul Edildi",
+      "REJECTED": "Reddedildi",
+      "REVISION_REQUESTED": "Revize İstendi",
+      "REVISED": "Revize Edildi",
+      "EXPIRED": "Süresi Doldu",
+      "CANCELLED": "İptal Edildi"
+    },
+    "create": {
+      "title": "Yeni Teklif Oluştur",
+      "step1": "Müşteri Seç",
+      "step2": "Ürün Ekle",
+      "step3": "Detaylar",
+      "step4": "Önizleme & Gönder",
+      "selectCustomer": "Müşteri seçin veya arayın...",
+      "selectContact": "İlgili kişi seçin",
+      "proposalTitle": "Teklif Başlığı",
+      "addProduct": "Ürün Ekle",
+      "searchProduct": "Ürün ara...",
+      "quantity": "Miktar",
+      "unitPrice": "Birim Fiyat",
+      "discount": "İskonto %",
+      "vat": "KDV %",
+      "lineTotal": "Satır Toplamı",
+      "subtotal": "Ara Toplam",
+      "generalDiscount": "Genel İskonto",
+      "vatTotal": "KDV Toplam",
+      "grandTotal": "Genel Toplam",
+      "validityDays": "Geçerlilik (gün)",
+      "paymentTerms": "Ödeme Koşulları",
+      "deliveryTerms": "Teslimat Koşulları",
+      "notes": "Notlar",
+      "preview": "Önizleme",
+      "saveDraft": "Taslak Kaydet",
+      "sendWhatsApp": "WhatsApp ile Gönder",
+      "sendEmail": "E-posta ile Gönder",
+      "copyLink": "Linki Kopyala"
+    }
+  },
+  "customers": {
+    "title": "Müşteriler",
+    "syncFromParasut": "Paraşüt'ten Senkronize Et",
+    "syncing": "Senkronize ediliyor...",
+    "syncSuccess": "{count} müşteri senkronize edildi",
+    "addManual": "Manuel Ekle"
+  },
+  "products": {
+    "title": "Ürünler",
+    "syncFromParasut": "Paraşüt'ten Senkronize Et",
+    "syncing": "Senkronize ediliyor...",
+    "syncSuccess": "{count} ürün senkronize edildi",
+    "addManual": "Manuel Ekle"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "tabs": {
+      "general": "Genel",
+      "parasut": "Paraşüt",
+      "whatsapp": "WhatsApp",
+      "team": "Ekip",
+      "billing": "Abonelik"
+    }
+  },
+  "publicProposal": {
+    "header": "Teklif",
+    "from": "Gönderen",
+    "to": "Alıcı",
+    "date": "Tarih",
+    "validUntil": "Geçerlilik",
+    "items": "Teklif Kalemleri",
+    "totals": "Toplam",
+    "actions": {
+      "title": "Bu teklifi kabul ediyor musunuz?",
+      "accept": "Teklifi Kabul Et",
+      "revise": "Revize Talep Et",
+      "reject": "Teklifi Reddet",
+      "acceptConfirm": "Teklifi kabul ettiğinizi onaylıyor musunuz?",
+      "revisePrompt": "Revize talebinizi yazın:",
+      "rejectPrompt": "Red nedeninizi belirtir misiniz? (opsiyonel)"
+    },
+    "accepted": "Bu teklif kabul edilmiştir.",
+    "rejected": "Bu teklif reddedilmiştir.",
+    "revisionRequested": "Bu teklif için revize talep edilmiştir.",
+    "expired": "Bu teklifin süresi dolmuştur."
+  }
+}

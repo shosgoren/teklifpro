@@ -1,0 +1,512 @@
+/**
+ * ParasutClient - Parasut V4 API Adapter
+ *
+ * Parasut OAuth2 token yonetimi + CRUD islemleri
+ * Her tenant kendi Parasut credential'larini DB'ye kaydeder
+ * Token otomatik yenilenir (refresh_token ile)
+ *
+ * API Docs: https://apidocs.parasut.com/
+ */
+
+import { prisma } from '@/shared/utils/prisma'
+import type {
+  ParasutCredentials,
+  ParasutTokenResponse,
+  ParasutContact,
+  ParasutProduct,
+  ParasutContactPerson,
+  ParasutPaginatedResponse,
+} from '@/shared/types'
+
+const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/v4'
+const PARASUT_AUTH_URL = process.env.PARASUT_AUTH_URL || 'https://auth.parasut.com/oauth/token'
+
+export class ParasutClient {
+  private tenantId: string
+  private companyId: string
+  private accessToken: string | null = null
+  private refreshToken: string | null = null
+  private tokenExpiry: Date | null = null
+
+  constructor(tenantId: string, companyId: string) {
+    this.tenantId = tenantId
+    this.companyId = companyId
+  }
+
+  // ==================== FACTORY ====================
+
+  /**
+   * Tenant'in Parasut bilgileriyle client olustur
+   * DB'den credential ve token bilgilerini okur
+   */
+  static async forTenant(tenantId: string): Promise<ParasutClient> {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        parasutCompanyId: true,
+        parasutClientId: true,
+        parasutClientSecret: true,
+        parasutUsername: true,
+        parasutPassword: true,
+        parasutAccessToken: true,
+        parasutRefreshToken: true,
+        parasutTokenExpiry: true,
+      },
+    })
+
+    if (!tenant?.parasutCompanyId || !tenant?.parasutClientId) {
+      throw new Error('PARASUT_NOT_CONFIGURED')
+    }
+
+    const client = new ParasutClient(tenantId, tenant.parasutCompanyId)
+    client.accessToken = tenant.parasutAccessToken
+    client.refreshToken = tenant.parasutRefreshToken
+    client.tokenExpiry = tenant.parasutTokenExpiry
+
+    return client
+  }
+
+  // ==================== AUTH ====================
+
+  /**
+   * Ilk kez token al (username + password ile)
+   * Kullanici onboarding'de Parasut bilgilerini girdiginde cagirilir
+   */
+  async authenticate(credentials: ParasutCredentials): Promise<boolean> {
+    try {
+      const response = await fetch(PARASUT_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grant_type: 'password',
+          client_id: credentials.clientId,
+          client_secret: credentials.clientSecret,
+          username: credentials.username,
+          password: credentials.password,
+          redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        console.error('[Parasut] Auth failed:', response.status, error)
+        return false
+      }
+
+      const tokenData: ParasutTokenResponse = await response.json()
+      await this.saveTokens(tokenData, credentials)
+
+      return true
+    } catch (error) {
+      console.error('[Parasut] Auth error:', error)
+      return false
+    }
+  }
+
+  /**
+   * Refresh token ile yeni access_token al
+   */
+  private async refreshAccessToken(): Promise<boolean> {
+    if (!this.refreshToken) return false
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: this.tenantId },
+      select: { parasutClientId: true, parasutClientSecret: true },
+    })
+
+    if (!tenant?.parasutClientId) return false
+
+    try {
+      const response = await fetch(PARASUT_AUTH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grant_type: 'refresh_token',
+          client_id: tenant.parasutClientId,
+          client_secret: tenant.parasutClientSecret,
+          refresh_token: this.refreshToken,
+        }),
+      })
+
+      if (!response.ok) return false
+
+      const tokenData: ParasutTokenResponse = await response.json()
+      await this.saveTokens(tokenData)
+
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Token'lari DB'ye kaydet ve in-memory cache'i guncelle
+   */
+  private async saveTokens(
+    tokenData: ParasutTokenResponse,
+    credentials?: ParasutCredentials
+  ): Promise<void> {
+    const expiry = new Date(Date.now() + tokenData.expires_in * 1000)
+
+    this.accessToken = tokenData.access_token
+    this.refreshToken = tokenData.refresh_token
+    this.tokenExpiry = expiry
+
+    const updateData: Record<string, unknown> = {
+      parasutAccessToken: tokenData.access_token,
+      parasutRefreshToken: tokenData.refresh_token,
+      parasutTokenExpiry: expiry,
+      parasutSyncEnabled: true,
+    }
+
+    if (credentials) {
+      updateData.parasutCompanyId = credentials.companyId
+      updateData.parasutClientId = credentials.clientId
+      updateData.parasutClientSecret = credentials.clientSecret
+      updateData.parasutUsername = credentials.username
+      updateData.parasutPassword = credentials.password
+    }
+
+    await prisma.tenant.update({
+      where: { id: this.tenantId },
+      data: updateData,
+    })
+  }
+
+  /**
+   * Gecerli token al — suresi dolduysa otomatik yenile
+   */
+  private async getValidToken(): Promise<string> {
+    // Token var ve suresi dolmamis (5dk buffer)
+    if (
+      this.accessToken &&
+      this.tokenExpiry &&
+      this.tokenExpiry > new Date(Date.now() + 5 * 60 * 1000)
+    ) {
+      return this.accessToken
+    }
+
+    // Refresh dene
+    const refreshed = await this.refreshAccessToken()
+    if (refreshed && this.accessToken) {
+      return this.accessToken
+    }
+
+    throw new Error('PARASUT_TOKEN_EXPIRED')
+  }
+
+  // ==================== API HELPERS ====================
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const token = await this.getValidToken()
+
+    const response = await fetch(
+      `${PARASUT_API_URL}/${this.companyId}/${endpoint}`,
+      {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      }
+    )
+
+    if (response.status === 401) {
+      // Token expired, try refresh
+      const refreshed = await this.refreshAccessToken()
+      if (refreshed) {
+        return this.request<T>(endpoint, options)
+      }
+      throw new Error('PARASUT_UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      throw new Error(`PARASUT_API_ERROR: ${response.status} - ${JSON.stringify(error)}`)
+    }
+
+    return response.json()
+  }
+
+  // ==================== CONTACTS (Musteriler) ====================
+
+  /**
+   * Tum musterileri cek (pagination ile)
+   */
+  async getContacts(page = 1, perPage = 25): Promise<ParasutPaginatedResponse<ParasutContact>> {
+    return this.request<ParasutPaginatedResponse<ParasutContact>>(
+      `contacts?page[number]=${page}&page[size]=${perPage}&filter[account_type]=customer&include=contact_people`
+    )
+  }
+
+  /**
+   * Tek musteri detayi
+   */
+  async getContact(id: string): Promise<{ data: ParasutContact; included?: ParasutContactPerson[] }> {
+    return this.request<{ data: ParasutContact; included?: ParasutContactPerson[] }>(
+      `contacts/${id}?include=contact_people`
+    )
+  }
+
+  /**
+   * Musteri ara
+   */
+  async searchContacts(query: string): Promise<ParasutPaginatedResponse<ParasutContact>> {
+    return this.request<ParasutPaginatedResponse<ParasutContact>>(
+      `contacts?filter[name]=${encodeURIComponent(query)}&filter[account_type]=customer`
+    )
+  }
+
+  // ==================== PRODUCTS (Urunler) ====================
+
+  /**
+   * Tum urunleri cek
+   */
+  async getProducts(page = 1, perPage = 25): Promise<ParasutPaginatedResponse<ParasutProduct>> {
+    return this.request<ParasutPaginatedResponse<ParasutProduct>>(
+      `products?page[number]=${page}&page[size]=${perPage}`
+    )
+  }
+
+  /**
+   * Tek urun detayi
+   */
+  async getProduct(id: string): Promise<{ data: ParasutProduct }> {
+    return this.request<{ data: ParasutProduct }>(`products/${id}`)
+  }
+
+  /**
+   * Urun ara
+   */
+  async searchProducts(query: string): Promise<ParasutPaginatedResponse<ParasutProduct>> {
+    return this.request<ParasutPaginatedResponse<ParasutProduct>>(
+      `products?filter[name]=${encodeURIComponent(query)}`
+    )
+  }
+
+  // ==================== SYNC OPERATIONS ====================
+
+  /**
+   * Tum musterileri Parasut'ten cek ve DB'ye senkronize et
+   */
+  async syncAllContacts(): Promise<{ synced: number; errors: number }> {
+    let page = 1
+    let synced = 0
+    let errors = 0
+    let hasMore = true
+
+    while (hasMore) {
+      const response = await this.getContacts(page, 25)
+
+      for (const contact of response.data) {
+        try {
+          await prisma.customer.upsert({
+            where: {
+              tenantId_parasutId: {
+                tenantId: this.tenantId,
+                parasutId: contact.id,
+              },
+            },
+            create: {
+              tenantId: this.tenantId,
+              parasutId: contact.id,
+              name: contact.attributes.name,
+              shortName: contact.attributes.short_name,
+              companyType: 'COMPANY',
+              taxNumber: contact.attributes.tax_number,
+              taxOffice: contact.attributes.tax_office,
+              email: contact.attributes.email,
+              phone: contact.attributes.phone,
+              fax: contact.attributes.fax,
+              address: contact.attributes.address,
+              city: contact.attributes.city,
+              district: contact.attributes.district,
+              balance: contact.attributes.balance ? parseFloat(contact.attributes.balance) : 0,
+              lastSyncAt: new Date(),
+            },
+            update: {
+              name: contact.attributes.name,
+              shortName: contact.attributes.short_name,
+              taxNumber: contact.attributes.tax_number,
+              taxOffice: contact.attributes.tax_office,
+              email: contact.attributes.email,
+              phone: contact.attributes.phone,
+              fax: contact.attributes.fax,
+              address: contact.attributes.address,
+              city: contact.attributes.city,
+              district: contact.attributes.district,
+              balance: contact.attributes.balance ? parseFloat(contact.attributes.balance) : 0,
+              lastSyncAt: new Date(),
+            },
+          })
+
+          // Sync contact people (ilgili kisiler)
+          if (contact.relationships?.contact_people?.data) {
+            for (const cpRef of contact.relationships.contact_people.data) {
+              const cpData = response.included?.find(
+                (inc) => inc.id === cpRef.id && inc.type === 'contact_people'
+              ) as unknown as ParasutContactPerson | undefined
+
+              if (cpData) {
+                const customer = await prisma.customer.findFirst({
+                  where: { tenantId: this.tenantId, parasutId: contact.id },
+                })
+
+                if (customer) {
+                  await prisma.customerContact.upsert({
+                    where: {
+                      id: `parasut_${cpData.id}`,
+                    },
+                    create: {
+                      id: `parasut_${cpData.id}`,
+                      customerId: customer.id,
+                      name: cpData.attributes.name,
+                      email: cpData.attributes.email,
+                      phone: cpData.attributes.phone,
+                      title: cpData.attributes.title,
+                    },
+                    update: {
+                      name: cpData.attributes.name,
+                      email: cpData.attributes.email,
+                      phone: cpData.attributes.phone,
+                      title: cpData.attributes.title,
+                    },
+                  })
+                }
+              }
+            }
+          }
+
+          synced++
+        } catch (err) {
+          console.error(`[Parasut] Contact sync error (${contact.id}):`, err)
+          errors++
+        }
+      }
+
+      hasMore = page < response.meta.total_pages
+      page++
+    }
+
+    // Sync log olustur
+    await prisma.parasutSyncLog.create({
+      data: {
+        tenantId: this.tenantId,
+        entityType: 'customer',
+        direction: 'PULL',
+        status: errors > 0 ? 'PARTIAL' : 'COMPLETED',
+        recordCount: synced,
+        errorCount: errors,
+        completedAt: new Date(),
+      },
+    })
+
+    // Tenant'in son sync zamanini guncelle
+    await prisma.tenant.update({
+      where: { id: this.tenantId },
+      data: { parasutLastSyncAt: new Date() },
+    })
+
+    return { synced, errors }
+  }
+
+  /**
+   * Tum urunleri Parasut'ten cek ve DB'ye senkronize et
+   */
+  async syncAllProducts(): Promise<{ synced: number; errors: number }> {
+    let page = 1
+    let synced = 0
+    let errors = 0
+    let hasMore = true
+
+    while (hasMore) {
+      const response = await this.getProducts(page, 25)
+
+      for (const product of response.data) {
+        try {
+          await prisma.product.upsert({
+            where: {
+              tenantId_parasutId: {
+                tenantId: this.tenantId,
+                parasutId: product.id,
+              },
+            },
+            create: {
+              tenantId: this.tenantId,
+              parasutId: product.id,
+              code: product.attributes.code,
+              name: product.attributes.name,
+              unit: product.attributes.unit || 'Adet',
+              listPrice: product.attributes.list_price
+                ? parseFloat(product.attributes.list_price)
+                : 0,
+              currency: product.attributes.currency || 'TRY',
+              vatRate: product.attributes.vat_rate
+                ? parseFloat(product.attributes.vat_rate)
+                : 20,
+              trackStock: product.attributes.inventory_tracking || false,
+              lastSyncAt: new Date(),
+            },
+            update: {
+              code: product.attributes.code,
+              name: product.attributes.name,
+              unit: product.attributes.unit || 'Adet',
+              listPrice: product.attributes.list_price
+                ? parseFloat(product.attributes.list_price)
+                : 0,
+              currency: product.attributes.currency || 'TRY',
+              vatRate: product.attributes.vat_rate
+                ? parseFloat(product.attributes.vat_rate)
+                : 20,
+              trackStock: product.attributes.inventory_tracking || false,
+              lastSyncAt: new Date(),
+            },
+          })
+          synced++
+        } catch (err) {
+          console.error(`[Parasut] Product sync error (${product.id}):`, err)
+          errors++
+        }
+      }
+
+      hasMore = page < response.meta.total_pages
+      page++
+    }
+
+    await prisma.parasutSyncLog.create({
+      data: {
+        tenantId: this.tenantId,
+        entityType: 'product',
+        direction: 'PULL',
+        status: errors > 0 ? 'PARTIAL' : 'COMPLETED',
+        recordCount: synced,
+        errorCount: errors,
+        completedAt: new Date(),
+      },
+    })
+
+    return { synced, errors }
+  }
+
+  /**
+   * Baglanti testi — Parasut API'ye erisim var mi kontrol et
+   */
+  async testConnection(): Promise<{ success: boolean; companyName?: string; error?: string }> {
+    try {
+      const response = await this.request<{ data: { attributes: { name: string } } }>('')
+      return {
+        success: true,
+        companyName: response?.data?.attributes?.name || 'Bağlantı başarılı',
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Bilinmeyen hata',
+      }
+    }
+  }
+}
