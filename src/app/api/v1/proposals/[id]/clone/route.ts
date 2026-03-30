@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
 import { generateProposalNumber, generatePublicToken } from '@/shared/utils/proposal';
-import { getAuth } from '@clerk/nextjs/server';
+
 
 /**
  * POST /api/v1/proposals/[id]/clone
@@ -108,7 +108,7 @@ export async function POST(
     }
 
     // Kullanıcı kimliğini kontrol et
-    const { userId } = await getAuth(request);
+    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
     if (!userId) {
       return NextResponse.json<ApiResponse>(
         {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
-import { getAuth } from '@clerk/nextjs/server';
+
 import { generateProposalNumber, generatePublicToken } from '@/shared/utils/generators';
 
 // Validation schemas
@@ -37,7 +37,7 @@ type GetProposalsQuery = z.infer<typeof GetProposalsSchema>;
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const { userId } = await getAuth(request);
+    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
     if (!userId) {
       return NextResponse.json(
         {
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const { userId } = await getAuth(request);
+    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
     if (!userId) {
       return NextResponse.json(
         {

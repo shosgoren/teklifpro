@@ -1,5 +1,25 @@
-import { Anthropic } from '@anthropic-ai/sdk';
 import { prisma } from '@/shared/utils/prisma';
+
+// Stub client replacing @anthropic-ai/sdk
+interface ClaudeMessage {
+  content: Array<{ type: string; text: string }>;
+}
+
+class AnthropicStub {
+  messages = {
+    create: async (_params: {
+      model: string;
+      max_tokens: number;
+      system: string;
+      messages: Array<{ role: string; content: string }>;
+    }): Promise<ClaudeMessage> => {
+      console.warn('[AiProposalService] Anthropic SDK stub called - returning empty response');
+      return {
+        content: [{ type: 'text', text: '{}' }],
+      };
+    },
+  };
+}
 
 // ============================================================================
 // TYPES - Türkçe yorumlar ile birlikte
@@ -99,15 +119,13 @@ class RateLimiter {
 // ============================================================================
 
 class AiProposalService {
-  private client: Anthropic;
+  private client: AnthropicStub;
   private cache: Map<string, CacheEntry<any>> = new Map();
   private rateLimiter = new RateLimiter();
   private model = 'claude-sonnet-4-20250514';
 
   constructor() {
-    this.client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    this.client = new AnthropicStub();
   }
 
   /**

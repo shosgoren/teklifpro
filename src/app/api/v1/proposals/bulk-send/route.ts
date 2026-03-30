@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getAuth } from '@clerk/nextjs/server';
+
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
@@ -55,7 +55,7 @@ export async function POST(
 ): Promise<NextResponse<ApiResponse<BulkSendResponse>>> {
   try {
     // Kimlik doğrulamayı kontrol et
-    const { userId } = await getAuth(request);
+    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
     if (!userId) {
       return NextResponse.json(
         {

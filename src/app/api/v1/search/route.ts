@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+
 import { prisma } from '@/lib/prisma';
 
 /**
@@ -323,7 +323,7 @@ async function searchProducts(
 export async function GET(request: NextRequest): Promise<NextResponse<SearchResponse>> {
   try {
     // Kullanıcı kimliğini doğrula
-    const { userId, orgId } = auth();
+    const { userId, orgId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
 
     if (!userId || !orgId) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getAuth } from '@clerk/nextjs/server';
+
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
@@ -31,7 +31,7 @@ interface SyncResult {
 
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<SyncResult>>> {
   try {
-    const { userId } = await getAuth(request);
+    const { userId } = { userId: request.headers.get('x-user-id'), orgId: request.headers.get('x-tenant-id') };
     if (!userId) {
       return NextResponse.json(
         {
