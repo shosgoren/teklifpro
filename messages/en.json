@@ -115,7 +115,12 @@
       "google": "Sign in with Google",
       "forgotPassword": "Forgot Password",
       "noAccount": "Don't have an account?",
-      "register": "Sign Up"
+      "register": "Sign Up",
+      "login": "Sign In",
+      "logging": "Signing in...",
+      "googleAuth": "Sign in with Google",
+      "rememberMe": "Remember me",
+      "or": "or"
     },
     "register": {
       "title": "Create Account",
@@ -129,7 +134,13 @@
       "submit": "Sign Up",
       "google": "Sign up with Google",
       "hasAccount": "Already have an account?",
-      "login": "Sign In"
+      "login": "Sign In",
+      "register": "Sign Up",
+      "registering": "Signing up...",
+      "googleAuth": "Sign up with Google",
+      "fullName": "Full Name",
+      "or": "or",
+      "haveAccount": "Already have an account?"
     }
   },
   "proposals": {
