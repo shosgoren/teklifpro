@@ -77,10 +77,10 @@ const LandingPage = () => {
   ];
 
   const steps = [
-    { number: 1, title: 'KayÄ±t ol', icon: 'ð' },
-    { number: 2, title: 'ParaÅÃ¼t baÄla', icon: 'ð' },
-    { number: 3, title: 'Teklif oluÅtur', icon: 'ð' },
-    { number: 4, title: "WhatsApp'tan gÃ¶nder", icon: 'ð±' },
+    { number: 1, title: 'Kayıt ol', icon: '📝' },
+    { number: 2, title: 'Paraşüt bağla', icon: '🔗' },
+    { number: 3, title: 'Teklif oluştur', icon: '📄' },
+    { number: 4, title: "WhatsApp'tan gönder", icon: '📱' },
   ];
 
   const faqItems = t.raw('faq.items') as Array<{ q: string; a: string }>;
@@ -216,10 +216,10 @@ const LandingPage = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              NasÄ±l ÃalÄ±ÅÄ±r?
+              Nasıl Çalışır?
             </h2>
             <p className="text-lg text-gray-600">
-              4 basit adÄ±mda baÅlayÄ±n
+              4 basit adımda başlayın
             </p>
           </motion.div>
 
@@ -239,10 +239,10 @@ const LandingPage = () => {
                   {step.number}. {step.title}
                 </h3>
                 <p className="text-center text-gray-600 text-sm">
-                  {step.number === 1 && 'E-posta ve Åirket bilgilerinizi girin'}
-                  {step.number === 2 && 'ParaÅÃ¼t hesabÄ±nÄ±zÄ± baÄlayÄ±n'}
-                  {step.number === 3 && 'MÃ¼Återi ve Ã¼rÃ¼n seÃ§erek teklif oluÅturun'}
-                  {step.number === 4 && 'Tek tuÅla WhatsApp\'tan gÃ¶nderin'}
+                  {step.number === 1 && 'E-posta ve şirket bilgilerinizi girin'}
+                  {step.number === 2 && 'Paraşüt hesabınızı bağlayın'}
+                  {step.number === 3 && 'Müşteri ve ürün seçerek teklif oluşturun'}
+                  {step.number === 4 && 'Tek tuşla WhatsApp\'tan gönderin'}
                 </p>
 
                 {index < steps.length - 1 && (
@@ -555,7 +555,7 @@ const LandingPage = () => {
                 TeklifPro
               </h3>
               <p className="text-sm text-gray-400">
-                ParaÅÃ¼t entegrasyonlu teklif yÃ¶netim platformu
+                Paraşüt entegrasyonlu teklif yönetim platformu
               </p>
             </div>
           </div>
