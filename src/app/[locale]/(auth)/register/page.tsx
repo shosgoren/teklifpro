@@ -61,7 +61,7 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/v1/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       // TODO: Implement Google OAuth
-      window.location.href = '/api/auth/google';
+      window.location.href = '/api/v1/auth/google';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google authentication failed');
       setIsLoading(false);
