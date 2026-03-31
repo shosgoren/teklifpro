@@ -156,7 +156,12 @@
       "google": "Google ile Giriş",
       "forgotPassword": "Şifremi Unuttum",
       "noAccount": "Hesabınız yok mu?",
-      "register": "Kayıt Olun"
+      "register": "Kayıt Olun",
+      "login": "Giriş Yap",
+      "logging": "Giriş yapılıyor...",
+      "googleAuth": "Google ile Giriş",
+      "rememberMe": "Beni Hatırla",
+      "or": "veya"
     },
     "register": {
       "title": "Hesap Oluşturun",
@@ -173,7 +178,13 @@
       "login": "Giriş Yapın",
       "terms": "Kayıt olarak {terms} ve {privacy} kabul etmiş olursunuz.",
       "termsLink": "Kullanım Koşulları",
-      "privacyLink": "Gizlilik Politikası"
+      "privacyLink": "Gizlilik Politikası",
+      "register": "Kayıt Ol",
+      "registering": "Kayıt yapılıyor...",
+      "googleAuth": "Google ile Kayıt",
+      "fullName": "Ad Soyad",
+      "or": "veya",
+      "haveAccount": "Zaten hesabınız var mı?"
     }
   },
   "onboarding": {
