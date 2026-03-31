@@ -290,7 +290,7 @@ async function sendEmailVerificationEmail(
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>

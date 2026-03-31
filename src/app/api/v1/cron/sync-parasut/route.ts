@@ -1,9 +1,81 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/shared/utils/prisma';
+import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient';
 
-export async function GET() {
-  return NextResponse.json({
-    success: true,
-    message: 'Parasut sync cron executed',
-    timestamp: new Date().toISOString(),
-  });
+export async function GET(request: NextRequest) {
+  // Verify cron secret for security
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const results: Array<{ tenantId: string; status: string; synced?: number; errors?: number }> = [];
+
+  try {
+    // Find all tenants with Parasut sync enabled
+    const tenants = await prisma.tenant.findMany({
+      where: {
+        parasutSyncEnabled: true,
+        isActive: true,
+        parasutClientId: { not: null },
+        parasutClientSecret: { not: null },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        parasutCompanyId: true,
+        parasutClientId: true,
+        parasutClientSecret: true,
+        parasutUsername: true,
+        parasutPassword: true,
+        parasutAccessToken: true,
+        parasutRefreshToken: true,
+      },
+    });
+
+    for (const tenant of tenants) {
+      try {
+        const client = new ParasutClient({
+          companyId: tenant.parasutCompanyId!,
+          clientId: tenant.parasutClientId!,
+          clientSecret: tenant.parasutClientSecret!,
+          username: tenant.parasutUsername!,
+          password: tenant.parasutPassword!,
+        });
+
+        const contactSync = await client.syncAllContacts(tenant.id);
+        const productSync = await client.syncAllProducts(tenant.id);
+
+        await prisma.tenant.update({
+          where: { id: tenant.id },
+          data: { parasutLastSyncAt: new Date() },
+        });
+
+        results.push({
+          tenantId: tenant.id,
+          status: 'success',
+          synced: contactSync.synced + productSync.synced,
+          errors: contactSync.errors + productSync.errors,
+        });
+      } catch (error) {
+        results.push({
+          tenantId: tenant.id,
+          status: 'failed',
+        });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Parasut sync completed for ${tenants.length} tenants`,
+      results,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Cron sync-parasut error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Sync failed' },
+      { status: 500 }
+    );
+  }
 }

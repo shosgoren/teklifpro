@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ==================== AUTH & TENANT ====================
@@ -90,6 +91,7 @@ model User {
   proposals               Proposal[]
   auditLogs               AuditLog[]
   emailVerificationTokens EmailVerificationToken[]
+  customerNotes           CustomerNote[]
 
   @@unique([tenantId, email])
   @@map("users")
@@ -157,6 +159,7 @@ model Customer {
   tenant            Tenant    @relation(fields: [tenantId], references: [id])
   contacts          CustomerContact[]
   proposals         Proposal[]
+  customerNotes     CustomerNote[]
 
   @@unique([tenantId, parasutId])
   @@index([tenantId, name])
@@ -183,6 +186,24 @@ model CustomerContact {
   proposals   Proposal[]
 
   @@map("customer_contacts")
+}
+
+// ==================== CUSTOMER NOTES ====================
+
+model CustomerNote {
+  id          String    @id @default(cuid())
+  customerId  String    @map("customer_id")
+  userId      String    @map("user_id")
+  content     String
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  customer    Customer  @relation(fields: [customerId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([customerId, createdAt])
+  @@map("customer_notes")
 }
 
 // ==================== PRODUCTS (Parasut Sync) ====================

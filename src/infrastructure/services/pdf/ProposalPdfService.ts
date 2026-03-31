@@ -406,7 +406,11 @@ export class ProposalPdfService {
     pdf.text('TeklifPro ile oluşturuldu', margin, footerY);
 
     // Right text - page number
-    pdf.text(`Sayfa ${1} / ${pageCount}`, this.PAGE_WIDTH - margin - 20, footerY, { align: 'right' });
+    const totalPages = pdf.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.text(`Sayfa ${i} / ${totalPages}`, this.PAGE_WIDTH - margin - 20, footerY, { align: 'right' });
+    }
 
     // Reset text color
     pdf.setTextColor(0, 0, 0);
@@ -439,13 +443,16 @@ export class ProposalPdfService {
 
   private static getStatusText(status: string): string {
     const statusMap: Record<string, string> = {
-      draft: 'Taslak',
-      sent: 'Gönderildi',
-      viewed: 'Görüntülendi',
-      accepted: 'Kabul Edildi',
-      rejected: 'Reddedildi',
-      expired: 'Süresi Doldu',
+      DRAFT: 'Taslak',
+      SENT: 'Gonderildi',
+      VIEWED: 'Goruntulendi',
+      ACCEPTED: 'Kabul Edildi',
+      REJECTED: 'Reddedildi',
+      REVISION_REQUESTED: 'Revizyon Istendi',
+      REVISED: 'Revize Edildi',
+      EXPIRED: 'Suresi Doldu',
+      CANCELLED: 'Iptal Edildi',
     };
-    return statusMap[status] || status;
+    return statusMap[status] || statusMap[status.toUpperCase()] || status;
   }
 }

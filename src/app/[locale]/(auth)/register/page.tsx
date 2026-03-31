@@ -29,7 +29,12 @@ const registerSchema = z
     fullName: z.string().min(2, 'Full name is required'),
     email: z.string().email('Invalid email address'),
     phone: z.string().regex(/^[+]?[0-9\s-()]+$/, 'Invalid phone number'),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
+    password: z.string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one digit')
+      .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -95,7 +100,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push(`/${locale}/dashboard`);
+      router.push(`/${locale}/onboarding`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -364,7 +369,7 @@ export default function RegisterPage() {
           <p className="mt-6 text-center text-sm text-gray-600">
             {t('register.haveAccount')}{' '}
             <Link
-              href="/login"
+              href={`/${locale}/login`}
               className="text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200"
             >
               {t('register.login')}

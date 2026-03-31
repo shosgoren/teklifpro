@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -220,6 +220,7 @@ const Confetti = () => {
 export default function OnboardingPage() {
   const t = useTranslations('onboarding');
   const router = useRouter();
+  const locale = useLocale();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -371,11 +372,11 @@ export default function OnboardingPage() {
   };
 
   const handleCreateFirstQuote = () => {
-    router.push('/dashboard');
+    router.push(`/${locale}/dashboard`);
   };
 
   const handleGoToDashboard = () => {
-    router.push('/dashboard');
+    router.push(`/${locale}/dashboard`);
   };
 
   if (currentStep === 4) {

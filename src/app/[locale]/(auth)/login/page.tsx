@@ -149,7 +149,7 @@ export default function LoginPage() {
                         {t('login.password')}
                       </FormLabel>
                       <Link
-                        href="/forgot-password"
+                        href={`/${locale}/reset-password`}
                         className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200"
                       >
                         {t('login.forgotPassword')}
@@ -263,7 +263,7 @@ export default function LoginPage() {
           <p className="mt-6 text-center text-sm text-gray-600">
             {t('login.noAccount')}{' '}
             <Link
-              href="/register"
+              href={`/${locale}/register`}
               className="text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200"
             >
               {t('login.register')}

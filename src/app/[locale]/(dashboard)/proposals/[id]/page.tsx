@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 import {
   Edit,
   MessageCircle,
@@ -208,16 +209,17 @@ const MOCK_PROPOSAL: ProposalDetail = {
 
 export default function ProposalDetailPage() {
   const router = useRouter();
+  const locale = useLocale();
   const [proposal] = useState<ProposalDetail>(MOCK_PROPOSAL);
 
   const handleEdit = () => {
-    router.push(`/proposals/${proposal.id}/edit`);
+    router.push(`/${locale}/proposals/${proposal.id}/edit`);
   };
 
   const handleDelete = () => {
     if (confirm('Bu teklifi silmek istediğinizden emin misiniz?')) {
       alert('Teklif silindi');
-      router.push('/proposals');
+      router.push(`/${locale}/proposals`);
     }
   };
 
@@ -280,7 +282,7 @@ export default function ProposalDetailPage() {
       {/* Breadcrumb */}
       <div className="mb-6 flex items-center gap-2 text-sm text-gray-600">
         <button
-          onClick={() => router.push('/proposals')}
+          onClick={() => router.push(`/${locale}/proposals`)}
           className="hover:text-gray-900"
         >
           Teklifler

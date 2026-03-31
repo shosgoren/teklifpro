@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import useSWR from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Badge } from '@/shared/ui/badge';
@@ -33,175 +34,98 @@ import {
   Eye,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
-// Mock data
-const mockUser = {
-  name: 'Ahmet Yılmaz',
-};
-
-const mockStats = [
-  {
-    title: 'Toplam Teklif',
-    value: '247',
-    icon: FileText,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-  },
-  {
-    title: 'Gönderilen',
-    value: '189',
-    icon: Send,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-  },
-  {
-    title: 'Kabul Edilen',
-    value: '156',
-    icon: CheckCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-100',
-  },
-  {
-    title: 'Kabul Oranı',
-    value: '82.5%',
-    icon: TrendingUp,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-100',
-  },
-  {
-    title: 'Toplam Gelir',
-    value: '₺245,500',
-    icon: DollarSign,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-100',
-  },
-  {
-    title: 'Ort. Yanıt Süresi',
-    value: '2.3 gün',
-    icon: Clock,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-100',
-  },
-];
-
-const mockProposals = [
-  {
-    id: '1',
-    number: 'TKF-2024-001',
-    client: 'ABC Ltd. Şti.',
-    amount: '₺15,500',
-    status: 'ACCEPTED',
-    date: '2024-01-15',
-    daysAgo: 2,
-  },
-  {
-    id: '2',
-    number: 'TKF-2024-002',
-    client: 'XYZ İnşaat A.Ş.',
-    amount: '₺28,000',
-    status: 'SENT',
-    date: '2024-01-14',
-    daysAgo: 3,
-  },
-  {
-    id: '3',
-    number: 'TKF-2024-003',
-    client: 'Teknoloji Çözümleri Ltd.',
-    amount: '₺12,300',
-    status: 'DRAFT',
-    date: '2024-01-13',
-    daysAgo: 4,
-  },
-  {
-    id: '4',
-    number: 'TKF-2024-004',
-    client: 'Global Ticaret A.Ş.',
-    amount: '₺45,200',
-    status: 'ACCEPTED',
-    date: '2024-01-12',
-    daysAgo: 5,
-  },
-  {
-    id: '5',
-    number: 'TKF-2024-005',
-    client: 'Yerel İşletmeler Grubu',
-    amount: '₺8,900',
-    status: 'SENT',
-    date: '2024-01-11',
-    daysAgo: 6,
-  },
-  {
-    id: '6',
-    number: 'TKF-2024-006',
-    client: 'Premium Danışmanlık Ltd.',
-    amount: '₺32,100',
-    status: 'ACCEPTED',
-    date: '2024-01-10',
-    daysAgo: 7,
-  },
-  {
-    id: '7',
-    number: 'TKF-2024-007',
-    client: 'Startup İnovasyon A.Ş.',
-    amount: '₺6,500',
-    status: 'DRAFT',
-    date: '2024-01-09',
-    daysAgo: 8,
-  },
-  {
-    id: '8',
-    number: 'TKF-2024-008',
-    client: 'Kurumsal Hizmetler Ltd.',
-    amount: '₺55,800',
-    status: 'SENT',
-    date: '2024-01-08',
-    daysAgo: 9,
-  },
-  {
-    id: '9',
-    number: 'TKF-2024-009',
-    client: 'Enerji Sektörü A.Ş.',
-    amount: '₺19,400',
-    status: 'ACCEPTED',
-    date: '2024-01-07',
-    daysAgo: 10,
-  },
-  {
-    id: '10',
-    number: 'TKF-2024-010',
-    client: 'Dış Ticaret Merkezi',
-    amount: '₺22,700',
-    status: 'REJECTED',
-    date: '2024-01-06',
-    daysAgo: 11,
-  },
-];
-
-const mockChartData = [
-  { date: '1-5 Şub', proposals: 12, accepted: 10 },
-  { date: '6-10 Şub', proposals: 19, accepted: 15 },
-  { date: '11-15 Şub', proposals: 15, accepted: 12 },
-  { date: '16-20 Şub', proposals: 25, accepted: 21 },
-  { date: '21-25 Şub', proposals: 22, accepted: 18 },
-  { date: '26-1 Mar', proposals: 18, accepted: 15 },
-  { date: '2-6 Mar', proposals: 28, accepted: 24 },
-];
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const statusConfig = {
   DRAFT: { label: 'Taslak', color: 'bg-gray-100 text-gray-800' },
-  SENT: { label: 'Gönderildi', color: 'bg-blue-100 text-blue-800' },
+  SENT: { label: 'G\u00f6nderildi', color: 'bg-blue-100 text-blue-800' },
+  VIEWED: { label: 'G\u00f6r\u00fcnt\u00fclendi', color: 'bg-yellow-100 text-yellow-800' },
   ACCEPTED: { label: 'Kabul Edildi', color: 'bg-green-100 text-green-800' },
   REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-800' },
-  EXPIRED: { label: 'Süresi Doldu', color: 'bg-yellow-100 text-yellow-800' },
+  REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-800' },
+  EXPIRED: { label: 'S\u00fcresi Doldu', color: 'bg-yellow-100 text-yellow-800' },
 };
 
 export default function DashboardPage() {
   const router = useRouter();
+  const locale = useLocale();
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const { data: proposalsData, isLoading: proposalsLoading } = useSWR(
+    '/api/v1/proposals?limit=10',
+    fetcher
+  );
+  const { data: customersData, isLoading: customersLoading } = useSWR(
+    '/api/v1/customers?limit=1',
+    fetcher
+  );
+
+  const proposals = proposalsData?.data?.proposals ?? [];
+  const proposalTotal = proposalsData?.data?.pagination?.total ?? 0;
+  const customerTotal = customersData?.data?.pagination?.total ?? 0;
+
+  const isLoading = proposalsLoading || customersLoading;
+
+  // Compute stats from real data
+  const sentCount = proposals.filter((p: any) => p.status === 'SENT').length;
+  const acceptedCount = proposals.filter((p: any) => p.status === 'ACCEPTED').length;
+  const acceptRate = proposals.length > 0
+    ? ((acceptedCount / proposals.length) * 100).toFixed(1)
+    : '0';
+  const totalRevenue = proposals
+    .filter((p: any) => p.status === 'ACCEPTED')
+    .reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0);
+
+  const stats = [
+    {
+      title: 'Toplam Teklif',
+      value: proposalTotal.toString(),
+      icon: FileText,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
+    },
+    {
+      title: 'G\u00f6nderilen',
+      value: sentCount.toString(),
+      icon: Send,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
+    },
+    {
+      title: 'Kabul Edilen',
+      value: acceptedCount.toString(),
+      icon: CheckCircle,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+    },
+    {
+      title: 'Kabul Oran\u0131',
+      value: `${acceptRate}%`,
+      icon: TrendingUp,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-100',
+    },
+    {
+      title: 'Toplam Gelir',
+      value: `\u20ba${totalRevenue.toLocaleString('tr-TR')}`,
+      icon: DollarSign,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-100',
+    },
+    {
+      title: 'Toplam M\u00fc\u015fteri',
+      value: customerTotal.toString(),
+      icon: Clock,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
+    },
+  ];
+
   const handleNewProposal = useCallback(() => {
-    router.push('/dashboard/proposals/new');
-  }, [router]);
+    router.push(`/${locale}/dashboard/proposals/new`);
+  }, [router, locale]);
 
   const handleSyncParasut = useCallback(async () => {
     setIsSyncing(true);
@@ -226,23 +150,74 @@ export default function DashboardPage() {
   }, []);
 
   const handleViewAll = useCallback(() => {
-    router.push('/dashboard/proposals');
-  }, [router]);
+    router.push(`/${locale}/dashboard/proposals`);
+  }, [router, locale]);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Bug\u00fcn';
+    if (diffDays === 1) return 'D\u00fcn';
+    return `${diffDays} g\u00fcn \u00f6nce`;
+  };
+
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 pb-8">
+        <div className="space-y-2">
+          <div className="h-9 w-64 bg-muted animate-pulse rounded" />
+          <div className="h-5 w-96 bg-muted animate-pulse rounded" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                <div className="h-8 w-8 bg-muted animate-pulse rounded-lg" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 bg-muted animate-pulse rounded" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">
-          Hoş geldiniz, {mockUser.name}
+          Kontrol Paneli
         </h1>
         <p className="text-muted-foreground">
-          Teklif yönetim paneline hoş geldiniz. İşletmenizi geliştirebilmek için en iyi sonuçları
+          Teklif y\u00f6netim paneline ho\u015f geldiniz. \u0130\u015fletmenizi geli\u015ftirebilmek i\u00e7in en iyi sonu\u00e7lar\u0131
           sunun.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {mockStats.map((stat, index) => {
+        {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="hover:shadow-md transition-shadow">
@@ -265,13 +240,16 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Teklif Trendi - Son 30 Gün</CardTitle>
-            <CardDescription>Gönderilen ve kabul edilen teklif sayıları</CardDescription>
+            <CardTitle>Son Teklifler \u00d6zeti</CardTitle>
+            <CardDescription>Son 10 teklifin tutar da\u011f\u0131l\u0131m\u0131</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={mockChartData}>
+                <LineChart data={proposals.map((p: any) => ({
+                  date: new Date(p.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+                  total: Number(p.grandTotal) || 0,
+                })).reverse()}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -284,16 +262,9 @@ export default function DashboardPage() {
                   />
                   <Line
                     type="monotone"
-                    dataKey="proposals"
+                    dataKey="total"
                     stroke="#3b82f6"
-                    name="Gönderilen"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="accepted"
-                    stroke="#10b981"
-                    name="Kabul Edilen"
+                    name="Teklif Tutar\u0131"
                     strokeWidth={2}
                   />
                 </LineChart>
@@ -304,8 +275,8 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Hızlı İşlemler</CardTitle>
-            <CardDescription>En sık kullanılan işlemlere hızlı erişim</CardDescription>
+            <CardTitle>H\u0131zl\u0131 \u0130\u015flemler</CardTitle>
+            <CardDescription>En s\u0131k kullan\u0131lan i\u015flemlere h\u0131zl\u0131 eri\u015fim</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
@@ -325,7 +296,7 @@ export default function DashboardPage() {
               disabled={isSyncing}
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Senkronize Ediliyor...' : 'Paraşüt Senkronize Et'}
+              {isSyncing ? 'Senkronize Ediliyor...' : 'Para\u015f\u00fct Senkronize Et'}
             </Button>
             <Button
               onClick={handleViewAll}
@@ -334,7 +305,7 @@ export default function DashboardPage() {
               variant="outline"
             >
               <Eye className="w-4 h-4 mr-2" />
-              Tüm Teklifleri Gör
+              T\u00fcm Teklifleri G\u00f6r
             </Button>
           </CardContent>
         </Card>
@@ -346,41 +317,47 @@ export default function DashboardPage() {
           <CardDescription>En son 10 teklif</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Teklif No</TableHead>
-                  <TableHead>İstemci</TableHead>
-                  <TableHead className="text-right">Tutar</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead className="text-right">Tarih</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockProposals.map((proposal) => {
-                  const statusInfo = statusConfig[proposal.status as keyof typeof statusConfig];
-                  return (
-                    <TableRow key={proposal.id} className="hover:bg-muted/50 cursor-pointer">
-                      <TableCell className="font-mono text-sm">{proposal.number}</TableCell>
-                      <TableCell className="font-medium">{proposal.client}</TableCell>
-                      <TableCell className="text-right font-semibold">{proposal.amount}</TableCell>
-                      <TableCell>
-                        <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {proposal.daysAgo} gün önce
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          {proposals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Hen\u00fcz teklif bulunmuyor.
+            </div>
+          ) : (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Teklif No</TableHead>
+                    <TableHead>\u0130stemci</TableHead>
+                    <TableHead className="text-right">Tutar</TableHead>
+                    <TableHead>Durum</TableHead>
+                    <TableHead className="text-right">Tarih</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {proposals.map((proposal: any) => {
+                    const statusInfo = statusConfig[proposal.status as keyof typeof statusConfig] || statusConfig.DRAFT;
+                    return (
+                      <TableRow key={proposal.id} className="hover:bg-muted/50 cursor-pointer">
+                        <TableCell className="font-mono text-sm">{proposal.proposalNumber}</TableCell>
+                        <TableCell className="font-medium">{proposal.customer?.name ?? '-'}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatAmount(Number(proposal.grandTotal) || 0)}</TableCell>
+                        <TableCell>
+                          <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">
+                          {formatDate(proposal.createdAt)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
           <div className="flex justify-center mt-6">
             <Button onClick={handleViewAll} variant="outline">
-              Tüm Teklifleri Görüntüle
+              T\u00fcm Teklifleri G\u00f6r\u00fcnt\u00fcle
             </Button>
           </div>
         </CardContent>

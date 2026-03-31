@@ -10,6 +10,7 @@ import {
   ApiResponse,
 } from '@/shared/utils/errorHandler';
 import { sanitizeInput } from '@/shared/utils/sanitize';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 
 /**
  * Audit log entry response type
@@ -79,18 +80,19 @@ interface AuditLogsQuery {
 async function handleGet(
   req: NextRequest
 ): Promise<Response> {
-  // Extract user info from request (would come from auth middleware)
-  const userId = req.headers.get('x-user-id');
-  const userRole = req.headers.get('x-user-role');
-  const tenantId = req.headers.get('x-tenant-id');
+  // Get session from auth middleware
+  const session = await getServerSessionWithAuth();
+  if (!session) {
+    throw badRequest('Authentication required');
+  }
 
-  // Validate authentication
+  const userId = session.user.id;
+  const userRole = (session as any).user?.role || 'OWNER';
+  const tenantId = session.tenant.id;
+
+  // Validate authorization
   assertAuthenticated(userId);
   assertAuthorized(userRole, ['OWNER', 'ADMIN']);
-
-  if (!tenantId) {
-    throw badRequest('Tenant ID is required');
-  }
 
   // Parse and validate query parameters
   const { searchParams } = new URL(req.url);

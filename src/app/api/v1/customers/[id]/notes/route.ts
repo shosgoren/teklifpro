@@ -1,104 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { AuditLogger } from '@/lib/audit/auditLogger';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 
-// Validasyon semalari
 const createNoteSchema = z.object({
   content: z.string().min(1, 'Not icerigi bos olamaz').max(5000),
-  type: z.enum(['note', 'call', 'meeting', 'email', 'task']),
-  isPinned: z.boolean().optional().default(false),
 });
-
-const updateNoteSchema = z.object({
-  noteId: z.string().min(1, 'Gecerli bir not ID\'si gereklidir'),
-  content: z.string().min(1, 'Not icerigi bos olamaz').max(5000).optional(),
-  isPinned: z.boolean().optional(),
-});
-
-const deleteNoteSchema = z.object({
-  noteId: z.string().min(1, 'Gecerli bir not ID\'si gereklidir'),
-});
-
-const listNotesSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  type: z.enum(['note', 'call', 'meeting', 'email', 'task']).optional(),
-});
-
-interface NoteResponse {
-  id: string;
-  content: string;
-  type: 'note' | 'call' | 'meeting' | 'email' | 'task';
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  isPinned: boolean;
-  attachmentsCount: number;
-}
-
-interface ListNotesResponse {
-  data: NoteResponse[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNextPage: boolean;
-  };
-}
 
 /**
  * GET /api/v1/customers/[id]/notes
- * Note: Note model is not yet implemented in the database schema.
- * This endpoint returns an empty list until the Note model is added.
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { searchParams } = new URL(req.url);
-
-    const queryParams = listNotesSchema.parse({
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-      type: searchParams.get('type'),
-    });
+    const session = await getServerSessionWithAuth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const customerId = params.id;
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
+    const skip = (page - 1) * limit;
 
-    // Verify customer exists
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+    // Verify customer belongs to tenant
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, tenantId: session.tenant.id, deletedAt: null },
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Musteri bulunamadi' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Musteri bulunamadi' }, { status: 404 });
     }
 
-    // Note model is not yet in the schema - return empty for now
-    const response: ListNotesResponse = {
-      data: [],
-      pagination: {
-        page: queryParams.page,
-        limit: queryParams.limit,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-      },
-    };
+    const [notes, total] = await Promise.all([
+      prisma.customerNote.findMany({
+        where: { customerId, deletedAt: null },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.customerNote.count({
+        where: { customerId, deletedAt: null },
+      }),
+    ]);
 
-    return NextResponse.json(response);
+    return NextResponse.json({
+      success: true,
+      data: notes,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: skip + limit < total,
+      },
+    });
   } catch (error) {
     console.error('GET /api/v1/customers/[id]/notes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -110,69 +75,45 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const customerId = params.id;
     const body = await req.json();
     const validatedData = createNoteSchema.parse(body);
 
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+    // Verify customer belongs to tenant
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, tenantId: session.tenant.id, deletedAt: null },
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Musteri bulunamadi' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Musteri bulunamadi' }, { status: 404 });
     }
 
-    // Note model is not yet in the schema
-    return NextResponse.json(
-      { error: 'Note model is not yet implemented' },
-      { status: 501 }
-    );
+    const note = await prisma.customerNote.create({
+      data: {
+        customerId,
+        userId: session.user.id,
+        content: validatedData.content,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return NextResponse.json({ success: true, data: note }, { status: 201 });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.errors },
+        { status: 400 }
+      );
+    }
     console.error('POST /api/v1/customers/[id]/notes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PUT /api/v1/customers/[id]/notes
- */
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const customerId = params.id;
-    const body = await req.json();
-    const validatedData = updateNoteSchema.parse(body);
-
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
-    });
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: 'Musteri bulunamadi' },
-        { status: 404 }
-      );
-    }
-
-    // Note model is not yet in the schema
-    return NextResponse.json(
-      { error: 'Note model is not yet implemented' },
-      { status: 501 }
-    );
-  } catch (error) {
-    console.error('PUT /api/v1/customers/[id]/notes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -184,38 +125,37 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const customerId = params.id;
     const { searchParams } = new URL(req.url);
     const noteId = searchParams.get('noteId');
 
     if (!noteId) {
-      return NextResponse.json(
-        { error: 'noteId query parametresi gereklidir' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'noteId query parametresi gereklidir' }, { status: 400 });
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+    // Verify customer belongs to tenant
+    const customer = await prisma.customer.findFirst({
+      where: { id: customerId, tenantId: session.tenant.id, deletedAt: null },
     });
 
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Musteri bulunamadi' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Musteri bulunamadi' }, { status: 404 });
     }
 
-    // Note model is not yet in the schema
-    return NextResponse.json(
-      { error: 'Note model is not yet implemented' },
-      { status: 501 }
-    );
+    // Soft delete
+    await prisma.customerNote.update({
+      where: { id: noteId },
+      data: { deletedAt: new Date() },
+    });
+
+    return NextResponse.json({ success: true, message: 'Not silindi' });
   } catch (error) {
     console.error('DELETE /api/v1/customers/[id]/notes error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

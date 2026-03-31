@@ -1,14 +1,26 @@
 import { type NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/shared/utils/prisma'
 
 /**
  * NextAuth options for TeklifPro
- * Supports credentials-based authentication
+ * Supports credentials and Google OAuth authentication
  */
 export const authOptions: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
+    }),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
@@ -73,12 +85,62 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google') {
+        try {
+          const existingUser = await prisma.user.findFirst({
+            where: { email: user.email! },
+          })
+
+          if (!existingUser) {
+            // Auto-create tenant and user for Google OAuth
+            const tenant = await prisma.tenant.create({
+              data: {
+                name: user.name || 'My Company',
+                email: user.email!,
+                slug: user.email!.split('@')[0] + '-' + Date.now(),
+                plan: 'STARTER',
+                isActive: true,
+              },
+            })
+
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name || '',
+                role: 'OWNER',
+                isActive: true,
+                emailVerified: true,
+                tenantId: tenant.id,
+              },
+            })
+          }
+          return true
+        } catch (error) {
+          console.error('Google OAuth error:', error)
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, trigger, session, account }) {
       // Initial signin
       if (user) {
-        token.id = user.id
-        token.tenantId = (user as any).tenantId
-        token.role = (user as any).role
+        if (account?.provider === 'google') {
+          // Fetch full user data for Google OAuth users
+          const dbUser = await prisma.user.findFirst({
+            where: { email: user.email! },
+          })
+          if (dbUser) {
+            token.id = dbUser.id
+            token.tenantId = dbUser.tenantId
+            token.role = dbUser.role
+          }
+        } else {
+          token.id = user.id
+          token.tenantId = (user as any).tenantId
+          token.role = (user as any).role
+        }
       }
 
       // Update token on refresh
@@ -100,9 +162,9 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/tr/login',
-    error: '/tr/login',
-    newUser: '/tr/register',
+    signIn: '/login',
+    error: '/login',
+    newUser: '/register',
   },
   session: {
     strategy: 'jwt',

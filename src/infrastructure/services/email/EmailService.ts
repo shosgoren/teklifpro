@@ -362,14 +362,14 @@ export class EmailService {
               </div>
 
               <p>Teklifi görmek için aşağıdaki butona tıklayın:</p>
-              <a href="${viewUrl}" class="button">Tekliği Görüntüle</a>
+              <a href="${viewUrl}" class="button">Teklifi Görüntüle</a>
 
               <p style="color: #666; font-size: 14px; margin-top: 30px;">
                 Bu teklif müşterinizin tarafından görüntülenebilir ve yanıtlanabilir.
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>
@@ -422,7 +422,7 @@ export class EmailService {
               <a href="${dashboardUrl}" class="button">Panoya Git</a>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>
@@ -465,7 +465,7 @@ export class EmailService {
               <a href="${dashboardUrl}" class="button">Detayları Görüntüle</a>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>
@@ -513,10 +513,10 @@ export class EmailService {
               </div>
 
               <p>Teklifinizi güncellemek için aşağıdaki butona tıklayın:</p>
-              <a href="${dashboardUrl}" class="button">Tekliği Güncelle</a>
+              <a href="${dashboardUrl}" class="button">Teklifi Güncelle</a>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>
@@ -573,7 +573,7 @@ export class EmailService {
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>
@@ -625,7 +625,7 @@ export class EmailService {
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2024 TeklifPro. Tüm hakları saklıdır.</p>
+              <p>&copy; 2026 TeklifPro. Tüm hakları saklıdır.</p>
             </div>
           </div>
         </body>

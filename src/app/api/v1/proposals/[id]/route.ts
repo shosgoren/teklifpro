@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 
 // Validation schemas
 const UpdateProposalSchema = z.object({
@@ -34,10 +35,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const proposalId = params.id;
 
     const proposal = await prisma.proposal.findUnique({
-      where: { id: proposalId, deletedAt: null },
+      where: { id: proposalId, tenantId: session.tenant.id, deletedAt: null },
       include: {
         customer: {
           select: {
@@ -97,13 +103,18 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const proposalId = params.id;
     const body = await request.json();
 
     const validatedData = UpdateProposalSchema.parse(body);
 
     const existingProposal = await prisma.proposal.findUnique({
-      where: { id: proposalId, deletedAt: null },
+      where: { id: proposalId, tenantId: session.tenant.id, deletedAt: null },
     });
 
     if (!existingProposal) {
@@ -243,10 +254,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const proposalId = params.id;
 
     const existingProposal = await prisma.proposal.findUnique({
-      where: { id: proposalId, deletedAt: null },
+      where: { id: proposalId, tenantId: session.tenant.id, deletedAt: null },
     });
 
     if (!existingProposal) {

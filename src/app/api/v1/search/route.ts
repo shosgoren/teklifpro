@@ -72,7 +72,8 @@ function calculateRelevanceScore(text: string, query: string): number {
   if (lowerText.startsWith(lowerQuery)) return 80;
 
   // Kelime basinda basliyor
-  if (new RegExp(`\\b${query}`).test(lowerText)) return 60;
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (new RegExp(`\\b${escapedQuery}`).test(lowerText)) return 60;
 
   // Icinde var
   return 30;

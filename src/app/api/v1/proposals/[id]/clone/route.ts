@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
 import { generateProposalNumber, generatePublicToken } from '@/shared/utils/proposal';
+import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 
 
 /**
@@ -92,8 +93,8 @@ export async function POST(
     }
 
     // Kullanici kimligini kontrol et
-    const userId = request.headers.get('x-user-id');
-    if (!userId) {
+    const session = await getServerSessionWithAuth();
+    if (!session) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -105,6 +106,7 @@ export async function POST(
         { status: 401 }
       );
     }
+    const userId = session.user.id;
 
     // Request body'yi validate et
     let validatedData: CloneProposalInput;

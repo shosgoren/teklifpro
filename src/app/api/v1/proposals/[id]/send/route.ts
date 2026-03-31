@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
+import { emailService } from '@/infrastructure/services/email/EmailService';
 
 // Validation schema
 const SendProposalSchema = z.object({
@@ -134,8 +135,16 @@ Iyi calismalar!`.trim();
         );
       }
 
-      // TODO: Implement email sending
-      console.log('Email sending would be implemented here');
+      const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.publicToken}`;
+      await emailService.sendProposalEmail({
+        to: sentTo,
+        clientName: proposal.customer.name,
+        proposalNumber: proposal.proposalNumber,
+        proposalTitle: proposal.title,
+        grandTotal: `${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY`,
+        proposalUrl,
+        companyName: tenant.name,
+      });
     } else if (payload.method === 'sms') {
       sentTo = proposal.customer.phone || '';
 

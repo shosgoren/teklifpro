@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import useSWR from 'swr';
 import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,24 +18,13 @@ import { Card } from '@/components/ui/card';
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
 
-interface Proposal {
-  id: string;
-  number: string;
-  customerName: string;
-  title: string;
-  amount: number;
-  status: ProposalStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  viewedAt: Date | null;
-  viewCount: number;
-}
-
 interface StatCard {
   label: string;
   value: string | number;
   highlight?: boolean;
 }
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const STATUS_COLORS: Record<ProposalStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-800',
@@ -47,269 +38,89 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
 
 const STATUS_LABELS: Record<ProposalStatus, string> = {
   DRAFT: 'Taslak',
-  SENT: 'Gönderildi',
-  VIEWED: 'Görüntülendi',
+  SENT: 'G\u00f6nderildi',
+  VIEWED: 'G\u00f6r\u00fcnt\u00fclendi',
   ACCEPTED: 'Kabul',
   REJECTED: 'Red',
   REVISION_REQUESTED: 'Revize',
-  EXPIRED: 'Süresi Doldu',
+  EXPIRED: 'S\u00fcresi Doldu',
 };
-
-// Mock data - 15 sample proposals
-const MOCK_PROPOSALS: Proposal[] = [
-  {
-    id: '1',
-    number: 'TKL-2026-001',
-    customerName: 'Acme Corporation',
-    title: 'Yazılım Geliştirme Hizmetleri',
-    amount: 45000,
-    status: 'ACCEPTED',
-    createdAt: new Date('2026-03-15'),
-    updatedAt: new Date('2026-03-25'),
-    viewedAt: new Date('2026-03-17'),
-    viewCount: 5,
-  },
-  {
-    id: '2',
-    number: 'TKL-2026-002',
-    customerName: 'Tech Solutions Ltd',
-    title: 'Web Tasarımı Projesi',
-    amount: 12500,
-    status: 'SENT',
-    createdAt: new Date('2026-03-20'),
-    updatedAt: new Date('2026-03-20'),
-    viewedAt: null,
-    viewCount: 0,
-  },
-  {
-    id: '3',
-    number: 'TKL-2026-003',
-    customerName: 'Digital Ventures',
-    title: 'Mobil Uygulama Geliştirme',
-    amount: 65000,
-    status: 'REVISION_REQUESTED',
-    createdAt: new Date('2026-03-10'),
-    updatedAt: new Date('2026-03-28'),
-    viewedAt: new Date('2026-03-12'),
-    viewCount: 3,
-  },
-  {
-    id: '4',
-    number: 'TKL-2026-004',
-    customerName: 'StartUp Hub',
-    title: 'Danışmanlık Hizmetleri',
-    amount: 8500,
-    status: 'VIEWED',
-    createdAt: new Date('2026-03-18'),
-    updatedAt: new Date('2026-03-22'),
-    viewedAt: new Date('2026-03-22'),
-    viewCount: 2,
-  },
-  {
-    id: '5',
-    number: 'TKL-2026-005',
-    customerName: 'Enterprise Global',
-    title: 'Sistem Entegrasyonu',
-    amount: 125000,
-    status: 'DRAFT',
-    createdAt: new Date('2026-03-28'),
-    updatedAt: new Date('2026-03-29'),
-    viewedAt: null,
-    viewCount: 0,
-  },
-  {
-    id: '6',
-    number: 'TKL-2026-006',
-    customerName: 'Innovation Labs',
-    title: 'API Geliştirme',
-    amount: 35000,
-    status: 'ACCEPTED',
-    createdAt: new Date('2026-02-15'),
-    updatedAt: new Date('2026-02-28'),
-    viewedAt: new Date('2026-02-17'),
-    viewCount: 4,
-  },
-  {
-    id: '7',
-    number: 'TKL-2026-007',
-    customerName: 'Business Partners Inc',
-    title: 'Veri Analitik Çözümü',
-    amount: 55000,
-    status: 'REJECTED',
-    createdAt: new Date('2026-03-01'),
-    updatedAt: new Date('2026-03-08'),
-    viewedAt: new Date('2026-03-02'),
-    viewCount: 1,
-  },
-  {
-    id: '8',
-    number: 'TKL-2026-008',
-    customerName: 'Cloud Services Co',
-    title: 'Altyapı Kurulumu',
-    amount: 95000,
-    status: 'SENT',
-    createdAt: new Date('2026-03-25'),
-    updatedAt: new Date('2026-03-26'),
-    viewedAt: null,
-    viewCount: 0,
-  },
-  {
-    id: '9',
-    number: 'TKL-2026-009',
-    customerName: 'Marketing Pro',
-    title: 'Dijital Pazarlama Kampanyası',
-    amount: 18500,
-    status: 'VIEWED',
-    createdAt: new Date('2026-03-12'),
-    updatedAt: new Date('2026-03-19'),
-    viewedAt: new Date('2026-03-19'),
-    viewCount: 3,
-  },
-  {
-    id: '10',
-    number: 'TKL-2026-010',
-    customerName: 'Retail Solutions',
-    title: 'E-ticaret Platformu',
-    amount: 145000,
-    status: 'DRAFT',
-    createdAt: new Date('2026-03-27'),
-    updatedAt: new Date('2026-03-29'),
-    viewedAt: null,
-    viewCount: 0,
-  },
-  {
-    id: '11',
-    number: 'TKL-2026-011',
-    customerName: 'Financial Group',
-    title: 'Siber Güvenlik Çözümü',
-    amount: 78000,
-    status: 'ACCEPTED',
-    createdAt: new Date('2026-02-20'),
-    updatedAt: new Date('2026-03-05'),
-    viewedAt: new Date('2026-02-22'),
-    viewCount: 6,
-  },
-  {
-    id: '12',
-    number: 'TKL-2026-012',
-    customerName: 'Manufacturing Ltd',
-    title: 'ERP Sistemi Kurulumu',
-    amount: 210000,
-    status: 'VIEWED',
-    createdAt: new Date('2026-03-08'),
-    updatedAt: new Date('2026-03-16'),
-    viewedAt: new Date('2026-03-16'),
-    viewCount: 4,
-  },
-  {
-    id: '13',
-    number: 'TKL-2026-013',
-    customerName: 'Healthcare Plus',
-    title: 'Hastane Yönetim Sistemi',
-    amount: 185000,
-    status: 'EXPIRED',
-    createdAt: new Date('2025-12-15'),
-    updatedAt: new Date('2026-01-15'),
-    viewedAt: new Date('2026-01-01'),
-    viewCount: 2,
-  },
-  {
-    id: '14',
-    number: 'TKL-2026-014',
-    customerName: 'Logistics Network',
-    title: 'Lojistik Takip Sistemi',
-    amount: 75000,
-    status: 'SENT',
-    createdAt: new Date('2026-03-22'),
-    updatedAt: new Date('2026-03-23'),
-    viewedAt: null,
-    viewCount: 0,
-  },
-  {
-    id: '15',
-    number: 'TKL-2026-015',
-    customerName: 'Education Board',
-    title: 'Öğrenci Yönetim Sistemi',
-    amount: 52000,
-    status: 'DRAFT',
-    createdAt: new Date('2026-03-29'),
-    updatedAt: new Date('2026-03-29'),
-    viewedAt: null,
-    viewCount: 0,
-  },
-];
 
 const ITEMS_PER_PAGE = 10;
 
 export default function ProposalsPage() {
   const router = useRouter();
+  const locale = useLocale();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredProposals = useMemo(() => {
-    return MOCK_PROPOSALS.filter((proposal) => {
-      const matchesSearch =
-        proposal.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        proposal.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        proposal.title.toLowerCase().includes(searchTerm.toLowerCase());
+  const queryParams = new URLSearchParams({
+    page: currentPage.toString(),
+    limit: ITEMS_PER_PAGE.toString(),
+    ...(searchTerm && { search: searchTerm }),
+    ...(statusFilter !== 'ALL' && { status: statusFilter }),
+  });
 
-      const matchesStatus = statusFilter === 'ALL' || proposal.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchTerm, statusFilter]);
-
-  const totalPages = Math.ceil(filteredProposals.length / ITEMS_PER_PAGE);
-  const paginatedProposals = filteredProposals.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+  const { data, error, isLoading, mutate } = useSWR(
+    `/api/v1/proposals?${queryParams.toString()}`,
+    fetcher
   );
+
+  const proposals = data?.data?.proposals ?? [];
+  const pagination = data?.data?.pagination ?? { total: 0, totalPages: 1, page: 1 };
+  const totalPages = pagination.totalPages;
 
   const stats: StatCard[] = [
     {
       label: 'Toplam Teklif',
-      value: MOCK_PROPOSALS.length,
+      value: pagination.total,
     },
     {
       label: 'Bekleyen',
-      value: MOCK_PROPOSALS.filter((p) => p.status === 'SENT').length,
+      value: proposals.filter((p: any) => p.status === 'SENT').length,
     },
     {
       label: 'Kabul Edilen',
-      value: MOCK_PROPOSALS.filter((p) => p.status === 'ACCEPTED').length,
+      value: proposals.filter((p: any) => p.status === 'ACCEPTED').length,
       highlight: true,
     },
     {
-      label: 'Toplam Değer',
-      value: `₺${(MOCK_PROPOSALS.reduce((sum, p) => sum + p.amount, 0) / 1000).toFixed(1)}K`,
+      label: 'Toplam De\u011fer',
+      value: `\u20ba${(proposals.reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0) / 1000).toFixed(1)}K`,
     },
   ];
 
   const handleRowClick = (id: string) => {
-    router.push(`/proposals/${id}`);
+    router.push(`/${locale}/proposals/${id}`);
   };
 
   const handleCopyLink = (e: React.MouseEvent, number: string) => {
     e.stopPropagation();
     const link = `${window.location.origin}/proposals/${number}`;
     navigator.clipboard.writeText(link);
-    alert('Link kopyalandı!');
+    alert('Link kopyaland\u0131!');
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('Bu teklifi silmek istediğinizden emin misiniz?')) {
-      alert(`Teklif ${id} silindi`);
+    if (!confirm('Bu teklifi silmek istedi\u011finizden emin misiniz?')) return;
+    try {
+      await fetch(`/api/v1/proposals/${id}`, { method: 'DELETE' });
+      mutate();
+    } catch (err) {
+      console.error('Silme hatas\u0131:', err);
+      alert('Silme i\u015flemi s\u0131ras\u0131nda hata olu\u015ftu.');
     }
   };
 
   const handleWhatsApp = (e: React.MouseEvent, customerName: string) => {
     e.stopPropagation();
-    alert(`${customerName} için WhatsApp mesajı gönderme sayfasına yönlendirileceksiniz`);
+    alert(`${customerName} i\u00e7in WhatsApp mesaj\u0131 g\u00f6nderme sayfas\u0131na y\u00f6nlendirileceksiniz`);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
     return date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
@@ -321,6 +132,41 @@ export default function ProposalsPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6">Teklifler</h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="p-4 border-0 bg-white">
+                <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mb-2" />
+                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded" />
+              </Card>
+            ))}
+          </div>
+          <Card className="border border-gray-200 overflow-hidden">
+            <div className="p-8 space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-12 bg-gray-100 animate-pulse rounded" />
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+        <div className="text-center py-12 text-red-600">
+          Veriler y\u00fcklenirken hata olu\u015ftu. L\u00fctfen sayfay\u0131 yenileyin.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -353,7 +199,7 @@ export default function ProposalsPage() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Teklif No, Müşteri, Başlık..."
+                  placeholder="Teklif No, M\u00fc\u015fteri, Ba\u015fl\u0131k..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -370,13 +216,13 @@ export default function ProposalsPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-full justify-between">
-                    {statusFilter === 'ALL' ? 'Tümü' : STATUS_LABELS[statusFilter as ProposalStatus]}
+                    {statusFilter === 'ALL' ? 'T\u00fcm\u00fc' : STATUS_LABELS[statusFilter as ProposalStatus]}
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuItem onClick={() => { setStatusFilter('ALL'); setCurrentPage(1); }}>
-                    Tümü
+                    T\u00fcm\u00fc
                   </DropdownMenuItem>
                   {(Object.keys(STATUS_LABELS) as ProposalStatus[]).map((status) => (
                     <DropdownMenuItem
@@ -392,7 +238,7 @@ export default function ProposalsPage() {
 
             {/* New Proposal Button */}
             <Button
-              onClick={() => router.push('/proposals/new')}
+              onClick={() => router.push(`/${locale}/proposals/new`)}
               className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -409,38 +255,36 @@ export default function ProposalsPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Teklif No</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Müşteri</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Başlık</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">M\u00fc\u015fteri</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Ba\u015fl\u0131k</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Tutar</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Durum</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Oluşturulma</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Son Güncelleme</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Görüntülenme</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">İşlemler</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Olu\u015fturulma</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Son G\u00fcncelleme</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">\u0130\u015flemler</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedProposals.length > 0 ? (
-                paginatedProposals.map((proposal) => (
+              {proposals.length > 0 ? (
+                proposals.map((proposal: any) => (
                   <tr
                     key={proposal.id}
                     onClick={() => handleRowClick(proposal.id)}
                     className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{proposal.number}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{proposal.customerName}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{proposal.proposalNumber}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{proposal.customer?.name ?? '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{proposal.title}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
-                      {formatAmount(proposal.amount)}
+                      {formatAmount(Number(proposal.grandTotal) || 0)}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      <Badge className={`${STATUS_COLORS[proposal.status]}`}>
-                        {STATUS_LABELS[proposal.status]}
+                      <Badge className={`${STATUS_COLORS[proposal.status as ProposalStatus] || ''}`}>
+                        {STATUS_LABELS[proposal.status as ProposalStatus] || proposal.status}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{formatDate(proposal.createdAt)}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{formatDate(proposal.updatedAt)}</td>
-                    <td className="px-4 py-3 text-sm text-center text-gray-600">{proposal.viewCount}</td>
                     <td className="px-4 py-3 text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -451,21 +295,21 @@ export default function ProposalsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleRowClick(proposal.id)}>
                             <Eye className="h-4 w-4 mr-2" />
-                            Görüntüle
+                            G\u00f6r\u00fcnt\u00fcle
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push(`/proposals/${proposal.id}/edit`)}>
+                          <DropdownMenuItem onClick={() => router.push(`/${locale}/proposals/${proposal.id}/edit`)}>
                             <Edit className="h-4 w-4 mr-2" />
-                            Düzenle
+                            D\u00fczenle
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => alert(`Teklif ${proposal.id} kopyalanıyor...`)}>
+                          <DropdownMenuItem onClick={() => alert(`Teklif ${proposal.id} kopyalan\u0131yor...`)}>
                             <Copy className="h-4 w-4 mr-2" />
                             Kopyala
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => handleWhatsApp(e, proposal.customerName)}>
+                          <DropdownMenuItem onClick={(e) => handleWhatsApp(e, proposal.customer?.name ?? '')}>
                             <MessageCircle className="h-4 w-4 mr-2" />
-                            WhatsApp Gönder
+                            WhatsApp G\u00f6nder
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => handleCopyLink(e, proposal.number)}>
+                          <DropdownMenuItem onClick={(e) => handleCopyLink(e, proposal.proposalNumber)}>
                             <Link className="h-4 w-4 mr-2" />
                             Link Kopyala
                           </DropdownMenuItem>
@@ -483,8 +327,8 @@ export default function ProposalsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                    Teklif bulunamadı
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    Teklif bulunamad\u0131
                   </td>
                 </tr>
               )}
@@ -496,9 +340,9 @@ export default function ProposalsPage() {
         {totalPages > 1 && (
           <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              {paginatedProposals.length > 0 && (
+              {proposals.length > 0 && (
                 <>
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProposals.length)} / {filteredProposals.length}
+                  {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, pagination.total)} / {pagination.total}
                 </>
               )}
             </p>

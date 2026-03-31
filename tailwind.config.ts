@@ -137,7 +137,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  darkMode: 'class',
+  plugins: [require('tailwindcss-animate')],
 }
 
 export default config

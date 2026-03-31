@@ -103,6 +103,47 @@
         "cta": "Start Free Trial",
         "popular": "Most Popular"
       }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "q": "Can I use it without a Parasut account?",
+          "a": "Yes! Parasut integration is optional. You can enter your customer and product information manually. However, if you connect Parasut, all your data will sync automatically."
+        },
+        {
+          "q": "How does the WhatsApp integration work?",
+          "a": "We use the WhatsApp Business API. When you prepare a proposal, an interactive proposal link is sent to the relevant contact with a single click. The customer can review the proposal and accept, request a revision, or reject it through this link."
+        },
+        {
+          "q": "How does the 14-day trial work?",
+          "a": "After signing up, you can use all Professional plan features free for 14 days. No credit card required. When the trial period ends, simply choose a plan."
+        },
+        {
+          "q": "Is my data secure?",
+          "a": "All your data is encrypted with SSL/TLS. We use GDPR-compliant infrastructure. Your data is hosted on servers in the Europe (Frankfurt) region."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Get Started Today",
+      "subtitle": "14 days free, no credit card required.",
+      "button": "Create Free Account"
+    },
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "features": "Features",
+      "pricing": "Pricing",
+      "integrations": "Integrations",
+      "about": "About Us",
+      "blog": "Blog",
+      "contact": "Contact",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "kvkk": "Data Protection Notice",
+      "copyright": "© 2026 TeklifPro. All rights reserved."
     }
   },
   "auth": {
@@ -115,12 +156,7 @@
       "google": "Sign in with Google",
       "forgotPassword": "Forgot Password",
       "noAccount": "Don't have an account?",
-      "register": "Sign Up",
-      "login": "Sign In",
-      "logging": "Signing in...",
-      "googleAuth": "Sign in with Google",
-      "rememberMe": "Remember me",
-      "or": "or"
+      "register": "Sign Up"
     },
     "register": {
       "title": "Create Account",
@@ -135,17 +171,74 @@
       "google": "Sign up with Google",
       "hasAccount": "Already have an account?",
       "login": "Sign In",
-      "register": "Sign Up",
-      "registering": "Signing up...",
-      "googleAuth": "Sign up with Google",
-      "fullName": "Full Name",
-      "or": "or",
-      "haveAccount": "Already have an account?"
+      "terms": "By signing up, you agree to our {terms} and {privacy}.",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy"
+    }
+  },
+  "onboarding": {
+    "title": "Let's Set Up Your Account",
+    "steps": {
+      "company": "Company Information",
+      "parasut": "Parasut Integration",
+      "whatsapp": "WhatsApp Settings",
+      "done": "You're All Set!"
+    },
+    "parasut": {
+      "title": "Connect Your Parasut Account",
+      "subtitle": "Your customer and product cards will be synced automatically",
+      "companyId": "Company ID",
+      "companyIdHelp": "You can find it in the URL on your Parasut homepage: app.parasut.com/{companyID}",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "credentialHelp": "You can create these from Parasut > Settings > API Integrations",
+      "username": "Parasut Email",
+      "password": "Parasut Password",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "connected": "Connection successful!",
+      "failed": "Connection failed. Please check your credentials.",
+      "skip": "Skip for Now",
+      "skipNote": "You can connect later from Settings > Parasut."
+    },
+    "complete": {
+      "title": "All Set!",
+      "subtitle": "You can start creating your first proposal.",
+      "startButton": "Create First Proposal",
+      "dashboardButton": "Go to Dashboard"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {name}!",
+    "stats": {
+      "totalProposals": "Total Proposals",
+      "sent": "Sent",
+      "accepted": "Accepted",
+      "acceptanceRate": "Acceptance Rate",
+      "totalRevenue": "Total Revenue",
+      "avgResponseTime": "Avg. Response Time"
+    },
+    "recentProposals": "Recent Proposals",
+    "quickActions": {
+      "title": "Quick Actions",
+      "newProposal": "New Proposal",
+      "syncParasut": "Sync with Parasut",
+      "viewAll": "View All Proposals"
     }
   },
   "proposals": {
     "title": "Proposals",
     "new": "New Proposal",
+    "list": {
+      "number": "Proposal No",
+      "customer": "Customer",
+      "title": "Title",
+      "total": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions"
+    },
     "status": {
       "DRAFT": "Draft",
       "SENT": "Sent",
@@ -156,6 +249,82 @@
       "REVISED": "Revised",
       "EXPIRED": "Expired",
       "CANCELLED": "Cancelled"
+    },
+    "create": {
+      "title": "Create New Proposal",
+      "step1": "Select Customer",
+      "step2": "Add Products",
+      "step3": "Details",
+      "step4": "Preview & Send",
+      "selectCustomer": "Select or search for a customer...",
+      "selectContact": "Select a contact",
+      "proposalTitle": "Proposal Title",
+      "addProduct": "Add Product",
+      "searchProduct": "Search products...",
+      "quantity": "Quantity",
+      "unitPrice": "Unit Price",
+      "discount": "Discount %",
+      "vat": "VAT %",
+      "lineTotal": "Line Total",
+      "subtotal": "Subtotal",
+      "generalDiscount": "General Discount",
+      "vatTotal": "VAT Total",
+      "grandTotal": "Grand Total",
+      "validityDays": "Validity (days)",
+      "paymentTerms": "Payment Terms",
+      "deliveryTerms": "Delivery Terms",
+      "notes": "Notes",
+      "preview": "Preview",
+      "saveDraft": "Save as Draft",
+      "sendWhatsApp": "Send via WhatsApp",
+      "sendEmail": "Send via Email",
+      "copyLink": "Copy Link"
     }
+  },
+  "customers": {
+    "title": "Customers",
+    "syncFromParasut": "Sync from Parasut",
+    "syncing": "Syncing...",
+    "syncSuccess": "{count} customers synced",
+    "addManual": "Add Manually"
+  },
+  "products": {
+    "title": "Products",
+    "syncFromParasut": "Sync from Parasut",
+    "syncing": "Syncing...",
+    "syncSuccess": "{count} products synced",
+    "addManual": "Add Manually"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "general": "General",
+      "parasut": "Parasut",
+      "whatsapp": "WhatsApp",
+      "team": "Team",
+      "billing": "Subscription"
+    }
+  },
+  "publicProposal": {
+    "header": "Proposal",
+    "from": "From",
+    "to": "To",
+    "date": "Date",
+    "validUntil": "Valid Until",
+    "items": "Proposal Items",
+    "totals": "Total",
+    "actions": {
+      "title": "Do you accept this proposal?",
+      "accept": "Accept Proposal",
+      "revise": "Request Revision",
+      "reject": "Reject Proposal",
+      "acceptConfirm": "Do you confirm that you accept this proposal?",
+      "revisePrompt": "Please describe your revision request:",
+      "rejectPrompt": "Would you like to provide a reason for rejection? (optional)"
+    },
+    "accepted": "This proposal has been accepted.",
+    "rejected": "This proposal has been rejected.",
+    "revisionRequested": "A revision has been requested for this proposal.",
+    "expired": "This proposal has expired."
   }
 }
