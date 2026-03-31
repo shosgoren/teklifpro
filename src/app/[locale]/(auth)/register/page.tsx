@@ -107,9 +107,9 @@ export default function RegisterPage() {
       </div>
 
       <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <div className="p-8">
+        <div className="p-5">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-3">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
               TeklifPro
             </h1>
@@ -118,14 +118,14 @@ export default function RegisterPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
           )}
 
           {/* Form */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               {/* Company Name */}
               <FormField
                 control={form.control}
