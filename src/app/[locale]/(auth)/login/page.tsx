@@ -52,7 +52,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,9 +64,10 @@ export default function LoginPage() {
         }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Login failed');
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Giriş başarısız');
       }
 
       router.push('/dashboard');
@@ -81,7 +82,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       // TODO: Implement Google OAuth
-      window.location.href = '/api/auth/google';
+      window.location.href = '/api/v1/auth/google';
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google authentication failed');
       setIsLoading(false);
