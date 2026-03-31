@@ -1,5 +1,6 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import AuthProvider from '@/shared/providers/AuthProvider';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,10 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <NextIntlClientProvider locale={params.locale} messages={messages}>
-      {children}
-    </NextIntlClientProvider>
+    <AuthProvider>
+      <NextIntlClientProvider locale={params.locale} messages={messages}>
+        {children}
+      </NextIntlClientProvider>
+    </AuthProvider>
   );
 }

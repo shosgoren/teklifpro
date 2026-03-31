@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -33,6 +34,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const t = useTranslations('auth');
+  const locale = useLocale();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,25 +54,18 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-          rememberMe: values.rememberMe,
-        }),
+      const result = await signIn('credentials', {
+        email: values.email,
+        password: values.password,
+        redirect: false,
       });
 
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error?.message || 'Giriş başarısız');
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      router.push('/dashboard');
+      router.push(`/${locale}/dashboard`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -81,8 +76,7 @@ export default function LoginPage() {
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement Google OAuth
-      window.location.href = '/api/v1/auth/google';
+      await signIn('google', { callbackUrl: `/${locale}/dashboard` });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google authentication failed');
       setIsLoading(false);

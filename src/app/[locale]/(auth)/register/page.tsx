@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -40,6 +41,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
+  const locale = useLocale();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,10 +79,24 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.error?.message || 'Registration failed');
       }
 
-      router.push('/onboarding');
+      // Auto-login after successful registration
+      const loginResult = await signIn('credentials', {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (loginResult?.error) {
+        // Registration succeeded but auto-login failed, redirect to login
+        router.push(`/${locale}/login`);
+        return;
+      }
+
+      router.push(`/${locale}/dashboard`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
@@ -91,8 +107,7 @@ export default function RegisterPage() {
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement Google OAuth
-      window.location.href = '/api/v1/auth/google';
+      await signIn('google', { callbackUrl: `/${locale}/dashboard` });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google authentication failed');
       setIsLoading(false);
@@ -107,9 +122,9 @@ export default function RegisterPage() {
       </div>
 
       <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <div className="p-5">
+        <div className="p-8">
           {/* Header */}
-          <div className="text-center mb-3">
+          <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
               TeklifPro
             </h1>
@@ -118,14 +133,14 @@ export default function RegisterPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
           )}
 
           {/* Form */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {/* Company Name */}
               <FormField
                 control={form.control}
