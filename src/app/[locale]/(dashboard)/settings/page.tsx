@@ -216,8 +216,20 @@ const SettingsPage = () => {
   const handleWhatsAppSave = async () => {
     setSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success('Ayarlar kaydedildi');
+      const res = await fetch('/api/onboarding/whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneId: whatsapp.phoneNumberId,
+          accessToken: whatsapp.accessToken,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');
+      setWhatsapp({ ...whatsapp, connected: true });
+      toast.success('WhatsApp ayarları kaydedildi');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'WhatsApp ayarları kaydedilemedi');
     } finally {
       setSaving(false);
     }

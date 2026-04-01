@@ -15,7 +15,6 @@ import {
   GripVertical,
   Send,
   FileText,
-  Copy,
   MessageSquare,
   ChevronRight,
   ChevronLeft,
@@ -851,26 +850,20 @@ function DetailsStep({
 function PreviewStep({
   data,
   totals,
+  onSaveAndSend,
+  isSending,
 }: {
   data: ProposalFormData
   totals: ReturnType<typeof calculateProposalTotals>
+  onSaveAndSend: (method: 'draft' | 'whatsapp' | 'email') => Promise<void>
+  isSending: boolean
 }) {
   const t = useTranslations()
   const [sendDialog, setSendDialog] = useState<'email' | 'whatsapp' | null>(null)
 
-  const handleSendEmail = async () => {
-    toast.success('Proposal sent via email!')
+  const handleAction = async (method: 'draft' | 'whatsapp' | 'email') => {
+    await onSaveAndSend(method)
     setSendDialog(null)
-  }
-
-  const handleSendWhatsApp = async () => {
-    toast.success('Proposal link copied to clipboard!')
-    setSendDialog(null)
-  }
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText('https://proposal.link/abc123')
-    toast.success('Link copied to clipboard!')
   }
 
   return (
@@ -957,44 +950,103 @@ function PreviewStep({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" className="gap-2 h-12 rounded-xl">
-          <FileText className="h-4 w-4" />
-          {t('proposals.saveDraft')}
-        </Button>
-        <Dialog open={sendDialog === 'email'} onOpenChange={(open) => setSendDialog(open ? 'email' : null)}>
-          <Button variant="outline" className="gap-2 h-12 rounded-xl" onClick={() => setSendDialog('email')}>
-            <Send className="h-4 w-4" />
-            {t('proposals.sendEmail')}
-          </Button>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('proposals.sendEmail')}</DialogTitle>
-              <DialogDescription>{t('proposals.emailWillSentTo')} {data.customer.email}</DialogDescription>
-            </DialogHeader>
-            <Button onClick={handleSendEmail} className="w-full rounded-xl">{t('proposals.send')}</Button>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
+      {/* Send Actions */}
+      <div className="space-y-3">
+        {/* WhatsApp - Primary CTA */}
         <Dialog open={sendDialog === 'whatsapp'} onOpenChange={(open) => setSendDialog(open ? 'whatsapp' : null)}>
-          <Button variant="outline" className="gap-2 h-12 rounded-xl" onClick={() => setSendDialog('whatsapp')}>
-            <MessageSquare className="h-4 w-4" />
+          <Button
+            className="w-full gap-3 h-14 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25 text-base font-semibold"
+            onClick={() => setSendDialog('whatsapp')}
+            disabled={isSending || !data.customer.phone}
+          >
+            <MessageSquare className="h-5 w-5" />
             {t('proposals.sendWhatsApp')}
           </Button>
-          <DialogContent>
+          <DialogContent className="rounded-2xl">
             <DialogHeader>
-              <DialogTitle>{t('proposals.sendWhatsApp')}</DialogTitle>
-              <DialogDescription>{t('proposals.whatsappMessageWillSentTo')} {data.customer.phone}</DialogDescription>
+              <DialogTitle className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-green-600" />
+                </div>
+                {t('proposals.sendWhatsApp')}
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                {t('proposals.whatsappMessageWillSentTo')}
+              </DialogDescription>
             </DialogHeader>
-            <Button onClick={handleSendWhatsApp} className="w-full rounded-xl">{t('proposals.send')}</Button>
+            <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold shrink-0">
+                {data.customer.name.charAt(0)}
+              </div>
+              <div>
+                <p className="font-semibold text-sm">{data.customer.name}</p>
+                <p className="text-sm text-green-700 dark:text-green-400">{data.customer.phone}</p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4 text-xs space-y-1">
+              <p className="font-medium text-muted-foreground mb-2">{t('proposals.preview')}:</p>
+              <p className="font-semibold">{data.title}</p>
+              <p>{t('proposals.total')}: {formatCurrency(totals.grandTotal)}</p>
+              <p className="text-blue-600 dark:text-blue-400">teklifpro.vercel.app/proposals/...</p>
+            </div>
+            <Button
+              onClick={() => handleAction('whatsapp')}
+              disabled={isSending}
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg gap-2"
+            >
+              {isSending ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ...
+                </span>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  {t('proposals.send')}
+                </>
+              )}
+            </Button>
           </DialogContent>
         </Dialog>
-        <Button variant="outline" className="gap-2 h-12 rounded-xl" onClick={handleCopyLink}>
-          <Copy className="h-4 w-4" />
-          {t('proposals.copyLink')}
-        </Button>
+
+        <div className="grid grid-cols-2 gap-3">
+          {/* Email */}
+          <Dialog open={sendDialog === 'email'} onOpenChange={(open) => setSendDialog(open ? 'email' : null)}>
+            <Button
+              variant="outline"
+              className="gap-2 h-12 rounded-xl"
+              onClick={() => setSendDialog('email')}
+              disabled={isSending || !data.customer.email}
+            >
+              <Send className="h-4 w-4" />
+              {t('proposals.sendEmail')}
+            </Button>
+            <DialogContent className="rounded-2xl">
+              <DialogHeader>
+                <DialogTitle>{t('proposals.sendEmail')}</DialogTitle>
+                <DialogDescription>{t('proposals.emailWillSentTo')} {data.customer.email}</DialogDescription>
+              </DialogHeader>
+              <Button
+                onClick={() => handleAction('email')}
+                disabled={isSending}
+                className="w-full h-12 rounded-xl gap-2"
+              >
+                {isSending ? '...' : t('proposals.send')}
+              </Button>
+            </DialogContent>
+          </Dialog>
+
+          {/* Save Draft */}
+          <Button
+            variant="outline"
+            className="gap-2 h-12 rounded-xl"
+            onClick={() => handleAction('draft')}
+            disabled={isSending}
+          >
+            <FileText className="h-4 w-4" />
+            {t('proposals.saveDraft')}
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -1073,47 +1125,92 @@ export default function CreateProposalPage() {
     { title: t('proposals.steps.preview'), icon: Eye, completed: false },
   ]
 
-  const onSubmit = async (data: ProposalFormData) => {
+  // Save proposal to DB, returns proposal ID
+  const saveProposal = async (data: ProposalFormData): Promise<string> => {
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + (data.validityDays || 30))
+
+    // Convert fixed discounts to effective percent for backend
+    const items = data.items.map(item => {
+      let discountRate = item.discountPercent || 0
+      if (item.discountType === 'fixed' && item.discountFixed > 0) {
+        const lineSubtotal = item.quantity * item.unitPrice
+        discountRate = lineSubtotal > 0 ? Math.min((item.discountFixed / lineSubtotal) * 100, 100) : 0
+      }
+      return {
+        name: item.name,
+        description: '',
+        unit: 'Adet',
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discountRate: Math.round(discountRate * 100) / 100,
+        vatRate: item.vatPercent || 18,
+      }
+    })
+
+    const payload = {
+      customerId: data.customer.id,
+      title: data.title,
+      description: data.notes || '',
+      items,
+      generalDiscount: data.generalDiscount.value > 0 ? {
+        type: data.generalDiscount.type === 'percent' ? 'PERCENTAGE' : 'FIXED',
+        value: data.generalDiscount.value,
+      } : undefined,
+      expiresAt: expiresAt.toISOString(),
+      notes: data.notes || '',
+      paymentTerms: data.paymentTerms || '',
+      deliveryTerms: data.deliveryTerms || '',
+    }
+
+    const res = await fetch('/api/v1/proposals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const result = await res.json()
+    if (!res.ok || !result.success) throw new Error(result.error || t('proposals.error'))
+    return result.data.id
+  }
+
+  // Send proposal via channel
+  const sendProposal = async (proposalId: string, method: 'whatsapp' | 'email') => {
+    const res = await fetch(`/api/v1/proposals/${proposalId}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method }),
+    })
+    const result = await res.json()
+    if (!res.ok || !result.success) throw new Error(result.error || t('proposals.error'))
+    return result.data
+  }
+
+  // Combined save & send handler for PreviewStep
+  const handleSaveAndSend = async (method: 'draft' | 'whatsapp' | 'email') => {
     if (isSubmitting) return
     setIsSubmitting(true)
     try {
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + (data.validityDays || 30))
+      const proposalId = await saveProposal(formData)
 
-      const payload = {
-        customerId: data.customer.id,
-        title: data.title,
-        description: data.notes || '',
-        items: data.items.map(item => ({
-          name: item.name,
-          description: '',
-          unit: 'Adet',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          discountRate: item.discountPercent || 0,
-          vatRate: item.vatPercent || 18,
-        })),
-        expiresAt: expiresAt.toISOString(),
-        notes: data.notes || '',
-        paymentTerms: data.paymentTerms || '',
-        deliveryTerms: data.deliveryTerms || '',
+      if (method === 'whatsapp' || method === 'email') {
+        const sendResult = await sendProposal(proposalId, method)
+        const channel = method === 'whatsapp' ? 'WhatsApp' : 'E-posta'
+        toast.success(`${t('proposals.saved')} — ${channel}: ${sendResult.sentTo}`)
+      } else {
+        toast.success(t('proposals.saved'))
       }
 
-      const res = await fetch('/api/v1/proposals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const result = await res.json()
-      if (!res.ok || !result.success) throw new Error(result.error || t('proposals.error'))
-      toast.success(t('proposals.saved'))
-      router.push(`/${locale}/proposals/${result.data.id}`)
+      router.push(`/${locale}/proposals/${proposalId}`)
     } catch (error) {
-      console.error('Proposal creation error:', error)
+      console.error('Proposal save/send error:', error)
       toast.error(error instanceof Error ? error.message : t('proposals.error'))
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const onSubmit = async (data: ProposalFormData) => {
+    await handleSaveAndSend('draft')
   }
 
   return (
@@ -1206,7 +1303,7 @@ export default function CreateProposalPage() {
                 <DetailsStep data={formData} onChange={(field, value) => setValue(field as any, value)} />
               )}
               {currentStep === 3 && (
-                <PreviewStep data={formData} totals={totals} />
+                <PreviewStep data={formData} totals={totals} onSaveAndSend={handleSaveAndSend} isSending={isSubmitting} />
               )}
             </div>
           </div>
