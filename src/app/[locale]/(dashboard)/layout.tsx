@@ -320,9 +320,20 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         <header className="bg-white/80 dark:bg-gradient-to-r dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700/50 px-4 md:px-8 py-3 shadow-sm dark:shadow-lg">
           <div className="flex items-center justify-between">
             {/* Title */}
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
-              {labels[navigationItems.find(item => isActive(item.href))?.nameKey || 'dashboard'] || 'Dashboard'}
-            </h2>
+            <div className="flex items-center gap-3 min-w-0">
+              {(() => {
+                const activeItem = navigationItems.find(item => isActive(item.href))
+                const ActiveIcon = activeItem?.icon
+                return ActiveIcon ? (
+                  <div className={`hidden sm:flex p-1.5 rounded-lg ${activeItem?.iconColor} ${activeItem?.iconColorDark} bg-slate-100 dark:bg-slate-800/50`}>
+                    <ActiveIcon className="w-4 h-4" />
+                  </div>
+                ) : null
+              })()}
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
+                {labels[navigationItems.find(item => isActive(item.href))?.nameKey || 'dashboard'] || 'Dashboard'}
+              </h2>
+            </div>
 
             {/* Right controls */}
             <div className="flex items-center gap-1">

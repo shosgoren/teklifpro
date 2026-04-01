@@ -375,26 +375,16 @@ const SettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950" onInput={markDirty} onChange={markDirty}>
-      {/* ========== Gradient Header + Tabs ========== */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 pt-5 pb-12 md:px-8 md:pt-6 md:pb-14`}>
+      {/* ========== Gradient Background + Tabs ========== */}
+      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 pt-4 pb-12 md:px-8 md:pt-5 md:pb-14`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
-
-        <div className="relative max-w-6xl mx-auto flex items-center gap-3">
-          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
-            <Settings2 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-white">{t('title')}</h1>
-            <p className="text-white/60 text-xs md:text-sm">{t('subtitle')}</p>
-          </div>
-        </div>
       </div>
 
       {/* ========== Tab Navigation ========== */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-7">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-10 md:-mt-12">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
