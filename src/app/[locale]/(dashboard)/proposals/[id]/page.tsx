@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useConfirm } from '@/shared/components/confirm-dialog';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Edit,
   MessageCircle,
@@ -20,10 +22,18 @@ import {
   FileText,
   User,
   Phone,
+  QrCode,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
@@ -108,6 +118,11 @@ export default function ProposalDetailPage() {
   );
 
   const proposal = data?.data;
+  const [showQR, setShowQR] = useState(false);
+
+  const proposalLink = proposal?.publicToken
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/proposal/${proposal.publicToken}`
+    : '';
 
   const handleEdit = () => {
     router.push(`/${locale}/proposals/${proposalId}/edit`);
@@ -307,6 +322,13 @@ export default function ProposalDetailPage() {
               title="Link Kopyala"
             >
               <Link className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setShowQR(true)}
+              className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
+              title="QR Kod"
+            >
+              <QrCode className="h-4 w-4" />
             </button>
             <button
               onClick={handleDownloadPDF}
@@ -571,6 +593,44 @@ export default function ProposalDetailPage() {
         </div>
       </div>
 
+      {/* ===== QR Code Dialog ===== */}
+      <Dialog open={showQR} onOpenChange={setShowQR}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">{t('qrCode')}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {proposalLink && (
+              <div className="p-4 bg-white rounded-2xl shadow-inner">
+                <QRCodeSVG
+                  value={proposalLink}
+                  size={220}
+                  level="M"
+                  includeMargin
+                />
+              </div>
+            )}
+            <p className="text-sm text-gray-500 text-center max-w-xs">
+              {t('qrCodeDesc')}
+            </p>
+            <p className="text-xs text-gray-400 font-mono break-all text-center px-4">
+              {proposal?.proposalNumber}
+            </p>
+            <button
+              onClick={() => {
+                if (!proposalLink) return;
+                navigator.clipboard.writeText(proposalLink);
+                toast.success(t('linkCopied'));
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl text-sm font-medium transition-colors"
+            >
+              <Link className="h-4 w-4" />
+              {t('copyLink')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ===== Mobile Sticky Bottom Bar ===== */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         <button
@@ -600,6 +660,13 @@ export default function ProposalDetailPage() {
           title="Link Kopyala"
         >
           <Link className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => setShowQR(true)}
+          className="inline-flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
+          title="QR Kod"
+        >
+          <QrCode className="h-4 w-4" />
         </button>
         <button
           onClick={handleDownloadPDF}
