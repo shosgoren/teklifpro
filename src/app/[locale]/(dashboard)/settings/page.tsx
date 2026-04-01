@@ -142,6 +142,33 @@ const SettingsPage = () => {
     setBankAccounts(bankAccounts.filter((_, i) => i !== index));
   };
 
+  const [syncingBank, setSyncingBank] = useState(false);
+  const handleSyncBankFromParasut = async () => {
+    setSyncingBank(true);
+    try {
+      const res = await fetch('/api/v1/parasut/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entities: ['bank_accounts'] }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error?.message || 'Senkronizasyon hatası');
+      // Reload tenant data to get updated bank accounts
+      await mutateTenant();
+      // Re-fetch bank accounts from updated data
+      const tenantRes = await fetch('/api/v1/settings/logo');
+      const tenantResult = await tenantRes.json();
+      if (tenantResult.success && Array.isArray(tenantResult.data?.bankAccounts)) {
+        setBankAccounts(tenantResult.data.bankAccounts);
+      }
+      toast.success(`${result.data?.bankAccounts?.synced || 0} banka hesabı Paraşüt'ten aktarıldı`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Paraşüt banka senkronizasyonu başarısız');
+    } finally {
+      setSyncingBank(false);
+    }
+  };
+
   const [parasut, setParasut] = useState({
     connected: false,
     companyId: '',
@@ -581,13 +608,25 @@ const SettingsPage = () => {
                       <p className="text-xs text-gray-400">{t('bank.desc')}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={addBankAccount}
-                    className={`inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-medium rounded-xl hover:opacity-90 text-xs shadow-md`}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    {t('bank.add')}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {parasut.connected && (
+                      <button
+                        onClick={handleSyncBankFromParasut}
+                        disabled={syncingBank}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-xs border border-emerald-200 dark:border-emerald-800 disabled:opacity-50"
+                      >
+                        {syncingBank ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Settings2 className="w-3.5 h-3.5" />}
+                        {t('bank.syncParasut')}
+                      </button>
+                    )}
+                    <button
+                      onClick={addBankAccount}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-medium rounded-xl hover:opacity-90 text-xs shadow-md`}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {t('bank.add')}
+                    </button>
+                  </div>
                 </div>
 
                 {bankAccounts.length === 0 ? (

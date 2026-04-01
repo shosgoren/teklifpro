@@ -9,7 +9,7 @@ import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddle
 // Validation schema
 const SyncRequestSchema = z.object({
   entities: z.array(
-    z.enum(['customers', 'products', 'all'])
+    z.enum(['customers', 'products', 'bank_accounts', 'all'])
   ).optional(),
 });
 
@@ -26,6 +26,10 @@ interface SyncResult {
     imported: number;
     updated: number;
     failed: number;
+    errors: string[];
+  };
+  bankAccounts?: {
+    synced: number;
     errors: string[];
   };
 }
@@ -85,8 +89,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     const syncResult: SyncResult = {};
     const entitiesToSync = payload.entities?.includes('all')
-      ? ['customers', 'products']
-      : payload.entities ?? ['customers', 'products'];
+      ? ['customers', 'products', 'bank_accounts']
+      : payload.entities ?? ['customers', 'products', 'bank_accounts'];
 
     // Sync customers
     if (entitiesToSync.includes('customers')) {
@@ -125,6 +129,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
           imported: 0,
           updated: 0,
           failed: 0,
+          errors: [error instanceof Error ? error.message : 'Unknown error'],
+        };
+      }
+    }
+
+    // Sync bank accounts
+    if (entitiesToSync.includes('bank_accounts')) {
+      try {
+        const result = await parasutClient.syncBankAccounts();
+        syncResult.bankAccounts = {
+          synced: result.synced,
+          errors: [],
+        };
+      } catch (error) {
+        console.error('Bank accounts sync error:', error);
+        syncResult.bankAccounts = {
+          synced: 0,
           errors: [error instanceof Error ? error.message : 'Unknown error'],
         };
       }

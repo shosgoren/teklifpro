@@ -429,7 +429,8 @@
       "branchName": "Branch Name",
       "accountHolder": "Account Holder",
       "currency": "Currency",
-      "save": "Save Bank Info"
+      "save": "Save Bank Info",
+      "syncParasut": "Sync from Parasut"
     },
     "followup": {
       "title": "Smart Follow-up",

@@ -509,4 +509,60 @@ export class ParasutClient {
       }
     }
   }
+
+  // ==================== BANK ACCOUNTS (Banka Hesaplari) ====================
+
+  /**
+   * Parasut'tan banka hesaplarini cek
+   */
+  async getBankAccounts(): Promise<Array<{
+    bankName: string
+    branchName: string
+    accountHolder: string
+    iban: string
+    currency: string
+  }>> {
+    const response = await this.request<{
+      data: Array<{
+        id: string
+        type: string
+        attributes: {
+          name: string
+          currency: string
+          bank_name: string
+          bank_branch: string
+          iban: string
+          account_type: string
+        }
+      }>
+    }>('bank_accounts?page[size]=25')
+
+    if (!response?.data) return []
+
+    return response.data
+      .filter(acc => acc.attributes.iban) // Only accounts with IBAN
+      .map(acc => ({
+        bankName: acc.attributes.bank_name || acc.attributes.name || '',
+        branchName: acc.attributes.bank_branch || '',
+        accountHolder: '', // Parasut doesn't expose this, will use tenant name
+        iban: acc.attributes.iban,
+        currency: acc.attributes.currency || 'TRY',
+      }))
+  }
+
+  /**
+   * Parasut'tan banka hesaplarini cekip tenant'a kaydet
+   */
+  async syncBankAccounts(): Promise<{ synced: number }> {
+    const accounts = await this.getBankAccounts()
+
+    if (accounts.length > 0) {
+      await prisma.tenant.update({
+        where: { id: this.tenantId },
+        data: { bankAccounts: accounts },
+      })
+    }
+
+    return { synced: accounts.length }
+  }
 }

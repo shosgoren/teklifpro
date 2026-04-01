@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
 
         const contactSync = await client.syncAllContacts();
         const productSync = await client.syncAllProducts();
+        const bankSync = await client.syncBankAccounts();
 
         await prisma.tenant.update({
           where: { id: tenant.id },
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
         results.push({
           tenantId: tenant.id,
           status: 'success',
-          synced: contactSync.synced + productSync.synced,
+          synced: contactSync.synced + productSync.synced + bankSync.synced,
           errors: contactSync.errors + productSync.errors,
         });
       } catch (error) {

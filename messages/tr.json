@@ -429,7 +429,8 @@
       "branchName": "Şube Adı",
       "accountHolder": "Hesap Sahibi",
       "currency": "Para Birimi",
-      "save": "Banka Bilgilerini Kaydet"
+      "save": "Banka Bilgilerini Kaydet",
+      "syncParasut": "Paraşüt'ten Çek"
     },
     "followup": {
       "title": "Akıllı Takip",
