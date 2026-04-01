@@ -611,8 +611,15 @@
     "addSuccess": "{name} added successfully",
     "addError": "Error occurred while adding customer",
     "companyRequired": "Company name is required",
+    "companyNameRequired": "Company name is required",
     "updateSuccess": "Customer updated successfully",
-    "updateError": "Error occurred during update"
+    "updateError": "Error occurred during update",
+    "editSuccess": "Customer updated successfully",
+    "editError": "Error occurred during update",
+    "genericError": "An error occurred",
+    "phonePlaceholder": "Enter phone number",
+    "emailPlaceholder": "Enter email address",
+    "cityPlaceholder": "Enter city (optional)"
   },
   "productsPage": {
     "title": "Products",
@@ -681,7 +688,13 @@
     "deleteError": "Error occurred during deletion",
     "addSuccess": "{name} added successfully",
     "addError": "Error occurred while adding product",
-    "fieldsRequired": "Product code, name and unit fields are required"
+    "fieldsRequired": "Product code, name and unit fields are required",
+    "requiredFields": "Product code, name and unit fields are required",
+    "genericError": "An error occurred",
+    "stockHeader": "Stock",
+    "cost": "Cost",
+    "vatRate": "VAT %",
+    "category": "Category"
   },
   "stockPage": {
     "title": "Stock Management",

@@ -611,8 +611,15 @@
     "addSuccess": "{name} başarıyla eklendi",
     "addError": "Müşteri eklenirken bir hata oluştu",
     "companyRequired": "Firma adı zorunludur",
+    "companyNameRequired": "Firma adı zorunludur",
     "updateSuccess": "Müşteri başarıyla güncellendi",
-    "updateError": "Güncelleme sırasında hata oluştu"
+    "updateError": "Güncelleme sırasında hata oluştu",
+    "editSuccess": "Müşteri başarıyla güncellendi",
+    "editError": "Güncelleme sırasında hata oluştu",
+    "genericError": "Bir hata oluştu",
+    "phonePlaceholder": "Telefon numarası girin",
+    "emailPlaceholder": "E-posta adresi girin",
+    "cityPlaceholder": "Şehir girin (opsiyonel)"
   },
   "productsPage": {
     "title": "Ürünler",
@@ -681,7 +688,13 @@
     "deleteError": "Silme işlemi sırasında hata oluştu",
     "addSuccess": "{name} başarıyla eklendi",
     "addError": "Ürün eklenirken bir hata oluştu",
-    "fieldsRequired": "Ürün kodu, adı ve birim alanları zorunludur"
+    "fieldsRequired": "Ürün kodu, adı ve birim alanları zorunludur",
+    "requiredFields": "Ürün kodu, adı ve birim alanları zorunludur",
+    "genericError": "Bir hata oluştu",
+    "stockHeader": "Stok",
+    "cost": "Maliyet",
+    "vatRate": "KDV %",
+    "category": "Kategori"
   },
   "stockPage": {
     "title": "Stok Yönetimi",
