@@ -316,12 +316,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0 relative">
         {/* Top Bar */}
-        <header className={`relative z-10 px-4 md:px-8 py-3 transition-colors duration-300 ${
+        <header className={`px-4 md:px-8 py-3 transition-colors duration-300 ${
           isSettingsPage
-            ? 'bg-transparent border-b border-white/10 shadow-none'
-            : 'bg-white/80 dark:bg-gradient-to-r dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-lg'
+            ? 'absolute top-0 left-0 right-0 z-20 bg-transparent'
+            : 'relative z-10 bg-white/80 dark:bg-gradient-to-r dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-lg'
         }`}>
           <div className="flex items-center justify-between">
             {/* Title */}
@@ -419,9 +419,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             : 'bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'
         }`}>
           {isSettingsPage ? (
-            <div className="-mt-[52px]">
-              {children}
-            </div>
+            children
           ) : (
             <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
               {children}
