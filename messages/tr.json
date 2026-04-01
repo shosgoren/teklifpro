@@ -554,7 +554,9 @@
     "createFirst": "İlk Teklifini Oluştur",
     "today": "Bugün",
     "yesterday": "Dün",
-    "daysAgo": "{count} gün önce"
+    "daysAgo": "{count} gün önce",
+    "copyLastProposal": "Son Teklifi Kopyala",
+    "todayFollowups": "Bugünün Takipleri"
   },
   "customersPage": {
     "title": "Müşteriler",

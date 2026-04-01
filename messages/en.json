@@ -554,7 +554,9 @@
     "createFirst": "Create Your First Proposal",
     "today": "Today",
     "yesterday": "Yesterday",
-    "daysAgo": "{count} days ago"
+    "daysAgo": "{count} days ago",
+    "copyLastProposal": "Copy Last Proposal",
+    "todayFollowups": "Today's Follow-ups"
   },
   "customersPage": {
     "title": "Customers",
