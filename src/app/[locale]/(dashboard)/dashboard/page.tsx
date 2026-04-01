@@ -136,8 +136,29 @@ function SortableWidget({ id, children }: { id: string; children: React.ReactNod
 // ─── FAB (Floating Action Button) ───
 function FloatingActionButton({ locale, lastProposalId }: { locale: string; lastProposalId?: string }) {
   const [open, setOpen] = useState(false);
+  const [cloning, setCloning] = useState(false);
   const router = useRouter();
   const t = useTranslations('dashboardPage');
+
+  const handleClone = async () => {
+    if (!lastProposalId || cloning) return;
+    setCloning(true);
+    try {
+      const res = await fetch(`/api/v1/proposals/${lastProposalId}/clone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.success && data.data?.id) {
+        router.push(`/${locale}/proposals/${data.data.id}`);
+      }
+    } catch {
+      // silently handle
+    } finally {
+      setCloning(false);
+    }
+  };
 
   const actions = [
     {
@@ -149,9 +170,9 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
     ...(lastProposalId
       ? [{
           icon: Copy,
-          label: t('copyLastProposal'),
+          label: cloning ? '...' : t('copyLastProposal'),
           color: 'from-violet-500 to-purple-600',
-          onClick: () => router.push(`/${locale}/proposals/new?clone=${lastProposalId}`),
+          onClick: handleClone,
         }]
       : []),
     {
