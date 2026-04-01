@@ -16,6 +16,7 @@ import {
   RotateCw,
   ChevronDown,
   Sparkles,
+  PenTool,
 } from 'lucide-react'
 import { useState } from 'react'
 import ProposalActions from './proposal-actions'
@@ -59,6 +60,7 @@ interface ProposalContentProps {
   contact: { name: string; title: string | null } | null
   userName: string | null
   voiceNote: { data: string; duration: number | null; senderName: string | null } | null
+  signature: { data: string; signerName: string | null; signedAt: string | null } | null
   items: {
     id: string
     name: string
@@ -95,6 +97,7 @@ export default function ProposalContent({
   contact,
   userName,
   voiceNote,
+  signature,
   items,
   financials,
   isResponded,
@@ -177,6 +180,26 @@ export default function ProposalContent({
               )}
               {proposal.status === 'REVISION_REQUESTED' && proposal.revisionNote && (
                 <p className="text-sm text-amber-600 mt-1">{proposal.revisionNote}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Signature ─── */}
+        {signature && proposal.status === 'ACCEPTED' && (
+          <div className="mb-4 p-5 bg-white rounded-2xl shadow-sm border border-emerald-100">
+            <div className="flex items-center gap-2 mb-3">
+              <PenTool className="w-4 h-4 text-emerald-600" />
+              <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Dijital İmza</p>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={signature.data} alt="İmza" className="max-h-24 mx-auto" />
+            </div>
+            <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+              {signature.signerName && <span className="font-medium">{signature.signerName}</span>}
+              {signature.signedAt && (
+                <span>{new Date(signature.signedAt).toLocaleString('tr-TR')}</span>
               )}
             </div>
           </div>

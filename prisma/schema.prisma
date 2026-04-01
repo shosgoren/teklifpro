@@ -436,6 +436,9 @@ model Proposal {
   customerNote      String?         @map("customer_note")
   rejectionReason   String?         @map("rejection_reason")
   revisionNote      String?         @map("revision_note")
+  signatureData     String?         @map("signature_data") // base64 PNG
+  signedAt          DateTime?       @map("signed_at")
+  signerName        String?         @map("signer_name")
 
   // Terms & Conditions
   validityDays      Int             @default(30) @map("validity_days")

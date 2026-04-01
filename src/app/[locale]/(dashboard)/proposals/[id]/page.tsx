@@ -552,6 +552,23 @@ export default function ProposalDetailPage() {
               </div>
             </Card>
 
+            {/* Digital Signature */}
+            {proposal.signatureData && proposal.status === 'ACCEPTED' && (
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+                <div className="p-5">
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">{t('signature.title')}</h3>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-200 dark:border-gray-700">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={proposal.signatureData} alt="Signature" className="max-h-20 mx-auto" />
+                  </div>
+                  <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                    {proposal.signerName && <span className="font-medium text-gray-700 dark:text-gray-300">{proposal.signerName}</span>}
+                    {proposal.signedAt && <span>{new Date(proposal.signedAt).toLocaleString('tr-TR')}</span>}
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* Activity Feed */}
             <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
               <div className="p-5">

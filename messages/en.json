@@ -310,6 +310,9 @@
       "duration": "Duration",
       "lastView": "Last Viewed"
     },
+    "signature": {
+      "title": "Digital Signature"
+    },
     "send": "Send",
     "emailWillSentTo": "Email will be sent to:",
     "whatsappMessageWillSentTo": "WhatsApp message will be sent to:",

@@ -172,6 +172,16 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
             }
           : null
       }
+      signature={
+        updatedProposal.signatureData &&
+        updatedProposal.signatureData.startsWith('data:image/png;base64,')
+          ? {
+              data: updatedProposal.signatureData,
+              signerName: updatedProposal.signerName,
+              signedAt: updatedProposal.signedAt?.toISOString() ?? null,
+            }
+          : null
+      }
       items={itemsWithTotals.map((item) => ({
         id: item.id,
         name: item.name,

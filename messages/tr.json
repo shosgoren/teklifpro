@@ -310,6 +310,9 @@
       "duration": "Süre",
       "lastView": "Son Görüntüleme"
     },
+    "signature": {
+      "title": "Dijital İmza"
+    },
     "send": "Gönder",
     "emailWillSentTo": "E-posta şu adrese gönderilecek:",
     "whatsappMessageWillSentTo": "WhatsApp mesajı şu numaraya gönderilecek:",

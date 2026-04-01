@@ -5,7 +5,7 @@ import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyPr
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { proposalId, action, customerNote, rejectionReason, revisionNote } = body
+    const { proposalId, action, customerNote, rejectionReason, revisionNote, signatureData, signerName } = body
 
     if (!proposalId || !action) {
       return NextResponse.json(
@@ -42,12 +42,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate signature if provided
+    if (signatureData) {
+      if (!signatureData.startsWith('data:image/png;base64,')) {
+        return NextResponse.json(
+          { success: false, error: { message: 'Geçersiz imza formatı' } },
+          { status: 400 }
+        )
+      }
+      // Max 200KB for signature PNG
+      const base64Part = signatureData.split(',')[1] || ''
+      if (base64Part.length > 200 * 1024 * 1.37) {
+        return NextResponse.json(
+          { success: false, error: { message: 'İmza dosyası çok büyük' } },
+          { status: 400 }
+        )
+      }
+    }
+
     // Update proposal status
     const updatedProposal = await prisma.proposal.update({
       where: { id: proposalId },
       data: {
         status: action,
-        ...(action === 'ACCEPTED' && { customerNote: customerNote || null }),
+        respondedAt: new Date(),
+        ...(action === 'ACCEPTED' && {
+          customerNote: customerNote || null,
+          signatureData: signatureData || null,
+          signedAt: signatureData ? new Date() : null,
+          signerName: signerName || null,
+        }),
         ...(action === 'REJECTED' && { rejectionReason: rejectionReason || null }),
         ...(action === 'REVISION_REQUESTED' && { revisionNote: revisionNote || null }),
       },

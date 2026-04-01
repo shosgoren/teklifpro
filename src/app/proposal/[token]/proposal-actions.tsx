@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, RotateCw, XCircle, Loader2, AlertCircle, X } from 'lucide-react'
+import SignatureCanvas from 'react-signature-canvas'
+import { CheckCircle, RotateCw, XCircle, Loader2, AlertCircle, X, PenTool, Eraser } from 'lucide-react'
 
 interface ProposalActionsProps {
   proposalId: string
@@ -18,6 +19,9 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
   const [revisionNote, setRevisionNote] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
   const [customerNote, setCustomerNote] = useState('')
+  const [signerName, setSignerName] = useState('')
+  const [hasSigned, setHasSigned] = useState(false)
+  const sigCanvasRef = useRef<SignatureCanvas>(null)
 
   const handleSubmit = async (action: string, body: Record<string, string | undefined>) => {
     setIsLoading(true)
@@ -41,7 +45,17 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
     }
   }
 
-  const handleAccept = () => handleSubmit('ACCEPTED', { customerNote: customerNote.trim() || undefined })
+  const handleAccept = () => {
+    const signatureData = sigCanvasRef.current && !sigCanvasRef.current.isEmpty()
+      ? sigCanvasRef.current.getTrimmedCanvas().toDataURL('image/png')
+      : undefined
+
+    handleSubmit('ACCEPTED', {
+      customerNote: customerNote.trim() || undefined,
+      signatureData,
+      signerName: signerName.trim() || undefined,
+    })
+  }
 
   const handleReject = () => handleSubmit('REJECTED', { rejectionReason: rejectionReason.trim() || undefined })
 
@@ -53,6 +67,11 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
     handleSubmit('REVISION_REQUESTED', { revisionNote: revisionNote.trim() })
   }
 
+  const clearSignature = () => {
+    sigCanvasRef.current?.clear()
+    setHasSigned(false)
+  }
+
   const closeModal = () => {
     if (!isLoading) {
       setActiveModal(null)
@@ -60,6 +79,9 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
       setRevisionNote('')
       setRejectionReason('')
       setCustomerNote('')
+      setSignerName('')
+      setHasSigned(false)
+      sigCanvasRef.current?.clear()
     }
   }
 
@@ -102,7 +124,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal} />
 
           {/* Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[70dvh] overflow-hidden animate-slide-up">
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85dvh] overflow-hidden animate-slide-up">
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-gray-300" />
@@ -125,7 +147,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
             </div>
 
             {/* Body */}
-            <div className="px-6 py-4 space-y-4 overflow-y-auto">
+            <div className="px-6 py-4 space-y-4 overflow-y-auto max-h-[60dvh]">
               {error && (
                 <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -139,6 +161,56 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
                     <p className="text-sm text-emerald-800">Teklifi kabul etmek istediğinize emin misiniz?</p>
                   </div>
+
+                  {/* Signer Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ad Soyad</label>
+                    <input
+                      type="text"
+                      value={signerName}
+                      onChange={(e) => setSignerName(e.target.value)}
+                      placeholder="İmzalayan kişinin adı soyadı"
+                      disabled={isLoading}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50"
+                    />
+                  </div>
+
+                  {/* Signature Canvas */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <PenTool className="w-4 h-4" />
+                        E-İmza
+                      </label>
+                      {hasSigned && (
+                        <button
+                          onClick={clearSignature}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                        >
+                          <Eraser className="w-3 h-3" />
+                          Temizle
+                        </button>
+                      )}
+                    </div>
+                    <div className="border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 overflow-hidden relative">
+                      <SignatureCanvas
+                        ref={sigCanvasRef}
+                        penColor="#1a1a2e"
+                        canvasProps={{
+                          className: 'w-full',
+                          style: { width: '100%', height: '160px' },
+                        }}
+                        onEnd={() => setHasSigned(true)}
+                      />
+                      {!hasSigned && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <p className="text-sm text-gray-400">Parmağınız veya kaleminizle imzalayın</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Customer Note */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Notunuz (Opsiyonel)</label>
                     <textarea
@@ -147,7 +219,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
                       placeholder="Ek notlarınız..."
                       disabled={isLoading}
                       className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none bg-gray-50 disabled:opacity-50"
-                      rows={3}
+                      rows={2}
                     />
                   </div>
                 </>
