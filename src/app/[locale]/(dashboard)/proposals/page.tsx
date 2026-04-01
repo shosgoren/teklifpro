@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
 import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
@@ -44,6 +44,7 @@ const ITEMS_PER_PAGE = 10;
 export default function ProposalsPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('proposals');
   const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
@@ -224,7 +225,7 @@ export default function ProposalsPage() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="rounded-xl min-w-[140px] justify-between h-11 border-gray-200 dark:border-gray-800">
-              {statusFilter === 'ALL' ? 'Tum Durumlar' : STATUS_CONFIG[statusFilter as ProposalStatus]?.label}
+              {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as any)}
               <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
@@ -235,7 +236,7 @@ export default function ProposalsPage() {
             {(Object.keys(STATUS_CONFIG) as ProposalStatus[]).map((status) => (
               <DropdownMenuItem key={status} onClick={() => { setStatusFilter(status); setCurrentPage(1); }}>
                 <div className={cn('h-2 w-2 rounded-full mr-2', STATUS_CONFIG[status].dot)} />
-                {STATUS_CONFIG[status].label}
+                {t(`status.${status}` as any)}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -291,7 +292,7 @@ export default function ProposalsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <Badge className={cn('text-xs font-medium rounded-lg px-2.5 py-0.5', status.color)}>
-                        {status.label}
+                        {t(`status.${proposal.status}` as any) || proposal.status}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-sm text-muted-foreground text-right">
@@ -347,7 +348,7 @@ export default function ProposalsPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums">{formatAmount(Number(proposal.grandTotal) || 0)}</p>
-                    <Badge className={cn('text-[10px] mt-1 rounded-md', status.color)}>{status.label}</Badge>
+                    <Badge className={cn('text-[10px] mt-1 rounded-md', status.color)}>{t(`status.${proposal.status}` as any) || proposal.status}</Badge>
                   </div>
                 </button>
               );

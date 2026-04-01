@@ -36,6 +36,7 @@ import {
   Landmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -68,7 +69,16 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode; desc: string }[
   { key: 'subscription', label: 'Abonelik', icon: <CreditCard className="w-5 h-5" />, desc: 'Plan ve faturalar' },
 ];
 
+const TAB_TRANSLATION_KEYS: Record<TabKey, string> = {
+  general: 'tabs.general',
+  parasut: 'tabs.parasut',
+  whatsapp: 'tabs.whatsapp',
+  team: 'tabs.team',
+  subscription: 'tabs.billing',
+};
+
 const SettingsPage = () => {
+  const t = useTranslations('settings');
   const [activeTab, setActiveTab] = useState<TabKey>('general');
   const [saving, setSaving] = useState(false);
   const [showPasswords, setShowPasswords] = useState({
@@ -285,7 +295,7 @@ const SettingsPage = () => {
                   {tab.icon}
                 </span>
                 <div className="text-left">
-                  <span className="block font-semibold">{tab.label}</span>
+                  <span className="block font-semibold">{t(TAB_TRANSLATION_KEYS[tab.key] as any)}</span>
                   <span className={`block text-[10px] leading-tight hidden sm:block ${isActive ? 'text-gray-400' : 'text-gray-400/70'}`}>
                     {tab.desc}
                   </span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import {
@@ -47,15 +47,6 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   EXPIRED: 'bg-slate-700 text-white',
 };
 
-const STATUS_LABELS: Record<ProposalStatus, string> = {
-  DRAFT: 'Taslak',
-  SENT: 'Gönderildi',
-  VIEWED: 'Görüntülendi',
-  ACCEPTED: 'Kabul',
-  REJECTED: 'Red',
-  REVISION_REQUESTED: 'Revize',
-  EXPIRED: 'Süresi Doldu',
-};
 
 const ACTIVITY_ICON_COLORS: Record<string, string> = {
   CREATED: 'from-blue-500 to-blue-600',
@@ -104,9 +95,12 @@ const getActivityLabel = (type: string) => {
 export default function ProposalDetailPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('proposals');
   const confirm = useConfirm();
   const params = useParams();
   const proposalId = params.id as string;
+
+  const statusLabel = (s: string) => t(`status.${s}` as any) || s;
 
   const { data, error, isLoading } = useSWR(
     proposalId ? `/api/v1/proposals/${proposalId}` : null,
@@ -279,7 +273,7 @@ export default function ProposalDetailPage() {
               )}
             </div>
             <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm px-3 py-1 text-sm font-medium w-fit">
-              {STATUS_LABELS[status] || status}
+              {statusLabel(status) || status}
             </Badge>
           </div>
 
@@ -364,7 +358,7 @@ export default function ProposalDetailPage() {
                   <div>
                     <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Durum</p>
                     <Badge className={`${STATUS_COLORS[status] || ''} w-fit text-xs`}>
-                      {STATUS_LABELS[status] || status}
+                      {statusLabel(status) || status}
                     </Badge>
                   </div>
                 </div>

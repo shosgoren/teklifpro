@@ -125,6 +125,29 @@
         }
       ]
     },
+    "howItWorks": "How It Works?",
+    "howItWorksSubtitle": "Get started in 4 simple steps",
+    "heroBadge": "Proposal Management with Parasut Integration",
+    "heroTitle1": "Create Your Proposals in",
+    "heroTitle2": "Seconds",
+    "heroTitle3": "",
+    "featuresBadge": "Powerful Features",
+    "featuresSubtitle": "Everything you need to grow your business in one platform",
+    "pricingBadge": "Transparent Pricing",
+    "ctaTrialNote": "14 days free trial · No credit card required",
+    "footerDesc": "Proposal management platform with Parasut integration",
+    "steps": {
+      "1": { "title": "Sign Up", "desc": "Enter your email and company info" },
+      "2": { "title": "Connect Parasut", "desc": "Link your Parasut account" },
+      "3": { "title": "Create Proposal", "desc": "Select customer and products to create a proposal" },
+      "4": { "title": "Send via WhatsApp", "desc": "Send with one click via WhatsApp" }
+    },
+    "stats": {
+      "activeFirms": "Active Companies",
+      "proposalsSent": "Proposals Sent",
+      "satisfaction": "Customer Satisfaction",
+      "timeSaved": "Time Saved"
+    },
     "cta": {
       "title": "Get Started Today",
       "subtitle": "14 days free, no credit card required.",

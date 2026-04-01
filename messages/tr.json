@@ -125,6 +125,29 @@
         }
       ]
     },
+    "howItWorks": "Nasıl Çalışır?",
+    "howItWorksSubtitle": "4 basit adımda başlayın",
+    "heroBadge": "Paraşüt Entegrasyonlu Teklif Yönetimi",
+    "heroTitle1": "Tekliflerinizi",
+    "heroTitle2": "Saniyeler",
+    "heroTitle3": "İçinde Oluşturun",
+    "featuresBadge": "Güçlü Özellikler",
+    "featuresSubtitle": "İşletmenizi büyütmek için ihtiyacınız olan her şey tek platformda",
+    "pricingBadge": "Şeffaf Fiyatlandırma",
+    "ctaTrialNote": "14 gün ücretsiz deneme · Kredi kartı gerekmez",
+    "footerDesc": "Paraşüt entegrasyonlu teklif yönetim platformu",
+    "steps": {
+      "1": { "title": "Kayıt ol", "desc": "E-posta ve şirket bilgilerinizi girin" },
+      "2": { "title": "Paraşüt bağla", "desc": "Paraşüt hesabınızı bağlayın" },
+      "3": { "title": "Teklif oluştur", "desc": "Müşteri ve ürün seçerek teklif oluşturun" },
+      "4": { "title": "WhatsApp'tan gönder", "desc": "Tek tuşla WhatsApp'tan gönderin" }
+    },
+    "stats": {
+      "activeFirms": "Aktif Firma",
+      "proposalsSent": "Teklif Gönderildi",
+      "satisfaction": "Müşteri Memnuniyeti",
+      "timeSaved": "Zaman Tasarrufu"
+    },
     "cta": {
       "title": "Hemen Başlayın",
       "subtitle": "14 gün ücretsiz, kredi kartı gerekmez.",

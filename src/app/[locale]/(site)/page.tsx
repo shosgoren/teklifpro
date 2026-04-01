@@ -90,17 +90,17 @@ const LandingPage = () => {
   ];
 
   const steps = [
-    { number: 1, title: 'Kayıt ol', desc: 'E-posta ve şirket bilgilerinizi girin', icon: <FileText className="w-6 h-6" />, color: 'from-blue-500 to-indigo-600' },
-    { number: 2, title: 'Paraşüt bağla', desc: 'Paraşüt hesabınızı bağlayın', icon: <Zap className="w-6 h-6" />, color: 'from-amber-500 to-orange-600' },
-    { number: 3, title: 'Teklif oluştur', desc: 'Müşteri ve ürün seçerek teklif oluşturun', icon: <Package className="w-6 h-6" />, color: 'from-emerald-500 to-teal-600' },
-    { number: 4, title: "WhatsApp'tan gönder", desc: "Tek tuşla WhatsApp'tan gönderin", icon: <MessageCircle className="w-6 h-6" />, color: 'from-green-500 to-green-600' },
+    { number: 1, title: t('steps.1.title'), desc: t('steps.1.desc'), icon: <FileText className="w-6 h-6" />, color: 'from-blue-500 to-indigo-600' },
+    { number: 2, title: t('steps.2.title'), desc: t('steps.2.desc'), icon: <Zap className="w-6 h-6" />, color: 'from-amber-500 to-orange-600' },
+    { number: 3, title: t('steps.3.title'), desc: t('steps.3.desc'), icon: <Package className="w-6 h-6" />, color: 'from-emerald-500 to-teal-600' },
+    { number: 4, title: t('steps.4.title'), desc: t('steps.4.desc'), icon: <MessageCircle className="w-6 h-6" />, color: 'from-green-500 to-green-600' },
   ];
 
   const stats = [
-    { numValue: 500, suffix: '+', prefix: '', label: 'Aktif Firma', icon: <Users className="w-5 h-5" /> },
-    { numValue: 25, suffix: 'K+', prefix: '', label: 'Teklif Gönderildi', icon: <FileText className="w-5 h-5" /> },
-    { numValue: 94, suffix: '', prefix: '%', label: 'Müşteri Memnuniyeti', icon: <Star className="w-5 h-5" /> },
-    { numValue: 60, suffix: '', prefix: '%', label: 'Zaman Tasarrufu', icon: <TrendingUp className="w-5 h-5" /> },
+    { numValue: 500, suffix: '+', prefix: '', label: t('stats.activeFirms'), icon: <Users className="w-5 h-5" /> },
+    { numValue: 25, suffix: 'K+', prefix: '', label: t('stats.proposalsSent'), icon: <FileText className="w-5 h-5" /> },
+    { numValue: 94, suffix: '', prefix: '%', label: t('stats.satisfaction'), icon: <Star className="w-5 h-5" /> },
+    { numValue: 60, suffix: '', prefix: '%', label: t('stats.timeSaved'), icon: <TrendingUp className="w-5 h-5" /> },
   ];
 
   const faqItems = t.raw('faq.items') as Array<{ q: string; a: string }>;
@@ -182,22 +182,22 @@ const LandingPage = () => {
             {/* Badge */}
             <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-8">
               <Sparkles className="w-4 h-4" />
-              Paraşüt Entegrasyonlu Teklif Yönetimi
+              {t('heroBadge')}
             </motion.div>
 
             <motion.h1
               variants={heroTitleVariants}
               className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight mb-6"
             >
-              <span className="text-gray-900 dark:text-white">Tekliflerinizi </span>
+              <span className="text-gray-900 dark:text-white">{t('heroTitle1')} </span>
               <motion.span
                 variants={gradientTextVariants}
                 className="inline-block bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent bg-[size:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]"
               >
-                Saniyeler
+                {t('heroTitle2')}
               </motion.span>
               <br />
-              <span className="text-gray-900 dark:text-white">İçinde Oluşturun</span>
+              <span className="text-gray-900 dark:text-white">{t('heroTitle3')}</span>
             </motion.h1>
 
             <motion.p
@@ -262,13 +262,13 @@ const LandingPage = () => {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
               <Zap className="w-4 h-4" />
-              Güçlü Özellikler
+              {t('featuresBadge')}
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
               {t('features.title')}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              İşletmenizi büyütmek için ihtiyacınız olan her şey tek platformda
+              {t('featuresSubtitle')}
             </p>
           </motion.div>
 
@@ -313,10 +313,10 @@ const LandingPage = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Nasıl Çalışır?
+              {t('howItWorks')}
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              4 basit adımda başlayın
+              {t('howItWorksSubtitle')}
             </p>
           </motion.div>
 
@@ -366,7 +366,7 @@ const LandingPage = () => {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-4">
               <Shield className="w-4 h-4" />
-              Şeffaf Fiyatlandırma
+              {t('pricingBadge')}
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
               {t('pricing.title')}
@@ -568,7 +568,7 @@ const LandingPage = () => {
           </Link>
           <p className="mt-6 text-sm text-blue-200 flex items-center justify-center gap-2">
             <Shield className="w-4 h-4" />
-            14 gün ücretsiz deneme · Kredi kartı gerekmez
+            {t('ctaTrialNote')}
           </p>
         </motion.div>
       </section>
@@ -585,7 +585,7 @@ const LandingPage = () => {
                 <span className="text-lg font-bold text-white">TeklifPro</span>
               </div>
               <p className="text-sm text-gray-500">
-                Paraşüt entegrasyonlu teklif yönetim platformu
+                {t('footerDesc')}
               </p>
             </div>
             <div>
