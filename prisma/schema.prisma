@@ -82,6 +82,7 @@ model User {
   tenantId      String    @map("tenant_id")
   email         String
   name          String
+  phone         String?
   password      String?
   avatar        String?
   role          UserRole  @default(USER)

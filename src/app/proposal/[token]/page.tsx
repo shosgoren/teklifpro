@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/shared/utils/prisma'
+import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import ProposalActions from './proposal-actions'
 import ProposalContent from './proposal-content'
 import { format } from 'date-fns'
@@ -68,6 +69,14 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
       metadata: { timestamp: new Date().toISOString() },
     },
   })
+
+  // Notify proposal owner on first view (fire-and-forget)
+  if (proposal.status === 'SENT') {
+    notifyProposalEvent({
+      proposalId: proposal.id,
+      eventType: 'VIEWED',
+    }).catch(() => {})
+  }
 
   // Calculate line totals
   const itemsWithTotals = updatedProposal.items.map((item) => {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/shared/utils/prisma'
+import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,6 +66,15 @@ export async function POST(request: NextRequest) {
         },
       },
     })
+
+    // Send real-time WhatsApp notification to proposal owner (fire-and-forget)
+    notifyProposalEvent({
+      proposalId,
+      eventType: action as 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED',
+      customerNote,
+      rejectionReason,
+      revisionNote,
+    }).catch(() => {})
 
     return NextResponse.json({
       success: true,
