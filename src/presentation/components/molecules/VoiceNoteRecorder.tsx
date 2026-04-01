@@ -75,9 +75,31 @@ export function VoiceNoteRecorder({
 
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mimeType })
+
+        // Client-side security: validate size (max 500KB)
+        if (blob.size > 512_000) {
+          console.warn('Voice note too large:', blob.size)
+          stream.getTracks().forEach(t => t.stop())
+          streamRef.current = null
+          return
+        }
+
+        // Validate MIME type is audio
+        if (!blob.type.startsWith('audio/')) {
+          console.warn('Invalid audio type:', blob.type)
+          stream.getTracks().forEach(t => t.stop())
+          streamRef.current = null
+          return
+        }
+
         const reader = new FileReader()
         reader.onloadend = () => {
           const base64 = reader.result as string
+          // Final check: must be a data:audio/* URL
+          if (!base64.startsWith('data:audio/')) {
+            console.warn('Invalid data URL format')
+            return
+          }
           onChange(base64, recordingTime)
         }
         reader.readAsDataURL(blob)

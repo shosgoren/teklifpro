@@ -149,11 +149,17 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
         title: updatedProposal.contact.title,
       } : null}
       userName={updatedProposal.user?.name ?? null}
-      voiceNote={updatedProposal.voiceNoteData ? {
-        data: updatedProposal.voiceNoteData,
-        duration: updatedProposal.voiceNoteDuration,
-        senderName: updatedProposal.user?.name ?? null,
-      } : null}
+      voiceNote={
+        updatedProposal.voiceNoteData &&
+        updatedProposal.voiceNoteData.startsWith('data:audio/') &&
+        updatedProposal.voiceNoteData.includes(';base64,')
+          ? {
+              data: updatedProposal.voiceNoteData,
+              duration: updatedProposal.voiceNoteDuration,
+              senderName: updatedProposal.user?.name ?? null,
+            }
+          : null
+      }
       items={itemsWithTotals.map((item) => ({
         id: item.id,
         name: item.name,

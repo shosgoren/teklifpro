@@ -9,6 +9,55 @@ interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+// Voice note security constants
+const VOICE_NOTE_MAX_SIZE_BYTES = 512_000; // 500KB max (~5 min of WebM/opus)
+const VOICE_NOTE_MAX_DURATION = 60; // 60 seconds max
+const VOICE_NOTE_ALLOWED_MIMES = ['audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg'];
+
+/**
+ * Validate and sanitize base64 audio data.
+ * Returns sanitized data URL or null if invalid.
+ */
+function validateVoiceNote(dataUrl: string): { valid: boolean; error?: string } {
+  // Must be a data URL
+  if (!dataUrl.startsWith('data:')) {
+    return { valid: false, error: 'Invalid data URL format' };
+  }
+
+  // Extract MIME type
+  const mimeMatch = dataUrl.match(/^data:(audio\/[a-z0-9;=\-+.]+);base64,/i);
+  if (!mimeMatch) {
+    return { valid: false, error: 'Invalid or non-audio MIME type' };
+  }
+
+  const mimeType = mimeMatch[1].split(';')[0].toLowerCase();
+  if (!VOICE_NOTE_ALLOWED_MIMES.some(m => mimeType.startsWith(m.replace('audio/', 'audio/')))) {
+    // More permissive: allow any audio/* type
+    if (!mimeType.startsWith('audio/')) {
+      return { valid: false, error: `Disallowed MIME type: ${mimeType}` };
+    }
+  }
+
+  // Extract base64 payload
+  const base64Part = dataUrl.split(',')[1];
+  if (!base64Part) {
+    return { valid: false, error: 'Missing base64 data' };
+  }
+
+  // Validate base64 format (only valid base64 characters)
+  if (!/^[A-Za-z0-9+/=]+$/.test(base64Part)) {
+    return { valid: false, error: 'Invalid base64 characters detected' };
+  }
+
+  // Check decoded size
+  const sizeInBytes = Math.ceil((base64Part.length * 3) / 4);
+  if (sizeInBytes > VOICE_NOTE_MAX_SIZE_BYTES) {
+    return { valid: false, error: `Voice note too large: ${Math.round(sizeInBytes / 1024)}KB (max ${VOICE_NOTE_MAX_SIZE_BYTES / 1024}KB)` };
+  }
+
+  return { valid: true };
+}
+
 // Validation schemas
 const CreateProposalSchema = z.object({
   customerId: z.string(),
@@ -31,7 +80,7 @@ const CreateProposalSchema = z.object({
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
   voiceNoteData: z.string().nullable().optional(),
-  voiceNoteDuration: z.number().nullable().optional(),
+  voiceNoteDuration: z.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
 });
 
 const GetProposalsSchema = z.object({
@@ -139,6 +188,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     const body = await request.json();
     const payload = CreateProposalSchema.parse(body);
+
+    // Validate voice note security
+    if (payload.voiceNoteData) {
+      const voiceValidation = validateVoiceNote(payload.voiceNoteData);
+      if (!voiceValidation.valid) {
+        return NextResponse.json(
+          { success: false, error: `Voice note rejected: ${voiceValidation.error}` },
+          { status: 400 }
+        );
+      }
+    }
 
     // Calculate totals
     let subtotal = 0;

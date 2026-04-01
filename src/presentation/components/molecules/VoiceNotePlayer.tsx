@@ -22,8 +22,18 @@ export function VoiceNotePlayer({
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [isValid, setIsValid] = useState(true)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const animRef = useRef<number | null>(null)
+
+  // Security: validate audio data URL on mount
+  useEffect(() => {
+    if (!audioData.startsWith('data:audio/') || !audioData.includes(';base64,')) {
+      setIsValid(false)
+    }
+  }, [audioData])
+
+  if (!isValid) return null
 
   useEffect(() => {
     return () => {
