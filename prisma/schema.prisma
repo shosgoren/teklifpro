@@ -49,6 +49,12 @@ model Tenant {
   whatsappAccessToken String?  @map("whatsapp_access_token")
   whatsappBusinessId  String?  @map("whatsapp_business_id")
 
+  // Smart Follow-up
+  smartFollowupEnabled    Boolean   @default(false) @map("smart_followup_enabled")
+  followupDaysAfterView   Int       @default(3)     @map("followup_days_after_view")
+  followupMessage         String?   @map("followup_message")
+  followupMaxReminders    Int       @default(2)     @map("followup_max_reminders")
+
   // Relations
   users               User[]
   customers            Customer[]
@@ -444,6 +450,10 @@ model Proposal {
   voiceNoteData     String?         @map("voice_note_data")     // base64 audio data
   voiceNoteDuration Int?            @map("voice_note_duration")  // seconds
 
+  // Follow-up tracking
+  followupCount     Int             @default(0) @map("followup_count")
+  lastFollowupAt    DateTime?       @map("last_followup_at")
+
   // Metadata
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
@@ -533,6 +543,7 @@ enum ActivityType {
   WHATSAPP_DELIVERED
   WHATSAPP_READ
   LINK_CLICKED
+  FOLLOWUP_SENT
 }
 
 model ProposalRevision {

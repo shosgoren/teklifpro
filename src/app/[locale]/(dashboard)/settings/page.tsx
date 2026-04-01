@@ -134,6 +134,30 @@ const SettingsPage = () => {
     businessAccountId: '',
   });
 
+  const [followup, setFollowup] = useState({
+    enabled: false,
+    daysAfterView: 3,
+    maxReminders: 2,
+    message: '',
+  });
+
+  useEffect(() => {
+    // Load follow-up settings
+    fetch('/api/v1/settings/followup')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          setFollowup({
+            enabled: res.data.smartFollowupEnabled ?? false,
+            daysAfterView: res.data.followupDaysAfterView ?? 3,
+            maxReminders: res.data.followupMaxReminders ?? 2,
+            message: res.data.followupMessage ?? '',
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (tenantData?.success && tenantData.data) {
       const t = tenantData.data;
@@ -230,6 +254,29 @@ const SettingsPage = () => {
       toast.success('WhatsApp ayarları kaydedildi');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'WhatsApp ayarları kaydedilemedi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFollowupSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/v1/settings/followup', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          smartFollowupEnabled: followup.enabled,
+          followupDaysAfterView: followup.daysAfterView,
+          followupMessage: followup.message || null,
+          followupMaxReminders: followup.maxReminders,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');
+      toast.success(t('followupSaved'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('followupError'));
     } finally {
       setSaving(false);
     }
@@ -601,6 +648,7 @@ const SettingsPage = () => {
 
         {/* ===== WhatsApp Tab ===== */}
         {activeTab === 'whatsapp' && (
+          <div className="space-y-6">
           <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
             <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
             <div className="p-6 md:p-8">
@@ -657,11 +705,105 @@ const SettingsPage = () => {
                 <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
                   <button onClick={handleWhatsAppSave} disabled={saving} className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm`}>
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    Değişiklikleri Kaydet
+                    {t('saveChanges')}
                   </button>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Smart Follow-up Section */}
+          <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+            <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
+            <div className="p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`p-2 rounded-xl bg-gradient-to-br ${colors.from} ${colors.to}`}>
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('followup.title')}</h3>
+                  <p className="text-xs text-gray-400">{t('followup.desc')}</p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {/* Enable toggle */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                  <div>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">{t('followup.enable')}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('followup.enableDesc')}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={followup.enabled}
+                    onClick={() => setFollowup({ ...followup, enabled: !followup.enabled })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${followup.enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${followup.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                {followup.enabled && (
+                  <>
+                    {/* Days after view */}
+                    <div className="space-y-2">
+                      <Label htmlFor="followup-days" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('followup.daysLabel')}</Label>
+                      <Input
+                        id="followup-days"
+                        type="number"
+                        min={1}
+                        max={30}
+                        className={inputClass}
+                        value={followup.daysAfterView}
+                        onChange={e => setFollowup({ ...followup, daysAfterView: Math.min(30, Math.max(1, parseInt(e.target.value) || 1)) })}
+                      />
+                      <p className="text-xs text-gray-400">{t('followup.daysHint')}</p>
+                    </div>
+
+                    {/* Max reminders */}
+                    <div className="space-y-2">
+                      <Label htmlFor="followup-max" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('followup.maxLabel')}</Label>
+                      <Input
+                        id="followup-max"
+                        type="number"
+                        min={1}
+                        max={5}
+                        className={inputClass}
+                        value={followup.maxReminders}
+                        onChange={e => setFollowup({ ...followup, maxReminders: Math.min(5, Math.max(1, parseInt(e.target.value) || 1)) })}
+                      />
+                      <p className="text-xs text-gray-400">{t('followup.maxHint')}</p>
+                    </div>
+
+                    {/* Custom message */}
+                    <div className="space-y-2">
+                      <Label htmlFor="followup-message" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('followup.messageLabel')}</Label>
+                      <textarea
+                        id="followup-message"
+                        rows={4}
+                        maxLength={1000}
+                        className={`${inputClass} w-full p-3 resize-none`}
+                        value={followup.message}
+                        onChange={e => setFollowup({ ...followup, message: e.target.value })}
+                        placeholder={t('followup.messagePlaceholder')}
+                      />
+                      <p className="text-xs text-gray-400">
+                        {t('followup.messageHint')}: {'{{customerName}}'}, {'{{proposalTitle}}'}, {'{{proposalNumber}}'}, {'{{daysLeft}}'}, {'{{proposalUrl}}'}, {'{{companyName}}'}
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <button onClick={handleFollowupSave} disabled={saving} className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm`}>
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    {t('followup.save')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           </div>
         )}
 

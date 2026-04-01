@@ -402,6 +402,23 @@
       "whatsapp": "WhatsApp",
       "team": "Team",
       "billing": "Subscription"
+    },
+    "saveChanges": "Save Changes",
+    "followupSaved": "Smart follow-up settings saved",
+    "followupError": "Failed to save smart follow-up settings",
+    "followup": {
+      "title": "Smart Follow-up",
+      "desc": "Automatic WhatsApp reminders for viewed but unanswered proposals",
+      "enable": "Enable Smart Follow-up",
+      "enableDesc": "Automatically send reminders when a customer views a proposal but doesn't respond",
+      "daysLabel": "Wait After View (Days)",
+      "daysHint": "How many days after the customer views the proposal to send a reminder (1-30)",
+      "maxLabel": "Maximum Reminders",
+      "maxHint": "Maximum number of reminders per proposal (1-5)",
+      "messageLabel": "Custom Message Template",
+      "messagePlaceholder": "Leave empty to use the default message...",
+      "messageHint": "Available variables",
+      "save": "Save Follow-up Settings"
     }
   },
   "publicProposal": {

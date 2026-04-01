@@ -402,6 +402,23 @@
       "whatsapp": "WhatsApp",
       "team": "Ekip",
       "billing": "Abonelik"
+    },
+    "saveChanges": "Değişiklikleri Kaydet",
+    "followupSaved": "Akıllı takip ayarları kaydedildi",
+    "followupError": "Akıllı takip ayarları kaydedilemedi",
+    "followup": {
+      "title": "Akıllı Takip",
+      "desc": "Görüntülenip yanıtlanmayan teklifler için otomatik WhatsApp hatırlatması",
+      "enable": "Akıllı Takibi Etkinleştir",
+      "enableDesc": "Müşteri teklifi görüntüleyip yanıt vermezse otomatik hatırlatma gönderilir",
+      "daysLabel": "Görüntüleme Sonrası Bekleme (Gün)",
+      "daysHint": "Müşteri teklifi görüntüledikten kaç gün sonra hatırlatma gönderilecek (1-30)",
+      "maxLabel": "Maksimum Hatırlatma Sayısı",
+      "maxHint": "Her teklif için en fazla kaç hatırlatma gönderilecek (1-5)",
+      "messageLabel": "Özel Mesaj Şablonu",
+      "messagePlaceholder": "Boş bırakırsanız varsayılan mesaj kullanılır...",
+      "messageHint": "Kullanılabilir değişkenler",
+      "save": "Takip Ayarlarını Kaydet"
     }
   },
   "publicProposal": {
