@@ -30,6 +30,8 @@ const CreateProposalSchema = z.object({
   notes: z.string().optional(),
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
+  voiceNoteData: z.string().nullable().optional(),
+  voiceNoteDuration: z.number().nullable().optional(),
 });
 
 const GetProposalsSchema = z.object({
@@ -169,6 +171,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         notes: payload.notes,
         paymentTerms: payload.paymentTerms,
         deliveryTerms: payload.deliveryTerms,
+        voiceNoteData: payload.voiceNoteData || null,
+        voiceNoteDuration: payload.voiceNoteDuration || null,
         items: {
           create: payload.items.map((item, index) => ({
             name: item.name,

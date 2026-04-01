@@ -440,6 +440,10 @@ model Proposal {
   whatsappSentAt    DateTime?       @map("whatsapp_sent_at")
   whatsappMessageId String?         @map("whatsapp_message_id")
 
+  // Voice Note
+  voiceNoteData     String?         @map("voice_note_data")     // base64 audio data
+  voiceNoteDuration Int?            @map("voice_note_duration")  // seconds
+
   // Metadata
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")

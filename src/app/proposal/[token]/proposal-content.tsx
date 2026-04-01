@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import ProposalActions from './proposal-actions'
+import { VoiceNotePlayer } from '@/presentation/components/molecules/VoiceNotePlayer'
 
 interface ProposalContentProps {
   proposal: {
@@ -57,6 +58,7 @@ interface ProposalContentProps {
   }
   contact: { name: string; title: string | null } | null
   userName: string | null
+  voiceNote: { data: string; duration: number | null; senderName: string | null } | null
   items: {
     id: string
     name: string
@@ -92,6 +94,7 @@ export default function ProposalContent({
   customer,
   contact,
   userName,
+  voiceNote,
   items,
   financials,
   isResponded,
@@ -146,6 +149,21 @@ export default function ProposalContent({
       </div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 -mt-2 pb-32 print:pb-8">
+        {/* ─── Voice Note ─── */}
+        {voiceNote && (
+          <div className="mb-4">
+            <VoiceNotePlayer
+              audioData={voiceNote.data}
+              duration={voiceNote.duration}
+              senderName={voiceNote.senderName ?? tenant.name}
+              label={voiceNote.senderName
+                ? `${voiceNote.senderName} size sesli mesaj bıraktı`
+                : `${tenant.name} size sesli mesaj bıraktı`
+              }
+            />
+          </div>
+        )}
+
         {/* ─── Status Banner ─── */}
         {isResponded && currentStatus && (
           <div className={`mb-4 p-4 rounded-2xl border ${currentStatus.bg} flex items-start gap-3`}>

@@ -28,6 +28,7 @@ import {
   ChevronDown,
   ArrowLeftRight,
   Copy as CopyIcon,
+  Mic,
 } from 'lucide-react'
 
 import { Button } from '@/presentation/components/ui/button'
@@ -62,6 +63,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/presentation/components/ui/popover'
 import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
+import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNoteRecorder'
 
 // ── Validation ────────────────────────────────────────────
 
@@ -99,6 +101,8 @@ const proposalFormSchema = z.object({
   deliveryTerms: z.string().default('Standard'),
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),
+  voiceNoteData: z.string().nullable().optional(),
+  voiceNoteDuration: z.number().nullable().optional(),
 })
 
 type ProposalFormData = z.infer<typeof proposalFormSchema>
@@ -852,11 +856,17 @@ function PreviewStep({
   totals,
   onSaveAndSend,
   isSending,
+  voiceNoteData,
+  voiceNoteDuration,
+  onVoiceNoteChange,
 }: {
   data: ProposalFormData
   totals: ReturnType<typeof calculateProposalTotals>
   onSaveAndSend: (method: 'draft' | 'whatsapp' | 'email') => Promise<void>
   isSending: boolean
+  voiceNoteData: string | null
+  voiceNoteDuration: number | null
+  onVoiceNoteChange: (data: string | null, duration: number | null) => void
 }) {
   const t = useTranslations()
   const [sendDialog, setSendDialog] = useState<'email' | 'whatsapp' | null>(null)
@@ -868,6 +878,30 @@ function PreviewStep({
 
   return (
     <div className="space-y-6">
+      {/* Voice Note Recorder */}
+      <div>
+        <Label className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Mic className="h-4 w-4 text-blue-500" />
+          {t('proposals.voiceNote')}
+        </Label>
+        <p className="text-xs text-muted-foreground mb-3">{t('proposals.voiceNoteDesc')}</p>
+        <VoiceNoteRecorder
+          value={voiceNoteData}
+          duration={voiceNoteDuration}
+          onChange={onVoiceNoteChange}
+          maxDuration={60}
+          labels={{
+            record: t('proposals.voiceRecord'),
+            recording: t('proposals.voiceRecording'),
+            stop: t('proposals.voiceStop'),
+            play: t('proposals.voiceReady'),
+            reRecord: t('proposals.voiceReRecord'),
+            delete: t('proposals.voiceDelete'),
+            maxDurationLabel: t('proposals.voiceMaxDuration'),
+          }}
+        />
+      </div>
+
       <Card className="rounded-2xl overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
           <CardTitle className="text-base flex items-center gap-2">
@@ -1081,6 +1115,8 @@ export default function CreateProposalPage() {
       deliveryTerms: 'Standard',
       notes: '',
       termsAndConditions: '',
+      voiceNoteData: null,
+      voiceNoteDuration: null,
     },
   })
 
@@ -1161,6 +1197,8 @@ export default function CreateProposalPage() {
       notes: data.notes || '',
       paymentTerms: data.paymentTerms || '',
       deliveryTerms: data.deliveryTerms || '',
+      voiceNoteData: data.voiceNoteData || null,
+      voiceNoteDuration: data.voiceNoteDuration || null,
     }
 
     const res = await fetch('/api/v1/proposals', {
@@ -1303,7 +1341,18 @@ export default function CreateProposalPage() {
                 <DetailsStep data={formData} onChange={(field, value) => setValue(field as any, value)} />
               )}
               {currentStep === 3 && (
-                <PreviewStep data={formData} totals={totals} onSaveAndSend={handleSaveAndSend} isSending={isSubmitting} />
+                <PreviewStep
+                  data={formData}
+                  totals={totals}
+                  onSaveAndSend={handleSaveAndSend}
+                  isSending={isSubmitting}
+                  voiceNoteData={formData.voiceNoteData ?? null}
+                  voiceNoteDuration={formData.voiceNoteDuration ?? null}
+                  onVoiceNoteChange={(data, dur) => {
+                    setValue('voiceNoteData', data)
+                    setValue('voiceNoteDuration', dur)
+                  }}
+                />
               )}
             </div>
           </div>
