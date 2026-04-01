@@ -184,21 +184,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
-        {/* Logo */}
+        {/* Logo + Collapse Toggle */}
         <div className={`border-b border-slate-200 dark:border-slate-700/50 ${collapsed ? 'px-3 py-8' : 'px-6 py-8'}`}>
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
               <span className="text-white font-bold text-lg">TP</span>
             </div>
             {!collapsed && (
-              <div className="min-w-0">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">TeklifPro</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {t('quotePlatform')}
-                </p>
-              </div>
+              <>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">TeklifPro</h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {t('quotePlatform')}
+                  </p>
+                </div>
+                <button
+                  onClick={toggleCollapsed}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 flex-shrink-0"
+                  aria-label="Collapse sidebar"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </>
             )}
           </div>
+          {collapsed && (
+            <button
+              onClick={toggleCollapsed}
+              className="mt-3 mx-auto p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+              aria-label="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
@@ -239,17 +257,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )
           })}
         </nav>
-
-        {/* Collapse Toggle */}
-        <div className="flex justify-center py-2 border-t border-slate-200 dark:border-slate-700/50">
-          <button
-            onClick={toggleCollapsed}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
-          </button>
-        </div>
 
         {/* User Profile */}
         <div className={`border-t border-slate-200 dark:border-slate-700/50 ${collapsed ? 'p-2' : 'p-4'}`}>
