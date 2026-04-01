@@ -21,7 +21,11 @@
     "success": "İşlem başarılı",
     "required": "Bu alan zorunludur",
     "currency": "₺",
-    "actions": "İşlemler"
+    "actions": "İşlemler",
+    "unsavedChangesTitle": "Kaydedilmemiş Değişiklikler",
+    "unsavedChangesMessage": "Bu sayfada kaydedilmemiş değişiklikleriniz var. Sayfadan ayrılırsanız bu değişiklikler kaybolacaktır.",
+    "unsavedChangesLeave": "Sayfadan Ayrıl",
+    "unsavedChangesStay": "Sayfada Kal"
   },
   "site": {
     "nav": {
@@ -901,6 +905,10 @@
   "layout": {
     "quotePlatform": "Teklif Platformu",
     "signOut": "Çıkış Yap",
-    "user": "Kullanıcı"
+    "user": "Kullanıcı",
+    "logoutTitle": "Çıkış Yap",
+    "logoutMessage": "Çıkış yapmak istediğinize emin misiniz? Kaydedilmemiş değişiklikleriniz kaybolabilir.",
+    "logoutConfirm": "Çıkış Yap",
+    "logoutCancel": "Vazgeç"
   }
 }

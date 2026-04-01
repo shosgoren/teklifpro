@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, type ComponentType } from 'react'
-import { ConfirmProvider } from '@/shared/components/confirm-dialog'
+import { ConfirmProvider, useConfirm } from '@/shared/components/confirm-dialog'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
@@ -106,6 +106,15 @@ const navLabels: Record<string, Record<string, string>> = {
 const SIDEBAR_COLLAPSED_KEY = 'teklifpro-sidebar-collapsed'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ConfirmProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </ConfirmProvider>
+  )
+}
+
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
+  const confirm = useConfirm()
   const [collapsed, setCollapsed] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [langMenuOpen, setLangMenuOpen] = useState(false)
@@ -175,19 +184,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const mobileSecondaryItems = navigationItems.slice(MOBILE_PRIMARY_COUNT)
   const isSecondaryActive = mobileSecondaryItems.some(item => isActive(item.href))
 
+  const handleLogout = async () => {
+    const ok = await confirm({
+      title: t('logoutTitle'),
+      message: t('logoutMessage'),
+      confirmText: t('logoutConfirm'),
+      cancelText: t('logoutCancel'),
+      variant: 'warning',
+    })
+    if (ok) {
+      signOut({ callbackUrl: `/${locale}/login` })
+    }
+  }
+
   return (
-    <ConfirmProvider>
     <div className="flex h-screen bg-gradient-to-br from-slate-100 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Desktop Sidebar - hidden on mobile */}
       <aside
-        className={`hidden md:flex flex-col bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-950 dark:to-slate-950 border-r border-slate-200 dark:border-slate-700/50 shadow-xl dark:shadow-2xl transition-all duration-300 ease-in-out ${
-          collapsed ? 'w-16' : 'w-64'
+        className={`hidden md:flex flex-col bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-950 dark:to-slate-950 border-r border-slate-200 dark:border-slate-700/50 shadow-xl dark:shadow-2xl transition-all duration-300 ease-in-out overflow-hidden ${
+          collapsed ? 'w-[72px]' : 'w-64'
         }`}
       >
         {/* Logo + Collapse Toggle */}
-        <div className={`border-b border-slate-200 dark:border-slate-700/50 ${collapsed ? 'px-3 py-8' : 'px-6 py-8'}`}>
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
+        <div className={`border-b border-slate-200 dark:border-slate-700/50 ${collapsed ? 'px-3 py-5' : 'px-6 py-8'}`}>
+          <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'gap-3'}`}>
+            <div className={`rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0 ${collapsed ? 'w-10 h-10' : 'w-10 h-10'}`}>
               <span className="text-white font-bold text-lg">TP</span>
             </div>
             {!collapsed && (
@@ -207,20 +228,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
               </>
             )}
+            {collapsed && (
+              <button
+                onClick={toggleCollapsed}
+                className="w-9 h-9 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                aria-label="Expand sidebar"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
           </div>
-          {collapsed && (
-            <button
-              onClick={toggleCollapsed}
-              className="mt-3 mx-auto p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
-              aria-label="Expand sidebar"
-            >
-              <PanelLeftOpen className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 py-6 space-y-2 overflow-y-auto ${collapsed ? 'px-2' : 'px-4'}`}>
+        <nav className={`flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden ${collapsed ? 'px-2' : 'px-4'}`}>
           {navigationItems.map((item) => {
             const active = isActive(item.href)
             const Icon = item.icon
@@ -230,7 +251,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   href={getLocalizedHref(item.href)}
                   className={`flex items-center rounded-lg transition-all duration-200 group/link ${
-                    collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-4 py-3'
+                    collapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 px-4 py-3'
                   } ${
                     active
                       ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/20'
@@ -282,7 +303,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
+                onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-md transition-colors duration-200 border border-slate-200 dark:border-slate-700/30"
               >
                 <LogOut className="w-4 h-4" />
@@ -347,7 +368,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               {/* Desktop user menu */}
               <button
-                onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
+                onClick={handleLogout}
                 className="hidden md:flex p-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-600 dark:text-slate-300"
                 title={t('signOut')}
               >
@@ -431,7 +452,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {/* Sign out in more menu */}
                 <div className="border-t border-slate-200 dark:border-slate-700">
                   <button
-                    onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
+                    onClick={handleLogout}
                     className="flex items-center gap-3 px-4 py-3 w-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <LogOut className="w-5 h-5" />
@@ -444,6 +465,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </nav>
     </div>
-    </ConfirmProvider>
   )
 }

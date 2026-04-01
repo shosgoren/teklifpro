@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useUnsavedChanges } from '@/shared/hooks/useUnsavedChanges';
 import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,6 +82,7 @@ const SettingsPage = () => {
   const t = useTranslations('settings');
   const [activeTab, setActiveTab] = useState<TabKey>('general');
   const [saving, setSaving] = useState(false);
+  const { markDirty, markClean } = useUnsavedChanges();
   const [showPasswords, setShowPasswords] = useState({
     parasutPassword: false,
     parasutClientSecret: false,
@@ -274,6 +276,7 @@ const SettingsPage = () => {
       if (!res.ok) throw new Error('Save failed');
 
       await mutateTenant();
+      markClean();
       toast.success('Ayarlar kaydedildi');
     } catch {
       toast.error('Ayarlar kaydedilemedi.');
@@ -286,6 +289,7 @@ const SettingsPage = () => {
     setSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
+      markClean();
       toast.success('Ayarlar kaydedildi');
     } finally {
       setSaving(false);
@@ -306,6 +310,7 @@ const SettingsPage = () => {
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');
       setWhatsapp({ ...whatsapp, connected: true });
+      markClean();
       toast.success('WhatsApp ayarları kaydedildi');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'WhatsApp ayarları kaydedilemedi');
@@ -329,6 +334,7 @@ const SettingsPage = () => {
       });
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');
+      markClean();
       toast.success(t('followupSaved'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('followupError'));
@@ -368,7 +374,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950" onInput={markDirty} onChange={markDirty}>
       {/* ========== Gradient Header + Tabs ========== */}
       <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 pt-5 pb-12 md:px-8 md:pt-6 md:pb-14`}>
         {/* Decorative elements */}

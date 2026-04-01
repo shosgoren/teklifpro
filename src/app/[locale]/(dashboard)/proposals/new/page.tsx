@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import useSWR from 'swr'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,6 +8,7 @@ import * as z from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useUnsavedChanges } from '@/shared/hooks/useUnsavedChanges'
 import {
   Search,
   Plus,
@@ -1101,7 +1102,7 @@ export default function CreateProposalPage() {
     watch,
     setValue,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors, isValid, isDirty },
   } = useForm<ProposalFormData>({
     resolver: zodResolver(proposalFormSchema),
     mode: 'onChange',
@@ -1119,6 +1120,12 @@ export default function CreateProposalPage() {
       voiceNoteDuration: null,
     },
   })
+
+  const { markDirty, markClean } = useUnsavedChanges()
+
+  useEffect(() => {
+    if (isDirty) markDirty()
+  }, [isDirty, markDirty])
 
   const formData = watch()
   const itemsForCalcMain = useMemo(() => formData.items.map((item: any) => {
@@ -1238,6 +1245,7 @@ export default function CreateProposalPage() {
         toast.success(t('proposals.saved'))
       }
 
+      markClean()
       router.push(`/${locale}/proposals/${proposalId}`)
     } catch (error) {
       console.error('Proposal save/send error:', error)

@@ -21,7 +21,11 @@
     "success": "Operation successful",
     "required": "This field is required",
     "currency": "₺",
-    "actions": "Actions"
+    "actions": "Actions",
+    "unsavedChangesTitle": "Unsaved Changes",
+    "unsavedChangesMessage": "You have unsaved changes on this page. If you leave, your changes will be lost.",
+    "unsavedChangesLeave": "Leave Page",
+    "unsavedChangesStay": "Stay on Page"
   },
   "site": {
     "nav": {
@@ -901,6 +905,10 @@
   "layout": {
     "quotePlatform": "Quote Platform",
     "signOut": "Sign Out",
-    "user": "User"
+    "user": "User",
+    "logoutTitle": "Sign Out",
+    "logoutMessage": "Are you sure you want to sign out? Any unsaved changes may be lost.",
+    "logoutConfirm": "Sign Out",
+    "logoutCancel": "Cancel"
   }
 }
