@@ -71,10 +71,11 @@ async function getProposalWithRelations(proposalId: string) {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ): Promise<NextResponse<ApiResponse>> {
   try {
-    const sourceProposalId = params.id;
+    const resolvedParams = await Promise.resolve(context.params);
+    const sourceProposalId = resolvedParams.id;
 
     // ============ 1. DOGRULAMA ============
 

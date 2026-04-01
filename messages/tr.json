@@ -556,7 +556,9 @@
     "yesterday": "Dün",
     "daysAgo": "{count} gün önce",
     "copyLastProposal": "Son Teklifi Kopyala",
-    "todayFollowups": "Bugünün Takipleri"
+    "todayFollowups": "Bugünün Takipleri",
+    "cloneSuccess": "Teklif başarıyla kopyalandı",
+    "cloneError": "Teklif kopyalanırken hata oluştu"
   },
   "customersPage": {
     "title": "Müşteriler",

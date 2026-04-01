@@ -32,6 +32,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/shared/utils/cn';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
@@ -151,10 +152,15 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
       });
       const data = await res.json();
       if (data.success && data.data?.id) {
+        toast.success(t('cloneSuccess'));
         router.push(`/${locale}/proposals/${data.data.id}`);
+      } else {
+        console.error('Clone failed:', res.status, data);
+        toast.error(data.error?.message || data.error || t('cloneError'));
       }
-    } catch {
-      // silently handle
+    } catch (err) {
+      console.error('Clone error:', err);
+      toast.error(t('cloneError'));
     } finally {
       setCloning(false);
     }

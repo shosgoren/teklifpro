@@ -556,7 +556,9 @@
     "yesterday": "Yesterday",
     "daysAgo": "{count} days ago",
     "copyLastProposal": "Copy Last Proposal",
-    "todayFollowups": "Today's Follow-ups"
+    "todayFollowups": "Today's Follow-ups",
+    "cloneSuccess": "Proposal cloned successfully",
+    "cloneError": "Error cloning proposal"
   },
   "customersPage": {
     "title": "Customers",
