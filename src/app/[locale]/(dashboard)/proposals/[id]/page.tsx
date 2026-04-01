@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import useSWR from 'swr';
+import { useConfirm } from '@/shared/components/confirm-dialog';
 import {
   Edit,
   MessageCircle,
@@ -17,53 +18,24 @@ import {
   XCircle,
   AlertCircle,
   FileText,
+  User,
+  Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
 
-interface ProposalItem {
-  id: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  discount: number;
-  vatRate: number;
-}
-
-interface Activity {
-  id: string;
-  type: 'CREATED' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED';
-  timestamp: Date;
-  description: string;
-}
-
-interface ProposalDetail {
-  id: string;
-  number: string;
-  status: ProposalStatus;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  title: string;
-  description: string;
-  items: ProposalItem[];
-  subtotal: number;
-  discount: number;
-  vat: number;
-  total: number;
-  notes: string;
-  terms: string;
-  createdAt: Date;
-  updatedAt: Date;
-  activities: Activity[];
-  revisionRequest?: {
-    note: string;
-    requestedAt: Date;
-  };
-}
+const fetcher = (url: string) =>
+  fetch(url).then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }).then(data => {
+    if (!data.success) throw new Error(data.error || 'API error');
+    return data;
+  });
 
 const STATUS_COLORS: Record<ProposalStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-800',
@@ -85,7 +57,18 @@ const STATUS_LABELS: Record<ProposalStatus, string> = {
   EXPIRED: 'Süresi Doldu',
 };
 
-const getActivityIcon = (type: Activity['type']) => {
+const ACTIVITY_ICON_COLORS: Record<string, string> = {
+  CREATED: 'from-blue-500 to-blue-600',
+  SENT: 'from-indigo-500 to-indigo-600',
+  VIEWED: 'from-amber-500 to-amber-600',
+  ACCEPTED: 'from-emerald-500 to-emerald-600',
+  REJECTED: 'from-red-500 to-red-600',
+  REVISION_REQUESTED: 'from-orange-500 to-orange-600',
+  UPDATED: 'from-violet-500 to-violet-600',
+  CANCELLED: 'from-gray-500 to-gray-600',
+};
+
+const getActivityIcon = (type: string) => {
   switch (type) {
     case 'CREATED':
       return <FileText className="h-4 w-4" />;
@@ -99,156 +82,103 @@ const getActivityIcon = (type: Activity['type']) => {
       return <XCircle className="h-4 w-4" />;
     case 'REVISION_REQUESTED':
       return <AlertCircle className="h-4 w-4" />;
+    default:
+      return <Clock className="h-4 w-4" />;
   }
 };
 
-const getActivityLabel = (type: Activity['type']) => {
+const getActivityLabel = (type: string) => {
   switch (type) {
-    case 'CREATED':
-      return 'Oluşturuldu';
-    case 'SENT':
-      return 'Gönderildi';
-    case 'VIEWED':
-      return 'Görüntülendi';
-    case 'ACCEPTED':
-      return 'Kabul Edildi';
-    case 'REJECTED':
-      return 'Reddedildi';
-    case 'REVISION_REQUESTED':
-      return 'Revize İstendi';
+    case 'CREATED': return 'Oluşturuldu';
+    case 'SENT': return 'Gönderildi';
+    case 'VIEWED': return 'Görüntülendi';
+    case 'ACCEPTED': return 'Kabul Edildi';
+    case 'REJECTED': return 'Reddedildi';
+    case 'REVISION_REQUESTED': return 'Revize İstendi';
+    case 'UPDATED': return 'Güncellendi';
+    case 'CANCELLED': return 'Silindi';
+    default: return type;
   }
-};
-
-// Mock detailed proposal data
-const MOCK_PROPOSAL: ProposalDetail = {
-  id: '3',
-  number: 'TKL-2026-003',
-  status: 'REVISION_REQUESTED',
-  customerName: 'Digital Ventures',
-  customerEmail: 'contact@digitalventures.com',
-  customerPhone: '+90 212 555 0123',
-  title: 'Mobil Uygulama Geliştirme',
-  description: 'Full-stack mobil uygulama geliştirme projesi - iOS ve Android',
-  items: [
-    {
-      id: '1',
-      productName: 'Mobil Uygulama Geliştirme - Backend',
-      quantity: 1,
-      unitPrice: 25000,
-      discount: 0,
-      vatRate: 18,
-    },
-    {
-      id: '2',
-      productName: 'Mobil Uygulama Geliştirme - iOS',
-      quantity: 1,
-      unitPrice: 20000,
-      discount: 0,
-      vatRate: 18,
-    },
-    {
-      id: '3',
-      productName: 'Mobil Uygulama Geliştirme - Android',
-      quantity: 1,
-      unitPrice: 20000,
-      discount: 0,
-      vatRate: 18,
-    },
-  ],
-  subtotal: 65000,
-  discount: 0,
-  vat: 11700,
-  total: 76700,
-  notes: 'Proje, 16 haftalık geliştirme dönemini kapsamaktadır.',
-  terms: '50% ön ödeme, 50% teslim sırasında ödeme. Destekleme hizmeti ilk 3 ay ücretsiz olacaktır.',
-  createdAt: new Date('2026-03-10'),
-  updatedAt: new Date('2026-03-28'),
-  activities: [
-    {
-      id: '1',
-      type: 'CREATED',
-      timestamp: new Date('2026-03-10T10:00:00'),
-      description: 'Teklif oluşturuldu',
-    },
-    {
-      id: '2',
-      type: 'SENT',
-      timestamp: new Date('2026-03-10T14:30:00'),
-      description: 'Teklif müşteriye gönderildi',
-    },
-    {
-      id: '3',
-      type: 'VIEWED',
-      timestamp: new Date('2026-03-12T09:15:00'),
-      description: 'Müşteri tarafından görüntülendi',
-    },
-    {
-      id: '4',
-      type: 'VIEWED',
-      timestamp: new Date('2026-03-15T16:45:00'),
-      description: 'Müşteri tarafından görüntülendi',
-    },
-    {
-      id: '5',
-      type: 'VIEWED',
-      timestamp: new Date('2026-03-20T11:20:00'),
-      description: 'Müşteri tarafından görüntülendi',
-    },
-    {
-      id: '6',
-      type: 'REVISION_REQUESTED',
-      timestamp: new Date('2026-03-28T13:45:00'),
-      description: 'Müşteri revize isteğinde bulundu',
-    },
-  ],
-  revisionRequest: {
-    note: 'Backend ve frontend tasarımlarında küçük değişikliklerin yapılması gerekmektedir. Ayrıca geliştirme takvimi hakkında daha detaylı bilgi istiyoruz.',
-    requestedAt: new Date('2026-03-28T13:45:00'),
-  },
 };
 
 export default function ProposalDetailPage() {
   const router = useRouter();
   const locale = useLocale();
-  const [proposal] = useState<ProposalDetail>(MOCK_PROPOSAL);
+  const confirm = useConfirm();
+  const params = useParams();
+  const proposalId = params.id as string;
+
+  const { data, error, isLoading } = useSWR(
+    proposalId ? `/api/v1/proposals/${proposalId}` : null,
+    fetcher
+  );
+
+  const proposal = data?.data;
 
   const handleEdit = () => {
-    router.push(`/${locale}/proposals/${proposal.id}/edit`);
+    router.push(`/${locale}/proposals/${proposalId}/edit`);
   };
 
-  const handleDelete = () => {
-    if (confirm('Bu teklifi silmek istediğinizden emin misiniz?')) {
-      alert('Teklif silindi');
-      router.push(`/${locale}/proposals`);
+  const handleDelete = async () => {
+    const ok = await confirm({ message: 'Bu teklifi silmek istediğinizden emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    if (!ok) return;
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}`, { method: 'DELETE' });
+      if (res.ok) {
+        router.push(`/${locale}/proposals`);
+      } else {
+        toast.error('Silme işlemi sırasında hata oluştu.');
+      }
+    } catch {
+      toast.error('Silme işlemi sırasında hata oluştu.');
     }
   };
 
   const handleSendWhatsApp = () => {
-    const message = `Merhaba, ${proposal.number} numaralı teklif hakkında konuşmak istiyorum.`;
+    if (!proposal?.customer?.phone) return;
+    const message = `Merhaba, ${proposal.proposalNumber} numarali teklif hakkinda konusmak istiyorum.`;
     const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${proposal.customerPhone.replace(/\D/g, '')}?text=${encodedMessage}`);
+    window.open(`https://wa.me/${proposal.customer.phone.replace(/\D/g, '')}?text=${encodedMessage}`);
   };
 
   const handleSendEmail = () => {
-    alert(`E-posta gönderi sayfasına yönlendirileceksiniz - ${proposal.customerEmail}`);
+    if (proposal?.customer?.email) {
+      window.open(`mailto:${proposal.customer.email}?subject=Teklif: ${proposal.proposalNumber}`);
+    }
   };
 
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/proposals/${proposal.number}`;
+    if (!proposal?.publicToken) return;
+    const link = `${window.location.origin}/proposal/${proposal.publicToken}`;
     navigator.clipboard.writeText(link);
-    alert('Link kopyalandı!');
+    toast.success('Link kopyalandı!');
   };
 
-  const handleDownloadPDF = () => {
-    alert('PDF indirme başlatılacak...');
+  const handleDownloadPDF = async () => {
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/pdf`);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${proposal?.proposalNumber || 'teklif'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        toast.error('PDF indirme başlatılamadı.');
+      }
+    } catch {
+      toast.error('PDF indirme sırasında hata oluştu.');
+    }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const formatDateTime = (date: Date) => {
-    return date.toLocaleString('tr-TR', {
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('tr-TR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -266,281 +196,431 @@ export default function ProposalDetailPage() {
     }).format(amount);
   };
 
-  const calculateLineTotal = (item: ProposalItem) => {
-    const priceAfterDiscount = item.unitPrice * (1 - item.discount / 100);
-    const subtotal = priceAfterDiscount * item.quantity;
-    return subtotal;
-  };
+  // --- Loading State ---
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6">
+        <div className="space-y-6 max-w-7xl mx-auto">
+          {/* Header skeleton */}
+          <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-lg">
+            <div className="h-4 w-32 bg-white/20 rounded-full animate-pulse mb-4" />
+            <div className="h-8 w-72 bg-white/20 rounded-2xl animate-pulse mb-2" />
+            <div className="h-5 w-48 bg-white/20 rounded-2xl animate-pulse mb-6" />
+            <div className="flex gap-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-10 w-10 bg-white/20 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          </div>
+          {/* Content skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="h-96 bg-white dark:bg-gray-900 rounded-2xl shadow-lg animate-pulse" />
+            </div>
+            <div className="space-y-6">
+              <div className="h-64 bg-white dark:bg-gray-900 rounded-2xl shadow-lg animate-pulse" />
+              <div className="h-48 bg-white dark:bg-gray-900 rounded-2xl shadow-lg animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const calculateLineWithVAT = (item: ProposalItem) => {
-    const lineTotal = calculateLineTotal(item);
-    return lineTotal * (1 + item.vatRate / 100);
-  };
+  // --- Error State ---
+  if (error || !proposal) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-20">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+              <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+            </div>
+            <p className="text-lg font-medium text-red-600 dark:text-red-400">
+              {error?.message === 'HTTP 404' ? 'Teklif bulunamadi.' : 'Veriler yuklenirken hata olustu. Lutfen sayfayi yenileyin.'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const status = proposal.status as ProposalStatus;
+  const items = proposal.items || [];
+  const activities = proposal.activities || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      {/* Breadcrumb */}
-      <div className="mb-6 flex items-center gap-2 text-sm text-gray-600">
-        <button
-          onClick={() => router.push(`/${locale}/proposals`)}
-          className="hover:text-gray-900"
-        >
-          Teklifler
-        </button>
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-gray-900 font-medium">{proposal.number}</span>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24 md:pb-6">
+      {/* ===== Gradient Header ===== */}
+      <div className="relative overflow-hidden rounded-b-3xl md:rounded-b-none">
+        <div className="relative rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">
+          {/* Decorative circle */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-10 -translate-x-6" />
 
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{proposal.number}</h1>
-            <p className="text-gray-600">{proposal.title}</p>
+          {/* Breadcrumb */}
+          <div className="relative z-10 mb-4 flex items-center gap-2 text-sm">
+            <button
+              onClick={() => router.push(`/${locale}/proposals`)}
+              className="text-white/60 hover:text-white transition-colors"
+            >
+              Teklifler
+            </button>
+            <ChevronRight className="h-4 w-4 text-white/40" />
+            <span className="text-white/90 font-medium">{proposal.proposalNumber}</span>
           </div>
-          <Badge className={`${STATUS_COLORS[proposal.status]} h-fit`}>
-            {STATUS_LABELS[proposal.status]}
-          </Badge>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleEdit}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Düzenle
-          </Button>
-          <Button variant="outline" onClick={handleSendWhatsApp}>
-            <MessageCircle className="h-4 w-4 mr-2" />
-            WhatsApp Gönder
-          </Button>
-          <Button variant="outline" onClick={handleSendEmail}>
-            <Mail className="h-4 w-4 mr-2" />
-            E-posta Gönder
-          </Button>
-          <Button variant="outline" onClick={handleCopyLink}>
-            <Link className="h-4 w-4 mr-2" />
-            Link Kopyala
-          </Button>
-          <Button variant="outline" onClick={handleDownloadPDF}>
-            <Download className="h-4 w-4 mr-2" />
-            PDF İndir
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleDelete}
-            className="text-red-600 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Sil
-          </Button>
+          {/* Title & Status */}
+          <div className="relative z-10 flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{proposal.proposalNumber}</h1>
+              {proposal.title && (
+                <p className="text-white/70 text-sm md:text-base">{proposal.title}</p>
+              )}
+            </div>
+            <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm px-3 py-1 text-sm font-medium w-fit">
+              {STATUS_LABELS[status] || status}
+            </Badge>
+          </div>
+
+          {/* Desktop Action Buttons */}
+          <div className="relative z-10 hidden md:flex flex-wrap gap-2">
+            <button
+              onClick={handleEdit}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors text-sm font-medium"
+              title="Düzenle"
+            >
+              <Edit className="h-4 w-4" />
+              <span>Düzenle</span>
+            </button>
+            <button
+              onClick={handleSendWhatsApp}
+              className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
+              title="WhatsApp Gönder"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleSendEmail}
+              className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
+              title="E-posta Gönder"
+            >
+              <Mail className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleCopyLink}
+              className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
+              title="Link Kopyala"
+            >
+              <Link className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
+              title="PDF İndir"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="inline-flex items-center justify-center w-10 h-10 bg-red-500/30 hover:bg-red-500/50 text-white rounded-xl backdrop-blur-sm transition-colors ml-auto"
+              title="Sil"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Revision Notice */}
-          {proposal.status === 'REVISION_REQUESTED' && proposal.revisionRequest && (
-            <Card className="border-2 border-orange-200 bg-orange-50 p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-orange-900 mb-2">Revize İsteği</h3>
-                  <p className="text-orange-800 text-sm mb-3">{proposal.revisionRequest.note}</p>
-                  <p className="text-xs text-orange-700 mb-3">
-                    {formatDateTime(proposal.revisionRequest.requestedAt)}
-                  </p>
-                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Revize Et
-                  </Button>
+      {/* ===== Main Content ===== */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Proposal Preview */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="p-6 md:p-8">
+                {/* Company Header */}
+                <div className="mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Teklifpro</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">www.teklifpro.com | info@teklifpro.com</p>
+                </div>
+
+                {/* Proposal Info Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Teklif Tarihi</p>
+                    <p className="text-gray-900 dark:text-white font-semibold text-sm">{formatDate(proposal.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Teklif No</p>
+                    <p className="text-gray-900 dark:text-white font-semibold text-sm">{proposal.proposalNumber}</p>
+                  </div>
+                  {proposal.expiresAt && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Geçerlilik</p>
+                      <p className="text-gray-900 dark:text-white font-semibold text-sm">{formatDate(proposal.expiresAt)}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Durum</p>
+                    <Badge className={`${STATUS_COLORS[status] || ''} w-fit text-xs`}>
+                      {STATUS_LABELS[status] || status}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Customer Info in Preview */}
+                {proposal.customer && (
+                  <div className="mb-8">
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Müşteri</p>
+                    <p className="text-gray-900 dark:text-white font-semibold">{proposal.customer.name}</p>
+                    {proposal.customer.email && <p className="text-gray-500 dark:text-gray-400 text-sm">{proposal.customer.email}</p>}
+                    {proposal.customer.phone && <p className="text-gray-500 dark:text-gray-400 text-sm">{proposal.customer.phone}</p>}
+                  </div>
+                )}
+
+                {/* Line Items - Desktop Table */}
+                <div className="mb-8">
+                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Kalemler</p>
+
+                  {/* Desktop table */}
+                  <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50/80 dark:bg-gray-800/50">
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ürün/Hizmet</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Miktar</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Birim Fiyat</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">İskonto</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">KDV</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Toplam</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((item: any, idx: number) => (
+                          <tr
+                            key={item.id}
+                            className={`border-t border-gray-100 dark:border-gray-800 ${
+                              idx % 2 === 1 ? 'bg-gray-50/50 dark:bg-gray-900/50' : ''
+                            }`}
+                          >
+                            <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{item.name}</td>
+                            <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{item.quantity}</td>
+                            <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{formatAmount(Number(item.unitPrice) || 0)}</td>
+                            <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">%{Number(item.discountRate) || 0}</td>
+                            <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">%{Number(item.vatRate) || 0}</td>
+                            <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
+                              {formatAmount(Number(item.lineTotal) || 0)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-3">
+                    {items.map((item: any) => (
+                      <div
+                        key={item.id}
+                        className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-4"
+                      >
+                        <p className="font-semibold text-gray-900 dark:text-white mb-2">{item.name}</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="text-gray-400 text-xs">Miktar</span>
+                            <p className="text-gray-700 dark:text-gray-300">{item.quantity}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 text-xs">Birim Fiyat</span>
+                            <p className="text-gray-700 dark:text-gray-300">{formatAmount(Number(item.unitPrice) || 0)}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 text-xs">İskonto</span>
+                            <p className="text-gray-700 dark:text-gray-300">%{Number(item.discountRate) || 0}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 text-xs">KDV</span>
+                            <p className="text-gray-700 dark:text-gray-300">%{Number(item.vatRate) || 0}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                          <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Toplam</span>
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {formatAmount(Number(item.lineTotal) || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Totals */}
+                <div className="flex justify-end mb-8">
+                  <div className="w-full md:w-72 space-y-2">
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>Ara Toplam:</span>
+                      <span>{formatAmount(Number(proposal.subtotal) || 0)}</span>
+                    </div>
+                    {Number(proposal.discountAmount) > 0 && (
+                      <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <span>İskonto:</span>
+                        <span>-{formatAmount(Number(proposal.discountAmount))}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>KDV:</span>
+                      <span>{formatAmount(Number(proposal.vatTotal) || 0)}</span>
+                    </div>
+                    {/* Grand total with gradient bg */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 mt-2">
+                      <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+                        <span>Genel Toplam:</span>
+                        <span>{formatAmount(Number(proposal.grandTotal) || 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {proposal.notes && (
+                  <div className="mb-6 p-4 bg-gray-50/80 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Notlar</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{proposal.notes}</p>
+                  </div>
+                )}
+
+                {/* Terms */}
+                {(proposal.paymentTerms || proposal.deliveryTerms) && (
+                  <div className="p-4 bg-gray-50/80 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Sartlar</p>
+                    {proposal.paymentTerms && <p className="text-sm text-gray-700 dark:text-gray-300">Odeme: {proposal.paymentTerms}</p>}
+                    {proposal.deliveryTerms && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">Teslimat: {proposal.deliveryTerms}</p>}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* ===== Sidebar ===== */}
+          <div className="space-y-6">
+            {/* Activity Feed */}
+            <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="p-5">
+                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">Faaliyet Geçmişi</h3>
+                <div className="space-y-0">
+                  {activities.length === 0 ? (
+                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Henuz faaliyet yok.</p>
+                  ) : (
+                    activities.map((activity: any, idx: number) => (
+                      <div key={activity.id} className="flex gap-3">
+                        {/* Timeline column */}
+                        <div className="flex flex-col items-center">
+                          <div className={`h-8 w-8 rounded-full bg-gradient-to-br ${ACTIVITY_ICON_COLORS[activity.type] || 'from-gray-400 to-gray-500'} text-white flex items-center justify-center shrink-0 shadow-sm`}>
+                            {getActivityIcon(activity.type)}
+                          </div>
+                          {idx < activities.length - 1 && (
+                            <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
+                          )}
+                        </div>
+                        {/* Content */}
+                        <div className="flex-1 pb-4 pt-1">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{getActivityLabel(activity.type)}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{formatDateTime(activity.createdAt)}</p>
+                          {activity.description && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{activity.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </Card>
-          )}
 
-          {/* Proposal Preview */}
-          <Card className="border border-gray-200 p-8 bg-white">
-            {/* Company Header */}
-            <div className="mb-8 pb-8 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Teklifpro</h2>
-              <p className="text-gray-600 text-sm">www.teklifpro.com | info@teklifpro.com</p>
-            </div>
-
-            {/* Invoice/Proposal Info */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Teklif Tarihi</p>
-                <p className="text-gray-900 font-semibold">{formatDate(proposal.createdAt)}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Teklif No</p>
-                <p className="text-gray-900 font-semibold">{proposal.number}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Geçerlilik</p>
-                <p className="text-gray-900 font-semibold">30 Gün</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Durum</p>
-                <Badge className={`${STATUS_COLORS[proposal.status]} w-fit`}>
-                  {STATUS_LABELS[proposal.status]}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Customer Info */}
-            <div className="mb-8">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Fatura Adresi</p>
-              <p className="text-gray-900 font-semibold">{proposal.customerName}</p>
-              <p className="text-gray-600 text-sm">{proposal.customerEmail}</p>
-              <p className="text-gray-600 text-sm">{proposal.customerPhone}</p>
-            </div>
-
-            {/* Line Items */}
-            <div className="mb-8 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-3 py-2 text-left font-semibold text-gray-900">Ürün/Hizmet</th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-900">Miktar</th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-900">Birim Fiyat</th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-900">İskonto</th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-900">KDV</th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-900">Toplam</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {proposal.items.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-200">
-                      <td className="px-3 py-2 text-gray-900">{item.productName}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">{item.quantity}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">{formatAmount(item.unitPrice)}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">%{item.discount}</td>
-                      <td className="px-3 py-2 text-right text-gray-600">%{item.vatRate}</td>
-                      <td className="px-3 py-2 text-right font-semibold text-gray-900">
-                        {formatAmount(calculateLineWithVAT(item))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Totals */}
-            <div className="flex justify-end mb-8">
-              <div className="w-64 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Ara Toplam:</span>
-                  <span>{formatAmount(proposal.subtotal)}</span>
-                </div>
-                {proposal.discount > 0 && (
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>İskonto:</span>
-                    <span>-{formatAmount(proposal.discount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>KDV (Ort. %18):</span>
-                  <span>{formatAmount(proposal.vat)}</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
-                  <span>Genel Toplam:</span>
-                  <span>{formatAmount(proposal.total)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes & Terms */}
-            {proposal.notes && (
-              <div className="mb-6 p-4 bg-gray-50 rounded border border-gray-200">
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Notlar</p>
-                <p className="text-sm text-gray-700">{proposal.notes}</p>
-              </div>
-            )}
-
-            {proposal.terms && (
-              <div className="p-4 bg-gray-50 rounded border border-gray-200">
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Şartlar</p>
-                <p className="text-sm text-gray-700">{proposal.terms}</p>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Activity Feed */}
-          <Card className="border border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Faaliyet Geçmişi</h3>
-            <div className="space-y-4">
-              {proposal.activities.map((activity, idx) => (
-                <div key={activity.id} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
-                      {getActivityIcon(activity.type)}
+            {/* Customer Info Card */}
+            {proposal.customer && (
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-blue-500">
+                <div className="p-5">
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">Müşteri Bilgileri</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">{proposal.customer.name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">Müşteri</p>
+                      </div>
                     </div>
-                    {idx < proposal.activities.length - 1 && (
-                      <div className="w-0.5 h-6 bg-gray-200 my-1" />
+                    {proposal.customer.email && (
+                      <div className="flex items-center gap-3 pl-1">
+                        <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                        <a href={`mailto:${proposal.customer.email}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm truncate">
+                          {proposal.customer.email}
+                        </a>
+                      </div>
                     )}
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <p className="text-sm font-medium text-gray-900">{getActivityLabel(activity.type)}</p>
-                    <p className="text-xs text-gray-500">{formatDateTime(activity.timestamp)}</p>
-                    {activity.description && (
-                      <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
+                    {proposal.customer.phone && (
+                      <div className="flex items-center gap-3 pl-1">
+                        <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+                        <a href={`tel:${proposal.customer.phone}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+                          {proposal.customer.phone}
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Customer Info Card */}
-          <Card className="border border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Müşteri Bilgileri</h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Ad</p>
-                <p className="text-gray-900">{proposal.customerName}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase mb-1">E-posta</p>
-                <a href={`mailto:${proposal.customerEmail}`} className="text-blue-600 hover:underline text-sm">
-                  {proposal.customerEmail}
-                </a>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Telefon</p>
-                <a href={`tel:${proposal.customerPhone}`} className="text-blue-600 hover:underline text-sm">
-                  {proposal.customerPhone}
-                </a>
-              </div>
-            </div>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="border border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">Hızlı İstatistikler</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600">Görüntülenme Sayısı</p>
-                <p className="font-semibold text-gray-900">3</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600">Son Görüntüleme</p>
-                <p className="text-xs text-gray-900">20 Mart</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600">Gönderildikten Sonra Geçen Süre</p>
-                <p className="text-xs text-gray-900">18 gün</p>
-              </div>
-            </div>
-          </Card>
+              </Card>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* ===== Mobile Sticky Bottom Bar ===== */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <button
+          onClick={handleEdit}
+          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-sm font-medium"
+        >
+          <Edit className="h-4 w-4" />
+          Duzenle
+        </button>
+        <button
+          onClick={handleSendWhatsApp}
+          className="inline-flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
+          title="WhatsApp"
+        >
+          <MessageCircle className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleSendEmail}
+          className="inline-flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
+          title="E-posta"
+        >
+          <Mail className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleCopyLink}
+          className="inline-flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
+          title="Link Kopyala"
+        >
+          <Link className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleDownloadPDF}
+          className="inline-flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
+          title="PDF"
+        >
+          <Download className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleDelete}
+          className="inline-flex items-center justify-center w-10 h-10 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-xl transition-colors"
+          title="Sil"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

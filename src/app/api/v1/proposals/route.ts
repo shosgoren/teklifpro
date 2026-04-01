@@ -36,7 +36,7 @@ const GetProposalsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
-  status: z.enum(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED']).optional(),
+  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED']).optional(),
 });
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
@@ -51,10 +51,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
 
     const searchParams = request.nextUrl.searchParams;
     const queryParams = GetProposalsSchema.parse({
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-      search: searchParams.get('search'),
-      status: searchParams.get('status'),
+      page: searchParams.get('page') ?? undefined,
+      limit: searchParams.get('limit') ?? undefined,
+      search: searchParams.get('search') ?? undefined,
+      status: searchParams.get('status') ?? undefined,
     });
 
     const skip = (queryParams.page - 1) * queryParams.limit;

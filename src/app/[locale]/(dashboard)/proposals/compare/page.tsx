@@ -1,176 +1,191 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useState, useMemo } from 'react';
+import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { X, Plus, Download, Printer } from 'lucide-react';
+import { X, Plus, Printer, Loader2, AlertCircle, Search, BarChart3, TrendingDown, FileText, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
-// Types
+// Types matching API response
+type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
+
 interface ProposalItem {
   id: string;
   name: string;
   quantity: number;
   unitPrice: number;
-  total: number;
+  lineTotal: number;
 }
 
 interface Proposal {
   id: string;
-  number: string;
-  date: Date;
-  status: 'draft' | 'sent' | 'accepted' | 'revised' | 'rejected';
-  customerName: string;
-  customerEmail?: string;
-  items: ProposalItem[];
+  proposalNumber: string;
+  title: string;
+  status: ProposalStatus;
+  grandTotal: number;
   subtotal: number;
-  discount: number;
-  taxRate: number;
-  taxAmount: number;
-  total: number;
-  createdDate: Date;
-  sentDate?: Date;
-  responseDate?: Date;
-  expiryDate: Date;
-  customerResponse?: 'accepted' | 'revised' | 'rejected';
-  responseNotes?: string;
+  vatTotal: number;
+  currency: string;
+  createdAt: string;
+  expiresAt: string;
+  customer: { name: string };
+  items: ProposalItem[];
 }
 
-interface ComparisonColumn {
-  proposal: Proposal;
-  isLoading: boolean;
-}
+// Fetcher
+const fetcher = (url: string) =>
+  fetch(url).then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }).then(data => {
+    if (!data.success) throw new Error(data.error || 'API error');
+    return data;
+  });
 
 // Turkish locale formatter
-const formatCurrency = (value: number): string => {
+const formatCurrency = (value: number, currency = 'TRY'): string => {
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
-    currency: 'TRY',
+    currency,
     minimumFractionDigits: 2,
   }).format(value);
 };
 
-const formatDate = (date: Date): string => {
+const formatDate = (dateStr: string): string => {
   return new Intl.DateTimeFormat('tr-TR', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(date);
+  }).format(new Date(dateStr));
 };
 
-const getStatusBadge = (status: string) => {
-  const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-    draft: { label: 'Taslak', variant: 'secondary' },
-    sent: { label: 'Gönderildi', variant: 'default' },
-    accepted: { label: 'Kabul Edildi', variant: 'default' },
-    revised: { label: 'Revize Edildi', variant: 'outline' },
-    rejected: { label: 'Reddedildi', variant: 'destructive' },
-  };
+const STATUS_COLORS: Record<ProposalStatus, string> = {
+  DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+  SENT: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  VIEWED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+  ACCEPTED: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+  REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+  REVISION_REQUESTED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+  EXPIRED: 'bg-slate-700 text-white dark:bg-slate-600 dark:text-slate-200',
+};
 
-  const config = statusMap[status] || { label: 'Bilinmiyor', variant: 'secondary' as const };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+const STATUS_LABELS: Record<ProposalStatus, string> = {
+  DRAFT: 'Taslak',
+  SENT: 'Gonderildi',
+  VIEWED: 'Goruntulendi',
+  ACCEPTED: 'Kabul',
+  REJECTED: 'Red',
+  REVISION_REQUESTED: 'Revize',
+  EXPIRED: 'Suresi Doldu',
+};
+
+const getStatusBadge = (status: ProposalStatus) => {
+  return (
+    <Badge className={`rounded-lg ${STATUS_COLORS[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}`}>
+      {STATUS_LABELS[status] || status}
+    </Badge>
+  );
 };
 
 // Highlight differences between proposals
-const highlightDifference = (value: any, otherValues: any[]): string => {
+const highlightDifference = (value: number, otherValues: number[]): string => {
   const allValues = [value, ...otherValues].filter((v) => v !== null && v !== undefined);
-  const isNumeric = typeof value === 'number';
-
-  if (isNumeric) {
-    const max = Math.max(...allValues);
-    const min = Math.min(...allValues);
-    if (value === max && max !== min) return 'bg-red-100';
-    if (value === min && max !== min) return 'bg-green-100';
-  } else if (typeof value === 'string') {
-    const uniqueValues = new Set(allValues);
-    if (uniqueValues.size > 1) return 'bg-yellow-100';
-  }
-
+  const max = Math.max(...allValues);
+  const min = Math.min(...allValues);
+  if (value === max && max !== min) return 'bg-red-50 dark:bg-red-950/20';
+  if (value === min && max !== min) return 'bg-green-50 dark:bg-green-950/20';
   return '';
 };
 
-// Determine best proposal (highest acceptance indicators)
-const getBestProposal = (proposals: Proposal[]): string | null => {
-  const scored = proposals.map((p) => {
-    let score = 0;
-    if (p.status === 'accepted' || p.customerResponse === 'accepted') score += 100;
-    if (p.customerResponse === 'revised') score += 50;
-    score -= p.total / 1000; // Prefer lower prices as tiebreaker
-    return { id: p.id, score };
-  });
-
-  const best = scored.reduce((prev, curr) => (curr.score > prev.score ? curr : prev));
-  return best.score > 0 ? best.id : null;
-};
-
-// Search dialog for adding proposals
-function AddProposalDialog({ isOpen, onClose, onAdd, maxReached }: any) {
+// Proposal selection dialog
+function SelectProposalsDialog({
+  isOpen,
+  onClose,
+  allProposals,
+  selectedIds,
+  onToggle,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  allProposals: Proposal[];
+  selectedIds: Set<string>;
+  onToggle: (id: string) => void;
+}) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch(`/api/v1/proposals/search?q=${encodeURIComponent(query)}`);
-      // const data = await response.json();
-      // setResults(data);
-
-      // Mock data for demonstration
-      setResults([
-        { id: 'mock-1', number: 'TK-2024-001', customerName: 'Acme Corp' },
-        { id: 'mock-2', number: 'TK-2024-002', customerName: 'Tech Solutions' },
-      ]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => handleSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm, handleSearch]);
+  const filtered = useMemo(() => {
+    if (!searchTerm) return allProposals;
+    const q = searchTerm.toLowerCase();
+    return allProposals.filter(
+      (p) =>
+        p.proposalNumber.toLowerCase().includes(q) ||
+        p.customer.name.toLowerCase().includes(q) ||
+        (p.title && p.title.toLowerCase().includes(q))
+    );
+  }, [allProposals, searchTerm]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg rounded-2xl bg-white dark:bg-gray-900 border-0 shadow-2xl">
         <DialogHeader>
-          <DialogTitle>Teklif Ekle</DialogTitle>
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Karsilastirilacak Teklifleri Secin
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Input
-            placeholder="Teklif numarası veya müşteri adı..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            disabled={isSearching}
-          />
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {results.length > 0 ? (
-              results.map((proposal) => (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+            <Input
+              placeholder="Teklif numarasi, musteri adi veya baslik..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
+            />
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {selectedIds.size} teklif secildi (en az 2 gerekli)
+          </div>
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            {filtered.length > 0 ? (
+              filtered.map((proposal) => (
                 <button
                   key={proposal.id}
-                  onClick={() => {
-                    onAdd(proposal.id);
-                    setSearchTerm('');
-                  }}
-                  className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={() => onToggle(proposal.id)}
+                  className={`w-full text-left p-3 rounded-2xl border-2 hover:shadow-lg transition-all duration-200 flex items-center gap-3 ${
+                    selectedIds.has(proposal.id)
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-md'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800/50'
+                  }`}
                 >
-                  <div className="font-medium">{proposal.number}</div>
-                  <div className="text-sm text-gray-600">{proposal.customerName}</div>
+                  <Checkbox
+                    checked={selectedIds.has(proposal.id)}
+                    onCheckedChange={() => onToggle(proposal.id)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{proposal.proposalNumber}</span>
+                      {getStatusBadge(proposal.status)}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                      {proposal.customer.name}
+                      {proposal.title && ` - ${proposal.title}`}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
+                      {formatCurrency(Number(proposal.grandTotal), proposal.currency)}
+                    </div>
+                  </div>
                 </button>
               ))
-            ) : searchTerm.length >= 2 && !isSearching ? (
-              <div className="text-center text-gray-500 py-4">Sonuç bulunamadı</div>
-            ) : null}
+            ) : (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                Sonuc bulunamadi
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>
@@ -178,451 +193,515 @@ function AddProposalDialog({ isOpen, onClose, onAdd, maxReached }: any) {
   );
 }
 
-// Proposal column component
-function ProposalColumn({ proposal, isLoading, onRemove, isBest }: any) {
+// Proposal detail column - fetches full proposal with items
+function ProposalColumn({
+  proposalId,
+  onRemove,
+  allTotals,
+}: {
+  proposalId: string;
+  onRemove: (id: string) => void;
+  allTotals: { grandTotal: number; id: string }[];
+}) {
+  const { data, error, isLoading } = useSWR(
+    `/api/v1/proposals/${proposalId}`,
+    fetcher
+  );
+
+  const proposal: Proposal | null = data?.data?.proposal ?? null;
+
   if (isLoading) {
     return (
-      <Card className="flex-shrink-0 w-full min-w-sm h-full">
+      <Card className="flex-shrink-0 w-full min-w-[300px] rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
         <CardHeader>
-          <div className="animate-pulse space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="animate-pulse space-y-3">
+            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded-2xl w-3/4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-2xl w-1/2"></div>
+            <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-2xl w-full mt-4"></div>
+            <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-2xl w-2/3"></div>
+            <div className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl w-full mt-4"></div>
           </div>
         </CardHeader>
       </Card>
     );
   }
 
+  if (error || !proposal) {
+    return (
+      <Card className="flex-shrink-0 w-full min-w-[300px] rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
+        <CardHeader>
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <AlertCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">Teklif yuklenemedi</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => onRemove(proposalId)} className="mt-2 dark:text-gray-300 dark:hover:bg-gray-800">
+            Kaldir
+          </Button>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  const lowestTotal = Math.min(...allTotals.map((t) => t.grandTotal));
+  const isBest = Number(proposal.grandTotal) === lowestTotal && allTotals.length > 1;
+
   return (
-    <Card className={`flex-shrink-0 w-full min-w-sm relative ${isBest ? 'ring-2 ring-green-500' : ''}`}>
-      {/* Best proposal badge */}
+    <Card className={`flex-shrink-0 w-full min-w-[300px] relative rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 transition-all duration-300 hover:shadow-xl ${isBest ? 'ring-2 ring-green-500 dark:ring-green-400' : ''}`}>
       {isBest && (
-        <div className="absolute top-2 right-2">
-          <Badge className="bg-green-500">En iyi teklif</Badge>
+        <div className="absolute top-3 right-3">
+          <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-md border-0">
+            En uygun fiyat
+          </Badge>
         </div>
       )}
 
-      {/* Remove button */}
       <button
         onClick={() => onRemove(proposal.id)}
-        className="absolute top-2 left-2 p-1 hover:bg-gray-100 rounded-full transition-colors"
-        title="Kaldır"
+        className="absolute top-3 left-3 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+        title="Kaldir"
       >
         <X className="w-4 h-4" />
       </button>
 
       <CardHeader className="pb-2">
         <div className="pt-6">
-          <CardTitle className="text-base">{proposal.number}</CardTitle>
-          <div className="text-sm text-gray-600 mt-1">{proposal.customerName}</div>
+          <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100">{proposal.proposalNumber}</CardTitle>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{proposal.customer.name}</div>
+          {proposal.title && (
+            <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{proposal.title}</div>
+          )}
           <div className="mt-2">{getStatusBadge(proposal.status)}</div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* General info section */}
-        <div className="border-t pt-4">
-          <h4 className="font-semibold text-sm mb-2">Genel Bilgiler</h4>
-          <div className="space-y-1 text-sm">
+        {/* General info */}
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">Genel Bilgiler</h4>
+          <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Teklif No:</span>
-              <span className="font-medium">{proposal.number}</span>
+              <span className="text-gray-500 dark:text-gray-400">Teklif No:</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{proposal.proposalNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Tarih:</span>
-              <span>{formatDate(new Date(proposal.date))}</span>
+              <span className="text-gray-500 dark:text-gray-400">Tarih:</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.createdAt)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Müşteri:</span>
-              <span className="font-medium">{proposal.customerName}</span>
+              <span className="text-gray-500 dark:text-gray-400">Musteri:</span>
+              <span className="font-medium text-gray-900 dark:text-gray-100">{proposal.customer.name}</span>
             </div>
+            {proposal.expiresAt && (
+              <div className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">Son Tarih:</span>
+                <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.expiresAt)}</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Products section */}
-        <div className="border-t pt-4">
-          <h4 className="font-semibold text-sm mb-2">Ürünler</h4>
+        {/* Products */}
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">
+            Urunler ({proposal.items?.length || 0})
+          </h4>
           <div className="space-y-2">
-            {proposal.items.map((item: ProposalItem) => (
-              <div key={item.id} className="text-sm border rounded p-2 bg-gray-50">
-                <div className="font-medium">{item.name}</div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>{item.quantity} x {formatCurrency(item.unitPrice)}</span>
-                  <span>{formatCurrency(item.total)}</span>
+            {proposal.items?.map((item, idx) => (
+              <div key={item.id || idx} className="text-sm rounded-xl p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50">
+                <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span>
+                    {item.quantity} x {formatCurrency(Number(item.unitPrice), proposal.currency)}
+                  </span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.lineTotal), proposal.currency)}</span>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Dates section */}
-        <div className="border-t pt-4">
-          <h4 className="font-semibold text-sm mb-2">Süre</h4>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Oluşturulma:</span>
-              <span>{formatDate(new Date(proposal.createdDate))}</span>
-            </div>
-            {proposal.sentDate && (
-              <div className="flex justify-between">
-                <span className="text-gray-600">Gönderimi:</span>
-                <span>{formatDate(new Date(proposal.sentDate))}</span>
-              </div>
+            {(!proposal.items || proposal.items.length === 0) && (
+              <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Urun bulunmuyor</div>
             )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">Son Tarih:</span>
-              <span>{formatDate(new Date(proposal.expiryDate))}</span>
-            </div>
           </div>
         </div>
 
-        {/* Customer response section */}
-        {proposal.customerResponse && (
-          <div className="border-t pt-4">
-            <h4 className="font-semibold text-sm mb-2">Müşteri Yanıtı</h4>
-            <div className="space-y-2">
-              <Badge
-                variant={
-                  proposal.customerResponse === 'accepted'
-                    ? 'default'
-                    : proposal.customerResponse === 'rejected'
-                    ? 'destructive'
-                    : 'outline'
-                }
-              >
-                {proposal.customerResponse === 'accepted'
-                  ? 'Kabul'
-                  : proposal.customerResponse === 'revised'
-                  ? 'Revize İstedi'
-                  : 'Reddetti'}
-              </Badge>
-              {proposal.responseNotes && (
-                <p className="text-xs text-gray-600">{proposal.responseNotes}</p>
-              )}
-              {proposal.responseDate && (
-                <div className="text-xs text-gray-500">
-                  {formatDate(new Date(proposal.responseDate))}
-                </div>
-              )}
+        {/* Totals */}
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">Fiyat Ozeti</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Ara Toplam:</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.subtotal), proposal.currency)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">KDV:</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.vatTotal), proposal.currency)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
+              <span className="text-gray-900 dark:text-gray-100">Toplam:</span>
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                {formatCurrency(Number(proposal.grandTotal), proposal.currency)}
+              </span>
             </div>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-// Main comparison page component
+// Summary KPI card
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  gradient,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  gradient: string;
+}) {
+  return (
+    <div className={`rounded-2xl p-5 ${gradient} shadow-lg`}>
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-white/80">{label}</p>
+          <p className="text-lg font-bold text-white">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main comparison page
 export default function ProposalComparePage() {
-  const searchParams = useSearchParams();
-  const [columns, setColumns] = useState<ComparisonColumn[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Fetch proposals on mount
-  useEffect(() => {
-    const idsParam = searchParams.get('ids');
-    if (!idsParam) return;
+  // Fetch all proposals for the selection list
+  const { data, error, isLoading } = useSWR(
+    '/api/v1/proposals?limit=50',
+    fetcher
+  );
 
-    const ids = idsParam.split(',').filter(Boolean);
-    if (ids.length === 0) return;
+  const allProposals: Proposal[] = data?.data?.proposals ?? [];
 
-    // Initialize with loading state
-    setColumns(ids.map((id) => ({ proposal: null as any, isLoading: true })));
-
-    // Fetch each proposal
-    const fetchProposals = async () => {
-      try {
-        const proposals = await Promise.all(
-          ids.map(async (id) => {
-            // TODO: Replace with actual API call
-            // const response = await fetch(`/api/v1/proposals/${id}`);
-            // return response.json();
-
-            // Mock data for demonstration
-            return {
-              id,
-              number: `TK-2024-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
-              date: new Date(),
-              status: (['draft', 'sent', 'accepted'] as const)[Math.floor(Math.random() * 3)],
-              customerName: `Müşteri ${id}`,
-              customerEmail: `customer${id}@example.com`,
-              items: [
-                {
-                  id: '1',
-                  name: 'Yazılım Geliştirme',
-                  quantity: 1,
-                  unitPrice: 5000 + Math.random() * 5000,
-                  total: 5000 + Math.random() * 5000,
-                },
-                {
-                  id: '2',
-                  name: 'Danışmanlık',
-                  quantity: 10,
-                  unitPrice: 500 + Math.random() * 500,
-                  total: (500 + Math.random() * 500) * 10,
-                },
-              ],
-              subtotal: 10000 + Math.random() * 10000,
-              discount: 500 + Math.random() * 2000,
-              taxRate: 0.18,
-              taxAmount: (10000 + Math.random() * 10000) * 0.18,
-              total: 10000 + Math.random() * 10000,
-              createdDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-              sentDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-              responseDate: Math.random() > 0.5 ? new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) : undefined,
-              expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-              customerResponse: Math.random() > 0.5 ? (['accepted', 'revised', 'rejected'] as const)[Math.floor(Math.random() * 3)] : undefined,
-              responseNotes: Math.random() > 0.7 ? 'Fiyat konusunda görüşmek istiyoruz.' : undefined,
-            };
-          })
-        );
-
-        setColumns(proposals.map((proposal) => ({ proposal, isLoading: false })));
-      } catch (error) {
-        console.error('Failed to fetch proposals:', error);
+  const handleToggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
       }
-    };
-
-    fetchProposals();
-  }, [searchParams]);
-
-  const handleRemoveProposal = (id: string) => {
-    setColumns(columns.filter((col) => col.proposal?.id !== id));
+      return next;
+    });
   };
 
-  const handleAddProposal = (id: string) => {
-    if (columns.length >= 4) return;
-
-    // Add new proposal with loading state
-    setColumns([
-      ...columns,
-      { proposal: null as any, isLoading: true },
-    ]);
-
-    // Fetch the new proposal (mock for now)
-    // TODO: Replace with actual API call
-    const newProposal = {
-      id,
-      number: `TK-2024-${Math.random().toString(36).substr(2, 3).toUpperCase()}`,
-      date: new Date(),
-      status: 'sent' as const,
-      customerName: `Müşteri ${id}`,
-      customerEmail: `customer${id}@example.com`,
-      items: [
-        {
-          id: '1',
-          name: 'Yazılım Geliştirme',
-          quantity: 1,
-          unitPrice: 5000 + Math.random() * 5000,
-          total: 5000 + Math.random() * 5000,
-        },
-      ],
-      subtotal: 10000 + Math.random() * 10000,
-      discount: 0,
-      taxRate: 0.18,
-      taxAmount: (10000 + Math.random() * 10000) * 0.18,
-      total: 10000 + Math.random() * 10000,
-      createdDate: new Date(),
-      sentDate: new Date(),
-      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    };
-
-    setColumns((prev) => [
-      ...prev.slice(0, -1),
-      { proposal: newProposal, isLoading: false },
-    ]);
-
-    setIsAddDialogOpen(false);
-  };
-
-  const handleExportPDF = async () => {
-    try {
-      const ids = columns.map((col) => col.proposal.id).join(',');
-      // TODO: Implement PDF export via /api/v1/proposals/compare/pdf
-      // const response = await fetch(`/api/v1/proposals/compare/pdf?ids=${ids}`);
-      // const blob = await response.blob();
-      // window.open(URL.createObjectURL(blob));
-      console.log('PDF export - IDs:', ids);
-    } catch (error) {
-      console.error('Failed to export PDF:', error);
-    }
+  const handleRemove = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   };
 
   const handlePrint = () => {
     window.print();
   };
 
-  const bestProposalId = columns.length > 0 ? getBestProposal(columns.map((c) => c.proposal)) : null;
-  const proposals = columns.filter((c) => !c.isLoading).map((c) => c.proposal);
+  const selectedProposals = allProposals.filter((p) => selectedIds.has(p.id));
+  const allTotals = selectedProposals.map((p) => ({
+    id: p.id,
+    grandTotal: Number(p.grandTotal),
+  }));
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Teklif Karsilastirma
+          </h1>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl animate-pulse bg-gray-200 dark:bg-gray-800 h-24 shadow-lg"></div>
+          ))}
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <div className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-6 py-4 shadow-lg">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Teklifler yukleniyor...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Teklif Karsilastirma
+          </h1>
+        </div>
+        <Card className="text-center py-12 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
+          <CardContent>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
+            </div>
+            <p className="text-red-600 dark:text-red-400 font-semibold mb-2 text-lg">Teklifler yuklenirken hata olustu</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{error.message}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Empty state - no proposals at all
+  if (allProposals.length < 2) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Teklif Karsilastirma
+          </h1>
+        </div>
+        <Card className="text-center py-16 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
+          <CardContent>
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-800/30 flex items-center justify-center">
+              <BarChart3 className="w-10 h-10 text-blue-500 dark:text-blue-400" />
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
+              Karsilastirmak icin en az 2 teklif gerekli. Henuz teklif bulunmuyor.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const selectedArray = Array.from(selectedIds);
+
+  // Compute summary stats
+  const avgTotal = selectedProposals.length > 0
+    ? selectedProposals.reduce((sum, p) => sum + Number(p.grandTotal), 0) / selectedProposals.length
+    : 0;
+  const lowestTotal = selectedProposals.length > 0
+    ? Math.min(...selectedProposals.map((p) => Number(p.grandTotal)))
+    : 0;
+  const uniqueCustomers = new Set(selectedProposals.map((p) => p.customer.name)).size;
+  const totalItems = selectedProposals.reduce((sum, p) => sum + (p.items?.length ?? 0), 0);
+  const summaryCurrency = selectedProposals[0]?.currency ?? 'TRY';
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Teklif Karşılaştırma</h1>
-        <div className="flex gap-2">
-          {columns.length < 4 && (
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Teklif Ekle
-            </Button>
-          )}
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Teklif Karsilastirma
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+            Teklifleri yan yana karsilastirin ve en uygun secimi yapin
+          </p>
+        </div>
+        <div className="flex gap-3">
           <Button
-            onClick={handleExportPDF}
+            onClick={() => setIsDialogOpen(true)}
             variant="outline"
             size="sm"
-            className="gap-2"
-            disabled={columns.length === 0}
+            className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
           >
-            <Download className="w-4 h-4" />
-            PDF İndir
+            <Plus className="w-4 h-4" />
+            Teklif Sec ({selectedIds.size})
           </Button>
           <Button
             onClick={handlePrint}
             variant="outline"
             size="sm"
-            className="gap-2"
-            disabled={columns.length === 0}
+            className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
+            disabled={selectedIds.size < 2}
           >
             <Printer className="w-4 h-4" />
-            Yazdır
+            Yazdir
           </Button>
         </div>
       </div>
 
-      {columns.length === 0 ? (
-        <Card className="text-center py-12">
+      {selectedIds.size < 2 ? (
+        <Card className="text-center py-16 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
           <CardContent>
-            <p className="text-gray-600 mb-4">Karşılaştırmak için teklif seçin</p>
-            <Button onClick={() => setIsAddDialogOpen(true)}>Teklif Ekle</Button>
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-800/30 flex items-center justify-center">
+              <BarChart3 className="w-10 h-10 text-blue-500 dark:text-blue-400" />
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">
+              {selectedIds.size === 0
+                ? 'Karsilastirmak icin en az 2 teklif secin'
+                : '1 teklif secildi. Karsilastirma icin en az 2 teklif gerekli.'}
+            </p>
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Teklif Sec
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <>
+          {/* Summary KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <SummaryCard
+              icon={FileText}
+              label="Karsilastirilan Teklif"
+              value={`${selectedProposals.length} teklif`}
+              gradient="bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800"
+            />
+            <SummaryCard
+              icon={TrendingDown}
+              label="En Dusuk Fiyat"
+              value={formatCurrency(lowestTotal, summaryCurrency)}
+              gradient="bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-800"
+            />
+            <SummaryCard
+              icon={BarChart3}
+              label="Ortalama Fiyat"
+              value={formatCurrency(avgTotal, summaryCurrency)}
+              gradient="bg-gradient-to-br from-purple-500 to-indigo-700 dark:from-purple-600 dark:to-indigo-800"
+            />
+            <SummaryCard
+              icon={Users}
+              label="Musteri / Urun"
+              value={`${uniqueCustomers} musteri, ${totalItems} urun`}
+              gradient="bg-gradient-to-br from-orange-500 to-rose-600 dark:from-orange-600 dark:to-rose-700"
+            />
+          </div>
+
           {/* Pricing comparison table */}
-          {proposals.length > 0 && (
-            <Card className="mb-6 overflow-x-auto">
-              <CardContent className="p-0">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="text-left p-4 font-semibold w-32 flex-shrink-0">Detay</th>
-                      {proposals.map((proposal) => (
-                        <th key={proposal.id} className="text-right p-4 font-semibold min-w-40 flex-shrink-0">
-                          {proposal.number}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b">
-                      <td className="p-4 text-gray-700 font-medium">Ara Toplam</td>
-                      {proposals.map((proposal) => (
+          <Card className="mb-8 rounded-2xl overflow-hidden shadow-lg border-0 bg-white dark:bg-gray-900">
+            <CardContent className="p-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300 w-32">Detay</th>
+                    {selectedProposals.map((p) => (
+                      <th key={p.id} className="text-right p-4 font-semibold min-w-[160px] text-gray-700 dark:text-gray-300">
+                        {p.proposalNumber}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Musteri</td>
+                    {selectedProposals.map((p) => (
+                      <td key={p.id} className="p-4 text-right text-gray-600 dark:text-gray-400">
+                        {p.customer.name}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Ara Toplam</td>
+                    {selectedProposals.map((p) => (
+                      <td
+                        key={p.id}
+                        className={`p-4 text-right font-medium text-gray-900 dark:text-gray-100 ${highlightDifference(
+                          Number(p.subtotal),
+                          selectedProposals.filter((o) => o.id !== p.id).map((o) => Number(o.subtotal))
+                        )}`}
+                      >
+                        {formatCurrency(Number(p.subtotal), p.currency)}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">KDV</td>
+                    {selectedProposals.map((p) => (
+                      <td
+                        key={p.id}
+                        className={`p-4 text-right font-medium text-gray-900 dark:text-gray-100 ${highlightDifference(
+                          Number(p.vatTotal),
+                          selectedProposals.filter((o) => o.id !== p.id).map((o) => Number(o.vatTotal))
+                        )}`}
+                      >
+                        {formatCurrency(Number(p.vatTotal), p.currency)}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+                    <td className="p-4 text-gray-900 dark:text-gray-100 font-bold">TOPLAM</td>
+                    {selectedProposals.map((p) => {
+                      const total = Number(p.grandTotal);
+                      const totals = selectedProposals.map((o) => Number(o.grandTotal));
+                      const min = Math.min(...totals);
+                      const max = Math.max(...totals);
+                      return (
                         <td
-                          key={proposal.id}
-                          className={`p-4 text-right font-medium ${highlightDifference(
-                            proposal.subtotal,
-                            proposals.filter((p) => p.id !== proposal.id).map((p) => p.subtotal)
-                          )}`}
-                        >
-                          {formatCurrency(proposal.subtotal)}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b">
-                      <td className="p-4 text-gray-700 font-medium">İndirim</td>
-                      {proposals.map((proposal) => (
-                        <td
-                          key={proposal.id}
-                          className={`p-4 text-right font-medium text-red-600 ${highlightDifference(
-                            proposal.discount,
-                            proposals.filter((p) => p.id !== proposal.id).map((p) => p.discount)
-                          )}`}
-                        >
-                          -{formatCurrency(proposal.discount)}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="border-b">
-                      <td className="p-4 text-gray-700 font-medium">KDV ({proposals[0]?.taxRate * 100}%)</td>
-                      {proposals.map((proposal) => (
-                        <td
-                          key={proposal.id}
-                          className={`p-4 text-right font-medium ${highlightDifference(
-                            proposal.taxAmount,
-                            proposals.filter((p) => p.id !== proposal.id).map((p) => p.taxAmount)
-                          )}`}
-                        >
-                          {formatCurrency(proposal.taxAmount)}
-                        </td>
-                      ))}
-                    </tr>
-                    <tr className="bg-blue-50">
-                      <td className="p-4 text-gray-900 font-bold">TOPLAM</td>
-                      {proposals.map((proposal) => (
-                        <td
-                          key={proposal.id}
+                          key={p.id}
                           className={`p-4 text-right font-bold text-lg ${
-                            proposal.total === Math.min(...proposals.map((p) => p.total))
-                              ? 'bg-green-100 text-green-900'
-                              : proposal.total === Math.max(...proposals.map((p) => p.total))
-                              ? 'bg-red-100 text-red-900'
-                              : ''
+                            total === min && min !== max
+                              ? 'bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400'
+                              : total === max && min !== max
+                              ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400'
+                              : 'text-gray-900 dark:text-gray-100'
                           }`}
                         >
-                          {formatCurrency(proposal.total)}
+                          {formatCurrency(total, p.currency)}
                         </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
+                      );
+                    })}
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Urun Sayisi</td>
+                    {selectedProposals.map((p) => (
+                      <td key={p.id} className="p-4 text-right text-gray-600 dark:text-gray-400">
+                        {p.items?.length ?? 0}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Durum</td>
+                    {selectedProposals.map((p) => (
+                      <td key={p.id} className="p-4 text-right">
+                        {getStatusBadge(p.status)}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
 
-          {/* Proposal columns */}
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {columns.map((column) => (
-              <div key={column.proposal?.id || Math.random()}>
-                <ProposalColumn
-                  proposal={column.proposal}
-                  isLoading={column.isLoading}
-                  onRemove={handleRemoveProposal}
-                  isBest={column.proposal?.id === bestProposalId}
-                />
-              </div>
+          {/* Proposal detail columns */}
+          <div className="grid gap-6" style={{ gridTemplateColumns: `repeat(${Math.min(selectedArray.length, 4)}, 1fr)` }}>
+            {selectedArray.map((id) => (
+              <ProposalColumn
+                key={id}
+                proposalId={id}
+                onRemove={handleRemove}
+                allTotals={allTotals}
+              />
             ))}
           </div>
         </>
       )}
 
-      {/* Add proposal dialog */}
-      <AddProposalDialog
-        isOpen={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onAdd={handleAddProposal}
-        maxReached={columns.length >= 4}
+      {/* Selection dialog */}
+      <SelectProposalsDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        allProposals={allProposals}
+        selectedIds={selectedIds}
+        onToggle={handleToggle}
       />
-
-      {/* Print styles */}
-      <style jsx>{`
-        @media print {
-          .no-print {
-            display: none;
-          }
-          body {
-            background: white;
-          }
-          .print\\:break-inside-avoid {
-            break-inside: avoid;
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -35,16 +35,10 @@ export async function GET(request: NextRequest) {
 
     for (const tenant of tenants) {
       try {
-        const client = new ParasutClient({
-          companyId: tenant.parasutCompanyId!,
-          clientId: tenant.parasutClientId!,
-          clientSecret: tenant.parasutClientSecret!,
-          username: tenant.parasutUsername!,
-          password: tenant.parasutPassword!,
-        });
+        const client = await ParasutClient.forTenant(tenant.id);
 
-        const contactSync = await client.syncAllContacts(tenant.id);
-        const productSync = await client.syncAllProducts(tenant.id);
+        const contactSync = await client.syncAllContacts();
+        const productSync = await client.syncAllProducts();
 
         await prisma.tenant.update({
           where: { id: tenant.id },

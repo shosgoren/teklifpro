@@ -56,6 +56,9 @@ const nextConfig = {
       'date-fns',
       '@radix-ui/react-dialog',
     ],
+    outputFileTracingIncludes: {
+      '/api/v1/proposals/\\[id\\]/pdf': ['./public/fonts/**/*'],
+    },
   },
 
   async redirects() {

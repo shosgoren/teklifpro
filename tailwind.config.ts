@@ -96,6 +96,7 @@ const config: Config = {
         'slide-in-right': 'slideInRight 0.4s ease-out',
         'scale-in': 'scaleIn 0.3s ease-in-out',
         'bounce-soft': 'bounceSoft 1s ease-in-out infinite',
+        shimmer: 'shimmer 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -125,6 +126,11 @@ const config: Config = {
         bounceSoft: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '50%': { backgroundPosition: '0% 0' },
+          '100%': { backgroundPosition: '200% 0' },
         },
       },
       boxShadow: {

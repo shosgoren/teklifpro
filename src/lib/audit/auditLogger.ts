@@ -1,4 +1,5 @@
 import { prisma } from '@/shared/utils/prisma';
+import type { Prisma } from '@prisma/client';
 
 interface AuditLogEntry {
   userId: string;
@@ -22,9 +23,9 @@ export class AuditLogger {
           action: entry.action,
           entity: entry.resourceType,
           entityId: entry.resourceId,
-          oldData: entry.oldData || undefined,
-          newData: entry.newData || undefined,
-          metadata: entry.metadata || undefined,
+          oldData: (entry.oldData as Prisma.InputJsonValue) || undefined,
+          newData: (entry.newData as Prisma.InputJsonValue) || undefined,
+          metadata: (entry.metadata as Prisma.InputJsonValue) || undefined,
           ipAddress: entry.ipAddress || null,
         },
       });

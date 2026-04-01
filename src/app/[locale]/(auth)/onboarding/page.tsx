@@ -32,6 +32,17 @@ import { Input } from '@/shared/components/ui/input';
 import { Card } from '@/shared/components/ui/card';
 import { cn } from '@/shared/utils/cn';
 
+// Shared style constants
+const inputClasses =
+  'rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 h-11 transition-all';
+const inputWithIconClasses = `pl-10 ${inputClasses}`;
+const textareaClasses =
+  'pl-10 p-2 w-full border rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-gray-900 dark:text-gray-100';
+const labelClasses = 'text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider';
+const primaryBtnClasses =
+  'w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 transform hover:scale-[1.02] active:scale-95';
+const iconClasses = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500';
+
 // Step 1: Company Info Schema
 const companyInfoSchema = z.object({
   companyName: z.string().min(2, 'Company name is required'),
@@ -42,7 +53,7 @@ const companyInfoSchema = z.object({
   logo: z.instanceof(File).optional(),
 });
 
-// Step 2: Paraşüt Integration Schema
+// Step 2: Parasut Integration Schema
 const parasutSchema = z.object({
   companyId: z.string().min(1, 'Company ID is required').optional().or(z.literal('')),
   clientId: z.string().min(1, 'Client ID is required').optional().or(z.literal('')),
@@ -103,7 +114,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
 }) => {
   const steps = [
     { number: 1, label: 'Company Info' },
-    { number: 2, label: 'Paraşüt Integration' },
+    { number: 2, label: 'Parasut Integration' },
     { number: 3, label: 'WhatsApp Settings' },
     { number: 4, label: 'Done' },
   ];
@@ -122,10 +133,10 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300',
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-110'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-110'
                     : isCompleted
-                    ? 'bg-green-100 text-green-700 border-2 border-green-300'
-                    : 'bg-gray-100 text-gray-400 border-2 border-gray-200'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-2 border-green-300 dark:border-green-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'
                 )}
               >
                 {isCompleted ? (
@@ -140,8 +151,8 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                   className={cn(
                     'flex-1 h-1 mx-2 rounded-full transition-all duration-300',
                     isCompleted || currentStep > step.number
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600'
-                      : 'bg-gray-200'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
+                      : 'bg-gray-200 dark:bg-gray-700'
                   )}
                 />
               )}
@@ -151,7 +162,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
       </div>
 
       {/* Step Label */}
-      <p className="text-center text-sm font-medium text-gray-600">
+      <p className="text-center text-sm font-medium text-gray-600 dark:text-gray-400">
         {steps[currentStep - 1]?.label}
       </p>
     </div>
@@ -242,7 +253,7 @@ export default function OnboardingPage() {
     },
   });
 
-  // Form 2: Paraşüt
+  // Form 2: Parasut
   const parasutForm = useForm<ParasutFormValues>({
     resolver: zodResolver(parasutSchema),
     defaultValues: {
@@ -307,7 +318,7 @@ export default function OnboardingPage() {
         body: JSON.stringify(values),
       });
 
-      if (!response.ok) throw new Error('Failed to save Paraşüt credentials');
+      if (!response.ok) throw new Error('Failed to save Parasut credentials');
 
       setCompletedSteps([...completedSteps, 2]);
       setCurrentStep(3);
@@ -381,32 +392,32 @@ export default function OnboardingPage() {
 
   if (currentStep === 4) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
         <Confetti />
 
-        <Card className="relative w-full max-w-lg shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+        <Card className="relative w-full max-w-lg shadow-2xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl">
           <div className="p-12 text-center">
             <div className="mb-6 flex justify-center">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-2xl opacity-50" />
-                <div className="relative w-24 h-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur-2xl opacity-50" />
+                <div className="relative w-24 h-24 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
                   <CheckCircle className="w-12 h-12 text-white" />
                 </div>
               </div>
             </div>
 
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
               {t('success.title')}
             </h1>
 
-            <p className="text-gray-600 text-lg mb-8 max-w-md">
+            <p className="text-gray-600 dark:text-gray-400 text-lg mb-8 max-w-md">
               {t('success.description')}
             </p>
 
             <div className="space-y-3">
               <Button
                 onClick={handleCreateFirstQuote}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95 text-base"
+                className={primaryBtnClasses}
               >
                 <Zap className="w-5 h-5 mr-2" />
                 {t('success.createFirstQuote')}
@@ -415,13 +426,13 @@ export default function OnboardingPage() {
               <Button
                 onClick={handleGoToDashboard}
                 variant="outline"
-                className="w-full h-12 border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg transition-colors duration-200 text-base"
+                className="w-full h-11 border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-colors duration-200 text-base"
               >
                 {t('success.goToDashboard')}
               </Button>
             </div>
 
-            <p className="text-sm text-gray-500 mt-8">
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-8">
               {t('success.note')}
             </p>
           </div>
@@ -431,13 +442,13 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 py-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4 py-8">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 dark:bg-purple-900 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse" />
       </div>
 
-      <Card className="relative w-full max-w-lg shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+      <Card className="relative w-full max-w-lg shadow-2xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl">
         <div className="p-8">
           <ProgressIndicator
             currentStep={currentStep}
@@ -448,8 +459,8 @@ export default function OnboardingPage() {
           {/* Step 1: Company Info */}
           <Step isActive={currentStep === 1} isCompleted={completedSteps.includes(1)} stepNumber={1} title={t('step1.title')}>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('step1.title')}</h2>
-              <p className="text-gray-600 text-sm">{t('step1.description')}</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('step1.title')}</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">{t('step1.description')}</p>
             </div>
 
             <Form {...companyForm}>
@@ -459,15 +470,15 @@ export default function OnboardingPage() {
                   name="companyName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step1.companyName')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Building2 className={iconClasses} />
                           <Input
                             placeholder="Acme Inc."
-                            className="pl-10 h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className={inputWithIconClasses}
                             {...field}
                           />
                         </div>
@@ -482,13 +493,13 @@ export default function OnboardingPage() {
                   name="taxNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step1.taxNumber')}
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="1234567890"
-                          className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          className={inputClasses}
                           {...field}
                         />
                       </FormControl>
@@ -502,13 +513,13 @@ export default function OnboardingPage() {
                   name="taxOffice"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step1.taxOffice')}
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Istanbul Tax Office"
-                          className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          className={inputClasses}
                           {...field}
                         />
                       </FormControl>
@@ -522,15 +533,15 @@ export default function OnboardingPage() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step1.address')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                          <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
                           <textarea
                             placeholder="123 Business St, Istanbul"
-                            className="pl-10 p-2 w-full border border-gray-200 rounded-md focus:border-blue-500 focus:ring-blue-500 resize-none"
+                            className={textareaClasses}
                             rows={3}
                             {...field}
                           />
@@ -546,15 +557,15 @@ export default function OnboardingPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step1.phone')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Phone className={iconClasses} />
                           <Input
                             placeholder="+90 (535) 000 0000"
-                            className="pl-10 h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className={inputWithIconClasses}
                             {...field}
                           />
                         </div>
@@ -569,14 +580,14 @@ export default function OnboardingPage() {
                   name="logo"
                   render={({ field: { onChange, value: _value, ...field } }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step1.logo')} ({t('step1.optional')})
                       </FormLabel>
                       <FormControl>
-                        <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200">
+                        <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200">
                           <div className="flex flex-col items-center justify-center">
-                            <Upload className="w-6 h-6 text-gray-400 mb-2" />
-                            <span className="text-sm font-medium text-gray-600">
+                            <Upload className="w-6 h-6 text-gray-400 dark:text-gray-500 mb-2" />
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                               {t('step1.uploadLogo')}
                             </span>
                           </div>
@@ -600,7 +611,7 @@ export default function OnboardingPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95"
+                  className={primaryBtnClasses}
                 >
                   {isLoading ? t('step1.saving') : t('step1.next')}
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -609,14 +620,14 @@ export default function OnboardingPage() {
             </Form>
           </Step>
 
-          {/* Step 2: Paraşüt Integration */}
+          {/* Step 2: Parasut Integration */}
           <Step isActive={currentStep === 2} isCompleted={completedSteps.includes(2)} stepNumber={2} title={t('step2.title')}>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('step2.title')}</h2>
-              <p className="text-gray-600 text-sm mb-4">{t('step2.description')}</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('step2.title')}</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{t('step2.description')}</p>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <p className="text-xs text-blue-800 leading-relaxed">
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
+                <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
                   {t('step2.help')}
                 </p>
               </div>
@@ -625,10 +636,10 @@ export default function OnboardingPage() {
             {connectionResult && (
               <div
                 className={cn(
-                  'mb-4 p-3 rounded-lg border flex items-start gap-2',
+                  'mb-4 p-3 rounded-xl border flex items-start gap-2',
                   connectionResult.success
-                    ? 'bg-green-50 border-green-200 text-green-700'
-                    : 'bg-red-50 border-red-200 text-red-700'
+                    ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+                    : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                 )}
               >
                 {connectionResult.success ? (
@@ -650,13 +661,13 @@ export default function OnboardingPage() {
                   name="companyId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step2.companyId')}
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="e.g., 123456"
-                          className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          className={inputClasses}
                           {...field}
                         />
                       </FormControl>
@@ -670,13 +681,13 @@ export default function OnboardingPage() {
                   name="clientId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step2.clientId')}
                       </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Your API Client ID"
-                          className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          className={inputClasses}
                           {...field}
                         />
                       </FormControl>
@@ -690,16 +701,16 @@ export default function OnboardingPage() {
                   name="clientSecret"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step2.clientSecret')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Lock className={iconClasses} />
                           <Input
                             type="password"
                             placeholder="••••••••••"
-                            className="pl-10 h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className={inputWithIconClasses}
                             {...field}
                           />
                         </div>
@@ -714,14 +725,14 @@ export default function OnboardingPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step2.email')}
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="email"
                           placeholder="user@parasut.com"
-                          className="h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          className={inputClasses}
                           {...field}
                         />
                       </FormControl>
@@ -735,16 +746,16 @@ export default function OnboardingPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step2.password')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Lock className={iconClasses} />
                           <Input
                             type="password"
                             placeholder="••••••••••"
-                            className="pl-10 h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className={inputWithIconClasses}
                             {...field}
                           />
                         </div>
@@ -759,7 +770,7 @@ export default function OnboardingPage() {
                   onClick={handleTestConnection}
                   disabled={testingConnection}
                   variant="outline"
-                  className="w-full h-10 border-blue-300 text-blue-600 hover:bg-blue-50 font-medium rounded-lg transition-colors duration-200"
+                  className="w-full h-11 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 font-semibold rounded-xl transition-colors duration-200"
                 >
                   {testingConnection ? t('step2.testing') : t('step2.testConnection')}
                 </Button>
@@ -768,7 +779,7 @@ export default function OnboardingPage() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95"
+                    className={cn(primaryBtnClasses, 'flex-1')}
                   >
                     {isLoading ? t('step2.saving') : t('step2.next')}
                   </Button>
@@ -777,7 +788,7 @@ export default function OnboardingPage() {
                     type="button"
                     onClick={() => handleParasutSubmit({}, true)}
                     variant="outline"
-                    className="flex-1 h-10 border-gray-300 text-gray-600 hover:bg-gray-50 font-medium rounded-lg transition-colors duration-200"
+                    className="flex-1 h-11 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold rounded-xl transition-colors duration-200"
                   >
                     {t('step2.skip')}
                   </Button>
@@ -789,8 +800,8 @@ export default function OnboardingPage() {
           {/* Step 3: WhatsApp Settings */}
           <Step isActive={currentStep === 3} isCompleted={completedSteps.includes(3)} stepNumber={3} title={t('step3.title')}>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('step3.title')}</h2>
-              <p className="text-gray-600 text-sm">{t('step3.description')}</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('step3.title')}</h2>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">{t('step3.description')}</p>
             </div>
 
             <Form {...whatsappForm}>
@@ -803,15 +814,15 @@ export default function OnboardingPage() {
                   name="phoneId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step3.phoneId')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Phone className={iconClasses} />
                           <Input
                             placeholder="Your WhatsApp Business Phone ID"
-                            className="pl-10 h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            className={inputWithIconClasses}
                             {...field}
                           />
                         </div>
@@ -826,15 +837,15 @@ export default function OnboardingPage() {
                   name="accessToken"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">
+                      <FormLabel className={labelClasses}>
                         {t('step3.accessToken')}
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400 dark:text-gray-500" />
                           <textarea
                             placeholder="Your WhatsApp Business API Access Token"
-                            className="pl-10 p-2 w-full border border-gray-200 rounded-md focus:border-blue-500 focus:ring-blue-500 resize-none font-mono text-xs"
+                            className={cn(textareaClasses, 'font-mono text-xs')}
                             rows={4}
                             {...field}
                           />
@@ -849,7 +860,7 @@ export default function OnboardingPage() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="flex-1 h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-95"
+                    className={cn(primaryBtnClasses, 'flex-1')}
                   >
                     {isLoading ? t('step3.saving') : t('step3.next')}
                   </Button>
@@ -858,7 +869,7 @@ export default function OnboardingPage() {
                     type="button"
                     onClick={() => handleWhatsappSubmit({}, true)}
                     variant="outline"
-                    className="flex-1 h-10 border-gray-300 text-gray-600 hover:bg-gray-50 font-medium rounded-lg transition-colors duration-200"
+                    className="flex-1 h-11 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold rounded-xl transition-colors duration-200"
                   >
                     {t('step3.skip')}
                   </Button>

@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
-import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,36 +15,28 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { cn } from '@/shared/utils/cn';
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
 
-interface StatCard {
-  label: string;
-  value: string | number;
-  highlight?: boolean;
-}
+const fetcher = (url: string) =>
+  fetch(url).then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }).then(data => {
+    if (!data.success) throw new Error(data.error || 'API error');
+    return data;
+  });
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-const STATUS_COLORS: Record<ProposalStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  SENT: 'bg-blue-100 text-blue-800',
-  VIEWED: 'bg-yellow-100 text-yellow-800',
-  ACCEPTED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
-  EXPIRED: 'bg-slate-700 text-white',
-};
-
-const STATUS_LABELS: Record<ProposalStatus, string> = {
-  DRAFT: 'Taslak',
-  SENT: 'G\u00f6nderildi',
-  VIEWED: 'G\u00f6r\u00fcnt\u00fclendi',
-  ACCEPTED: 'Kabul',
-  REJECTED: 'Red',
-  REVISION_REQUESTED: 'Revize',
-  EXPIRED: 'S\u00fcresi Doldu',
+const STATUS_CONFIG: Record<ProposalStatus, { label: string; color: string; dot: string; border: string }> = {
+  DRAFT: { label: 'Taslak', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400', border: 'border-l-slate-400' },
+  SENT: { label: 'Gönderildi', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500', border: 'border-l-blue-500' },
+  VIEWED: { label: 'Görüntülendi', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500', border: 'border-l-amber-500' },
+  ACCEPTED: { label: 'Kabul Edildi', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500', border: 'border-l-emerald-500' },
+  REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500', border: 'border-l-red-500' },
+  REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500', border: 'border-l-orange-500' },
+  EXPIRED: { label: 'Süresi Doldu', color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-l-gray-400' },
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -51,6 +44,7 @@ const ITEMS_PER_PAGE = 10;
 export default function ProposalsPage() {
   const router = useRouter();
   const locale = useLocale();
+  const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,88 +65,58 @@ export default function ProposalsPage() {
   const pagination = data?.data?.pagination ?? { total: 0, totalPages: 1, page: 1 };
   const totalPages = pagination.totalPages;
 
-  const stats: StatCard[] = [
-    {
-      label: 'Toplam Teklif',
-      value: pagination.total,
-    },
-    {
-      label: 'Bekleyen',
-      value: proposals.filter((p: any) => p.status === 'SENT').length,
-    },
-    {
-      label: 'Kabul Edilen',
-      value: proposals.filter((p: any) => p.status === 'ACCEPTED').length,
-      highlight: true,
-    },
-    {
-      label: 'Toplam De\u011fer',
-      value: `\u20ba${(proposals.reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0) / 1000).toFixed(1)}K`,
-    },
-  ];
+  const handleRowClick = (id: string) => router.push(`/${locale}/proposals/${id}`);
 
-  const handleRowClick = (id: string) => {
-    router.push(`/${locale}/proposals/${id}`);
-  };
-
-  const handleCopyLink = (e: React.MouseEvent, number: string) => {
+  const handleCopyLink = (e: React.MouseEvent, token: string) => {
     e.stopPropagation();
-    const link = `${window.location.origin}/proposals/${number}`;
+    const link = `${window.location.origin}/proposal/${token}`;
     navigator.clipboard.writeText(link);
-    alert('Link kopyaland\u0131!');
+    toast.success('Link kopyalandı!');
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Bu teklifi silmek istedi\u011finizden emin misiniz?')) return;
+    const ok = await confirm({ message: 'Bu teklifi silmek istediğinizden emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    if (!ok) return;
     try {
       await fetch(`/api/v1/proposals/${id}`, { method: 'DELETE' });
+      toast.success('Teklif silindi');
       mutate();
-    } catch (err) {
-      console.error('Silme hatas\u0131:', err);
-      alert('Silme i\u015flemi s\u0131ras\u0131nda hata olu\u015ftu.');
+    } catch {
+      toast.error('Silme işlemi sırasında hata oluştu');
     }
-  };
-
-  const handleWhatsApp = (e: React.MouseEvent, customerName: string) => {
-    e.stopPropagation();
-    alert(`${customerName} i\u00e7in WhatsApp mesaj\u0131 g\u00f6nderme sayfas\u0131na y\u00f6nlendirileceksiniz`);
   };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'short', day: 'numeric' });
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Bugün';
+    if (diffDays === 1) return 'Dün';
+    if (diffDays < 7) return `${diffDays} gün önce`;
+    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   };
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat('tr-TR', {
+      style: 'currency', currency: 'TRY',
+      minimumFractionDigits: 0, maximumFractionDigits: 0,
     }).format(amount);
-  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-6">Teklifler</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="p-4 border-0 bg-white">
-                <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mb-2" />
-                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded" />
-              </Card>
-            ))}
-          </div>
-          <Card className="border border-gray-200 overflow-hidden">
-            <div className="p-8 space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-12 bg-gray-100 animate-pulse rounded" />
-              ))}
-            </div>
-          </Card>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="h-8 w-48 bg-muted animate-pulse rounded-xl" />
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
+          ))}
+        </div>
+        <div className="h-12 bg-muted animate-pulse rounded-xl" />
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
+          ))}
         </div>
       </div>
     );
@@ -160,226 +124,319 @@ export default function ProposalsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="text-center py-12 text-red-600">
-          Veriler y\u00fcklenirken hata olu\u015ftu. L\u00fctfen sayfay\u0131 yenileyin.
+      <div className="p-4 md:p-6">
+        <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
+            <FileText className="h-8 w-8 text-white" />
+          </div>
+          <p className="text-base font-semibold text-red-700 dark:text-red-400">Veriler yüklenirken hata oluştu</p>
+          <p className="text-sm text-muted-foreground mt-1">Lütfen sayfayı yenileyin.</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Teklifler</h1>
+  // Compute stats
+  const acceptedCount = proposals.filter((p: any) => p.status === 'ACCEPTED').length;
+  const pendingCount = proposals.filter((p: any) => ['SENT', 'VIEWED'].includes(p.status)).length;
+  const revisionCount = proposals.filter((p: any) => p.status === 'REVISION_REQUESTED').length;
+  const totalValue = proposals.reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0);
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {stats.map((stat, idx) => (
-            <Card
-              key={idx}
-              className={`p-4 border-0 ${stat.highlight ? 'bg-gradient-to-br from-blue-50 to-blue-100' : 'bg-white'}`}
-            >
-              <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-              <p className={`text-2xl font-bold ${stat.highlight ? 'text-blue-600' : 'text-gray-900'}`}>
-                {stat.value}
-              </p>
-            </Card>
-          ))}
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      {/* ─── Header ─── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Teklifler</h1>
+          <p className="text-sm text-muted-foreground mt-1">Teklif oluştur, takip et ve yonet</p>
+        </div>
+        <Button
+          onClick={() => router.push(`/${locale}/proposals/new`)}
+          className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Yeni Teklif
+        </Button>
+      </div>
+
+      {/* ─── Mini Stats ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {/* Total */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-lg shadow-blue-500/20">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+          <p className="text-xs font-medium text-blue-100">Toplam</p>
+          <p className="text-2xl font-bold mt-1">{pagination.total}</p>
         </div>
 
-        {/* Filters Bar */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6 space-y-4 md:space-y-0">
-          <div className="flex flex-col md:flex-row gap-4 items-end">
-            {/* Search */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ara</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Teklif No, M\u00fc\u015fteri, Ba\u015fl\u0131k..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+        {/* Pending */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 p-4 text-white shadow-lg shadow-sky-500/20">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+          <p className="text-xs font-medium text-sky-100">Beklemede</p>
+          <p className="text-2xl font-bold mt-1">{pendingCount}</p>
+        </div>
 
-            {/* Status Filter */}
-            <div className="w-full md:w-48">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Durum</label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {statusFilter === 'ALL' ? 'T\u00fcm\u00fc' : STATUS_LABELS[statusFilter as ProposalStatus]}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
-                  <DropdownMenuItem onClick={() => { setStatusFilter('ALL'); setCurrentPage(1); }}>
-                    T\u00fcm\u00fc
-                  </DropdownMenuItem>
-                  {(Object.keys(STATUS_LABELS) as ProposalStatus[]).map((status) => (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() => { setStatusFilter(status); setCurrentPage(1); }}
-                    >
-                      {STATUS_LABELS[status]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        {/* Revize - clickable */}
+        <button
+          onClick={() => setStatusFilter(statusFilter === 'REVISION_REQUESTED' ? 'ALL' : 'REVISION_REQUESTED')}
+          className={cn(
+            'relative overflow-hidden rounded-2xl p-4 text-white shadow-lg text-left transition-all',
+            statusFilter === 'REVISION_REQUESTED'
+              ? 'bg-gradient-to-br from-orange-600 to-orange-800 shadow-orange-600/30 ring-2 ring-orange-300 dark:ring-orange-500'
+              : 'bg-gradient-to-br from-orange-500 to-orange-700 shadow-orange-500/20 hover:shadow-orange-500/30'
+          )}
+        >
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+          <p className="text-xs font-medium text-orange-100">Revize</p>
+          <p className="text-2xl font-bold mt-1">{revisionCount}</p>
+          {revisionCount > 0 && (
+            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
+          )}
+        </button>
 
-            {/* New Proposal Button */}
-            <Button
-              onClick={() => router.push(`/${locale}/proposals/new`)}
-              className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Yeni Teklif
-            </Button>
-          </div>
+        {/* Accepted */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white shadow-lg shadow-emerald-500/20">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+          <p className="text-xs font-medium text-emerald-100">Kabul</p>
+          <p className="text-2xl font-bold mt-1">{acceptedCount}</p>
+        </div>
+
+        {/* Total Value */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 p-4 text-white shadow-lg shadow-violet-500/20 col-span-2 md:col-span-1">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+          <p className="text-xs font-medium text-violet-100">Toplam Deger</p>
+          <p className="text-xl font-bold mt-1 truncate">{formatAmount(totalValue)}</p>
         </div>
       </div>
 
-      {/* Table */}
-      <Card className="border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+      {/* ─── Filters ─── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Teklif No, Müşteri, Başlık..."
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:border-blue-500 focus:ring-blue-500/20 transition-all h-11"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="rounded-xl min-w-[140px] justify-between h-11 border-gray-200 dark:border-gray-800">
+              {statusFilter === 'ALL' ? 'Tum Durumlar' : STATUS_CONFIG[statusFilter as ProposalStatus]?.label}
+              <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48 rounded-xl">
+            <DropdownMenuItem onClick={() => { setStatusFilter('ALL'); setCurrentPage(1); }}>
+              Tum Durumlar
+            </DropdownMenuItem>
+            {(Object.keys(STATUS_CONFIG) as ProposalStatus[]).map((status) => (
+              <DropdownMenuItem key={status} onClick={() => { setStatusFilter(status); setCurrentPage(1); }}>
+                <div className={cn('h-2 w-2 rounded-full mr-2', STATUS_CONFIG[status].dot)} />
+                {STATUS_CONFIG[status].label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* ─── Proposals List ─── */}
+      {proposals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
+            <FileText className="h-10 w-10 text-white" />
+          </div>
+          <p className="text-base font-semibold">Teklif bulunamadi</p>
+          <p className="text-sm text-muted-foreground mt-1">Ilk teklifinizi olusturarak baslayın</p>
+          <Button
+            onClick={() => router.push(`/${locale}/proposals/new`)}
+            className="mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Ilk Teklifini Olustur
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-card overflow-hidden shadow-sm">
+          {/* Desktop Table */}
+          <table className="w-full hidden md:table">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Teklif No</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">M\u00fc\u015fteri</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Ba\u015fl\u0131k</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Tutar</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Durum</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Olu\u015fturulma</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Son G\u00fcncelleme</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">\u0130\u015flemler</th>
+              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teklif</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Müşteri</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tutar</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Durum</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tarih</th>
+                <th className="px-5 py-3.5 w-12"></th>
               </tr>
             </thead>
-            <tbody>
-              {proposals.length > 0 ? (
-                proposals.map((proposal: any) => (
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {proposals.map((proposal: any) => {
+                const status = STATUS_CONFIG[proposal.status as ProposalStatus] ?? STATUS_CONFIG.DRAFT;
+                return (
                   <tr
                     key={proposal.id}
                     onClick={() => handleRowClick(proposal.id)}
-                    className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 cursor-pointer transition-colors duration-150"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{proposal.proposalNumber}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{proposal.customer?.name ?? '-'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{proposal.title}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-semibold">{proposal.title || proposal.proposalNumber}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">{proposal.proposalNumber}</p>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-foreground/80">{proposal.customer?.name ?? '-'}</td>
+                    <td className="px-5 py-4 text-sm font-bold text-right tabular-nums">
                       {formatAmount(Number(proposal.grandTotal) || 0)}
                     </td>
-                    <td className="px-4 py-3 text-sm">
-                      <Badge className={`${STATUS_COLORS[proposal.status as ProposalStatus] || ''}`}>
-                        {STATUS_LABELS[proposal.status as ProposalStatus] || proposal.status}
+                    <td className="px-5 py-4">
+                      <Badge className={cn('text-xs font-medium rounded-lg px-2.5 py-0.5', status.color)}>
+                        {status.label}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(proposal.createdAt)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(proposal.updatedAt)}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-5 py-4 text-sm text-muted-foreground text-right">
+                      {formatDate(proposal.createdAt)}
+                    </td>
+                    <td className="px-5 py-4">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                             <ChevronDown className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="rounded-xl">
                           <DropdownMenuItem onClick={() => handleRowClick(proposal.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            G\u00f6r\u00fcnt\u00fcle
+                            <Eye className="h-4 w-4 mr-2" /> Goruntule
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push(`/${locale}/proposals/${proposal.id}/edit`)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            D\u00fczenle
+                          <DropdownMenuItem onClick={(e) => handleCopyLink(e, proposal.publicToken)}>
+                            <Link className="h-4 w-4 mr-2" /> Link Kopyala
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => alert(`Teklif ${proposal.id} kopyalan\u0131yor...`)}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Kopyala
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => handleWhatsApp(e, proposal.customer?.name ?? '')}>
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            WhatsApp G\u00f6nder
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => handleCopyLink(e, proposal.proposalNumber)}>
-                            <Link className="h-4 w-4 mr-2" />
-                            Link Kopyala
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => handleDelete(e, proposal.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Sil
+                          <DropdownMenuItem onClick={(e) => handleDelete(e, proposal.id)} className="text-red-600 focus:text-red-600">
+                            <Trash2 className="h-4 w-4 mr-2" /> Sil
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    Teklif bulunamad\u0131
-                  </td>
-                </tr>
-              )}
+                );
+              })}
             </tbody>
           </table>
-        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              {proposals.length > 0 && (
-                <>
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, pagination.total)} / {pagination.total}
-                </>
-              )}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className="min-w-10"
-                  >
-                    {page}
-                  </Button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Mobile Cards */}
+          <div className="divide-y divide-gray-100 dark:divide-gray-800 md:hidden">
+            {proposals.map((proposal: any) => {
+              const status = STATUS_CONFIG[proposal.status as ProposalStatus] ?? STATUS_CONFIG.DRAFT;
+              return (
+                <button
+                  key={proposal.id}
+                  onClick={() => handleRowClick(proposal.id)}
+                  className={cn(
+                    'flex items-center gap-3 p-4 w-full text-left transition-colors duration-150',
+                    'border-l-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/30',
+                    status.border
+                  )}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">
+                      {proposal.title || proposal.proposalNumber}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {proposal.customer?.name ?? '-'} · {formatDate(proposal.createdAt)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-bold tabular-nums">{formatAmount(Number(proposal.grandTotal) || 0)}</p>
+                    <Badge className={cn('text-[10px] mt-1 rounded-md', status.color)}>{status.label}</Badge>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-3.5 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, pagination.total)} / {pagination.total}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {pageNumbers.length <= 7 ? (
+                  pageNumbers.map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={cn(
+                        'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
+                        currentPage === page
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                          : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                      )}
+                    >
+                      {page}
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    {[1, 2].map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={cn(
+                          'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
+                          currentPage === page
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                            : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                        )}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    {currentPage > 3 && <span className="text-xs text-muted-foreground px-1">...</span>}
+                    {currentPage > 2 && currentPage < totalPages - 1 && (
+                      <button
+                        onClick={() => setCurrentPage(currentPage)}
+                        className="h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                      >
+                        {currentPage}
+                      </button>
+                    )}
+                    {currentPage < totalPages - 2 && <span className="text-xs text-muted-foreground px-1">...</span>}
+                    {[totalPages - 1, totalPages].filter(p => p > 2).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={cn(
+                          'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
+                          currentPage === page
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                            : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
+                        )}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </>
+                )}
+                <Button
+                  variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

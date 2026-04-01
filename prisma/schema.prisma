@@ -147,6 +147,9 @@ model Customer {
   balance           Decimal   @default(0) @db.Decimal(15, 2)
   currency          String    @default("TRY")
 
+  // Branding
+  logo              String?
+
   // Metadata
   notes             String?
   tags              String[]
@@ -208,41 +211,181 @@ model CustomerNote {
 
 // ==================== PRODUCTS (Parasut Sync) ====================
 
+enum ProductType {
+  COMMERCIAL      // Ticari - satılabilir, tekliflere eklenen
+  RAW_MATERIAL    // Hammadde
+  SEMI_FINISHED   // Yarı Mamül
+  CONSUMABLE      // Sarf Malzeme (ambalaj, etiket vs.)
+}
+
 model Product {
-  id              String    @id @default(cuid())
-  tenantId        String    @map("tenant_id")
-  parasutId       String?   @map("parasut_id")
+  id              String      @id @default(cuid())
+  tenantId        String      @map("tenant_id")
+  parasutId       String?     @map("parasut_id")
 
   code            String?
   name            String
   description     String?
   category        String?
-  unit            String    @default("Adet")
+  unit            String      @default("Adet")
+  productType     ProductType @default(COMMERCIAL) @map("product_type")
 
   // Pricing
-  listPrice       Decimal   @default(0) @db.Decimal(15, 2) @map("list_price")
-  currency        String    @default("TRY")
-  vatRate         Decimal   @default(20) @db.Decimal(5, 2) @map("vat_rate")
+  listPrice       Decimal     @default(0) @db.Decimal(15, 2) @map("list_price")
+  currency        String      @default("TRY")
+  vatRate         Decimal     @default(20) @db.Decimal(5, 2) @map("vat_rate")
+
+  // Cost (calculated from BOM or manually entered)
+  costPrice       Decimal     @default(0) @db.Decimal(15, 2) @map("cost_price")
+  laborCost       Decimal     @default(0) @db.Decimal(15, 2) @map("labor_cost")
+  overheadRate    Decimal     @default(0) @db.Decimal(5, 2) @map("overhead_rate")
 
   // Stock
-  trackStock      Boolean   @default(false) @map("track_stock")
-  stockQuantity   Decimal   @default(0) @db.Decimal(15, 2) @map("stock_quantity")
+  trackStock      Boolean     @default(false) @map("track_stock")
+  stockQuantity   Decimal     @default(0) @db.Decimal(15, 2) @map("stock_quantity")
+  minStockLevel   Decimal     @default(0) @db.Decimal(15, 2) @map("min_stock_level")
 
   // Metadata
-  imageUrl        String?   @map("image_url")
-  isActive        Boolean   @default(true) @map("is_active")
-  lastSyncAt      DateTime? @map("last_sync_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
+  imageUrl        String?     @map("image_url")
+  isActive        Boolean     @default(true) @map("is_active")
+  lastSyncAt      DateTime?   @map("last_sync_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  deletedAt       DateTime?   @map("deleted_at")
 
-  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
   proposalItems   ProposalItem[]
+
+  // BOM: This product's recipe (what it's made from)
+  billOfMaterials BillOfMaterial[]
+
+  // BOM: This product used as material in other products' recipes
+  usedInBomItems  BomItem[]
+
+  // Stock movements
+  stockMovements  StockMovement[]
+
+  // Supplier relationships
+  suppliers       ProductSupplier[]
 
   @@unique([tenantId, parasutId])
   @@unique([tenantId, code])
   @@index([tenantId, name])
+  @@index([tenantId, productType])
   @@map("products")
+}
+
+// ==================== BILL OF MATERIALS (BOM / Reçete) ====================
+
+model BillOfMaterial {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  productId   String    @map("product_id")
+  version     Int       @default(1)
+  isActive    Boolean   @default(true) @map("is_active")
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  product     Product   @relation(fields: [productId], references: [id])
+  items       BomItem[]
+
+  @@unique([productId, version])
+  @@index([tenantId])
+  @@map("bill_of_materials")
+}
+
+model BomItem {
+  id            String    @id @default(cuid())
+  bomId         String    @map("bom_id")
+  materialId    String    @map("material_id")
+  quantity      Decimal   @default(1) @db.Decimal(15, 4) // Required quantity
+  unit          String    @default("Adet")
+  wasteRate     Decimal   @default(0) @db.Decimal(5, 2) @map("waste_rate") // Fire oranı %
+  notes         String?
+  sortOrder     Int       @default(0) @map("sort_order")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  bom           BillOfMaterial @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  material      Product        @relation(fields: [materialId], references: [id])
+
+  @@index([bomId])
+  @@map("bom_items")
+}
+
+// ==================== SUPPLIERS (Tedarikçiler) ====================
+
+model Supplier {
+  id            String    @id @default(cuid())
+  tenantId      String    @map("tenant_id")
+  name          String
+  contactName   String?   @map("contact_name")
+  phone         String?
+  email         String?
+  address       String?
+  taxNumber     String?   @map("tax_number")
+  taxOffice     String?   @map("tax_office")
+  notes         String?
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  products      ProductSupplier[]
+
+  @@index([tenantId, name])
+  @@map("suppliers")
+}
+
+model ProductSupplier {
+  id              String    @id @default(cuid())
+  productId       String    @map("product_id")
+  supplierId      String    @map("supplier_id")
+  unitPrice       Decimal   @default(0) @db.Decimal(15, 2) @map("unit_price")
+  currency        String    @default("TRY")
+  leadTimeDays    Int?      @map("lead_time_days")
+  minOrderQty     Decimal?  @db.Decimal(15, 2) @map("min_order_qty")
+  isPreferred     Boolean   @default(false) @map("is_preferred")
+  lastPurchaseAt  DateTime? @map("last_purchase_at")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  product         Product   @relation(fields: [productId], references: [id])
+  supplier        Supplier  @relation(fields: [supplierId], references: [id])
+
+  @@unique([productId, supplierId])
+  @@map("product_suppliers")
+}
+
+// ==================== STOCK MOVEMENTS (Stok Hareketleri) ====================
+
+enum StockMovementType {
+  IN            // Stok girişi
+  OUT           // Stok çıkışı
+  ADJUSTMENT    // Düzeltme / Sayım
+  PRODUCTION_IN // Üretimden giriş
+  PRODUCTION_OUT // Üretime çıkış (hammadde tüketimi)
+}
+
+model StockMovement {
+  id          String            @id @default(cuid())
+  tenantId    String            @map("tenant_id")
+  productId   String            @map("product_id")
+  type        StockMovementType
+  quantity    Decimal           @db.Decimal(15, 2)
+  unitPrice   Decimal?          @db.Decimal(15, 2) @map("unit_price")
+  reference   String?           // Referans (sipariş no, fatura no vs.)
+  notes       String?
+  createdBy   String?           @map("created_by")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  product     Product           @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([productId, createdAt])
+  @@map("stock_movements")
 }
 
 // ==================== PROPOSALS ====================

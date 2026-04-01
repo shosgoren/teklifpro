@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
 import CookieConsent from '@/presentation/components/CookieConsent';
+import ThemeProvider from '@/shared/providers/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -216,9 +217,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content={siteTitle} />
       </head>
       <body className={inter.className}>
-        {children}
-        <Toaster position="top-right" richColors />
-        <CookieConsent />
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          {children}
+          <Toaster position="top-right" richColors />
+          <CookieConsent />
+        </ThemeProvider>
       </body>
     </html>
   );

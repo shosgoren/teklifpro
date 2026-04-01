@@ -2,17 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import useSWR from 'swr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Badge } from '@/shared/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/ui/table';
 import {
   LineChart,
   Line,
@@ -21,31 +12,46 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Area,
+  AreaChart,
 } from 'recharts';
 import {
   FileText,
-  Send,
+  Users,
   CheckCircle,
-  Clock,
-  DollarSign,
   TrendingUp,
   Plus,
   RefreshCw,
-  Eye,
+  ArrowRight,
+  AlertTriangle,
+  Package,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { cn } from '@/shared/utils/cn';
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string) =>
+  fetch(url)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      if (!data.success) throw new Error(data.error || 'API error');
+      return data;
+    });
 
-const statusConfig = {
-  DRAFT: { label: 'Taslak', color: 'bg-gray-100 text-gray-800' },
-  SENT: { label: 'G\u00f6nderildi', color: 'bg-blue-100 text-blue-800' },
-  VIEWED: { label: 'G\u00f6r\u00fcnt\u00fclendi', color: 'bg-yellow-100 text-yellow-800' },
-  ACCEPTED: { label: 'Kabul Edildi', color: 'bg-green-100 text-green-800' },
-  REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-800' },
-  REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-800' },
-  EXPIRED: { label: 'S\u00fcresi Doldu', color: 'bg-yellow-100 text-yellow-800' },
+const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
+  DRAFT: { label: 'Taslak', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400' },
+  SENT: { label: 'Gönderildi', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500' },
+  VIEWED: { label: 'Görüntülendi', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500' },
+  ACCEPTED: { label: 'Kabul Edildi', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500' },
+  REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
+  REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500' },
+  EXPIRED: { label: 'Süresi Doldu', color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400' },
 };
 
 export default function DashboardPage() {
@@ -53,315 +59,438 @@ export default function DashboardPage() {
   const locale = useLocale();
   const [isSyncing, setIsSyncing] = useState(false);
 
-  const { data: proposalsData, isLoading: proposalsLoading } = useSWR(
-    '/api/v1/proposals?limit=10',
-    fetcher
-  );
-  const { data: customersData, isLoading: customersLoading } = useSWR(
-    '/api/v1/customers?limit=1',
-    fetcher
-  );
+  const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher);
+  const { data: customersData, isLoading: customersLoading } = useSWR('/api/v1/customers?limit=1', fetcher);
+  const { data: alertsData } = useSWR('/api/v1/stock/alerts', fetcher);
 
   const proposals = proposalsData?.data?.proposals ?? [];
   const proposalTotal = proposalsData?.data?.pagination?.total ?? 0;
   const customerTotal = customersData?.data?.pagination?.total ?? 0;
+  const alerts = alertsData?.data?.alerts ?? alertsData?.data ?? [];
 
   const isLoading = proposalsLoading || customersLoading;
 
-  // Compute stats from real data
-  const sentCount = proposals.filter((p: any) => p.status === 'SENT').length;
   const acceptedCount = proposals.filter((p: any) => p.status === 'ACCEPTED').length;
-  const acceptRate = proposals.length > 0
-    ? ((acceptedCount / proposals.length) * 100).toFixed(1)
-    : '0';
+  const acceptRate = proposals.length > 0 ? ((acceptedCount / proposals.length) * 100).toFixed(0) : '0';
   const totalRevenue = proposals
     .filter((p: any) => p.status === 'ACCEPTED')
     .reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0);
-
-  const stats = [
-    {
-      title: 'Toplam Teklif',
-      value: proposalTotal.toString(),
-      icon: FileText,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'G\u00f6nderilen',
-      value: sentCount.toString(),
-      icon: Send,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      title: 'Kabul Edilen',
-      value: acceptedCount.toString(),
-      icon: CheckCircle,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: 'Kabul Oran\u0131',
-      value: `${acceptRate}%`,
-      icon: TrendingUp,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-100',
-    },
-    {
-      title: 'Toplam Gelir',
-      value: `\u20ba${totalRevenue.toLocaleString('tr-TR')}`,
-      icon: DollarSign,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-100',
-    },
-    {
-      title: 'Toplam M\u00fc\u015fteri',
-      value: customerTotal.toString(),
-      icon: Clock,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
-  ];
-
-  const handleNewProposal = useCallback(() => {
-    router.push(`/${locale}/dashboard/proposals/new`);
-  }, [router, locale]);
+  const pendingCount = proposals.filter((p: any) => ['SENT', 'VIEWED'].includes(p.status)).length;
+  const revisionCount = proposals.filter((p: any) => p.status === 'REVISION_REQUESTED').length;
 
   const handleSyncParasut = useCallback(async () => {
     setIsSyncing(true);
     try {
-      const response = await fetch('/api/v1/parasut/sync', {
+      await fetch('/api/v1/parasut/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ entities: ['customers', 'products'] }),
       });
-
-      if (!response.ok) {
-        throw new Error('Sync failed');
-      }
-
-      const data = await response.json();
-      console.log('Sync completed:', data);
-    } catch (error) {
-      console.error('Sync error:', error);
+    } catch {
+      // silently handle
     } finally {
       setIsSyncing(false);
     }
   }, []);
 
-  const handleViewAll = useCallback(() => {
-    router.push(`/${locale}/dashboard/proposals`);
-  }, [router, locale]);
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Bug\u00fcn';
-    if (diffDays === 1) return 'D\u00fcn';
-    return `${diffDays} g\u00fcn \u00f6nce`;
-  };
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('tr-TR', {
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Bugün';
+    if (diffDays === 1) return 'Dün';
+    if (diffDays < 7) return `${diffDays} gün önce`;
+    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   };
+
+  const chartData = proposals
+    .map((p: any) => ({
+      date: new Date(p.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+      total: Number(p.grandTotal) || 0,
+    }))
+    .reverse();
 
   if (isLoading) {
     return (
-      <div className="space-y-8 pb-8">
-        <div className="space-y-2">
-          <div className="h-9 w-64 bg-muted animate-pulse rounded" />
-          <div className="h-5 w-96 bg-muted animate-pulse rounded" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                <div className="h-8 w-8 bg-muted animate-pulse rounded-lg" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-              </CardContent>
-            </Card>
+      <div className="p-4 md:p-6 space-y-6">
+        <div className="h-8 w-48 bg-muted animate-pulse rounded-lg" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 bg-muted animate-pulse rounded-2xl" />
           ))}
         </div>
-        <Card>
-          <CardHeader>
-            <div className="h-6 w-32 bg-muted animate-pulse rounded" />
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 bg-muted animate-pulse rounded" />
-          </CardContent>
-        </Card>
+        <div className="h-64 bg-muted animate-pulse rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Kontrol Paneli
-        </h1>
-        <p className="text-muted-foreground">
-          Teklif y\u00f6netim paneline ho\u015f geldiniz. \u0130\u015fletmenizi geli\u015ftirebilmek i\u00e7in en iyi sonu\u00e7lar\u0131
-          sunun.
-        </p>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* ─── Welcome Header ─── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            Hoş Geldin 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            İşte güncel durumun
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSyncParasut}
+            variant="outline"
+            size="sm"
+            disabled={isSyncing}
+            className="rounded-xl"
+          >
+            <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
+            Senkronize
+          </Button>
+          <Button
+            onClick={() => router.push(`/${locale}/proposals/new`)}
+            size="sm"
+            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Yeni Teklif
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <Card key={index} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <div className={`${stat.bgColor} p-2 rounded-lg`}>
-                  <Icon className={`w-4 h-4 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* ─── KPI Cards ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Total Revenue */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 md:p-5 text-white shadow-lg shadow-blue-500/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
+          <div className="relative">
+            <div className="flex items-center gap-2 text-blue-100 text-xs font-medium">
+              <Wallet className="h-3.5 w-3.5" />
+              Toplam Gelir
+            </div>
+            <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
+              {formatAmount(totalRevenue)}
+            </p>
+            <p className="text-xs text-blue-200 mt-1">{acceptedCount} kabul edilen teklif</p>
+          </div>
+        </div>
+
+        {/* Total Proposals */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-4 md:p-5 text-white shadow-lg shadow-purple-500/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
+          <div className="relative">
+            <div className="flex items-center gap-2 text-purple-100 text-xs font-medium">
+              <FileText className="h-3.5 w-3.5" />
+              Teklifler
+            </div>
+            <p className="text-xl md:text-2xl font-bold mt-2">{proposalTotal}</p>
+            <p className="text-xs text-purple-200 mt-1">
+              {pendingCount} beklemede{revisionCount > 0 ? ` · ${revisionCount} revize` : ''}
+            </p>
+          </div>
+        </div>
+
+        {/* Accept Rate */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-4 md:p-5 text-white shadow-lg shadow-emerald-500/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
+          <div className="relative">
+            <div className="flex items-center gap-2 text-emerald-100 text-xs font-medium">
+              <TrendingUp className="h-3.5 w-3.5" />
+              Kabul Oranı
+            </div>
+            <p className="text-xl md:text-2xl font-bold mt-2">{acceptRate}%</p>
+            <div className="mt-1 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white/80 rounded-full transition-all"
+                style={{ width: `${Math.min(Number(acceptRate), 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Customers */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 md:p-5 text-white shadow-lg shadow-amber-500/20">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
+          <div className="relative">
+            <div className="flex items-center gap-2 text-amber-100 text-xs font-medium">
+              <Users className="h-3.5 w-3.5" />
+              Müşteriler
+            </div>
+            <p className="text-xl md:text-2xl font-bold mt-2">{customerTotal}</p>
+            <p className="text-xs text-amber-200 mt-1">toplam müşteri</p>
+          </div>
+        </div>
       </div>
 
+      {/* ─── Revision Requested Proposals ─── */}
+      {revisionCount > 0 && (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50/80 dark:border-violet-800 dark:bg-violet-950/50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900">
+              <FileText className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            </div>
+            <h3 className="font-semibold text-violet-800 dark:text-violet-200">Revize Bekleyen Teklifler</h3>
+            <Badge className="bg-violet-200 text-violet-800 dark:bg-violet-800 dark:text-violet-200 text-xs ml-auto">
+              {revisionCount} teklif
+            </Badge>
+          </div>
+          <div className="flex flex-col gap-2">
+            {proposals
+              .filter((p: any) => p.status === 'REVISION_REQUESTED')
+              .map((proposal: any) => (
+                <button
+                  key={proposal.id}
+                  onClick={() => router.push(`/${locale}/proposals/${proposal.id}`)}
+                  className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-900 border border-violet-200 dark:border-violet-800 px-4 py-3 hover:shadow-md transition-all group text-left"
+                >
+                  <div className="h-2.5 w-2.5 rounded-full bg-orange-500 shrink-0 animate-pulse" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-violet-900 dark:text-violet-100 truncate">
+                      {proposal.title || proposal.proposalNumber}
+                    </p>
+                    <p className="text-xs text-violet-600 dark:text-violet-400 truncate">
+                      {proposal.customer?.name ?? 'Müşteri belirtilmemiş'} · {formatAmount(Number(proposal.grandTotal) || 0)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-violet-500 group-hover:text-violet-700 dark:group-hover:text-violet-300">
+                    <span className="text-xs font-medium hidden sm:block">Düzenle</span>
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Stock Alerts ─── */}
+      {alerts.length > 0 && (
+        <div className="rounded-2xl border border-orange-200 bg-orange-50/80 dark:border-orange-800 dark:bg-orange-950/50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900">
+              <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h3 className="font-semibold text-orange-800 dark:text-orange-200">Düşük Stok Uyarısı</h3>
+            <Badge className="bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200 text-xs ml-auto">
+              {alerts.length} ürün
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {alerts.slice(0, 5).map((alert: any) => (
+              <div
+                key={alert.productId}
+                className="flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 px-3 py-2 text-sm"
+              >
+                <Package className="h-3.5 w-3.5 text-orange-500" />
+                <span className="font-medium text-orange-900 dark:text-orange-100">{alert.productName}</span>
+                <span className="text-xs text-orange-600 dark:text-orange-400">
+                  {alert.currentStock}/{alert.minLevel}
+                </span>
+              </div>
+            ))}
+            {alerts.length > 5 && (
+              <button
+                onClick={() => router.push(`/${locale}/products`)}
+                className="text-xs text-orange-600 hover:text-orange-800 font-medium px-3 py-2"
+              >
+                +{alerts.length - 5} daha
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Chart + Quick Actions Row ─── */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Son Teklifler \u00d6zeti</CardTitle>
-            <CardDescription>Son 10 teklifin tutar da\u011f\u0131l\u0131m\u0131</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={proposals.map((p: any) => ({
-                  date: new Date(p.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
-                  total: Number(p.grandTotal) || 0,
-                })).reverse()}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #ccc',
-                      borderRadius: '4px',
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#3b82f6"
-                    name="Teklif Tutar\u0131"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+        {/* Chart */}
+        <div className="lg:col-span-2 rounded-2xl border bg-card p-4 md:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-semibold">Teklif Trendi</h3>
+              <p className="text-xs text-muted-foreground">Son 10 teklifin tutarları</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="w-full h-56 md:h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                  formatter={(value: number) => [formatAmount(value), 'Tutar']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#3b82f6"
+                  strokeWidth={2.5}
+                  fill="url(#colorTotal)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>H\u0131zl\u0131 \u0130\u015flemler</CardTitle>
-            <CardDescription>En s\u0131k kullan\u0131lan i\u015flemlere h\u0131zl\u0131 eri\u015fim</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              onClick={handleNewProposal}
-              className="w-full justify-start"
-              size="lg"
-              variant="default"
+        {/* Quick Actions */}
+        <div className="rounded-2xl border bg-card p-4 md:p-5 flex flex-col">
+          <h3 className="font-semibold mb-4">Hızlı İşlemler</h3>
+          <div className="flex flex-col gap-3 flex-1">
+            <button
+              onClick={() => router.push(`/${locale}/proposals/new`)}
+              className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border border-blue-200 dark:border-blue-800 p-3 hover:shadow-md transition-all group"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Yeni Teklif
-            </Button>
-            <Button
+              <div className="p-2 rounded-lg bg-blue-500 text-white group-hover:scale-110 transition-transform">
+                <Plus className="h-4 w-4" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Yeni Teklif</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Hızlı teklif oluştur</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <button
+              onClick={() => router.push(`/${locale}/customers`)}
+              className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border border-emerald-200 dark:border-emerald-800 p-3 hover:shadow-md transition-all group"
+            >
+              <div className="p-2 rounded-lg bg-emerald-500 text-white group-hover:scale-110 transition-transform">
+                <Users className="h-4 w-4" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Müşteriler</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">{customerTotal} müşteri</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <button
+              onClick={() => router.push(`/${locale}/products`)}
+              className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 p-3 hover:shadow-md transition-all group"
+            >
+              <div className="p-2 rounded-lg bg-amber-500 text-white group-hover:scale-110 transition-transform">
+                <Package className="h-4 w-4" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Ürünler</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">Stok ve ürün yönetimi</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-amber-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <button
               onClick={handleSyncParasut}
-              className="w-full justify-start"
-              size="lg"
-              variant="outline"
               disabled={isSyncing}
+              className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-950 dark:to-gray-950 border border-slate-200 dark:border-slate-800 p-3 hover:shadow-md transition-all group"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Senkronize Ediliyor...' : 'Para\u015f\u00fct Senkronize Et'}
-            </Button>
-            <Button
-              onClick={handleViewAll}
-              className="w-full justify-start"
-              size="lg"
-              variant="outline"
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              T\u00fcm Teklifleri G\u00f6r
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="p-2 rounded-lg bg-slate-500 text-white group-hover:scale-110 transition-transform">
+                <RefreshCw className={cn('h-4 w-4', isSyncing && 'animate-spin')} />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Paraşüt Sync</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">Verileri güncelle</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Son Teklifler</CardTitle>
-          <CardDescription>En son 10 teklif</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {proposals.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Hen\u00fcz teklif bulunmuyor.
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Teklif No</TableHead>
-                    <TableHead>\u0130stemci</TableHead>
-                    <TableHead className="text-right">Tutar</TableHead>
-                    <TableHead>Durum</TableHead>
-                    <TableHead className="text-right">Tarih</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {proposals.map((proposal: any) => {
-                    const statusInfo = statusConfig[proposal.status as keyof typeof statusConfig] || statusConfig.DRAFT;
-                    return (
-                      <TableRow key={proposal.id} className="hover:bg-muted/50 cursor-pointer">
-                        <TableCell className="font-mono text-sm">{proposal.proposalNumber}</TableCell>
-                        <TableCell className="font-medium">{proposal.customer?.name ?? '-'}</TableCell>
-                        <TableCell className="text-right font-semibold">{formatAmount(Number(proposal.grandTotal) || 0)}</TableCell>
-                        <TableCell>
-                          <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {formatDate(proposal.createdAt)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+      {/* ─── Recent Proposals ─── */}
+      <div className="rounded-2xl border bg-card">
+        <div className="flex items-center justify-between p-4 md:p-5 border-b">
+          <div>
+            <h3 className="font-semibold">Son Teklifler</h3>
+            <p className="text-xs text-muted-foreground">En son oluşturulan teklifler</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push(`/${locale}/proposals`)}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950 rounded-xl"
+          >
+            Tümünü Gör
+            <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
 
-          <div className="flex justify-center mt-6">
-            <Button onClick={handleViewAll} variant="outline">
-              T\u00fcm Teklifleri G\u00f6r\u00fcnt\u00fcle
+        {proposals.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="p-4 rounded-full bg-muted mb-4">
+              <FileText className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">Henüz teklif bulunmuyor</p>
+            <Button
+              onClick={() => router.push(`/${locale}/proposals/new`)}
+              className="mt-4 rounded-xl"
+              size="sm"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              İlk Teklifini Oluştur
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="divide-y">
+            {proposals.map((proposal: any) => {
+              const status = statusConfig[proposal.status] ?? statusConfig.DRAFT;
+              const amount = Number(proposal.grandTotal) || 0;
+              return (
+                <button
+                  key={proposal.id}
+                  onClick={() => router.push(`/${locale}/proposals/${proposal.id}`)}
+                  className="flex items-center gap-4 p-4 md:px-5 w-full text-left hover:bg-muted/50 transition-colors"
+                >
+                  {/* Status dot */}
+                  <div className={cn('h-2.5 w-2.5 rounded-full shrink-0', status.dot)} />
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold truncate">
+                        {proposal.title || proposal.proposalNumber}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {proposal.customer?.name ?? 'Müşteri belirtilmemiş'}
+                    </p>
+                  </div>
+
+                  {/* Amount + Status */}
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-bold">{formatAmount(amount)}</p>
+                    <Badge className={cn('text-[10px] mt-1 font-medium', status.color)}>
+                      {status.label}
+                    </Badge>
+                  </div>
+
+                  {/* Date */}
+                  <span className="text-xs text-muted-foreground shrink-0 hidden sm:block w-16 text-right">
+                    {formatDate(proposal.createdAt)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

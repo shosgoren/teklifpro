@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
+import useSWR from 'swr'
 import { useForm, Controller, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   Search,
@@ -99,55 +101,14 @@ const proposalFormSchema = z.object({
 
 type ProposalFormData = z.infer<typeof proposalFormSchema>
 
-// Mock data - replace with actual API calls
-const mockCustomers = [
-  {
-    id: '1',
-    name: 'Acme Corporation',
-    email: 'contact@acme.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Business St, New York, NY 10001',
-    taxNumber: '12-3456789',
-    contacts: [
-      { id: 'c1', name: 'John Smith', email: 'john@acme.com', phone: '+1 (555) 123-4568' },
-      { id: 'c2', name: 'Sarah Johnson', email: 'sarah@acme.com', phone: '+1 (555) 123-4569' },
-    ],
-  },
-  {
-    id: '2',
-    name: 'TechStart Inc',
-    email: 'info@techstart.com',
-    phone: '+1 (555) 987-6543',
-    address: '456 Innovation Ave, San Francisco, CA 94103',
-    taxNumber: '98-7654321',
-    contacts: [
-      { id: 'c3', name: 'Mike Chen', email: 'mike@techstart.com', phone: '+1 (555) 987-6544' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Global Enterprises Ltd',
-    email: 'procurement@global.com',
-    phone: '+1 (555) 456-7890',
-    address: '789 Corporate Blvd, Chicago, IL 60601',
-    taxNumber: '45-6789012',
-    contacts: [
-      { id: 'c4', name: 'Lisa Anderson', email: 'lisa@global.com', phone: '+1 (555) 456-7891' },
-      { id: 'c5', name: 'David Brown', email: 'david@global.com', phone: '+1 (555) 456-7892' },
-    ],
-  },
-]
-
-const mockProducts = [
-  { id: '1', name: 'Professional Consulting - Senior', unitPrice: 250, sku: 'CONS-001' },
-  { id: '2', name: 'Professional Consulting - Junior', unitPrice: 150, sku: 'CONS-002' },
-  { id: '3', name: 'Software Development - Full Stack', unitPrice: 200, sku: 'DEV-001' },
-  { id: '4', name: 'UI/UX Design Services', unitPrice: 180, sku: 'DESIGN-001' },
-  { id: '5', name: 'Project Management', unitPrice: 120, sku: 'PM-001' },
-  { id: '6', name: 'Quality Assurance Testing', unitPrice: 100, sku: 'QA-001' },
-  { id: '7', name: 'Infrastructure Setup & Support', unitPrice: 300, sku: 'INFRA-001' },
-  { id: '8', name: 'Technical Documentation', unitPrice: 75, sku: 'DOC-001' },
-]
+const apiFetcher = (url: string) =>
+  fetch(url).then(res => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }).then(data => {
+    if (!data.success) throw new Error(data.error || 'API error');
+    return data;
+  });
 
 // Step 1: Customer Selection
 function CustomerSelectionStep({ selectedCustomer, onSelect }: {
@@ -157,36 +118,38 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [selectedContactId, setSelectedContactId] = useState<string>('')
+
+  const { data: customersData } = useSWR(
+    '/api/v1/customers?limit=100',
+    apiFetcher
+  )
+  const customers: any[] = customersData?.data?.customers ?? []
 
   const filteredCustomers = useMemo(() => {
-    if (!search) return mockCustomers
-    return mockCustomers.filter((c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase()) ||
-      c.phone.includes(search)
+    if (!search) return customers
+    const q = search.toLowerCase()
+    return customers.filter((c: any) =>
+      c.name.toLowerCase().includes(q) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (c.phone && c.phone.includes(search))
     )
-  }, [search])
+  }, [search, customers])
 
-  const handleSelectCustomer = (customer: typeof mockCustomers[0], contactId: string) => {
-    const contact = customer.contacts.find((c) => c.id === contactId)
-    if (contact) {
-      onSelect(
-        {
-          id: customer.id,
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          taxNumber: customer.taxNumber,
-          contactPersonId: contact.id,
-        },
-        contact
-      )
-      setOpen(false)
-      setSearch('')
-      setSelectedContactId('')
-    }
+  const handleSelectCustomer = (customer: any) => {
+    onSelect(
+      {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email || '',
+        phone: customer.phone || '',
+        address: customer.address || '',
+        taxNumber: customer.taxNumber || '',
+        contactPersonId: customer.id,
+      },
+      { id: customer.id, name: customer.name }
+    )
+    setOpen(false)
+    setSearch('')
   }
 
   return (
@@ -215,21 +178,17 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
               <CommandList>
                 <CommandEmpty>{t('proposals.noCustomer')}</CommandEmpty>
                 <CommandGroup>
-                  {filteredCustomers.map((customer) => (
-                    <div key={customer.id} className="space-y-2 p-2 border-b last:border-b-0">
-                      <CommandItem disabled className="text-xs font-semibold text-foreground cursor-default">
-                        {customer.name}
-                      </CommandItem>
-                      {customer.contacts.map((contact) => (
-                        <CommandItem
-                          key={contact.id}
-                          onSelect={() => handleSelectCustomer(customer, contact.id)}
-                          className="pl-4 text-xs"
-                        >
-                          {contact.name}
-                        </CommandItem>
-                      ))}
-                    </div>
+                  {filteredCustomers.map((customer: any) => (
+                    <CommandItem
+                      key={customer.id}
+                      onSelect={() => handleSelectCustomer(customer)}
+                      className="text-xs"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold">{customer.name}</p>
+                        {customer.email && <p className="text-muted-foreground">{customer.email}</p>}
+                      </div>
+                    </CommandItem>
                   ))}
                 </CommandGroup>
               </CommandList>
@@ -254,16 +213,16 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
           <CardContent className="space-y-2 text-sm">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-xs text-muted-foreground">Phone:</span>
+                <span className="text-xs text-muted-foreground">Telefon:</span>
                 <p className="font-mono text-xs">{selectedCustomer.phone}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Tax No:</span>
+                <span className="text-xs text-muted-foreground">Vergi No:</span>
                 <p className="font-mono text-xs">{selectedCustomer.taxNumber}</p>
               </div>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground">Address:</span>
+              <span className="text-xs text-muted-foreground">Adres:</span>
               <p className="text-xs">{selectedCustomer.address}</p>
             </div>
           </CardContent>
@@ -292,22 +251,29 @@ function ProductSelectionStep({
   const [search, setSearch] = useState('')
   const [dragging, setDragging] = useState<number | null>(null)
 
+  const { data: productsData } = useSWR(
+    '/api/v1/products?limit=100',
+    apiFetcher
+  )
+  const allProducts: any[] = productsData?.data?.products ?? []
+
   const filteredProducts = useMemo(() => {
-    if (!search) return mockProducts
-    return mockProducts.filter((p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase())
+    if (!search) return allProducts
+    const q = search.toLowerCase()
+    return allProducts.filter((p: any) =>
+      p.name.toLowerCase().includes(q) ||
+      (p.code && p.code.toLowerCase().includes(q))
     )
   }, [search])
 
-  const handleAddProduct = (product: typeof mockProducts[0]) => {
+  const handleAddProduct = (product: any) => {
     onAddItem({
       id: product.id,
       name: product.name,
       quantity: 1,
-      unitPrice: product.unitPrice,
+      unitPrice: product.listPrice || 0,
       discountPercent: 0,
-      vatPercent: 18,
+      vatPercent: product.vatRate || 18,
     })
     setSearch('')
     setSearchOpen(false)
@@ -352,7 +318,7 @@ function ProductSelectionStep({
               <CommandList>
                 <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
                 <CommandGroup>
-                  {filteredProducts.map((product) => (
+                  {filteredProducts.map((product: any) => (
                     <CommandItem
                       key={product.id}
                       onSelect={() => handleAddProduct(product)}
@@ -360,7 +326,7 @@ function ProductSelectionStep({
                       <div className="flex-1">
                         <p className="text-sm font-medium">{product.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatCurrency(product.unitPrice)} • {product.sku}
+                          {formatCurrency(product.listPrice || 0)} {product.code ? `• ${product.code}` : ''}
                         </p>
                       </div>
                     </CommandItem>
@@ -791,8 +757,11 @@ function PreviewStep({
 // Main Page Component
 export default function CreateProposalPage() {
   const t = useTranslations()
+  const router = useRouter()
+  const locale = useLocale()
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedContact, setSelectedContact] = useState<any>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
     control,
@@ -876,11 +845,50 @@ export default function CreateProposalPage() {
   ]
 
   const onSubmit = async (data: ProposalFormData) => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
     try {
-      console.log('Submitting proposal:', data)
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + (data.validityDays || 30))
+
+      const payload = {
+        customerId: data.customer.id,
+        title: data.title,
+        description: data.notes || '',
+        items: data.items.map(item => ({
+          name: item.name,
+          description: '',
+          unit: 'Adet',
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discountRate: item.discountPercent || 0,
+          vatRate: item.vatPercent || 18,
+        })),
+        expiresAt: expiresAt.toISOString(),
+        notes: data.notes || '',
+        paymentTerms: data.paymentTerms || '',
+        deliveryTerms: data.deliveryTerms || '',
+      }
+
+      const res = await fetch('/api/v1/proposals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const result = await res.json()
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Teklif olusturulamadi')
+      }
+
       toast.success(t('proposals.saved'))
+      router.push(`/${locale}/proposals/${result.data.id}`)
     } catch (error) {
-      toast.error(t('proposals.error'))
+      console.error('Proposal creation error:', error)
+      toast.error(error instanceof Error ? error.message : t('proposals.error'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -971,9 +979,7 @@ export default function CreateProposalPage() {
                 <DetailsStep
                   data={formData}
                   onChange={(field, value) => {
-                    if (field.includes('Discount') || field.includes('Validity') || field.includes('Terms') || field.includes('notes') || field.includes('Conditions')) {
-                      setValue(field as any, value)
-                    }
+                    setValue(field as any, value)
                   }}
                 />
               )}
@@ -1037,9 +1043,10 @@ export default function CreateProposalPage() {
               <Button
                 type="submit"
                 className="gap-2 bg-green-600 hover:bg-green-700"
+                disabled={isSubmitting}
               >
                 <Check className="h-4 w-4" />
-                {t('proposals.createProposal')}
+                {isSubmitting ? 'Kaydediliyor...' : t('proposals.createProposal')}
               </Button>
             )}
           </div>

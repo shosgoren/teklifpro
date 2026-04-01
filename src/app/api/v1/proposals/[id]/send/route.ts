@@ -135,15 +135,14 @@ Iyi calismalar!`.trim();
         );
       }
 
-      const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.publicToken}`;
-      await emailService.sendProposalEmail({
-        to: sentTo,
+      await emailService.sendProposalNotification(sentTo, {
+        id: proposal.id,
+        number: proposal.proposalNumber,
         clientName: proposal.customer.name,
-        proposalNumber: proposal.proposalNumber,
-        proposalTitle: proposal.title,
-        grandTotal: `${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY`,
-        proposalUrl,
-        companyName: tenant.name,
+        clientEmail: sentTo,
+        amount: Number(proposal.grandTotal),
+        currency: 'TRY',
+        validUntil: proposal.expiresAt || new Date(),
       });
     } else if (payload.method === 'sms') {
       sentTo = proposal.customer.phone || '';

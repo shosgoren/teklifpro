@@ -44,6 +44,12 @@ const resetPasswordSchema = z
 type RequestResetValues = z.infer<typeof requestResetSchema>;
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
+const inputClassName =
+  'pl-10 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 h-11 transition-all';
+
+const labelClassName =
+  'text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider';
+
 export default function ResetPasswordPage() {
   const t = useTranslations('auth');
   const locale = useLocale();
@@ -114,16 +120,20 @@ export default function ResetPasswordPage() {
 
   if (success && !token) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-        <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+        <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white dark:bg-gray-900 backdrop-blur-sm">
           <div className="p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">E-posta Gönderildi</h2>
-            <p className="text-gray-600 mb-6">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-500 dark:text-green-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">E-posta Gönderildi</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu kontrol edin.
             </p>
             <Link href={`/${locale}/login`}>
-              <Button className="w-full">Giriş Sayfasına Dön</Button>
+              <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all">
+                Giriş Sayfasına Dön
+              </Button>
             </Link>
           </div>
         </Card>
@@ -133,16 +143,20 @@ export default function ResetPasswordPage() {
 
   if (success && token) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-        <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+        <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white dark:bg-gray-900 backdrop-blur-sm">
           <div className="p-8 text-center">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Şifre Sıfırlandı</h2>
-            <p className="text-gray-600 mb-6">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-500 dark:text-green-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Şifre Sıfırlandı</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.
             </p>
             <Link href={`/${locale}/login`}>
-              <Button className="w-full">Giriş Yap</Button>
+              <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all">
+                Giriş Yap
+              </Button>
             </Link>
           </div>
         </Card>
@@ -151,20 +165,20 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-      <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+      <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white dark:bg-gray-900 backdrop-blur-sm">
         <div className="p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
               TeklifPro
             </h1>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
               {token ? 'Yeni şifrenizi belirleyin' : 'Şifre sıfırlama bağlantısı gönderin'}
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -177,14 +191,14 @@ export default function ResetPasswordPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">Yeni Şifre</FormLabel>
+                      <FormLabel className={labelClassName}>Yeni Şifre</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                           <Input
                             type="password"
                             placeholder="••••••••"
-                            className="pl-10 h-10"
+                            className={inputClassName}
                             {...field}
                           />
                         </div>
@@ -199,14 +213,14 @@ export default function ResetPasswordPage() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">Şifre Tekrar</FormLabel>
+                      <FormLabel className={labelClassName}>Şifre Tekrar</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                           <Input
                             type="password"
                             placeholder="••••••••"
-                            className="pl-10 h-10"
+                            className={inputClassName}
                             {...field}
                           />
                         </div>
@@ -219,7 +233,7 @@ export default function ResetPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all"
                 >
                   {isLoading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
                 </Button>
@@ -233,14 +247,14 @@ export default function ResetPasswordPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 text-sm font-medium">E-posta Adresi</FormLabel>
+                      <FormLabel className={labelClassName}>E-posta Adresi</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                           <Input
                             type="email"
                             placeholder="john@example.com"
-                            className="pl-10 h-10"
+                            className={inputClassName}
                             {...field}
                           />
                         </div>
@@ -253,7 +267,7 @@ export default function ResetPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all"
                 >
                   {isLoading ? 'Gönderiliyor...' : 'Sıfırlama Bağlantısı Gönder'}
                 </Button>
@@ -264,7 +278,7 @@ export default function ResetPasswordPage() {
           <p className="mt-6 text-center">
             <Link
               href={`/${locale}/login`}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium inline-flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               Giriş sayfasına dön

@@ -1,15 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useMemo } from 'react';
+import useSWR from 'swr';
 import {
   AreaChart,
   Area,
@@ -28,640 +20,716 @@ import {
 } from 'recharts';
 import {
   TrendingUp,
-  TrendingDown,
-  Download,
-  ArrowUpRight,
-  ArrowDownRight,
-  Eye,
-  Clock,
   DollarSign,
   FileText,
   Users,
+  Package,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
-// Mock data generators
-const generateProposalTrendData = () => {
-  const data = [];
-  const today = new Date();
-  for (let i = 90; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    data.push({
-      date: date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
-      sent: Math.floor(Math.random() * 30) + 15,
-      accepted: Math.floor(Math.random() * 20) + 8,
-      rejected: Math.floor(Math.random() * 15) + 3,
+// ---------- fetcher ----------
+const fetcher = (url: string) =>
+  fetch(url)
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((data) => {
+      if (!data.success) throw new Error(data.error || 'API error');
+      return data;
     });
-  }
-  return data;
+
+// ---------- constants ----------
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Taslak',
+  SENT: 'Gönderildi',
+  VIEWED: 'Görüntülendi',
+  ACCEPTED: 'Kabul Edildi',
+  REJECTED: 'Reddedildi',
+  REVISION_REQUESTED: 'Revize İstendi',
+  REVISED: 'Revize Edildi',
+  EXPIRED: 'Süresi Doldu',
+  CANCELLED: 'İptal Edildi',
 };
 
-const generateStatusDistributionData = () => [
-  { name: 'Kabul Edildi', value: 342, percentage: 35 },
-  { name: 'Beklemede', value: 458, percentage: 47 },
-  { name: 'Reddedildi', value: 142, percentage: 14 },
-  { name: 'İptal Edildi', value: 38, percentage: 4 },
-];
+const STATUS_COLORS: Record<string, string> = {
+  ACCEPTED: '#10b981',
+  SENT: '#3b82f6',
+  VIEWED: '#f59e0b',
+  DRAFT: '#6b7280',
+  REJECTED: '#ef4444',
+  REVISION_REQUESTED: '#f97316',
+  REVISED: '#8b5cf6',
+  EXPIRED: '#a3a3a3',
+  CANCELLED: '#dc2626',
+};
 
-const generateTopCustomersData = () => [
-  { name: 'Acme Corporation', proposals: 87, percentage: 8.9 },
-  { name: 'TechStart Ltd.', proposals: 76, percentage: 7.8 },
-  { name: 'Global Solutions', proposals: 65, percentage: 6.7 },
-  { name: 'Innovation Hub', proposals: 58, percentage: 5.9 },
-  { name: 'Digital Ventures', proposals: 52, percentage: 5.3 },
-  { name: 'Prime Industries', proposals: 48, percentage: 4.9 },
-  { name: 'Future Systems', proposals: 44, percentage: 4.5 },
-  { name: 'Smart Solutions', proposals: 41, percentage: 4.2 },
-  { name: 'Expert Services', proposals: 38, percentage: 3.9 },
-  { name: 'Elite Partners', proposals: 35, percentage: 3.6 },
-];
-
-const generateMonthlyRevenueData = () => [
-  { month: 'Ocak', revenue: 145000, count: 32 },
-  { month: 'Şubat', revenue: 198000, count: 44 },
-  { month: 'Mart', revenue: 176000, count: 39 },
-  { month: 'Nisan', revenue: 225000, count: 51 },
-  { month: 'Mayıs', revenue: 189000, count: 42 },
-  { month: 'Haziran', revenue: 242000, count: 55 },
-  { month: 'Temmuz', revenue: 268000, count: 61 },
-  { month: 'Ağustos', revenue: 245000, count: 56 },
-  { month: 'Eylül', revenue: 215000, count: 48 },
-  { month: 'Ekim', revenue: 267000, count: 60 },
-  { month: 'Kasım', revenue: 298000, count: 68 },
-  { month: 'Aralık', revenue: 312000, count: 71 },
-];
-
-const generateTopProductsData = () => [
-  {
-    id: 1,
-    name: 'Premium Yazılım Lisansı',
-    proposals: 234,
-    revenue: 1170000,
-    acceptanceRate: 68,
-  },
-  {
-    id: 2,
-    name: 'Danışmanlık Paketi',
-    proposals: 198,
-    revenue: 990000,
-    acceptanceRate: 72,
-  },
-  {
-    id: 3,
-    name: 'Teknik Destek (1 Yıl)',
-    proposals: 187,
-    revenue: 561000,
-    acceptanceRate: 65,
-  },
-  {
-    id: 4,
-    name: 'Entegrasyon Hizmeti',
-    proposals: 165,
-    revenue: 825000,
-    acceptanceRate: 74,
-  },
-  {
-    id: 5,
-    name: 'Eğitim ve Onboarding',
-    proposals: 142,
-    revenue: 426000,
-    acceptanceRate: 70,
-  },
-  {
-    id: 6,
-    name: 'API Erişim Paketi',
-    proposals: 128,
-    revenue: 384000,
-    acceptanceRate: 61,
-  },
-  {
-    id: 7,
-    name: 'Custom Development',
-    proposals: 98,
-    revenue: 588000,
-    acceptanceRate: 78,
-  },
-  {
-    id: 8,
-    name: 'Bakım ve İyileştirme',
-    proposals: 87,
-    revenue: 261000,
-    acceptanceRate: 63,
-  },
-  {
-    id: 9,
-    name: 'Güvenlik Modülü',
-    proposals: 76,
-    revenue: 228000,
-    acceptanceRate: 59,
-  },
-  {
-    id: 10,
-    name: 'Raporlama Araçları',
-    proposals: 65,
-    revenue: 195000,
-    acceptanceRate: 66,
-  },
-];
-
-const generateRecentActivitiesData = () => [
-  {
-    id: 1,
-    proposal: 'TK-2024-001847',
-    customer: 'Acme Corporation',
-    type: 'accepted',
-    amount: 45000,
-    time: '2 saat önce',
-  },
-  {
-    id: 2,
-    proposal: 'TK-2024-001846',
-    customer: 'TechStart Ltd.',
-    type: 'sent',
-    amount: 12500,
-    time: '3 saat önce',
-  },
-  {
-    id: 3,
-    proposal: 'TK-2024-001845',
-    customer: 'Global Solutions',
-    type: 'rejected',
-    amount: 28000,
-    time: '5 saat önce',
-  },
-  {
-    id: 4,
-    proposal: 'TK-2024-001844',
-    customer: 'Innovation Hub',
-    type: 'accepted',
-    amount: 67500,
-    time: '1 gün önce',
-  },
-  {
-    id: 5,
-    proposal: 'TK-2024-001843',
-    customer: 'Digital Ventures',
-    type: 'sent',
-    amount: 35000,
-    time: '1 gün önce',
-  },
-];
-
-const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#6b7280'];
 const CHART_COLORS = {
   sent: '#3b82f6',
   accepted: '#10b981',
   rejected: '#ef4444',
 };
 
-interface DateRange {
-  label: string;
-  value: string;
-  days: number;
-}
-
-const DATE_RANGES: DateRange[] = [
-  { label: 'Son 7 gün', value: '7days', days: 7 },
-  { label: 'Son 30 gün', value: '30days', days: 30 },
-  { label: 'Son 90 gün', value: '90days', days: 90 },
-  { label: 'Bu Ay', value: 'month', days: 30 },
-  { label: 'Bu Yıl', value: 'year', days: 365 },
-  { label: 'Özel', value: 'custom', days: 0 },
+const MONTH_NAMES = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
 ];
 
+// ---------- helpers ----------
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+
+// ---------- sub-components ----------
 const KPICard = ({
   title,
   value,
   icon: Icon,
-  trend,
-  trendValue,
   suffix = '',
+  gradient,
+  shadowColor,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  trend?: 'up' | 'down';
-  trendValue?: string;
   suffix?: string;
+  gradient: string;
+  shadowColor: string;
 }) => (
-  <Card className="overflow-hidden">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      <div className="text-muted-foreground">{Icon}</div>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">
-        {value}
-        {suffix && <span className="text-lg">{suffix}</span>}
-      </div>
-      {trend && trendValue && (
-        <p
-          className={`text-xs font-medium mt-2 flex items-center gap-1 ${
-            trend === 'up' ? 'text-green-600' : 'text-red-600'
-          }`}
-        >
-          {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-          {trendValue} önceki döneme karşı
+  <div
+    className={`rounded-2xl bg-gradient-to-br ${gradient} p-5 text-white shadow-lg ${shadowColor} overflow-hidden relative`}
+  >
+    {/* Decorative circle */}
+    <div className="absolute -top-4 -right-4 w-24 h-24 rounded-full bg-white/10" />
+    <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full bg-white/5" />
+
+    <div className="relative z-10 flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium text-white/80">{title}</p>
+        <p className="text-3xl font-bold mt-2">
+          {value}
+          {suffix && <span className="text-xl">{suffix}</span>}
         </p>
-      )}
-    </CardContent>
-  </Card>
+      </div>
+      <div className="bg-white/20 rounded-xl p-2">{Icon}</div>
+    </div>
+  </div>
 );
 
+// ---------- main page ----------
 export default function AnalyticsDashboard() {
-  const [dateRange, setDateRange] = useState<string>('30days');
-  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  // ---- data fetching ----
+  const {
+    data: proposalsData,
+    isLoading: proposalsLoading,
+    error: proposalsError,
+  } = useSWR('/api/v1/proposals?limit=100', fetcher);
 
-  const proposalTrendData = useMemo(() => generateProposalTrendData(), []);
-  const statusData = useMemo(() => generateStatusDistributionData(), []);
-  const topCustomersData = useMemo(() => generateTopCustomersData(), []);
-  const monthlyRevenueData = useMemo(() => generateMonthlyRevenueData(), []);
-  const topProductsData = useMemo(() => generateTopProductsData(), []);
-  const recentActivities = useMemo(() => generateRecentActivitiesData(), []);
+  const {
+    data: customersData,
+    isLoading: customersLoading,
+    error: customersError,
+  } = useSWR('/api/v1/customers?limit=100', fetcher);
 
-  const handleExport = (format: 'csv' | 'pdf') => {
-    console.log(`Exporting as ${format}`);
-  };
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    error: productsError,
+  } = useSWR('/api/v1/products?limit=100', fetcher);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
+  const proposals: any[] = proposalsData?.data?.proposals ?? [];
+  const customers: any[] = customersData?.data?.customers ?? [];
+  const products: any[] = productsData?.data?.products ?? [];
 
-  const totalProposals = 980;
-  const totalRevenue = 2816000;
-  const acceptanceRate = 35;
-  const avgProposalAmount = formatCurrency(2873469);
+  const isLoading = proposalsLoading || customersLoading || productsLoading;
+  const hasError = proposalsError || customersError || productsError;
 
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analitik Panosu</h1>
-            <p className="text-muted-foreground mt-1">Teklif ve gelir verilerinizi analiz edin</p>
+  // ---- computed stats ----
+  const stats = useMemo(() => {
+    const totalProposals = proposals.length;
+    const acceptedProposals = proposals.filter((p) => p.status === 'ACCEPTED');
+    const rejectedProposals = proposals.filter((p) => p.status === 'REJECTED');
+    const totalRevenue = acceptedProposals.reduce(
+      (sum, p) => sum + (Number(p.grandTotal) || 0),
+      0,
+    );
+    const acceptanceRate =
+      totalProposals > 0
+        ? ((acceptedProposals.length / totalProposals) * 100).toFixed(1)
+        : '0';
+    const avgProposalAmount =
+      totalProposals > 0
+        ? totalRevenue / (acceptedProposals.length || 1)
+        : 0;
+
+    return {
+      totalProposals,
+      acceptedCount: acceptedProposals.length,
+      rejectedCount: rejectedProposals.length,
+      totalRevenue,
+      acceptanceRate,
+      avgProposalAmount,
+      customerCount: customers.length,
+      productCount: products.length,
+    };
+  }, [proposals, customers, products]);
+
+  // ---- status distribution for pie chart ----
+  const statusData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    proposals.forEach((p) => {
+      counts[p.status] = (counts[p.status] || 0) + 1;
+    });
+    return Object.entries(counts).map(([status, value]) => ({
+      name: STATUS_LABELS[status] || status,
+      value,
+      status,
+    }));
+  }, [proposals]);
+
+  const statusColors = useMemo(
+    () => statusData.map((d) => STATUS_COLORS[d.status] || '#6b7280'),
+    [statusData],
+  );
+
+  // ---- top customers (by proposal count) ----
+  const topCustomersData = useMemo(() => {
+    const map: Record<string, number> = {};
+    proposals.forEach((p) => {
+      const name = p.customer?.name || 'Bilinmeyen';
+      map[name] = (map[name] || 0) + 1;
+    });
+    return Object.entries(map)
+      .map(([name, count]) => ({ name, proposals: count }))
+      .sort((a, b) => b.proposals - a.proposals)
+      .slice(0, 10);
+  }, [proposals]);
+
+  // ---- monthly revenue (from accepted proposals, grouped by createdAt month) ----
+  const monthlyRevenueData = useMemo(() => {
+    const map: Record<string, { revenue: number; count: number }> = {};
+    proposals
+      .filter((p) => p.status === 'ACCEPTED')
+      .forEach((p) => {
+        const d = new Date(p.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+        if (!map[key]) map[key] = { revenue: 0, count: 0 };
+        map[key].revenue += Number(p.grandTotal) || 0;
+        map[key].count += 1;
+      });
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, v]) => {
+        const monthIdx = parseInt(key.split('-')[1], 10);
+        return {
+          month: MONTH_NAMES[monthIdx],
+          revenue: v.revenue,
+          count: v.count,
+        };
+      });
+  }, [proposals]);
+
+  // ---- proposal trend (daily counts for last 30 days) ----
+  const proposalTrendData = useMemo(() => {
+    const now = new Date();
+    const days = 30;
+    const buckets: Record<string, { sent: number; accepted: number; rejected: number }> = {};
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      buckets[key] = { sent: 0, accepted: 0, rejected: 0 };
+    }
+
+    proposals.forEach((p) => {
+      const key = new Date(p.createdAt).toISOString().slice(0, 10);
+      if (!buckets[key]) return;
+      if (p.status === 'SENT' || p.status === 'VIEWED') buckets[key].sent += 1;
+      else if (p.status === 'ACCEPTED') buckets[key].accepted += 1;
+      else if (p.status === 'REJECTED') buckets[key].rejected += 1;
+    });
+
+    return Object.entries(buckets)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateStr]) => {
+        const d = new Date(dateStr);
+        return {
+          date: d.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
+          sent: buckets[dateStr].sent,
+          accepted: buckets[dateStr].accepted,
+          rejected: buckets[dateStr].rejected,
+        };
+      });
+  }, [proposals]);
+
+  // ---- products table (simple list with price) ----
+  const topProductsList = useMemo(() => {
+    return products
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        listPrice: Number(p.listPrice) || 0,
+      }))
+      .sort((a, b) => b.listPrice - a.listPrice)
+      .slice(0, 10);
+  }, [products]);
+
+  // ---- recent proposals ----
+  const recentProposals = useMemo(() => {
+    return [...proposals]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .slice(0, 8);
+  }, [proposals]);
+
+  // ---- loading state ----
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Skeleton header */}
+          <div className="space-y-2">
+            <div className="h-9 w-64 bg-gray-200 dark:bg-gray-800 rounded-2xl animate-pulse" />
+            <div className="h-5 w-96 bg-gray-100 dark:bg-gray-800/60 rounded-xl animate-pulse" />
           </div>
-
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Tarih aralığı seçin" />
-              </SelectTrigger>
-              <SelectContent>
-                {DATE_RANGES.map((range) => (
-                  <SelectItem key={range.value} value={range.value}>
-                    {range.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
-                <Download className="w-4 h-4 mr-2" />
-                CSV
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}>
-                <Download className="w-4 h-4 mr-2" />
-                PDF
-              </Button>
-            </div>
+          {/* Skeleton KPI cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-28 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse"
+              />
+            ))}
+          </div>
+          {/* Skeleton chart cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-96 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse"
+              />
+            ))}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ---- error state ----
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-red-500 to-rose-500" />
+          <div className="flex flex-col items-center gap-4 p-8">
+            <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-3">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="font-bold text-xl text-gray-900 dark:text-white">Veriler yüklenemedi</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm text-center leading-relaxed">
+              {proposalsError?.message || customersError?.message || productsError?.message}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-medium text-sm hover:shadow-lg hover:shadow-red-500/25 transition-all"
+            >
+              Tekrar Dene
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- empty state ----
+  const isEmpty = proposals.length === 0 && customers.length === 0 && products.length === 0;
+
+  return (
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Analitik Panosu
+          </h1>
+          <p className="text-gray-500 mt-1">Teklif ve gelir verilerinizi analiz edin</p>
+        </div>
+
+        {isEmpty && (
+          <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
+            <div className="py-16 text-center px-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-7 h-7 text-blue-500" />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                Henüz analiz edilecek veri bulunmuyor. Teklif, müşteri veya ürün ekledikçe burada istatistikler görünecek.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <KPICard
             title="Toplam Teklif"
-            value={totalProposals}
-            icon={<FileText className="w-4 h-4" />}
-            trend="up"
-            trendValue="+12%"
+            value={stats.totalProposals}
+            icon={<FileText className="w-5 h-5 text-white" />}
+            gradient="from-blue-500 to-blue-700"
+            shadowColor="shadow-blue-500/20"
           />
           <KPICard
             title="Kabul Oranı"
-            value={`${acceptanceRate}%`}
-            icon={<TrendingUp className="w-4 h-4" />}
-            trend="up"
-            trendValue="+3%"
+            value={`${stats.acceptanceRate}%`}
+            icon={<TrendingUp className="w-5 h-5 text-white" />}
+            gradient="from-emerald-500 to-emerald-700"
+            shadowColor="shadow-emerald-500/20"
           />
           <KPICard
-            title="Toplam Gelir"
-            value={formatCurrency(totalRevenue)}
-            icon={<DollarSign className="w-4 h-4" />}
-            trend="up"
-            trendValue="+8%"
+            title="Toplam Gelir (Kabul Edilen)"
+            value={formatCurrency(stats.totalRevenue)}
+            icon={<DollarSign className="w-5 h-5 text-white" />}
+            gradient="from-violet-500 to-violet-700"
+            shadowColor="shadow-violet-500/20"
           />
           <KPICard
-            title="Ort. Teklif Tutarı"
-            value={avgProposalAmount}
-            icon={<DollarSign className="w-4 h-4" />}
+            title="Ort. Kabul Tutarı"
+            value={formatCurrency(stats.avgProposalAmount)}
+            icon={<DollarSign className="w-5 h-5 text-white" />}
+            gradient="from-amber-500 to-amber-700"
+            shadowColor="shadow-amber-500/20"
           />
           <KPICard
-            title="Ort. Yanıt Süresi"
-            value="2"
-            icon={<Clock className="w-4 h-4" />}
-            suffix=" gün"
-            trend="down"
-            trendValue="-4 saat"
+            title="Müşteri Sayısı"
+            value={stats.customerCount}
+            icon={<Users className="w-5 h-5 text-white" />}
+            gradient="from-rose-500 to-rose-700"
+            shadowColor="shadow-rose-500/20"
           />
           <KPICard
-            title="Görüntülenme Oranı"
-            value="78%"
-            icon={<Eye className="w-4 h-4" />}
-            trend="up"
-            trendValue="+5%"
+            title="Ürün Sayısı"
+            value={stats.productCount}
+            icon={<Package className="w-5 h-5 text-white" />}
+            gradient="from-cyan-500 to-cyan-700"
+            shadowColor="shadow-cyan-500/20"
           />
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Proposal Trend Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Teklif Trendi</CardTitle>
-              <CardDescription>Gönderilen, kabul edilen ve reddedilen teklifler</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={proposalTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={CHART_COLORS.sent} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={CHART_COLORS.sent} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorAccepted" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={CHART_COLORS.accepted} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={CHART_COLORS.accepted} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={CHART_COLORS.rejected} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={CHART_COLORS.rejected} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="date" stroke="#888" />
-                    <YAxis stroke="#888" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                      }}
-                      formatter={(value: number) => value}
-                    />
-                    <Legend />
-                    <Area
-                      type="monotone"
-                      dataKey="sent"
-                      stroke={CHART_COLORS.sent}
-                      fillOpacity={1}
-                      fill="url(#colorSent)"
-                      name="Gönderilen"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="accepted"
-                      stroke={CHART_COLORS.accepted}
-                      fillOpacity={1}
-                      fill="url(#colorAccepted)"
-                      name="Kabul Edilen"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="rejected"
-                      stroke={CHART_COLORS.rejected}
-                      fillOpacity={1}
-                      fill="url(#colorRejected)"
-                      name="Reddedilen"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+        {proposals.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Proposal Trend Chart */}
+            <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="p-6 pb-2">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Teklif Trendi (Son 30 Gün)
+                </h3>
+                <div className="h-1 w-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-2" />
+                <p className="text-sm text-gray-500 mt-2">Gönderilen, kabul edilen ve reddedilen teklifler</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-6 pt-2">
+                <div className="w-full h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={proposalTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={CHART_COLORS.sent} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={CHART_COLORS.sent} stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorAccepted" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={CHART_COLORS.accepted} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={CHART_COLORS.accepted} stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorRejected" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={CHART_COLORS.rejected} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={CHART_COLORS.rejected} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                      <YAxis stroke="#9ca3af" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#fff',
+                          border: 'none',
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                        }}
+                      />
+                      <Legend />
+                      <Area type="monotone" dataKey="sent" stroke={CHART_COLORS.sent} fillOpacity={1} fill="url(#colorSent)" name="Gönderilen" />
+                      <Area type="monotone" dataKey="accepted" stroke={CHART_COLORS.accepted} fillOpacity={1} fill="url(#colorAccepted)" name="Kabul Edilen" />
+                      <Area type="monotone" dataKey="rejected" stroke={CHART_COLORS.rejected} fillOpacity={1} fill="url(#colorRejected)" name="Reddedilen" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
 
-          {/* Status Distribution Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Durum Dağılımı</CardTitle>
-              <CardDescription>Tekliflerin güncel durumları</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center">
-              <div className="w-full h-80 flex justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={130}
-                      fill="#8884d8"
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            {/* Status Distribution Chart */}
+            <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="p-6 pb-2">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Durum Dağılımı</h3>
+                <div className="h-1 w-16 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full mt-2" />
+                <p className="text-sm text-gray-500 mt-2">Tekliflerin güncel durumları</p>
+              </div>
+              <div className="p-6 pt-2 flex flex-col items-center">
+                {statusData.length > 0 ? (
+                  <>
+                    <div className="w-full h-80 flex justify-center">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={statusData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={80}
+                            outerRadius={130}
+                            fill="#8884d8"
+                            paddingAngle={2}
+                            dataKey="value"
+                          >
+                            {statusData.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={statusColors[index]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#fff',
+                              border: 'none',
+                              borderRadius: '12px',
+                              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                            }}
+                            formatter={(value: number) => {
+                              const total = proposals.length;
+                              const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                              return `${value} (%${pct})`;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 w-full text-sm">
+                      {statusData.map((item, index) => (
+                        <div
+                          key={item.name}
+                          className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl px-3 py-2"
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: statusColors[index] }}
+                          />
+                          <span className="text-gray-600 dark:text-gray-300 truncate">
+                            {item.name}: <span className="font-semibold text-gray-900 dark:text-white">{item.value}</span>
+                          </span>
+                        </div>
                       ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => `${value} (${((value / 980) * 100).toFixed(1)}%)`}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-gray-500 py-12">Henüz teklif bulunmuyor.</p>
+                )}
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-4 w-full text-sm">
-                {statusData.map((item, index) => (
-                  <div key={item.name} className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-muted-foreground">
-                      {item.name}: <span className="font-medium text-foreground">{item.value}</span>
-                    </span>
+            </div>
+
+            {/* Top Customers Chart */}
+            {topCustomersData.length > 0 && (
+              <div className="lg:col-span-2 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+                <div className="p-6 pb-2">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    En Çok Teklif Verilen Müşteriler
+                  </h3>
+                  <div className="h-1 w-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full mt-2" />
+                  <p className="text-sm text-gray-500 mt-2">Müşteri bazında teklif sayıları</p>
+                </div>
+                <div className="p-6 pt-2">
+                  <div className="w-full h-96">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={topCustomersData}
+                        layout="vertical"
+                        margin={{ top: 5, right: 30, left: 150, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis type="number" stroke="#9ca3af" fontSize={12} />
+                        <YAxis dataKey="name" type="category" stroke="#9ca3af" width={145} fontSize={12} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#fff',
+                            border: 'none',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                          }}
+                          formatter={(value: number) => `${value} teklif`}
+                        />
+                        <Bar dataKey="proposals" fill="#3b82f6" radius={[0, 8, 8, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            )}
 
-          {/* Top Customers Chart */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>En Çok Teklif Verilen Müşteriler</CardTitle>
-              <CardDescription>Top 10 müşteri karşılaştırması</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={topCustomersData}
-                    layout="vertical"
-                    margin={{ top: 5, right: 30, left: 250, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis type="number" stroke="#888" />
-                    <YAxis dataKey="name" type="category" stroke="#888" width={245} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                      }}
-                      formatter={(value: number) => `${value} teklif`}
-                    />
-                    <Bar dataKey="proposals" fill="#3b82f6" radius={[0, 8, 8, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+            {/* Monthly Revenue Chart */}
+            {monthlyRevenueData.length > 0 && (
+              <div className="lg:col-span-2 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+                <div className="p-6 pb-2">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Aylık Gelir</h3>
+                  <div className="h-1 w-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mt-2" />
+                  <p className="text-sm text-gray-500 mt-2">Kabul edilen tekliflerden elde edilen gelir</p>
+                </div>
+                <div className="p-6 pt-2">
+                  <div className="w-full h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={monthlyRevenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
+                        <YAxis stroke="#9ca3af" fontSize={12} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#fff',
+                            border: 'none',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                          }}
+                          formatter={(value: number) => [formatCurrency(value), 'Gelir']}
+                          labelFormatter={(label) => `Ay: ${label}`}
+                        />
+                        <Legend />
+                        <Bar dataKey="revenue" fill="#10b981" name="Gelir (TL)" radius={[8, 8, 0, 0]} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Monthly Revenue Chart */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Aylık Gelir</CardTitle>
-              <CardDescription>Kabul edilen tekliflerden elde edilen gelir</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={monthlyRevenueData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" stroke="#888" />
-                    <YAxis stroke="#888" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#fff',
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                      }}
-                      formatter={(value: number) => [formatCurrency(value), 'Gelir']}
-                      labelFormatter={(label) => `Ay: ${label}`}
-                    />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#10b981" name="Gelir (₺)" radius={[8, 8, 0, 0]} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Tables Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Products Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>En Çok Tercih Edilen Ürünler</CardTitle>
-              <CardDescription>Top 10 ürün performansı</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 px-2 font-medium text-muted-foreground">Ürün</th>
-                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Teklif</th>
-                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Tutar</th>
-                      <th className="text-right py-2 px-2 font-medium text-muted-foreground">Kabul %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProductsData.map((product, index) => (
-                      <tr
-                        key={product.id}
-                        className="border-b border-border hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="py-3 px-2">
-                          <div>
-                            <p className="font-medium">{product.name}</p>
-                            <p className="text-xs text-muted-foreground">#{index + 1}</p>
-                          </div>
-                        </td>
-                        <td className="text-right py-3 px-2">{product.proposals}</td>
-                        <td className="text-right py-3 px-2 font-medium">
-                          {formatCurrency(product.revenue)}
-                        </td>
-                        <td className="text-right py-3 px-2">
-                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
-                            {product.acceptanceRate}%
-                          </span>
-                        </td>
+          {/* Products Table */}
+          <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="p-6 pb-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Ürünler (Fiyata Göre)</h3>
+              <div className="h-1 w-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full mt-2" />
+              <p className="text-sm text-gray-500 mt-2">En yüksek fiyatlı ürünler</p>
+            </div>
+            <div className="p-6 pt-3">
+              {topProductsList.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-gray-800">
+                        <th className="text-left py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                          #
+                        </th>
+                        <th className="text-left py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                          Ürün
+                        </th>
+                        <th className="text-right py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                          Liste Fiyatı
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                    </thead>
+                    <tbody>
+                      {topProductsList.map((product, index) => (
+                        <tr
+                          key={product.id}
+                          className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors"
+                        >
+                          <td className="py-3.5 px-3 text-gray-400 font-medium">{index + 1}</td>
+                          <td className="py-3.5 px-3 font-medium text-gray-900 dark:text-white">
+                            {product.name}
+                          </td>
+                          <td className="text-right py-3.5 px-3 font-semibold text-gray-900 dark:text-white">
+                            {formatCurrency(product.listPrice)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 py-8 text-center">Henüz ürün bulunmuyor.</p>
+              )}
+            </div>
+          </div>
 
-          {/* Recent Activities */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Son Aktiviteler</CardTitle>
-              <CardDescription>En son teklif aktiviteleri</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentActivities.map((activity) => {
-                  const typeConfig = {
-                    accepted: {
-                      color: 'bg-green-100 text-green-800',
-                      label: 'Kabul Edildi',
-                      icon: '✓',
-                    },
-                    rejected: {
-                      color: 'bg-red-100 text-red-800',
-                      label: 'Reddedildi',
-                      icon: '✕',
-                    },
-                    sent: {
-                      color: 'bg-blue-100 text-blue-800',
-                      label: 'Gönderildi',
-                      icon: '→',
-                    },
-                  };
-                  const config = typeConfig[activity.type as keyof typeof typeConfig];
+          {/* Recent Proposals */}
+          <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+            <div className="p-6 pb-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Son Teklifler</h3>
+              <div className="h-1 w-16 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full mt-2" />
+              <p className="text-sm text-gray-500 mt-2">En son oluşturulan teklifler</p>
+            </div>
+            <div className="p-6 pt-3">
+              {recentProposals.length > 0 ? (
+                <div className="space-y-3">
+                  {recentProposals.map((proposal) => {
+                    const statusLabel = STATUS_LABELS[proposal.status] || proposal.status;
+                    const statusColor = STATUS_COLORS[proposal.status] || '#6b7280';
+                    const isAccepted = proposal.status === 'ACCEPTED';
+                    const isRejected = proposal.status === 'REJECTED';
 
-                  return (
-                    <div key={activity.id} className="flex gap-4 pb-4 border-b border-border last:border-0">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${config.color}`}>
-                        {config.icon}
+                    return (
+                      <div
+                        key={proposal.id}
+                        className="flex gap-4 p-3 rounded-xl bg-gray-50/80 dark:bg-gray-800/40 hover:bg-gray-100/80 dark:hover:bg-gray-800/60 transition-colors"
+                        style={{ borderLeft: `4px solid ${statusColor}` }}
+                      >
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
+                          style={{ backgroundColor: statusColor }}
+                        >
+                          {isAccepted ? '\u2713' : isRejected ? '\u2715' : '\u2192'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 dark:text-white truncate">
+                            {proposal.customer?.name || 'Müşteri belirtilmemiş'}
+                          </p>
+                          <p className="text-sm text-gray-500">{proposal.proposalNumber}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {new Date(proposal.createdAt).toLocaleDateString('tr-TR')}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                            {formatCurrency(Number(proposal.grandTotal) || 0)}
+                          </p>
+                          <span
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg mt-1 inline-block"
+                            style={{
+                              backgroundColor: `${statusColor}15`,
+                              color: statusColor,
+                            }}
+                          >
+                            {statusLabel}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{activity.customer}</p>
-                        <p className="text-sm text-muted-foreground">{activity.proposal}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-sm">{formatCurrency(activity.amount)}</p>
-                        <p className={`text-xs font-medium ${config.color} px-2 py-1 rounded mt-1`}>
-                          {config.label}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-500 py-8 text-center">Henüz teklif bulunmuyor.</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Footer Info */}
-        <div className="text-center text-xs text-muted-foreground py-4">
-          Son güncelleme: {new Date().toLocaleDateString('tr-TR', {
+        <div className="text-center text-xs text-gray-400 py-4">
+          Son güncelleme:{' '}
+          {new Date().toLocaleDateString('tr-TR', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

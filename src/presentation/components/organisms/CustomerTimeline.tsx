@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useConfirm } from '@/shared/components/confirm-dialog';
 import {
   Card,
   Badge,
@@ -168,6 +169,7 @@ export function CustomerTimeline({
   className,
   onNoteCreate,
 }: CustomerTimelineProps) {
+  const confirm = useConfirm();
   // Durum yönetimi
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [pinnedEvents, setPinnedEvents] = useState<TimelineEvent[]>([]);
@@ -334,9 +336,8 @@ export function CustomerTimeline({
 
   // Not sil
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Bu notu silmek istediğinizden emin misiniz?')) {
-      return;
-    }
+    const ok = await confirm({ message: 'Bu notu silmek istediğinizden emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    if (!ok) return;
 
     try {
       const response = await fetch(

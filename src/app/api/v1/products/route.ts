@@ -19,6 +19,11 @@ const createProductSchema = z.object({
   vatRate: z.number().min(0).max(100).default(18),
   isActive: z.boolean().default(true),
   description: z.string().optional().default(''),
+  productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE']).optional().default('COMMERCIAL'),
+  costPrice: z.number().nonnegative().optional(),
+  laborCost: z.number().nonnegative().optional(),
+  overheadRate: z.number().min(0).max(100).optional(),
+  minStockLevel: z.number().nonnegative().optional(),
 });
 
 const querySchema = z.object({
@@ -27,6 +32,7 @@ const querySchema = z.object({
   search: z.string().optional().default(''),
   category: z.string().optional().default(''),
   status: z.enum(['all', 'active', 'inactive']).optional().default('all'),
+  productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE', '']).optional().default(''),
 });
 
 type CreateProductInput = z.infer<typeof createProductSchema>;
@@ -42,6 +48,11 @@ interface ProductResponse {
   vatRate: number;
   isActive: boolean;
   description: string | null;
+  productType: string;
+  costPrice: number | null;
+  laborCost: number | null;
+  overheadRate: number | null;
+  minStockLevel: number | null;
   syncedFromParasut: boolean;
   lastSyncAt: string | null;
   createdAt: string;
@@ -78,6 +89,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       search: searchParams.get('search') || '',
       category: searchParams.get('category') || '',
       status: searchParams.get('status') || 'all',
+      productType: searchParams.get('productType') || '',
     });
 
     const page = Math.max(1, parseInt(queryData.page));
@@ -105,6 +117,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       where.isActive = false;
     }
 
+    if (queryData.productType) {
+      where.productType = queryData.productType;
+    }
+
     const total = await prisma.product.count({ where });
 
     const products = await prisma.product.findMany({
@@ -122,6 +138,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         vatRate: true,
         isActive: true,
         description: true,
+        productType: true,
+        costPrice: true,
+        laborCost: true,
+        overheadRate: true,
+        minStockLevel: true,
         parasutId: true,
         lastSyncAt: true,
         createdAt: true,
@@ -138,6 +159,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       vatRate: Number(p.vatRate) || 18,
       isActive: p.isActive,
       description: p.description,
+      productType: p.productType || 'COMMERCIAL',
+      costPrice: p.costPrice?.toNumber?.() ?? null,
+      laborCost: p.laborCost?.toNumber?.() ?? null,
+      overheadRate: p.overheadRate?.toNumber?.() ?? null,
+      minStockLevel: p.minStockLevel?.toNumber?.() ?? null,
       syncedFromParasut: !!p.parasutId,
       lastSyncAt: p.lastSyncAt?.toISOString?.() || null,
       createdAt: p.createdAt.toISOString(),
@@ -230,6 +256,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         vatRate: true,
         isActive: true,
         description: true,
+        productType: true,
+        costPrice: true,
+        laborCost: true,
+        overheadRate: true,
+        minStockLevel: true,
         parasutId: true,
         lastSyncAt: true,
         createdAt: true,
@@ -246,6 +277,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       vatRate: Number(product.vatRate) || 18,
       isActive: product.isActive,
       description: product.description,
+      productType: product.productType || 'COMMERCIAL',
+      costPrice: product.costPrice?.toNumber?.() ?? null,
+      laborCost: product.laborCost?.toNumber?.() ?? null,
+      overheadRate: product.overheadRate?.toNumber?.() ?? null,
+      minStockLevel: product.minStockLevel?.toNumber?.() ?? null,
       syncedFromParasut: !!product.parasutId,
       lastSyncAt: product.lastSyncAt?.toISOString?.() || null,
       createdAt: product.createdAt.toISOString(),

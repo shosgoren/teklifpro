@@ -110,7 +110,7 @@ export const authOptions: NextAuthOptions = {
                 name: user.name || '',
                 role: 'OWNER',
                 isActive: true,
-                emailVerified: true,
+                emailVerified: new Date(),
                 tenantId: tenant.id,
               },
             })
