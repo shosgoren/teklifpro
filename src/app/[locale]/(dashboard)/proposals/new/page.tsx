@@ -79,7 +79,9 @@ const productItemSchema = z.object({
   name: z.string(),
   quantity: z.number().min(1, 'Quantity must be at least 1'),
   unitPrice: z.number().min(0, 'Price cannot be negative'),
+  discountType: z.enum(['percent', 'fixed']).default('percent'),
   discountPercent: z.number().min(0).max(100).default(0),
+  discountFixed: z.number().min(0).default(0),
   vatPercent: z.number().min(0).max(100).default(18),
 })
 
@@ -259,7 +261,9 @@ function ProductSelectionStep({
       name: product.name,
       quantity: 1,
       unitPrice: product.listPrice || 0,
+      discountType: 'percent',
       discountPercent: 0,
+      discountFixed: 0,
       vatPercent: product.vatRate || 18,
     })
     setSearch('')
@@ -267,10 +271,40 @@ function ProductSelectionStep({
   }
 
   const toggleExpand = (index: number) => {
-    setExpandedItem(expandedItem === index ? null : index)
+    const next = expandedItem === index ? null : index
+    setExpandedItem(next)
+    if (next !== null) scrollToCard(next)
   }
 
-  const totals = useMemo(() => calculateProposalTotals(items, generalDiscount), [items, generalDiscount])
+  // Convert fixed discounts to effective percent for calculation
+  const itemsForCalc = useMemo(() => items.map(item => {
+    if (item.discountType === 'fixed' && item.discountFixed > 0) {
+      const lineSubtotal = item.quantity * item.unitPrice
+      const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
+      return { ...item, discountPercent: Math.min(effectivePercent, 100) }
+    }
+    return item
+  }), [items])
+
+  const totals = useMemo(() => calculateProposalTotals(itemsForCalc, generalDiscount), [itemsForCalc, generalDiscount])
+
+  const getEffectiveItem = (item: ProposalFormData['items'][0]) => {
+    if (item.discountType === 'fixed' && item.discountFixed > 0) {
+      const lineSubtotal = item.quantity * item.unitPrice
+      const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
+      return { ...item, discountPercent: Math.min(effectivePercent, 100) }
+    }
+    return item
+  }
+
+  // Select-all on focus for number inputs
+  const handleNumFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select()
+
+  const scrollToCard = (index: number) => {
+    setTimeout(() => {
+      document.getElementById(`product-card-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, 50)
+  }
 
   return (
     <div className="space-y-5">
@@ -319,13 +353,19 @@ function ProductSelectionStep({
       {items.length > 0 ? (
         <div className="space-y-3">
           {items.map((item, index) => {
-            const lineTotal = calculateLineTotal(item, 'with_vat')
-            const lineTotalBeforeVat = calculateLineTotal(item, 'before_vat')
+            const effectiveItem = getEffectiveItem(item)
+            const lineTotal = calculateLineTotal(effectiveItem, 'with_vat')
+            const lineTotalBeforeVat = calculateLineTotal(effectiveItem, 'before_vat')
             const isExpanded = expandedItem === index
-            const hasDiscount = item.discountPercent > 0
+            const hasDiscount = item.discountType === 'fixed' ? item.discountFixed > 0 : item.discountPercent > 0
+            const discountDisplay = item.discountType === 'fixed'
+              ? formatCurrency(item.discountFixed)
+              : `${item.discountPercent}%`
+            const discountAmount = item.quantity * item.unitPrice - lineTotalBeforeVat
 
             return (
               <div
+                id={`product-card-${index}`}
                 key={index}
                 draggable
                 onDragStart={() => setDragging(index)}
@@ -344,130 +384,181 @@ function ProductSelectionStep({
                   isExpanded && 'ring-2 ring-blue-200 dark:ring-blue-800'
                 )}
               >
-                {/* Main Row */}
-                <div className="flex items-center gap-2 p-3 sm:p-4">
-                  {/* Drag handle */}
-                  <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hidden sm:block">
-                    <GripVertical className="h-5 w-5" />
-                  </div>
+                {/* Main Row - Two-line layout on mobile for breathing room */}
+                <div className="p-3 sm:p-4">
+                  <div className="flex items-center gap-2">
+                    {/* Drag handle */}
+                    <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hidden sm:block">
+                      <GripVertical className="h-5 w-5" />
+                    </div>
 
-                  {/* Item Number */}
-                  <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
-                    {index + 1}
-                  </div>
+                    {/* Item Number */}
+                    <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                      {index + 1}
+                    </div>
 
-                  {/* Product Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{item.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)}</span>
-                      {hasDiscount && (
-                        <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
-                          -{item.discountPercent}%
-                        </Badge>
-                      )}
-                      <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)}</span>
+                        {hasDiscount && (
+                          <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
+                            -{discountDisplay}
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions - always visible */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(index)}
+                        className={cn(
+                          'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                          isExpanded
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
+                        )}
+                      >
+                        <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveItem(index)}
+                        className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
-                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
-                      className="w-14 h-8 text-center text-sm font-semibold rounded-lg border-gray-200 dark:border-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })}
-                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Line Total */}
-                  <div className="text-right shrink-0 ml-2">
-                    <p className="font-bold text-sm">{formatCurrency(lineTotal)}</p>
-                  </div>
-
-                  {/* Expand / Actions */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(index)}
-                      className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-                        isExpanded
-                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
-                      )}
-                    >
-                      <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onRemoveItem(index)}
-                      className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  {/* Quantity + Total row */}
+                  <div className="flex items-center justify-between mt-3 gap-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
+                        className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <Input
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        value={item.quantity}
+                        onFocus={handleNumFocus}
+                        onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
+                        className="w-16 h-9 text-center text-sm font-semibold rounded-lg border-gray-200 dark:border-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })}
+                        className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-base">{formatCurrency(lineTotal)}</p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Expanded Detail Panel */}
                 {isExpanded && (
                   <div className="border-t bg-gray-50/50 dark:bg-gray-800/30 p-4 space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {/* Unit Price */}
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.unitPrice')}</Label>
-                        <div className="relative">
+                    {/* Unit Price - full width on mobile */}
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.unitPrice')}</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onFocus={handleNumFocus}
+                          onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
+                          className="h-11 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
+                      </div>
+                    </div>
+
+                    {/* Discount - with type toggle (% or ₺) */}
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.discount')}</Label>
+                      <div className="flex gap-2">
+                        <div className="flex rounded-xl border overflow-hidden shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => onUpdateItem(index, { discountType: 'percent', discountFixed: 0 })}
+                            className={cn(
+                              'w-11 h-11 flex items-center justify-center text-sm font-bold transition-colors',
+                              item.discountType === 'percent'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100'
+                            )}
+                          >
+                            %
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onUpdateItem(index, { discountType: 'fixed', discountPercent: 0 })}
+                            className={cn(
+                              'w-11 h-11 flex items-center justify-center text-sm font-bold transition-colors',
+                              item.discountType === 'fixed'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100'
+                            )}
+                          >
+                            ₺
+                          </button>
+                        </div>
+                        <div className="relative flex-1">
                           <Input
                             type="number"
+                            inputMode="decimal"
                             min="0"
-                            step="0.01"
-                            value={item.unitPrice}
-                            onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
-                            className="h-10 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            max={item.discountType === 'percent' ? 100 : undefined}
+                            value={item.discountType === 'percent' ? (item.discountPercent || '') : (item.discountFixed || '')}
+                            placeholder="0"
+                            onFocus={handleNumFocus}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0
+                              if (item.discountType === 'percent') {
+                                onUpdateItem(index, { discountPercent: Math.min(val, 100) })
+                              } else {
+                                onUpdateItem(index, { discountFixed: val })
+                              }
+                            }}
+                            className="h-11 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {item.discountType === 'percent' ? '%' : '₺'}
+                          </span>
                         </div>
                       </div>
+                      {hasDiscount && (
+                        <p className="text-xs text-red-500 mt-1.5">
+                          {t('proposals.discount')}: -{formatCurrency(discountAmount)}
+                        </p>
+                      )}
+                    </div>
 
-                      {/* Discount */}
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.discount')}</Label>
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={item.discountPercent}
-                            onChange={(e) => onUpdateItem(index, { discountPercent: parseFloat(e.target.value) || 0 })}
-                            className="h-10 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                      </div>
-
-                      {/* VAT */}
+                    {/* VAT + Total side by side */}
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.vat')}</Label>
                         <Select
                           value={String(item.vatPercent)}
                           onValueChange={(v) => onUpdateItem(index, { vatPercent: Number(v) })}
                         >
-                          <SelectTrigger className="h-10 rounded-xl text-sm font-medium">
+                          <SelectTrigger className="h-11 rounded-xl text-sm font-medium">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -480,20 +571,18 @@ function ProductSelectionStep({
                           </SelectContent>
                         </Select>
                       </div>
-
-                      {/* Line Summary */}
-                      <div className="flex flex-col justify-end">
+                      <div>
                         <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.total')}</Label>
-                        <div className="h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
+                        <div className="h-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
                           <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">{formatCurrency(lineTotal)}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Price Breakdown */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-gray-700">
                       <span>{t('proposals.subtotal')}: {formatCurrency(item.quantity * item.unitPrice)}</span>
-                      {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(item.quantity * item.unitPrice * item.discountPercent / 100)}</span>}
+                      {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(discountAmount)}</span>}
                       <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>
                     </div>
                   </div>
@@ -538,8 +627,10 @@ function ProductSelectionStep({
               </Select>
               <Input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 value={generalDiscount.value || ''}
+                onFocus={handleNumFocus}
                 onChange={(e) => onGeneralDiscountChange({ ...generalDiscount, value: parseFloat(e.target.value) || 0 })}
                 placeholder="0"
                 className="w-24 h-9 rounded-lg text-sm font-medium text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -874,7 +965,15 @@ export default function CreateProposalPage() {
   })
 
   const formData = watch()
-  const totals = useMemo(() => calculateProposalTotals(formData.items, formData.generalDiscount), [formData.items, formData.generalDiscount])
+  const itemsForCalcMain = useMemo(() => formData.items.map((item: any) => {
+    if (item.discountType === 'fixed' && item.discountFixed > 0) {
+      const lineSubtotal = item.quantity * item.unitPrice
+      const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
+      return { ...item, discountPercent: Math.min(effectivePercent, 100) }
+    }
+    return item
+  }), [formData.items])
+  const totals = useMemo(() => calculateProposalTotals(itemsForCalcMain, formData.generalDiscount), [itemsForCalcMain, formData.generalDiscount])
 
   const { fields: itemFields, append, update, remove } = useFieldArray({
     control,
