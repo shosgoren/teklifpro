@@ -27,6 +27,8 @@ import {
   Minus,
   Percent,
   ChevronDown,
+  ArrowLeftRight,
+  Copy as CopyIcon,
 } from 'lucide-react'
 
 import { Button } from '@/presentation/components/ui/button'
@@ -242,6 +244,7 @@ function ProductSelectionStep({
   const [search, setSearch] = useState('')
   const [expandedItem, setExpandedItem] = useState<number | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
 
   const { data: productsData } = useSWR('/api/v1/products?limit=100', apiFetcher)
   const allProducts: any[] = productsData?.data?.products ?? []
@@ -256,18 +259,41 @@ function ProductSelectionStep({
   }, [search, allProducts])
 
   const handleAddProduct = (product: any) => {
-    onAddItem({
-      id: product.id,
-      name: product.name,
-      quantity: 1,
-      unitPrice: product.listPrice || 0,
-      discountType: 'percent',
-      discountPercent: 0,
-      discountFixed: 0,
-      vatPercent: product.vatRate || 18,
-    })
+    if (replacingIndex !== null) {
+      // Replace: keep quantity and discount settings, swap product
+      const existing = items[replacingIndex]
+      onUpdateItem(replacingIndex, {
+        id: product.id,
+        name: product.name,
+        unitPrice: product.listPrice || 0,
+        vatPercent: product.vatRate || 18,
+      })
+      setReplacingIndex(null)
+    } else {
+      onAddItem({
+        id: product.id,
+        name: product.name,
+        quantity: 1,
+        unitPrice: product.listPrice || 0,
+        discountType: 'percent',
+        discountPercent: 0,
+        discountFixed: 0,
+        vatPercent: product.vatRate || 18,
+      })
+    }
     setSearch('')
     setSearchOpen(false)
+  }
+
+  const handleReplaceProduct = (index: number) => {
+    setReplacingIndex(index)
+    setSearchOpen(true)
+    setSearch('')
+  }
+
+  const handleDuplicateItem = (index: number) => {
+    const item = items[index]
+    onAddItem({ ...item })
   }
 
   const toggleExpand = (index: number) => {
@@ -309,7 +335,7 @@ function ProductSelectionStep({
   return (
     <div className="space-y-5">
       {/* Product Search */}
-      <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+      <Popover open={searchOpen} onOpenChange={(open) => { setSearchOpen(open); if (!open) setReplacingIndex(null) }}>
         <PopoverTrigger asChild>
           <button className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all text-left group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
@@ -323,6 +349,14 @@ function ProductSelectionStep({
         </PopoverTrigger>
         <PopoverContent className="w-[360px] p-0" align="start">
           <Command shouldFilter={false}>
+            {replacingIndex !== null && (
+              <div className="px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <ArrowLeftRight className="h-3 w-3" />
+                  {t('proposals.create.replaceSearch')}
+                </p>
+              </div>
+            )}
             <CommandInput placeholder={t('proposals.searchProduct')} value={search} onValueChange={setSearch} />
             <CommandList>
               <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
@@ -428,7 +462,7 @@ function ProductSelectionStep({
                       <button
                         type="button"
                         onClick={() => onRemoveItem(index)}
-                        className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                        className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -584,6 +618,40 @@ function ProductSelectionStep({
                       <span>{t('proposals.subtotal')}: {formatCurrency(item.quantity * item.unitPrice)}</span>
                       {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(discountAmount)}</span>}
                       <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>
+                    </div>
+
+                    {/* Item Actions */}
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleReplaceProduct(index)}
+                        className="rounded-lg text-xs gap-1.5 h-9"
+                      >
+                        <ArrowLeftRight className="h-3.5 w-3.5" />
+                        {t('proposals.create.replaceProduct')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDuplicateItem(index)}
+                        className="rounded-lg text-xs gap-1.5 h-9"
+                      >
+                        <CopyIcon className="h-3.5 w-3.5" />
+                        {t('proposals.create.duplicateItem')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onRemoveItem(index)}
+                        className="rounded-lg text-xs gap-1.5 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800 ml-auto"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {t('proposals.create.removeItem')}
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -362,7 +362,12 @@
       "saveDraft": "Save as Draft",
       "sendWhatsApp": "Send via WhatsApp",
       "sendEmail": "Send via Email",
-      "copyLink": "Copy Link"
+      "copyLink": "Copy Link",
+      "removeItem": "Remove",
+      "replaceProduct": "Replace Product",
+      "duplicateItem": "Duplicate Row",
+      "replaceSearch": "Select the product to replace with",
+      "itemActions": "Actions"
     }
   },
   "customers": {

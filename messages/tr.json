@@ -362,7 +362,12 @@
       "saveDraft": "Taslak Kaydet",
       "sendWhatsApp": "WhatsApp ile Gönder",
       "sendEmail": "E-posta ile Gönder",
-      "copyLink": "Linki Kopyala"
+      "copyLink": "Linki Kopyala",
+      "removeItem": "Kaldır",
+      "replaceProduct": "Ürünü Değiştir",
+      "duplicateItem": "Satırı Kopyala",
+      "replaceSearch": "Değiştirmek istediğiniz ürünü seçin",
+      "itemActions": "İşlemler"
     }
   },
   "customers": {
