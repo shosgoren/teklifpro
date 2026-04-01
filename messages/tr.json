@@ -408,6 +408,7 @@
   },
   "settings": {
     "title": "Ayarlar",
+    "subtitle": "İşletmenizi yapılandırın, entegrasyonları yönetin",
     "tabs": {
       "general": "Genel",
       "parasut": "Paraşüt",

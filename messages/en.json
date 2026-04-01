@@ -408,6 +408,7 @@
   },
   "settings": {
     "title": "Settings",
+    "subtitle": "Configure your business and manage integrations",
     "tabs": {
       "general": "General",
       "parasut": "Parasut",

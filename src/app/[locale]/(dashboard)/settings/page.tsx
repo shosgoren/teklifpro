@@ -314,23 +314,21 @@ const SettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-      {/* ========== Gradient Header ========== */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 py-8 md:px-8 md:py-10`}>
+      {/* ========== Gradient Header + Tabs ========== */}
+      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 pt-5 pb-12 md:px-8 md:pt-6 md:pb-14`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
-        <div className="relative max-w-6xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
-              <Settings2 className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">Ayarlar</h1>
+        <div className="relative max-w-6xl mx-auto flex items-center gap-3">
+          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+            <Settings2 className="w-5 h-5 text-white" />
           </div>
-          <p className="text-white/70 text-sm md:text-base ml-[52px]">
-            İşletmenizi yapılandırın, entegrasyonları yönetin
-          </p>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-white">{t('title')}</h1>
+            <p className="text-white/60 text-xs md:text-sm">{t('subtitle')}</p>
+          </div>
         </div>
       </div>
 
