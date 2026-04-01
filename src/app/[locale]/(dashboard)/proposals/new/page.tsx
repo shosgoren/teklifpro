@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import useSWR from 'swr'
-import { useForm, Controller, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
@@ -24,16 +24,14 @@ import {
   Package,
   Settings,
   Eye,
-  Calendar,
-  DollarSign,
-  TrendingDown,
+  Minus,
   Percent,
+  ChevronDown,
 } from 'lucide-react'
 
 import { Button } from '@/presentation/components/ui/button'
 import { Input } from '@/presentation/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/presentation/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/presentation/components/ui/tabs'
 import { Textarea } from '@/presentation/components/ui/textarea'
 import { Label } from '@/presentation/components/ui/label'
 import { Separator } from '@/presentation/components/ui/separator'
@@ -64,7 +62,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/presentation/componen
 import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
 
-// Validation schemas
+// ── Validation ────────────────────────────────────────────
+
 const customerSchema = z.object({
   id: z.string().min(1, 'Customer is required'),
   name: z.string(),
@@ -110,7 +109,8 @@ const apiFetcher = (url: string) =>
     return data;
   });
 
-// Step 1: Customer Selection
+// ── Step 1: Customer Selection ────────────────────────────
+
 function CustomerSelectionStep({ selectedCustomer, onSelect }: {
   selectedCustomer: ProposalFormData['customer'] | null
   onSelect: (customer: any, contact: any) => void
@@ -119,10 +119,7 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const { data: customersData } = useSWR(
-    '/api/v1/customers?limit=100',
-    apiFetcher
-  )
+  const { data: customersData } = useSWR('/api/v1/customers?limit=100', apiFetcher)
   const customers: any[] = customersData?.data?.customers ?? []
 
   const filteredCustomers = useMemo(() => {
@@ -162,31 +159,28 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={cn('w-full justify-start text-left font-normal', !selectedCustomer && 'text-muted-foreground')}
+              className={cn('w-full justify-start text-left font-normal h-12 rounded-xl', !selectedCustomer && 'text-muted-foreground')}
             >
               <Building2 className="mr-2 h-4 w-4" />
               {selectedCustomer ? selectedCustomer.name : t('proposals.selectCustomer')}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0" align="start">
+          <PopoverContent className="w-[340px] p-0" align="start">
             <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={t('proposals.searchCustomer')}
-                value={search}
-                onValueChange={setSearch}
-              />
+              <CommandInput placeholder={t('proposals.searchCustomer')} value={search} onValueChange={setSearch} />
               <CommandList>
                 <CommandEmpty>{t('proposals.noCustomer')}</CommandEmpty>
                 <CommandGroup>
                   {filteredCustomers.map((customer: any) => (
-                    <CommandItem
-                      key={customer.id}
-                      onSelect={() => handleSelectCustomer(customer)}
-                      className="text-xs"
-                    >
-                      <div className="flex-1">
-                        <p className="font-semibold">{customer.name}</p>
-                        {customer.email && <p className="text-muted-foreground">{customer.email}</p>}
+                    <CommandItem key={customer.id} onSelect={() => handleSelectCustomer(customer)}>
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {customer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{customer.name}</p>
+                          {customer.email && <p className="text-xs text-muted-foreground truncate">{customer.email}</p>}
+                        </div>
                       </div>
                     </CommandItem>
                   ))}
@@ -198,63 +192,56 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
       </div>
 
       {selectedCustomer && (
-        <Card className="bg-accent/50 border-accent">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base">{selectedCustomer.name}</CardTitle>
-                <CardDescription className="text-xs mt-1">
-                  {selectedCustomer.email}
-                </CardDescription>
-              </div>
-              <Check className="h-5 w-5 text-green-600" />
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 p-5 relative overflow-hidden">
+          <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-emerald-200/30 dark:bg-emerald-800/20" />
+          <div className="relative flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-lg shadow-emerald-500/20">
+              {selectedCustomer.name.charAt(0).toUpperCase()}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-xs text-muted-foreground">Telefon:</span>
-                <p className="font-mono text-xs">{selectedCustomer.phone}</p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-emerald-900 dark:text-emerald-100">{selectedCustomer.name}</h3>
+                <Check className="h-5 w-5 text-emerald-600" />
               </div>
-              <div>
-                <span className="text-xs text-muted-foreground">Vergi No:</span>
-                <p className="font-mono text-xs">{selectedCustomer.taxNumber}</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300">{selectedCustomer.email}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                {selectedCustomer.phone && <span>{selectedCustomer.phone}</span>}
+                {selectedCustomer.taxNumber && <span>VN: {selectedCustomer.taxNumber}</span>}
               </div>
             </div>
-            <div>
-              <span className="text-xs text-muted-foreground">Adres:</span>
-              <p className="text-xs">{selectedCustomer.address}</p>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-// Step 2: Product Selection
+// ── Step 2: Product Selection (Redesigned) ────────────────
+
 function ProductSelectionStep({
   items,
   onAddItem,
   onUpdateItem,
   onRemoveItem,
   onReorderItems,
+  generalDiscount,
+  onGeneralDiscountChange,
 }: {
   items: ProposalFormData['items']
   onAddItem: (item: ProposalFormData['items'][0]) => void
   onUpdateItem: (index: number, item: Partial<ProposalFormData['items'][0]>) => void
   onRemoveItem: (index: number) => void
   onReorderItems: (items: ProposalFormData['items']) => void
+  generalDiscount: ProposalFormData['generalDiscount']
+  onGeneralDiscountChange: (gd: ProposalFormData['generalDiscount']) => void
 }) {
   const t = useTranslations()
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [expandedItem, setExpandedItem] = useState<number | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
 
-  const { data: productsData } = useSWR(
-    '/api/v1/products?limit=100',
-    apiFetcher
-  )
+  const { data: productsData } = useSWR('/api/v1/products?limit=100', apiFetcher)
   const allProducts: any[] = productsData?.data?.products ?? []
 
   const filteredProducts = useMemo(() => {
@@ -264,7 +251,7 @@ function ProductSelectionStep({
       p.name.toLowerCase().includes(q) ||
       (p.code && p.code.toLowerCase().includes(q))
     )
-  }, [search])
+  }, [search, allProducts])
 
   const handleAddProduct = (product: any) => {
     onAddItem({
@@ -279,177 +266,327 @@ function ProductSelectionStep({
     setSearchOpen(false)
   }
 
-  const handleDragStart = (index: number) => {
-    setDragging(index)
+  const toggleExpand = (index: number) => {
+    setExpandedItem(expandedItem === index ? null : index)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const handleDrop = (dropIndex: number) => {
-    if (dragging === null || dragging === dropIndex) return
-    const newItems = [...items]
-    const [draggedItem] = newItems.splice(dragging, 1)
-    newItems.splice(dropIndex, 0, draggedItem)
-    onReorderItems(newItems)
-    setDragging(null)
-  }
-
-  const subtotal = items.reduce((sum, item) => sum + calculateLineTotal(item, 'before_vat'), 0)
+  const totals = useMemo(() => calculateProposalTotals(items, generalDiscount), [items, generalDiscount])
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
-              <Search className="mr-2 h-4 w-4" />
-              {t('proposals.searchProduct')}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[300px] p-0" align="start">
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder={t('proposals.searchProduct')}
-                value={search}
-                onValueChange={setSearch}
-              />
-              <CommandList>
-                <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
-                <CommandGroup>
-                  {filteredProducts.map((product: any) => (
-                    <CommandItem
-                      key={product.id}
-                      onSelect={() => handleAddProduct(product)}
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{product.name}</p>
+    <div className="space-y-5">
+      {/* Product Search */}
+      <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+        <PopoverTrigger asChild>
+          <button className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all text-left group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              <Plus className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <p className="font-semibold text-blue-700 dark:text-blue-300 text-sm">{t('proposals.create.addProduct')}</p>
+              <p className="text-xs text-blue-500 dark:text-blue-400">{t('proposals.searchProduct')}</p>
+            </div>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[360px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder={t('proposals.searchProduct')} value={search} onValueChange={setSearch} />
+            <CommandList>
+              <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
+              <CommandGroup>
+                {filteredProducts.map((product: any) => (
+                  <CommandItem key={product.id} onSelect={() => handleAddProduct(product)}>
+                    <div className="flex items-center gap-3 w-full py-1">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
+                        <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{product.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {formatCurrency(product.listPrice || 0)} {product.code ? `• ${product.code}` : ''}
+                          {product.code && `${product.code} · `}{formatCurrency(product.listPrice || 0)}
                         </p>
                       </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
 
-        <Button variant="outline" size="icon">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-
+      {/* Product Items */}
       {items.length > 0 ? (
-        <div className="border rounded-lg overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="w-8 px-4 py-3 text-left"></th>
-                <th className="px-4 py-3 text-left font-medium">{t('proposals.product')}</th>
-                <th className="w-20 px-4 py-3 text-right font-medium">{t('proposals.quantity')}</th>
-                <th className="w-24 px-4 py-3 text-right font-medium">{t('proposals.unitPrice')}</th>
-                <th className="w-20 px-4 py-3 text-right font-medium">{t('proposals.discount')}</th>
-                <th className="w-16 px-4 py-3 text-right font-medium">{t('proposals.vat')}</th>
-                <th className="w-24 px-4 py-3 text-right font-medium">{t('proposals.total')}</th>
-                <th className="w-10 px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item, index) => (
-                <tr
-                  key={index}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(index)}
-                  className={cn(
-                    'border-b transition-colors hover:bg-muted/30',
-                    dragging === index && 'bg-blue-50 opacity-50'
-                  )}
-                >
-                  <td className="px-4 py-3 cursor-grab active:cursor-grabbing">
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  </td>
-                  <td className="px-4 py-3 font-medium text-xs max-w-xs truncate">{item.name}</td>
-                  <td className="px-4 py-3 text-right">
+        <div className="space-y-3">
+          {items.map((item, index) => {
+            const lineTotal = calculateLineTotal(item, 'with_vat')
+            const lineTotalBeforeVat = calculateLineTotal(item, 'before_vat')
+            const isExpanded = expandedItem === index
+            const hasDiscount = item.discountPercent > 0
+
+            return (
+              <div
+                key={index}
+                draggable
+                onDragStart={() => setDragging(index)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (dragging === null || dragging === index) return
+                  const newItems = [...items]
+                  const [draggedItem] = newItems.splice(dragging, 1)
+                  newItems.splice(index, 0, draggedItem)
+                  onReorderItems(newItems)
+                  setDragging(null)
+                }}
+                className={cn(
+                  'rounded-2xl border bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all overflow-hidden',
+                  dragging === index && 'opacity-50 scale-[0.98]',
+                  isExpanded && 'ring-2 ring-blue-200 dark:ring-blue-800'
+                )}
+              >
+                {/* Main Row */}
+                <div className="flex items-center gap-2 p-3 sm:p-4">
+                  {/* Drag handle */}
+                  <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hidden sm:block">
+                    <GripVertical className="h-5 w-5" />
+                  </div>
+
+                  {/* Item Number */}
+                  <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                    {index + 1}
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{item.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)}</span>
+                      {hasDiscount && (
+                        <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
+                          -{item.discountPercent}%
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>
+                    </div>
+                  </div>
+
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
+                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
                     <Input
                       type="number"
                       min="1"
                       value={item.quantity}
                       onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
-                      className="w-full h-8 text-right text-xs"
+                      className="w-14 h-8 text-center text-sm font-semibold rounded-lg border-gray-200 dark:border-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.unitPrice}
-                      onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
-                      className="w-full h-8 text-right text-xs"
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={item.discountPercent}
-                        onChange={(e) => onUpdateItem(index, { discountPercent: parseFloat(e.target.value) || 0 })}
-                        className="w-full h-8 text-right text-xs"
-                      />
-                      <span className="text-xs text-muted-foreground">%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={item.vatPercent}
-                        onChange={(e) => onUpdateItem(index, { vatPercent: parseFloat(e.target.value) || 0 })}
-                        className="w-full h-8 text-right text-xs"
-                      />
-                      <span className="text-xs text-muted-foreground">%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium text-xs whitespace-nowrap">
-                    {formatCurrency(calculateLineTotal(item, 'with_vat'))}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRemoveItem(index)}
-                      className="h-8 w-8 p-0"
+                    <button
+                      type="button"
+                      onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })}
+                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Line Total */}
+                  <div className="text-right shrink-0 ml-2">
+                    <p className="font-bold text-sm">{formatCurrency(lineTotal)}</p>
+                  </div>
+
+                  {/* Expand / Actions */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(index)}
+                      className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
+                        isExpanded
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
+                      )}
+                    >
+                      <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveItem(index)}
+                      className="w-8 h-8 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded Detail Panel */}
+                {isExpanded && (
+                  <div className="border-t bg-gray-50/50 dark:bg-gray-800/30 p-4 space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {/* Unit Price */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.unitPrice')}</Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unitPrice}
+                            onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
+                            className="h-10 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
+                        </div>
+                      </div>
+
+                      {/* Discount */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.discount')}</Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={item.discountPercent}
+                            onChange={(e) => onUpdateItem(index, { discountPercent: parseFloat(e.target.value) || 0 })}
+                            className="h-10 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                      </div>
+
+                      {/* VAT */}
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.vat')}</Label>
+                        <Select
+                          value={String(item.vatPercent)}
+                          onValueChange={(v) => onUpdateItem(index, { vatPercent: Number(v) })}
+                        >
+                          <SelectTrigger className="h-10 rounded-xl text-sm font-medium">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">%0</SelectItem>
+                            <SelectItem value="1">%1</SelectItem>
+                            <SelectItem value="8">%8</SelectItem>
+                            <SelectItem value="10">%10</SelectItem>
+                            <SelectItem value="18">%18</SelectItem>
+                            <SelectItem value="20">%20</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Line Summary */}
+                      <div className="flex flex-col justify-end">
+                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.total')}</Label>
+                        <div className="h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
+                          <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">{formatCurrency(lineTotal)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Price Breakdown */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1 border-t border-gray-200 dark:border-gray-700">
+                      <span>{t('proposals.subtotal')}: {formatCurrency(item.quantity * item.unitPrice)}</span>
+                      {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(item.quantity * item.unitPrice * item.discountPercent / 100)}</span>}
+                      <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       ) : (
-        <Card className="border-dashed flex items-center justify-center py-12">
-          <div className="text-center">
-            <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">{t('proposals.noItems')}</p>
+        <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center mb-4">
+            <Package className="h-8 w-8 text-blue-500" />
           </div>
-        </Card>
+          <p className="text-sm font-medium text-muted-foreground">{t('proposals.noItems')}</p>
+        </div>
+      )}
+
+      {/* General Discount Section */}
+      {items.length > 0 && (
+        <div className="rounded-2xl border bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-800 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                <Percent className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-violet-800 dark:text-violet-200">{t('proposals.generalDiscount')}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={generalDiscount.type}
+                onValueChange={(v) => onGeneralDiscountChange({ ...generalDiscount, type: v as 'percent' | 'fixed' })}
+              >
+                <SelectTrigger className="w-16 h-9 rounded-lg text-xs font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percent">%</SelectItem>
+                  <SelectItem value="fixed">₺</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min="0"
+                value={generalDiscount.value || ''}
+                onChange={(e) => onGeneralDiscountChange({ ...generalDiscount, value: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                className="w-24 h-9 rounded-lg text-sm font-medium text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+          </div>
+          {generalDiscount.value > 0 && (
+            <p className="text-xs text-violet-600 dark:text-violet-400 mt-2 text-right">
+              -{formatCurrency(totals.discountAmount)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Running Totals */}
+      {items.length > 0 && (
+        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 shadow-xl shadow-blue-500/20 relative overflow-hidden">
+          <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10" />
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5" />
+          <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.subtotal')}</p>
+              <p className="text-lg font-bold">{formatCurrency(totals.subtotal)}</p>
+            </div>
+            {totals.discountAmount > 0 && (
+              <div>
+                <p className="text-xs text-blue-200 mb-0.5">{t('proposals.discount')}</p>
+                <p className="text-lg font-bold text-red-300">-{formatCurrency(totals.discountAmount)}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.vat')}</p>
+              <p className="text-lg font-bold">{formatCurrency(totals.vatAmount)}</p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.total')}</p>
+              <p className="text-2xl font-extrabold">{formatCurrency(totals.grandTotal)}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-// Step 3: Details
+// ── Step 3: Details ───────────────────────────────────────
+
 function DetailsStep({
   data,
   onChange,
@@ -467,37 +604,12 @@ function DetailsStep({
           id="title"
           value={data.title || ''}
           onChange={(e) => onChange('title', e.target.value)}
-          placeholder="e.g., Q2 2024 Development Services"
-          className="mt-2"
+          placeholder={t('proposals.create.proposalTitle')}
+          className="mt-2 h-12 rounded-xl"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label>{t('proposals.generalDiscount')}</Label>
-          <div className="flex gap-2 mt-2">
-            <Select
-              value={data.generalDiscount?.type || 'percent'}
-              onValueChange={(value) => onChange('generalDiscount', { ...data.generalDiscount, type: value as any })}
-            >
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="percent">%</SelectItem>
-                <SelectItem value="fixed">$</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min="0"
-              value={data.generalDiscount?.value || 0}
-              onChange={(e) => onChange('generalDiscount', { ...data.generalDiscount, value: parseFloat(e.target.value) || 0 })}
-              className="flex-1"
-            />
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="validity">{t('proposals.validityDays')}</Label>
           <div className="flex items-center gap-2 mt-2">
@@ -508,20 +620,18 @@ function DetailsStep({
               max="365"
               value={data.validityDays || 30}
               onChange={(e) => onChange('validityDays', parseInt(e.target.value) || 30)}
+              className="h-11 rounded-xl"
             />
-            <span className="text-xs text-muted-foreground">{t('proposals.days')}</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{t('proposals.days')}</span>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="payment">{t('proposals.paymentTerms')}</Label>
           <Select
             value={data.paymentTerms || 'Net 30'}
             onValueChange={(value) => onChange('paymentTerms', value)}
           >
-            <SelectTrigger id="payment" className="mt-2">
+            <SelectTrigger id="payment" className="mt-2 h-11 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -533,24 +643,24 @@ function DetailsStep({
             </SelectContent>
           </Select>
         </div>
+      </div>
 
-        <div>
-          <Label htmlFor="delivery">{t('proposals.deliveryTerms')}</Label>
-          <Select
-            value={data.deliveryTerms || 'Standard'}
-            onValueChange={(value) => onChange('deliveryTerms', value)}
-          >
-            <SelectTrigger id="delivery" className="mt-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Standard">Standard</SelectItem>
-              <SelectItem value="Express">Express</SelectItem>
-              <SelectItem value="Overnight">Overnight</SelectItem>
-              <SelectItem value="Same Day">Same Day</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div>
+        <Label htmlFor="delivery">{t('proposals.deliveryTerms')}</Label>
+        <Select
+          value={data.deliveryTerms || 'Standard'}
+          onValueChange={(value) => onChange('deliveryTerms', value)}
+        >
+          <SelectTrigger id="delivery" className="mt-2 h-11 rounded-xl">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Standard">Standard</SelectItem>
+            <SelectItem value="Express">Express</SelectItem>
+            <SelectItem value="Overnight">Overnight</SelectItem>
+            <SelectItem value="Same Day">Same Day</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
@@ -559,8 +669,8 @@ function DetailsStep({
           id="notes"
           value={data.notes || ''}
           onChange={(e) => onChange('notes', e.target.value)}
-          placeholder="Add any additional notes or special instructions..."
-          className="mt-2 h-24 resize-none"
+          placeholder={t('proposals.create.notes')}
+          className="mt-2 h-24 resize-none rounded-xl"
         />
       </div>
 
@@ -570,15 +680,15 @@ function DetailsStep({
           id="terms"
           value={data.termsAndConditions || ''}
           onChange={(e) => onChange('termsAndConditions', e.target.value)}
-          placeholder="Standard terms and conditions..."
-          className="mt-2 h-32 resize-none"
+          className="mt-2 h-32 resize-none rounded-xl"
         />
       </div>
     </div>
   )
 }
 
-// Step 4: Preview & Send
+// ── Step 4: Preview & Send ────────────────────────────────
+
 function PreviewStep({
   data,
   totals,
@@ -606,16 +716,14 @@ function PreviewStep({
 
   return (
     <div className="space-y-6">
-      {/* Preview */}
-      <Card>
-        <CardHeader>
+      <Card className="rounded-2xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
           <CardTitle className="text-base flex items-center gap-2">
             <Eye className="h-4 w-4" />
             {t('proposals.preview')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Header */}
+        <CardContent className="space-y-6 pt-6">
           <div className="border-b pb-6">
             <h1 className="text-2xl font-bold mb-2">{data.title}</h1>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -627,12 +735,11 @@ function PreviewStep({
               <div className="text-right">
                 <p className="text-muted-foreground text-xs mb-1">{t('proposals.date')}</p>
                 <p className="font-semibold">{new Date().toLocaleDateString()}</p>
-                <p className="text-xs text-muted-foreground">Valid for {data.validityDays} days</p>
+                <p className="text-xs text-muted-foreground">{data.validityDays} {t('proposals.days')}</p>
               </div>
             </div>
           </div>
 
-          {/* Items Table */}
           <div>
             <table className="w-full text-xs">
               <thead>
@@ -656,7 +763,6 @@ function PreviewStep({
             </table>
           </div>
 
-          {/* Totals */}
           <div className="border-t pt-4 space-y-2">
             <div className="flex justify-end text-sm">
               <div className="w-48">
@@ -683,69 +789,50 @@ function PreviewStep({
             </div>
           </div>
 
-          {/* Terms */}
           {data.notes && (
-            <div className="bg-muted/50 p-4 rounded border text-xs space-y-2">
+            <div className="bg-muted/50 p-4 rounded-xl border text-xs space-y-2">
               <p className="font-semibold">{t('proposals.notes')}</p>
               <p className="whitespace-pre-wrap">{data.notes}</p>
-            </div>
-          )}
-
-          {data.termsAndConditions && (
-            <div className="bg-muted/50 p-4 rounded border text-xs space-y-2">
-              <p className="font-semibold">{t('proposals.termsConditions')}</p>
-              <p className="whitespace-pre-wrap">{data.termsAndConditions}</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2 h-12 rounded-xl">
           <FileText className="h-4 w-4" />
           {t('proposals.saveDraft')}
         </Button>
-
         <Dialog open={sendDialog === 'email'} onOpenChange={(open) => setSendDialog(open ? 'email' : null)}>
-          <Button variant="outline" className="gap-2" onClick={() => setSendDialog('email')}>
+          <Button variant="outline" className="gap-2 h-12 rounded-xl" onClick={() => setSendDialog('email')}>
             <Send className="h-4 w-4" />
             {t('proposals.sendEmail')}
           </Button>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('proposals.sendEmail')}</DialogTitle>
-              <DialogDescription>
-                {t('proposals.emailWillSentTo')} {data.customer.email}
-              </DialogDescription>
+              <DialogDescription>{t('proposals.emailWillSentTo')} {data.customer.email}</DialogDescription>
             </DialogHeader>
-            <Button onClick={handleSendEmail} className="w-full">
-              {t('proposals.send')}
-            </Button>
+            <Button onClick={handleSendEmail} className="w-full rounded-xl">{t('proposals.send')}</Button>
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Dialog open={sendDialog === 'whatsapp'} onOpenChange={(open) => setSendDialog(open ? 'whatsapp' : null)}>
-          <Button variant="outline" className="gap-2" onClick={() => setSendDialog('whatsapp')}>
+          <Button variant="outline" className="gap-2 h-12 rounded-xl" onClick={() => setSendDialog('whatsapp')}>
             <MessageSquare className="h-4 w-4" />
             {t('proposals.sendWhatsApp')}
           </Button>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('proposals.sendWhatsApp')}</DialogTitle>
-              <DialogDescription>
-                {t('proposals.whatsappMessageWillSentTo')} {data.customer.phone}
-              </DialogDescription>
+              <DialogDescription>{t('proposals.whatsappMessageWillSentTo')} {data.customer.phone}</DialogDescription>
             </DialogHeader>
-            <Button onClick={handleSendWhatsApp} className="w-full">
-              {t('proposals.send')}
-            </Button>
+            <Button onClick={handleSendWhatsApp} className="w-full rounded-xl">{t('proposals.send')}</Button>
           </DialogContent>
         </Dialog>
-
-        <Button variant="outline" className="gap-2" onClick={handleCopyLink}>
+        <Button variant="outline" className="gap-2 h-12 rounded-xl" onClick={handleCopyLink}>
           <Copy className="h-4 w-4" />
           {t('proposals.copyLink')}
         </Button>
@@ -754,7 +841,8 @@ function PreviewStep({
   )
 }
 
-// Main Page Component
+// ── Main Page ─────────────────────────────────────────────
+
 export default function CreateProposalPage() {
   const t = useTranslations()
   const router = useRouter()
@@ -788,32 +876,22 @@ export default function CreateProposalPage() {
   const formData = watch()
   const totals = useMemo(() => calculateProposalTotals(formData.items, formData.generalDiscount), [formData.items, formData.generalDiscount])
 
-  const { fields: itemFields, append, update, remove, move } = useFieldArray({
+  const { fields: itemFields, append, update, remove } = useFieldArray({
     control,
     name: 'items',
   })
 
-  const handleAddItem = (item: ProposalFormData['items'][0]) => {
-    append(item)
-  }
+  const handleAddItem = (item: ProposalFormData['items'][0]) => { append(item) }
 
   const handleUpdateItem = (index: number, updates: Partial<ProposalFormData['items'][0]>) => {
     const currentItem = itemFields[index]
-    if (currentItem) {
-      update(index, { ...currentItem, ...updates })
-    }
+    if (currentItem) update(index, { ...currentItem, ...updates })
   }
 
-  const handleRemoveItem = (index: number) => {
-    remove(index)
-  }
+  const handleRemoveItem = (index: number) => { remove(index) }
 
   const handleReorderItems = (items: ProposalFormData['items']) => {
-    itemFields.forEach((_, index) => {
-      if (items[index]) {
-        update(index, items[index])
-      }
-    })
+    itemFields.forEach((_, index) => { if (items[index]) update(index, items[index]) })
   }
 
   const handleSelectCustomer = (customer: any, contact: any) => {
@@ -822,26 +900,10 @@ export default function CreateProposalPage() {
   }
 
   const steps = [
-    {
-      title: t('proposals.steps.selectCustomer'),
-      icon: Building2,
-      completed: !!formData.customer?.id,
-    },
-    {
-      title: t('proposals.steps.addProducts'),
-      icon: Package,
-      completed: formData.items.length > 0,
-    },
-    {
-      title: t('proposals.steps.details'),
-      icon: Settings,
-      completed: !!formData.title,
-    },
-    {
-      title: t('proposals.steps.preview'),
-      icon: Eye,
-      completed: false,
-    },
+    { title: t('proposals.steps.selectCustomer'), icon: Building2, completed: !!formData.customer?.id },
+    { title: t('proposals.steps.addProducts'), icon: Package, completed: formData.items.length > 0 },
+    { title: t('proposals.steps.details'), icon: Settings, completed: !!formData.title },
+    { title: t('proposals.steps.preview'), icon: Eye, completed: false },
   ]
 
   const onSubmit = async (data: ProposalFormData) => {
@@ -875,13 +937,8 @@ export default function CreateProposalPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-
       const result = await res.json()
-
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || 'Teklif olusturulamadi')
-      }
-
+      if (!res.ok || !result.success) throw new Error(result.error || t('proposals.error'))
       toast.success(t('proposals.saved'))
       router.push(`/${locale}/proposals/${result.data.id}`)
     } catch (error) {
@@ -893,18 +950,20 @@ export default function CreateProposalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
-      <div className="container max-w-6xl">
+    <div className="min-h-screen py-4 md:py-8">
+      <div className="max-w-4xl mx-auto px-0">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('proposals.createNew')}</h1>
-          <p className="text-muted-foreground">{t('proposals.createDescription')}</p>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            {t('proposals.createNew')}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('proposals.createDescription')}</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Stepper */}
-          <div className="bg-white rounded-lg border p-6">
-            <div className="flex justify-between items-center mb-8">
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm p-4 md:p-6">
+            <div className="flex justify-between items-center">
               {steps.map((step, index) => {
                 const Icon = step.icon
                 const isActive = index === currentStep
@@ -912,34 +971,36 @@ export default function CreateProposalPage() {
 
                 return (
                   <div key={index} className="flex items-center flex-1">
-                    <div className="flex flex-col items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (index < currentStep || steps[index - 1]?.completed || index === 0) setCurrentStep(index)
+                      }}
+                      className="flex flex-col items-center group"
+                    >
                       <div
                         className={cn(
-                          'w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-colors mb-2',
-                          isActive && 'bg-blue-600 text-white shadow-lg',
-                          isCompleted && 'bg-green-600 text-white',
-                          !isActive && !isCompleted && 'bg-muted text-muted-foreground'
+                          'w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-semibold transition-all mb-1.5',
+                          isActive && 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-110',
+                          isCompleted && 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20',
+                          !isActive && !isCompleted && 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'
                         )}
                       >
-                        {isCompleted ? (
-                          <Check className="h-6 w-6" />
-                        ) : (
-                          <Icon className="h-6 w-6" />
-                        )}
+                        {isCompleted ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                       </div>
                       <p className={cn(
-                        'text-xs font-medium text-center max-w-24',
-                        isActive && 'text-blue-600',
-                        isCompleted && 'text-green-600',
+                        'text-[10px] md:text-xs font-medium text-center max-w-20 md:max-w-24 leading-tight',
+                        isActive && 'text-blue-600 dark:text-blue-400',
+                        isCompleted && 'text-emerald-600 dark:text-emerald-400',
                         !isActive && !isCompleted && 'text-muted-foreground'
                       )}>
                         {step.title}
                       </p>
-                    </div>
+                    </button>
                     {index < steps.length - 1 && (
                       <div className={cn(
-                        'flex-1 h-1 mx-3 transition-colors',
-                        isCompleted ? 'bg-green-600' : 'bg-muted'
+                        'flex-1 h-1 mx-2 md:mx-3 rounded-full transition-colors',
+                        isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gray-200 dark:bg-gray-800'
                       )} />
                     )}
                   </div>
@@ -949,22 +1010,19 @@ export default function CreateProposalPage() {
           </div>
 
           {/* Step Content */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{steps[currentStep].title}</CardTitle>
-              <CardDescription>
+          <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm overflow-hidden">
+            <div className="p-4 md:p-6 border-b bg-gray-50/50 dark:bg-gray-800/30">
+              <h2 className="text-lg font-bold">{steps[currentStep].title}</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {currentStep === 0 && t('proposals.selectCustomerDesc')}
                 {currentStep === 1 && t('proposals.addProductsDesc')}
                 {currentStep === 2 && t('proposals.detailsDesc')}
                 {currentStep === 3 && t('proposals.previewDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
+              </p>
+            </div>
+            <div className="p-4 md:p-6">
               {currentStep === 0 && (
-                <CustomerSelectionStep
-                  selectedCustomer={formData.customer}
-                  onSelect={handleSelectCustomer}
-                />
+                <CustomerSelectionStep selectedCustomer={formData.customer} onSelect={handleSelectCustomer} />
               )}
               {currentStep === 1 && (
                 <ProductSelectionStep
@@ -973,82 +1031,54 @@ export default function CreateProposalPage() {
                   onUpdateItem={handleUpdateItem}
                   onRemoveItem={handleRemoveItem}
                   onReorderItems={handleReorderItems}
+                  generalDiscount={formData.generalDiscount}
+                  onGeneralDiscountChange={(gd) => setValue('generalDiscount', gd)}
                 />
               )}
               {currentStep === 2 && (
-                <DetailsStep
-                  data={formData}
-                  onChange={(field, value) => {
-                    setValue(field as any, value)
-                  }}
-                />
+                <DetailsStep data={formData} onChange={(field, value) => setValue(field as any, value)} />
               )}
               {currentStep === 3 && (
                 <PreviewStep data={formData} totals={totals} />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Totals Footer */}
-          <Card className="border-2 border-blue-200 bg-blue-50/50">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('proposals.subtotal')}</p>
-                  <p className="text-xl font-bold">{formatCurrency(totals.subtotal)}</p>
-                </div>
-                {totals.discountAmount > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">{t('proposals.discount')}</p>
-                    <p className="text-xl font-bold text-red-600">-{formatCurrency(totals.discountAmount)}</p>
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('proposals.vat')}</p>
-                  <p className="text-xl font-bold">{formatCurrency(totals.vatAmount)}</p>
-                </div>
-                <Separator orientation="vertical" className="hidden md:block" />
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">{t('proposals.total')}</p>
-                  <p className="text-2xl font-bold text-blue-600">{formatCurrency(totals.grandTotal)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Navigation */}
-          <div className="flex justify-between gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-              disabled={currentStep === 0}
-              className="gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              {t('proposals.previous')}
-            </Button>
-
-            {currentStep < steps.length - 1 ? (
+          {/* Navigation - Mobile sticky bottom */}
+          <div className="sticky bottom-0 md:relative bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-t md:border md:rounded-2xl p-4 md:p-5 -mx-4 md:mx-0 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:shadow-sm">
+            <div className="flex justify-between gap-3">
               <Button
                 type="button"
-                onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-                disabled={!steps[currentStep].completed}
-                className="gap-2"
+                variant="outline"
+                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+                disabled={currentStep === 0}
+                className="gap-2 h-11 rounded-xl flex-1 md:flex-none"
               >
-                {t('proposals.next')}
-                <ChevronRight className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('proposals.previous')}</span>
               </Button>
-            ) : (
-              <Button
-                type="submit"
-                className="gap-2 bg-green-600 hover:bg-green-700"
-                disabled={isSubmitting}
-              >
-                <Check className="h-4 w-4" />
-                {isSubmitting ? 'Kaydediliyor...' : t('proposals.createProposal')}
-              </Button>
-            )}
+
+              {currentStep < steps.length - 1 ? (
+                <Button
+                  type="button"
+                  onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+                  disabled={!steps[currentStep].completed}
+                  className="gap-2 h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 flex-1 md:flex-none"
+                >
+                  <span>{t('proposals.next')}</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  className="gap-2 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 flex-1 md:flex-none"
+                  disabled={isSubmitting}
+                >
+                  <Check className="h-4 w-4" />
+                  {isSubmitting ? '...' : t('proposals.createProposal')}
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </div>
