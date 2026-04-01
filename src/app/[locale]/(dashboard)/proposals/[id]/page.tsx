@@ -520,6 +520,38 @@ export default function ProposalDetailPage() {
 
           {/* ===== Sidebar ===== */}
           <div className="space-y-6">
+            {/* View Analytics */}
+            <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="p-5">
+                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">{t('analytics.title')}</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
+                    <Eye className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">{proposal.viewCount || 0}</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t('analytics.views')}</p>
+                  </div>
+                  <div className="text-center p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl">
+                    <Clock className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      {proposal.totalViewDuration
+                        ? proposal.totalViewDuration >= 60
+                          ? `${Math.floor(proposal.totalViewDuration / 60)}m`
+                          : `${proposal.totalViewDuration}s`
+                        : '0s'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t('analytics.duration')}</p>
+                  </div>
+                  <div className="text-center p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl">
+                    <FileText className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      {proposal.viewedAt ? new Date(proposal.viewedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }) : '—'}
+                    </p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t('analytics.lastView')}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             {/* Activity Feed */}
             <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
               <div className="p-5">

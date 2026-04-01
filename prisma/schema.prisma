@@ -417,6 +417,7 @@ model Proposal {
   respondedAt       DateTime?       @map("responded_at")
   expiresAt         DateTime?       @map("expires_at")
   viewCount         Int             @default(0) @map("view_count")
+  totalViewDuration Int             @default(0) @map("total_view_duration") // seconds
 
   // Public Access
   publicToken       String          @unique @map("public_token")

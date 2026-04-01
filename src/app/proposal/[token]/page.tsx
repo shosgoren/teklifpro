@@ -3,6 +3,7 @@ import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import ProposalActions from './proposal-actions'
 import ProposalContent from './proposal-content'
+import { ViewTracker } from './view-tracker'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -118,6 +119,8 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
     : null
 
   return (
+    <>
+    <ViewTracker token={params.token} />
     <ProposalContent
       proposal={{
         id: updatedProposal.id,
@@ -191,5 +194,6 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
       }}
       isResponded={isResponded}
     />
+    </>
   )
 }

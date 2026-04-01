@@ -304,6 +304,12 @@
     "linkCopied": "Link kopyalandı!",
     "qrCode": "QR Kod",
     "qrCodeDesc": "Bu QR kodu taratarak teklifi doğrudan açabilirsiniz. Yüz yüze toplantılarda idealdir.",
+    "analytics": {
+      "title": "Görüntüleme Analizi",
+      "views": "Görüntüleme",
+      "duration": "Süre",
+      "lastView": "Son Görüntüleme"
+    },
     "send": "Gönder",
     "emailWillSentTo": "E-posta şu adrese gönderilecek:",
     "whatsappMessageWillSentTo": "WhatsApp mesajı şu numaraya gönderilecek:",
