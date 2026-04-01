@@ -179,6 +179,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   const isDark = theme === 'dark'
+  const isSettingsPage = isActive('/settings')
 
   const mobilePrimaryItems = navigationItems.slice(0, MOBILE_PRIMARY_COUNT)
   const mobileSecondaryItems = navigationItems.slice(MOBILE_PRIMARY_COUNT)
@@ -317,7 +318,11 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Top Bar */}
-        <header className="bg-white/80 dark:bg-gradient-to-r dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700/50 px-4 md:px-8 py-3 shadow-sm dark:shadow-lg">
+        <header className={`relative z-10 px-4 md:px-8 py-3 transition-colors duration-300 ${
+          isSettingsPage
+            ? 'bg-transparent border-b border-white/10 shadow-none'
+            : 'bg-white/80 dark:bg-gradient-to-r dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-lg'
+        }`}>
           <div className="flex items-center justify-between">
             {/* Title */}
             <div className="flex items-center gap-3 min-w-0">
@@ -325,12 +330,18 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                 const activeItem = navigationItems.find(item => isActive(item.href))
                 const ActiveIcon = activeItem?.icon
                 return ActiveIcon ? (
-                  <div className={`hidden sm:flex p-1.5 rounded-lg ${activeItem?.iconColor} ${activeItem?.iconColorDark} bg-slate-100 dark:bg-slate-800/50`}>
+                  <div className={`hidden sm:flex p-1.5 rounded-lg ${
+                    isSettingsPage
+                      ? 'bg-white/20 text-white'
+                      : `${activeItem?.iconColor} ${activeItem?.iconColorDark} bg-slate-100 dark:bg-slate-800/50`
+                  }`}>
                     <ActiveIcon className="w-4 h-4" />
                   </div>
                 ) : null
               })()}
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
+              <h2 className={`text-lg font-semibold truncate ${
+                isSettingsPage ? 'text-white' : 'text-slate-900 dark:text-white'
+              }`}>
                 {labels[navigationItems.find(item => isActive(item.href))?.nameKey || 'dashboard'] || 'Dashboard'}
               </h2>
             </div>
@@ -340,7 +351,11 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               {mounted && (
                 <button
                   onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-600 dark:text-slate-300"
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    isSettingsPage
+                      ? 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                  }`}
                 >
                   {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
@@ -349,7 +364,11 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               <div className="relative" ref={langMenuRef}>
                 <button
                   onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className="flex items-center gap-1 px-2 py-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-600 dark:text-slate-300 text-sm font-medium"
+                  className={`flex items-center gap-1 px-2 py-2 rounded-lg transition-colors duration-200 text-sm font-medium ${
+                    isSettingsPage
+                      ? 'text-white/80 hover:bg-white/10 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                  }`}
                 >
                   <Globe className="w-4 h-4" />
                   <span className="uppercase hidden sm:inline">{locale}</span>
@@ -380,7 +399,11 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               {/* Desktop user menu */}
               <button
                 onClick={handleLogout}
-                className="hidden md:flex p-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-600 dark:text-slate-300"
+                className={`hidden md:flex p-2 rounded-lg transition-colors duration-200 ${
+                  isSettingsPage
+                    ? 'text-white/80 hover:bg-white/10 hover:text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                }`}
                 title={t('signOut')}
               >
                 <LogOut className="w-5 h-5" />
@@ -390,10 +413,20 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content - add bottom padding on mobile for tab bar */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
-            {children}
-          </div>
+        <main className={`flex-1 overflow-y-auto ${
+          isSettingsPage
+            ? ''
+            : 'bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'
+        }`}>
+          {isSettingsPage ? (
+            <div className="-mt-[52px]">
+              {children}
+            </div>
+          ) : (
+            <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
+              {children}
+            </div>
+          )}
         </main>
       </div>
 

@@ -355,7 +355,7 @@ const SettingsPage = () => {
   if (sessionLoading) {
     return (
       <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 py-8 md:px-8">
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pt-[68px] pb-8 md:px-8 md:pt-[72px]">
           <div className="max-w-6xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl mb-2" />
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg" />
@@ -376,7 +376,7 @@ const SettingsPage = () => {
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950" onInput={markDirty} onChange={markDirty}>
       {/* ========== Gradient Background + Tabs ========== */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 pt-4 pb-12 md:px-8 md:pt-5 md:pb-14`}>
+      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} px-4 pt-[68px] pb-12 md:px-8 md:pt-[72px] md:pb-14`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
