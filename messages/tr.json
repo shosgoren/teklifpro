@@ -419,6 +419,18 @@
     "saveChanges": "Değişiklikleri Kaydet",
     "followupSaved": "Akıllı takip ayarları kaydedildi",
     "followupError": "Akıllı takip ayarları kaydedilemedi",
+    "bank": {
+      "title": "Banka Hesapları",
+      "desc": "EFT/Havale için banka bilgileriniz tekliflerde otomatik görünür",
+      "add": "Hesap Ekle",
+      "empty": "Henüz banka hesabı eklenmedi. Hesap ekleyerek tekliflerinizde otomatik gösterebilirsiniz.",
+      "account": "Hesap",
+      "bankName": "Banka Adı",
+      "branchName": "Şube Adı",
+      "accountHolder": "Hesap Sahibi",
+      "currency": "Para Birimi",
+      "save": "Banka Bilgilerini Kaydet"
+    },
     "followup": {
       "title": "Akıllı Takip",
       "desc": "Görüntülenip yanıtlanmayan teklifler için otomatik WhatsApp hatırlatması",

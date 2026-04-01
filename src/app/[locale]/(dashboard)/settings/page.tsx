@@ -118,6 +118,30 @@ const SettingsPage = () => {
     taxOffice: '',
   });
 
+  interface BankAccount {
+    bankName: string;
+    branchName: string;
+    accountHolder: string;
+    iban: string;
+    currency: string;
+  }
+
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+
+  const addBankAccount = () => {
+    setBankAccounts([...bankAccounts, { bankName: '', branchName: '', accountHolder: '', iban: '', currency: 'TRY' }]);
+  };
+
+  const updateBankAccount = (index: number, field: keyof BankAccount, value: string) => {
+    const updated = [...bankAccounts];
+    updated[index] = { ...updated[index], [field]: value };
+    setBankAccounts(updated);
+  };
+
+  const removeBankAccount = (index: number) => {
+    setBankAccounts(bankAccounts.filter((_, i) => i !== index));
+  };
+
   const [parasut, setParasut] = useState({
     connected: false,
     companyId: '',
@@ -171,6 +195,9 @@ const SettingsPage = () => {
         taxOffice: t.taxOffice || prev.taxOffice,
       }));
       setLogo(t.logo || null);
+      if (Array.isArray((t as any).bankAccounts)) {
+        setBankAccounts((t as any).bankAccounts);
+      }
     }
   }, [tenantData]);
 
@@ -213,6 +240,7 @@ const SettingsPage = () => {
           address: general.address,
           taxNumber: general.taxNumber,
           taxOffice: general.taxOffice,
+          bankAccounts: bankAccounts.filter(b => b.bankName && b.iban),
         }),
       });
 
@@ -532,10 +560,104 @@ const SettingsPage = () => {
                       className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm`}
                     >
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                      Değişiklikleri Kaydet
+                      {t('saveChanges')}
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Bank Accounts */}
+            <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+              <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
+              <div className="p-6 md:p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl bg-gradient-to-br ${colors.from} ${colors.to}`}>
+                      <Landmark className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('bank.title')}</h3>
+                      <p className="text-xs text-gray-400">{t('bank.desc')}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={addBankAccount}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-medium rounded-xl hover:opacity-90 text-xs shadow-md`}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {t('bank.add')}
+                  </button>
+                </div>
+
+                {bankAccounts.length === 0 ? (
+                  <div className="flex flex-col items-center py-8 text-center">
+                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/30 rounded-2xl flex items-center justify-center mb-3">
+                      <Landmark className="w-8 h-8 text-blue-400" />
+                    </div>
+                    <p className="text-sm text-gray-400">{t('bank.empty')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bankAccounts.map((bank, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.account')} #{idx + 1}</span>
+                          <button
+                            onClick={() => removeBankAccount(idx)}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.bankName')}</Label>
+                            <Input className={inputClass} value={bank.bankName} onChange={e => updateBankAccount(idx, 'bankName', e.target.value)} placeholder="Ziraat Bankası" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.branchName')}</Label>
+                            <Input className={inputClass} value={bank.branchName} onChange={e => updateBankAccount(idx, 'branchName', e.target.value)} placeholder="Merkez Şube" />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.accountHolder')}</Label>
+                          <Input className={inputClass} value={bank.accountHolder} onChange={e => updateBankAccount(idx, 'accountHolder', e.target.value)} placeholder="Firma Ünvanı" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">IBAN</Label>
+                          <Input className={inputClass} value={bank.iban} onChange={e => updateBankAccount(idx, 'iban', e.target.value.toUpperCase())} placeholder="TR00 0000 0000 0000 0000 0000 00" maxLength={34} />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.currency')}</Label>
+                          <select
+                            className={`${inputClass} w-full px-3`}
+                            value={bank.currency}
+                            onChange={e => updateBankAccount(idx, 'currency', e.target.value)}
+                          >
+                            <option value="TRY">TRY - Türk Lirası</option>
+                            <option value="USD">USD - Amerikan Doları</option>
+                            <option value="EUR">EUR - Euro</option>
+                            <option value="GBP">GBP - İngiliz Sterlini</option>
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {bankAccounts.length > 0 && (
+                  <div className="flex justify-end pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
+                    <button
+                      onClick={handleGeneralSave}
+                      disabled={saving}
+                      className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm`}
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      {t('bank.save')}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

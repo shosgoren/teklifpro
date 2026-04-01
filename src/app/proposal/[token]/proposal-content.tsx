@@ -17,6 +17,9 @@ import {
   ChevronDown,
   Sparkles,
   PenTool,
+  Landmark,
+  Copy,
+  CreditCard,
 } from 'lucide-react'
 import { useState } from 'react'
 import ProposalActions from './proposal-actions'
@@ -49,6 +52,7 @@ interface ProposalContentProps {
     phone: string | null
     email: string | null
     taxNumber: string | null
+    bankAccounts: { bankName: string; branchName: string; accountHolder: string; iban: string; currency: string }[]
   }
   customer: {
     name: string
@@ -103,6 +107,14 @@ export default function ProposalContent({
   isResponded,
 }: ProposalContentProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const [showBankInfo, setShowBankInfo] = useState(false)
+  const [copiedIban, setCopiedIban] = useState<string | null>(null)
+
+  const copyIban = (iban: string) => {
+    navigator.clipboard.writeText(iban)
+    setCopiedIban(iban)
+    setTimeout(() => setCopiedIban(null), 2000)
+  }
 
   const fmt = (amount: number) =>
     amount.toLocaleString('tr-TR', { style: 'currency', currency: proposal.currency })
@@ -406,6 +418,63 @@ export default function ProposalContent({
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Genel Şartlar</p>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proposal.termsConditions}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── EFT / Havale Bank Info ─── */}
+        {tenant.bankAccounts && tenant.bankAccounts.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-3">
+            <button
+              onClick={() => setShowBankInfo(!showBankInfo)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-sm text-gray-900">EFT / Havale ile Ödeme</p>
+                  <p className="text-xs text-gray-400">{tenant.bankAccounts.length} banka hesabı</p>
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showBankInfo ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showBankInfo && (
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
+                <div className="pt-3">
+                  <p className="text-xs text-gray-500 mb-3">Aşağıdaki hesaplardan birine ödeme yapabilirsiniz. IBAN&apos;ı kopyalamak için tıklayın.</p>
+                </div>
+                {tenant.bankAccounts.map((bank, idx) => (
+                  <div key={idx} className="p-4 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Landmark className="w-4 h-4 text-blue-600" />
+                        <span className="font-bold text-sm text-gray-900">{bank.bankName}</span>
+                      </div>
+                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{bank.currency}</span>
+                    </div>
+                    {bank.branchName && (
+                      <p className="text-xs text-gray-500">Şube: {bank.branchName}</p>
+                    )}
+                    <p className="text-xs text-gray-500">Hesap Sahibi: <span className="font-medium text-gray-700">{bank.accountHolder || tenant.name}</span></p>
+                    <button
+                      onClick={() => copyIban(bank.iban)}
+                      className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors group"
+                    >
+                      <span className="font-mono text-sm text-gray-900 tracking-wider">{bank.iban}</span>
+                      <span className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-blue-600">
+                        {copiedIban === bank.iban ? (
+                          <><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Kopyalandı</>
+                        ) : (
+                          <><Copy className="w-3.5 h-3.5" /> Kopyala</>
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

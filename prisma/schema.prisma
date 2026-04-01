@@ -49,6 +49,9 @@ model Tenant {
   whatsappAccessToken String?  @map("whatsapp_access_token")
   whatsappBusinessId  String?  @map("whatsapp_business_id")
 
+  // Bank Accounts (JSON array: [{bankName, branchName, accountHolder, iban, currency}])
+  bankAccounts    Json?    @map("bank_accounts")
+
   // Smart Follow-up
   smartFollowupEnabled    Boolean   @default(false) @map("smart_followup_enabled")
   followupDaysAfterView   Int       @default(3)     @map("followup_days_after_view")

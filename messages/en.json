@@ -419,6 +419,18 @@
     "saveChanges": "Save Changes",
     "followupSaved": "Smart follow-up settings saved",
     "followupError": "Failed to save smart follow-up settings",
+    "bank": {
+      "title": "Bank Accounts",
+      "desc": "Your bank details will automatically appear on proposals for EFT/wire transfers",
+      "add": "Add Account",
+      "empty": "No bank accounts added yet. Add accounts to display them on your proposals.",
+      "account": "Account",
+      "bankName": "Bank Name",
+      "branchName": "Branch Name",
+      "accountHolder": "Account Holder",
+      "currency": "Currency",
+      "save": "Save Bank Info"
+    },
     "followup": {
       "title": "Smart Follow-up",
       "desc": "Automatic WhatsApp reminders for viewed but unanswered proposals",

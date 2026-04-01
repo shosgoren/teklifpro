@@ -21,6 +21,7 @@ export async function GET() {
         address: true,
         taxNumber: true,
         taxOffice: true,
+        bankAccounts: true,
       },
     });
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { logo, name, phone, address, taxNumber, taxOffice } = body;
+    const { logo, name, phone, address, taxNumber, taxOffice, bankAccounts } = body;
 
     // Validate logo if provided (must be a data URL, max 500KB base64)
     if (logo !== undefined && logo !== null) {
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
     if (address !== undefined) updateData.address = address || null;
     if (taxNumber !== undefined) updateData.taxNumber = taxNumber || null;
     if (taxOffice !== undefined) updateData.taxOffice = taxOffice || null;
+    if (bankAccounts !== undefined) updateData.bankAccounts = bankAccounts;
 
     const tenant = await prisma.tenant.update({
       where: { id: session.user.tenantId },
@@ -83,6 +85,7 @@ export async function POST(request: NextRequest) {
         address: true,
         taxNumber: true,
         taxOffice: true,
+        bankAccounts: true,
       },
     });
 

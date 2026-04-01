@@ -148,6 +148,7 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
         phone: updatedProposal.tenant.phone,
         email: updatedProposal.tenant.email,
         taxNumber: updatedProposal.tenant.taxNumber,
+        bankAccounts: (updatedProposal.tenant.bankAccounts as any[]) || [],
       }}
       customer={{
         name: updatedProposal.customer.name,
