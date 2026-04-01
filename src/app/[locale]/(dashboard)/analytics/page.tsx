@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
   AreaChart,
@@ -41,17 +42,6 @@ const fetcher = (url: string) =>
     });
 
 // ---------- constants ----------
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Taslak',
-  SENT: 'Gönderildi',
-  VIEWED: 'Görüntülendi',
-  ACCEPTED: 'Kabul Edildi',
-  REJECTED: 'Reddedildi',
-  REVISION_REQUESTED: 'Revize İstendi',
-  REVISED: 'Revize Edildi',
-  EXPIRED: 'Süresi Doldu',
-  CANCELLED: 'İptal Edildi',
-};
 
 const STATUS_COLORS: Record<string, string> = {
   ACCEPTED: '#10b981',
@@ -71,10 +61,7 @@ const CHART_COLORS = {
   rejected: '#ef4444',
 };
 
-const MONTH_NAMES = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-];
+// MONTH_NAMES moved to useTranslations
 
 // ---------- helpers ----------
 const formatCurrency = (value: number) =>
@@ -123,6 +110,10 @@ const KPICard = ({
 
 // ---------- main page ----------
 export default function AnalyticsDashboard() {
+  const t = useTranslations('analytics');
+  const tStatus = useTranslations('proposals');
+  const MONTH_NAMES = t.raw('months') as string[];
+
   // ---- data fetching ----
   const {
     data: proposalsData,
@@ -186,7 +177,7 @@ export default function AnalyticsDashboard() {
       counts[p.status] = (counts[p.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, value]) => ({
-      name: STATUS_LABELS[status] || status,
+      name: tStatus(`status.${status}` as any),
       value,
       status,
     }));
@@ -201,7 +192,7 @@ export default function AnalyticsDashboard() {
   const topCustomersData = useMemo(() => {
     const map: Record<string, number> = {};
     proposals.forEach((p) => {
-      const name = p.customer?.name || 'Bilinmeyen';
+      const name = p.customer?.name || t('tables.customerNotSpecified');
       map[name] = (map[name] || 0) + 1;
     });
     return Object.entries(map)
@@ -333,7 +324,7 @@ export default function AnalyticsDashboard() {
             <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-3">
               <AlertCircle className="w-8 h-8 text-red-500" />
             </div>
-            <p className="font-bold text-xl text-gray-900 dark:text-white">Veriler yüklenemedi</p>
+            <p className="font-bold text-xl text-gray-900 dark:text-white">{t('errorLoad')}</p>
             <p className="text-gray-500 dark:text-gray-400 text-sm text-center leading-relaxed">
               {proposalsError?.message || customersError?.message || productsError?.message}
             </p>
@@ -341,7 +332,7 @@ export default function AnalyticsDashboard() {
               onClick={() => window.location.reload()}
               className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-medium text-sm hover:shadow-lg hover:shadow-red-500/25 transition-all"
             >
-              Tekrar Dene
+              {t('retry')}
             </button>
           </div>
         </div>
@@ -358,9 +349,9 @@ export default function AnalyticsDashboard() {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Analitik Panosu
+            {t('title')}
           </h1>
-          <p className="text-gray-500 mt-1">Teklif ve gelir verilerinizi analiz edin</p>
+          <p className="text-gray-500 mt-1">{t('subtitle')}</p>
         </div>
 
         {isEmpty && (
@@ -371,7 +362,7 @@ export default function AnalyticsDashboard() {
                 <FileText className="w-7 h-7 text-blue-500" />
               </div>
               <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                Henüz analiz edilecek veri bulunmuyor. Teklif, müşteri veya ürün ekledikçe burada istatistikler görünecek.
+                {t('emptyState')}
               </p>
             </div>
           </div>
@@ -380,42 +371,42 @@ export default function AnalyticsDashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <KPICard
-            title="Toplam Teklif"
+            title={t('kpi.totalProposals')}
             value={stats.totalProposals}
             icon={<FileText className="w-5 h-5 text-white" />}
             gradient="from-blue-500 to-blue-700"
             shadowColor="shadow-blue-500/20"
           />
           <KPICard
-            title="Kabul Oranı"
+            title={t('kpi.acceptanceRate')}
             value={`${stats.acceptanceRate}%`}
             icon={<TrendingUp className="w-5 h-5 text-white" />}
             gradient="from-emerald-500 to-emerald-700"
             shadowColor="shadow-emerald-500/20"
           />
           <KPICard
-            title="Toplam Gelir (Kabul Edilen)"
+            title={t('kpi.totalRevenue')}
             value={formatCurrency(stats.totalRevenue)}
             icon={<DollarSign className="w-5 h-5 text-white" />}
             gradient="from-violet-500 to-violet-700"
             shadowColor="shadow-violet-500/20"
           />
           <KPICard
-            title="Ort. Kabul Tutarı"
+            title={t('kpi.avgAcceptedAmount')}
             value={formatCurrency(stats.avgProposalAmount)}
             icon={<DollarSign className="w-5 h-5 text-white" />}
             gradient="from-amber-500 to-amber-700"
             shadowColor="shadow-amber-500/20"
           />
           <KPICard
-            title="Müşteri Sayısı"
+            title={t('kpi.customerCount')}
             value={stats.customerCount}
             icon={<Users className="w-5 h-5 text-white" />}
             gradient="from-rose-500 to-rose-700"
             shadowColor="shadow-rose-500/20"
           />
           <KPICard
-            title="Ürün Sayısı"
+            title={t('kpi.productCount')}
             value={stats.productCount}
             icon={<Package className="w-5 h-5 text-white" />}
             gradient="from-cyan-500 to-cyan-700"
@@ -430,10 +421,10 @@ export default function AnalyticsDashboard() {
             <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
               <div className="p-6 pb-2">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Teklif Trendi (Son 30 Gün)
+                  {t('charts.proposalTrend')}
                 </h3>
                 <div className="h-1 w-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-2" />
-                <p className="text-sm text-gray-500 mt-2">Gönderilen, kabul edilen ve reddedilen teklifler</p>
+                <p className="text-sm text-gray-500 mt-2">{t('charts.proposalTrendDesc')}</p>
               </div>
               <div className="p-6 pt-2">
                 <div className="w-full h-80">
@@ -465,9 +456,9 @@ export default function AnalyticsDashboard() {
                         }}
                       />
                       <Legend />
-                      <Area type="monotone" dataKey="sent" stroke={CHART_COLORS.sent} fillOpacity={1} fill="url(#colorSent)" name="Gönderilen" />
-                      <Area type="monotone" dataKey="accepted" stroke={CHART_COLORS.accepted} fillOpacity={1} fill="url(#colorAccepted)" name="Kabul Edilen" />
-                      <Area type="monotone" dataKey="rejected" stroke={CHART_COLORS.rejected} fillOpacity={1} fill="url(#colorRejected)" name="Reddedilen" />
+                      <Area type="monotone" dataKey="sent" stroke={CHART_COLORS.sent} fillOpacity={1} fill="url(#colorSent)" name={t('charts.sent')} />
+                      <Area type="monotone" dataKey="accepted" stroke={CHART_COLORS.accepted} fillOpacity={1} fill="url(#colorAccepted)" name={t('charts.accepted')} />
+                      <Area type="monotone" dataKey="rejected" stroke={CHART_COLORS.rejected} fillOpacity={1} fill="url(#colorRejected)" name={t('charts.rejected')} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -477,9 +468,9 @@ export default function AnalyticsDashboard() {
             {/* Status Distribution Chart */}
             <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
               <div className="p-6 pb-2">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Durum Dağılımı</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('charts.statusDistribution')}</h3>
                 <div className="h-1 w-16 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full mt-2" />
-                <p className="text-sm text-gray-500 mt-2">Tekliflerin güncel durumları</p>
+                <p className="text-sm text-gray-500 mt-2">{t('charts.statusDistributionDesc')}</p>
               </div>
               <div className="p-6 pt-2 flex flex-col items-center">
                 {statusData.length > 0 ? (
@@ -535,7 +526,7 @@ export default function AnalyticsDashboard() {
                     </div>
                   </>
                 ) : (
-                  <p className="text-gray-500 py-12">Henüz teklif bulunmuyor.</p>
+                  <p className="text-gray-500 py-12">{t('tables.noProposals')}</p>
                 )}
               </div>
             </div>
@@ -545,10 +536,10 @@ export default function AnalyticsDashboard() {
               <div className="lg:col-span-2 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
                 <div className="p-6 pb-2">
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                    En Çok Teklif Verilen Müşteriler
+                    {t('charts.topCustomers')}
                   </h3>
                   <div className="h-1 w-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full mt-2" />
-                  <p className="text-sm text-gray-500 mt-2">Müşteri bazında teklif sayıları</p>
+                  <p className="text-sm text-gray-500 mt-2">{t('charts.topCustomersDesc')}</p>
                 </div>
                 <div className="p-6 pt-2">
                   <div className="w-full h-96">
@@ -568,7 +559,7 @@ export default function AnalyticsDashboard() {
                             borderRadius: '12px',
                             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                           }}
-                          formatter={(value: number) => `${value} teklif`}
+                          formatter={(value: number) => `${value} ${t('charts.proposals')}`}
                         />
                         <Bar dataKey="proposals" fill="#3b82f6" radius={[0, 8, 8, 0]} />
                       </BarChart>
@@ -582,9 +573,9 @@ export default function AnalyticsDashboard() {
             {monthlyRevenueData.length > 0 && (
               <div className="lg:col-span-2 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
                 <div className="p-6 pb-2">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Aylık Gelir</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('charts.monthlyRevenue')}</h3>
                   <div className="h-1 w-16 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full mt-2" />
-                  <p className="text-sm text-gray-500 mt-2">Kabul edilen tekliflerden elde edilen gelir</p>
+                  <p className="text-sm text-gray-500 mt-2">{t('charts.monthlyRevenueDesc')}</p>
                 </div>
                 <div className="p-6 pt-2">
                   <div className="w-full h-80">
@@ -600,11 +591,11 @@ export default function AnalyticsDashboard() {
                             borderRadius: '12px',
                             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                           }}
-                          formatter={(value: number) => [formatCurrency(value), 'Gelir']}
-                          labelFormatter={(label) => `Ay: ${label}`}
+                          formatter={(value: number) => [formatCurrency(value), t('charts.revenue')]}
+                          labelFormatter={(label) => `${t('charts.month')} ${label}`}
                         />
                         <Legend />
-                        <Bar dataKey="revenue" fill="#10b981" name="Gelir (TL)" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="revenue" fill="#10b981" name={t('charts.revenue')} radius={[8, 8, 0, 0]} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
@@ -619,9 +610,9 @@ export default function AnalyticsDashboard() {
           {/* Products Table */}
           <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
             <div className="p-6 pb-2">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Ürünler (Fiyata Göre)</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('tables.productsByPrice')}</h3>
               <div className="h-1 w-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full mt-2" />
-              <p className="text-sm text-gray-500 mt-2">En yüksek fiyatlı ürünler</p>
+              <p className="text-sm text-gray-500 mt-2">{t('tables.highestPriced')}</p>
             </div>
             <div className="p-6 pt-3">
               {topProductsList.length > 0 ? (
@@ -633,10 +624,10 @@ export default function AnalyticsDashboard() {
                           #
                         </th>
                         <th className="text-left py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-                          Ürün
+                          {t('tables.product')}
                         </th>
                         <th className="text-right py-3 px-3 font-semibold text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
-                          Liste Fiyatı
+                          {t('tables.listPrice')}
                         </th>
                       </tr>
                     </thead>
@@ -659,7 +650,7 @@ export default function AnalyticsDashboard() {
                   </table>
                 </div>
               ) : (
-                <p className="text-gray-500 py-8 text-center">Henüz ürün bulunmuyor.</p>
+                <p className="text-gray-500 py-8 text-center">{t('tables.noProducts')}</p>
               )}
             </div>
           </div>
@@ -667,15 +658,15 @@ export default function AnalyticsDashboard() {
           {/* Recent Proposals */}
           <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
             <div className="p-6 pb-2">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Son Teklifler</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('tables.recentProposals')}</h3>
               <div className="h-1 w-16 bg-gradient-to-r from-rose-500 to-pink-500 rounded-full mt-2" />
-              <p className="text-sm text-gray-500 mt-2">En son oluşturulan teklifler</p>
+              <p className="text-sm text-gray-500 mt-2">{t('tables.recentProposalsDesc')}</p>
             </div>
             <div className="p-6 pt-3">
               {recentProposals.length > 0 ? (
                 <div className="space-y-3">
                   {recentProposals.map((proposal) => {
-                    const statusLabel = STATUS_LABELS[proposal.status] || proposal.status;
+                    const statusLabel = tStatus(`status.${proposal.status}` as any);
                     const statusColor = STATUS_COLORS[proposal.status] || '#6b7280';
                     const isAccepted = proposal.status === 'ACCEPTED';
                     const isRejected = proposal.status === 'REJECTED';
@@ -694,7 +685,7 @@ export default function AnalyticsDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 dark:text-white truncate">
-                            {proposal.customer?.name || 'Müşteri belirtilmemiş'}
+                            {proposal.customer?.name || t('tables.customerNotSpecified')}
                           </p>
                           <p className="text-sm text-gray-500">{proposal.proposalNumber}</p>
                           <p className="text-xs text-gray-400 mt-0.5">
@@ -720,7 +711,7 @@ export default function AnalyticsDashboard() {
                   })}
                 </div>
               ) : (
-                <p className="text-gray-500 py-8 text-center">Henüz teklif bulunmuyor.</p>
+                <p className="text-gray-500 py-8 text-center">{t('tables.noProposals')}</p>
               )}
             </div>
           </div>
@@ -728,7 +719,7 @@ export default function AnalyticsDashboard() {
 
         {/* Footer Info */}
         <div className="text-center text-xs text-gray-400 py-4">
-          Son güncelleme:{' '}
+          {t('lastUpdate')}{' '}
           {new Date().toLocaleDateString('tr-TR', {
             year: 'numeric',
             month: 'long',

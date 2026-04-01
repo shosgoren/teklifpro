@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { FileText, Plus } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/button';
 import {
@@ -17,6 +18,7 @@ import { Label } from '@/presentation/components/ui/label';
 import { Textarea } from '@/presentation/components/ui/textarea';
 
 export default function TemplatesPage() {
+  const t = useTranslations('templates');
   const [openDialog, setOpenDialog] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -32,9 +34,9 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Teklif Şablonları</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="mt-2 text-sm text-gray-500">
-            Tekliflerinizi daha hızlı oluşturmak için şablonlar yönetin
+            {t('subtitle')}
           </p>
         </div>
         <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -44,24 +46,24 @@ export default function TemplatesPage() {
               className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:shadow-blue-500/30"
             >
               <Plus className="h-4 w-4" />
-              Şablon Oluştur
+              {t('create')}
             </Button>
           </DialogTrigger>
           <DialogContent className="w-full max-w-md rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Yeni Şablon Oluştur</DialogTitle>
+              <DialogTitle className="text-xl font-bold">{t('dialogTitle')}</DialogTitle>
               <DialogDescription className="text-gray-500">
-                Teklif şablonu bilgilerini girin
+                {t('dialogDesc')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="template-name" className="text-xs font-semibold uppercase text-gray-500">
-                  Şablon Adı
+                  {t('nameLabel')}
                 </Label>
                 <Input
                   id="template-name"
-                  placeholder="örn: Standart Teklif"
+                  placeholder={t('namePlaceholder')}
                   className="rounded-xl bg-gray-50 transition-colors focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-950"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -69,11 +71,11 @@ export default function TemplatesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="template-description" className="text-xs font-semibold uppercase text-gray-500">
-                  Açıklama
+                  {t('descLabel')}
                 </Label>
                 <Textarea
                   id="template-description"
-                  placeholder="Bu şablonun ne için kullanılacağını açıklayın"
+                  placeholder={t('descPlaceholder')}
                   className="min-h-20 rounded-xl bg-gray-50 transition-colors focus:bg-white dark:bg-gray-900 dark:focus:bg-gray-950"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -81,7 +83,7 @@ export default function TemplatesPage() {
               </div>
               <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 dark:border-amber-800 dark:from-amber-950/50 dark:to-orange-950/50">
                 <p className="text-center text-sm font-medium text-amber-700 dark:text-amber-400">
-                  Şablon oluşturma özelliği yakında kullanıma sunulacaktır.
+                  {t('comingSoon')}
                 </p>
               </div>
               <div className="flex gap-3 pt-2">
@@ -90,13 +92,13 @@ export default function TemplatesPage() {
                   onClick={() => setOpenDialog(false)}
                   className="flex-1 rounded-xl"
                 >
-                  İptal
+                  {t('cancel')}
                 </Button>
                 <Button
                   disabled
                   className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20"
                 >
-                  Oluştur
+                  {t('createBtn')}
                 </Button>
               </div>
             </div>
@@ -111,18 +113,17 @@ export default function TemplatesPage() {
             <FileText className="h-12 w-12 text-blue-500" />
           </div>
           <h3 className="mb-3 text-xl font-bold">
-            Henüz teklif şablonu oluşturulmamış
+            {t('emptyTitle')}
           </h3>
           <p className="mb-8 max-w-md text-center text-sm text-gray-500">
-            Teklif şablonları ile tekliflerinizi daha hızlı hazırlayabilirsiniz.
-            İlk şablonunuzu oluşturarak başlayın.
+            {t('emptyDesc')}
           </p>
           <Button
             onClick={handleOpenDialog}
             className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:shadow-blue-500/30"
           >
             <Plus className="h-4 w-4" />
-            Şablon Oluştur
+            {t('create')}
           </Button>
         </CardContent>
       </Card>

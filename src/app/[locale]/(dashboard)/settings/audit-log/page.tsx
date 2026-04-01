@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { ChevronDown, Download, Search, X, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/button';
@@ -71,22 +72,6 @@ const ACTION_COLORS: Record<ActionType, string> = {
   LOGIN: 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 dark:from-gray-800/40 dark:to-slate-800/40 dark:text-gray-300',
 };
 
-const ACTION_LABELS: Record<ActionType, string> = {
-  CREATE: 'Oluşturma',
-  UPDATE: 'Güncelleme',
-  DELETE: 'Silme',
-  SEND: 'Gönderim',
-  LOGIN: 'Giriş',
-};
-
-const ENTITY_LABELS: Record<EntityType, string> = {
-  PROPOSAL: 'Teklif',
-  CUSTOMER: 'Müşteri',
-  PRODUCT: 'Ürün',
-  USER: 'Kullanıcı',
-  SETTING: 'Ayar',
-};
-
 const fetcher = (url: string) =>
   fetch(url).then(res => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -97,6 +82,24 @@ const fetcher = (url: string) =>
   });
 
 export default function AuditLogPage() {
+  const t = useTranslations('auditLog');
+
+  const ACTION_LABELS: Record<ActionType, string> = {
+    CREATE: t('actions.CREATE'),
+    UPDATE: t('actions.UPDATE'),
+    DELETE: t('actions.DELETE'),
+    SEND: t('actions.SEND'),
+    LOGIN: t('actions.LOGIN'),
+  };
+
+  const ENTITY_LABELS: Record<EntityType, string> = {
+    PROPOSAL: t('entities.PROPOSAL'),
+    CUSTOMER: t('entities.CUSTOMER'),
+    PRODUCT: t('entities.PRODUCT'),
+    USER: t('entities.USER'),
+    SETTING: t('entities.SETTING'),
+  };
+
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [selectedUser, setSelectedUser] = useState<string>('all');
@@ -154,7 +157,7 @@ export default function AuditLogPage() {
   }, []);
 
   const handleExportCSV = () => {
-    const headers = ['Tarih', 'Kullanıcı', 'İşlem', 'Varlık', 'Detay', 'IP Adresi'];
+    const headers = [t('date'), t('userLabel'), t('action'), t('entity'), t('detail'), t('ipAddress')];
     const rows = logs.map((log) => [
       new Date(log.createdAt).toLocaleString('tr-TR'),
       log.user?.name || log.user?.email || '-',
@@ -198,10 +201,10 @@ export default function AuditLogPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-            İşlem Geçmişi
+            {t('title')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sistem üzerinde yapılan tüm işlemleri görüntüleyin ve takip edin
+            {t('subtitle')}
           </p>
         </div>
         <Button
@@ -211,7 +214,7 @@ export default function AuditLogPage() {
           disabled={!logs.length}
         >
           <Download className="h-4 w-4" />
-          CSV İndir
+          {t('exportCsv')}
         </Button>
       </div>
 
@@ -219,7 +222,7 @@ export default function AuditLogPage() {
       <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Filtreler</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t('filters')}</CardTitle>
             {hasActiveFilters && (
               <Button
                 onClick={clearFilters}
@@ -228,7 +231,7 @@ export default function AuditLogPage() {
                 className="gap-1 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
               >
                 <X className="h-3 w-3" />
-                Temizle
+                {t('clear')}
               </Button>
             )}
           </div>
@@ -237,11 +240,11 @@ export default function AuditLogPage() {
           <div className="space-y-4">
             {/* Search Bar */}
             <div>
-              <label className="text-sm font-medium">Arama</label>
+              <label className="text-sm font-medium">{t('search')}</label>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Detay, kullanıcı adı ara..."
+                  placeholder={t('searchPlaceholder')}
                   className="pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
                   value={searchDetails}
                   onChange={(e) => {
@@ -256,7 +259,7 @@ export default function AuditLogPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
               {/* Date From */}
               <div>
-                <label className="text-sm font-medium">Başlangıç Tarihi</label>
+                <label className="text-sm font-medium">{t('dateFrom')}</label>
                 <Input
                   type="date"
                   className="mt-2 rounded-xl"
@@ -270,7 +273,7 @@ export default function AuditLogPage() {
 
               {/* Date To */}
               <div>
-                <label className="text-sm font-medium">Bitiş Tarihi</label>
+                <label className="text-sm font-medium">{t('dateTo')}</label>
                 <Input
                   type="date"
                   className="mt-2 rounded-xl"
@@ -284,7 +287,7 @@ export default function AuditLogPage() {
 
               {/* User Select */}
               <div>
-                <label className="text-sm font-medium">Kullanıcı</label>
+                <label className="text-sm font-medium">{t('userLabel')}</label>
                 <Select value={selectedUser} onValueChange={(value) => {
                   setSelectedUser(value);
                   setCurrentPage(1);
@@ -293,7 +296,7 @@ export default function AuditLogPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tümü</SelectItem>
+                    <SelectItem value="all">{t('all')}</SelectItem>
                     {uniqueUsers.map(([id, name]) => (
                       <SelectItem key={id} value={id}>
                         {name}
@@ -305,7 +308,7 @@ export default function AuditLogPage() {
 
               {/* Action Type Select */}
               <div>
-                <label className="text-sm font-medium">İşlem Türü</label>
+                <label className="text-sm font-medium">{t('actionType')}</label>
                 <Select value={selectedAction} onValueChange={(value) => {
                   setSelectedAction(value);
                   setCurrentPage(1);
@@ -314,19 +317,19 @@ export default function AuditLogPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tümü</SelectItem>
-                    <SelectItem value="CREATE">Oluşturma</SelectItem>
-                    <SelectItem value="UPDATE">Güncelleme</SelectItem>
-                    <SelectItem value="DELETE">Silme</SelectItem>
-                    <SelectItem value="SEND">Gönderim</SelectItem>
-                    <SelectItem value="LOGIN">Giriş</SelectItem>
+                    <SelectItem value="all">{t('all')}</SelectItem>
+                    <SelectItem value="CREATE">{t('actions.CREATE')}</SelectItem>
+                    <SelectItem value="UPDATE">{t('actions.UPDATE')}</SelectItem>
+                    <SelectItem value="DELETE">{t('actions.DELETE')}</SelectItem>
+                    <SelectItem value="SEND">{t('actions.SEND')}</SelectItem>
+                    <SelectItem value="LOGIN">{t('actions.LOGIN')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Entity Type Select */}
               <div>
-                <label className="text-sm font-medium">Varlık Türü</label>
+                <label className="text-sm font-medium">{t('entityType')}</label>
                 <Select value={selectedEntity} onValueChange={(value) => {
                   setSelectedEntity(value);
                   setCurrentPage(1);
@@ -335,12 +338,12 @@ export default function AuditLogPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tümü</SelectItem>
-                    <SelectItem value="PROPOSAL">Teklif</SelectItem>
-                    <SelectItem value="CUSTOMER">Müşteri</SelectItem>
-                    <SelectItem value="PRODUCT">Ürün</SelectItem>
-                    <SelectItem value="USER">Kullanıcı</SelectItem>
-                    <SelectItem value="SETTING">Ayar</SelectItem>
+                    <SelectItem value="all">{t('all')}</SelectItem>
+                    <SelectItem value="PROPOSAL">{t('entities.PROPOSAL')}</SelectItem>
+                    <SelectItem value="CUSTOMER">{t('entities.CUSTOMER')}</SelectItem>
+                    <SelectItem value="PRODUCT">{t('entities.PRODUCT')}</SelectItem>
+                    <SelectItem value="USER">{t('entities.USER')}</SelectItem>
+                    <SelectItem value="SETTING">{t('entities.SETTING')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -358,7 +361,7 @@ export default function AuditLogPage() {
               <div className="rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 p-5">
                 <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="mt-5 text-sm font-medium text-muted-foreground">Yükleniyor...</p>
+              <p className="mt-5 text-sm font-medium text-muted-foreground">{t('loading')}</p>
               <div className="mt-6 w-full max-w-md space-y-3 px-8">
                 <div className="h-3 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse" />
                 <div className="h-3 w-4/5 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse" />
@@ -374,7 +377,7 @@ export default function AuditLogPage() {
                 <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
               </div>
               <p className="mt-5 text-sm font-medium text-destructive">
-                İşlem kayıtları yüklenirken hata oluştu
+                {t('error')}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {error.message}
@@ -389,7 +392,7 @@ export default function AuditLogPage() {
                 <FileText className="h-8 w-8 text-gray-500 dark:text-gray-400" />
               </div>
               <p className="mt-5 text-sm font-medium text-muted-foreground">
-                Henüz işlem kaydı bulunmuyor
+                {t('empty')}
               </p>
             </div>
           )}
@@ -400,12 +403,12 @@ export default function AuditLogPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-                    <TableHead className="w-32 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Tarih</TableHead>
-                    <TableHead className="w-32 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Kullanıcı</TableHead>
-                    <TableHead className="w-24 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">İşlem</TableHead>
-                    <TableHead className="w-24 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Varlık</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Detay</TableHead>
-                    <TableHead className="w-32 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">IP Adresi</TableHead>
+                    <TableHead className="w-32 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('date')}</TableHead>
+                    <TableHead className="w-32 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('userLabel')}</TableHead>
+                    <TableHead className="w-24 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('action')}</TableHead>
+                    <TableHead className="w-24 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('entity')}</TableHead>
+                    <TableHead className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('detail')}</TableHead>
+                    <TableHead className="w-32 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{t('ipAddress')}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -452,7 +455,7 @@ export default function AuditLogPage() {
                               {log.oldData && (
                                 <div className="overflow-hidden rounded-xl border border-red-200/50 dark:border-red-900/30">
                                   <div className="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/40 dark:to-rose-950/40 px-4 py-2 border-b border-red-200/50 dark:border-red-900/30">
-                                    <p className="text-xs font-semibold text-red-600 dark:text-red-400">Eski Veriler</p>
+                                    <p className="text-xs font-semibold text-red-600 dark:text-red-400">{t('oldData')}</p>
                                   </div>
                                   <pre className="overflow-auto p-4 text-xs bg-white/50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300">
                                     {JSON.stringify(log.oldData, null, 2)}
@@ -462,7 +465,7 @@ export default function AuditLogPage() {
                               {log.newData && (
                                 <div className="overflow-hidden rounded-xl border border-emerald-200/50 dark:border-emerald-900/30">
                                   <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/40 dark:to-green-950/40 px-4 py-2 border-b border-emerald-200/50 dark:border-emerald-900/30">
-                                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Yeni Veriler</p>
+                                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{t('newData')}</p>
                                   </div>
                                   <pre className="overflow-auto p-4 text-xs bg-white/50 dark:bg-gray-950/50 text-gray-700 dark:text-gray-300">
                                     {JSON.stringify(log.newData, null, 2)}
@@ -491,7 +494,7 @@ export default function AuditLogPage() {
                       {Math.min(pagination.page * pagination.pageSize, pagination.total)}
                     </span>
                     {' / '}
-                    {pagination.total} sonuç
+                    {pagination.total} {t('results')}
                   </>
                 )}
               </div>
@@ -503,7 +506,7 @@ export default function AuditLogPage() {
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={!pagination.hasPreviousPage}
                 >
-                  Önceki
+                  {t('previous')}
                 </Button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -539,7 +542,7 @@ export default function AuditLogPage() {
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={!pagination.hasNextPage}
                 >
-                  Sonraki
+                  {t('next')}
                 </Button>
               </div>
             </div>

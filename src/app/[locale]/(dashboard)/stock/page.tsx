@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import {
   Search,
@@ -99,34 +100,11 @@ const fetcher = (url: string) =>
       return data;
     });
 
-const PRODUCT_TYPE_LABELS: Record<string, string> = {
-  COMMERCIAL: 'Ticari',
-  RAW_MATERIAL: 'Hammadde',
-  SEMI_FINISHED: 'Yarı Mamül',
-  CONSUMABLE: 'Sarf',
-};
-
 const PRODUCT_TYPE_COLORS: Record<string, string> = {
   COMMERCIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   RAW_MATERIAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
   SEMI_FINISHED: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   CONSUMABLE: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
-};
-
-const PRODUCT_TYPE_OPTIONS: { value: ProductTypeFilter; label: string }[] = [
-  { value: 'all', label: 'Tümü' },
-  { value: 'RAW_MATERIAL', label: 'Hammadde' },
-  { value: 'SEMI_FINISHED', label: 'Yarı Mamül' },
-  { value: 'CONSUMABLE', label: 'Sarf' },
-  { value: 'COMMERCIAL', label: 'Ticari' },
-];
-
-const MOVEMENT_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-  IN: { label: 'Giriş', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  OUT: { label: 'Çıkış', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-  ADJUSTMENT: { label: 'Düzeltme', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  PRODUCTION_IN: { label: 'Üretim Girişi', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
-  PRODUCTION_OUT: { label: 'Üretime Çıkış', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
 };
 
 const isLowStock = (p: StockProduct) =>
@@ -138,6 +116,31 @@ const isOutOfStock = (p: StockProduct) =>
 // ── Component ──────────────────────────────────────────
 
 export default function StockPage() {
+  const t = useTranslations('stockPage');
+
+  const PRODUCT_TYPE_LABELS: Record<string, string> = {
+    COMMERCIAL: t('commercial'),
+    RAW_MATERIAL: t('rawMaterial'),
+    SEMI_FINISHED: t('semiFinished'),
+    CONSUMABLE: t('consumable'),
+  };
+
+  const PRODUCT_TYPE_OPTIONS: { value: ProductTypeFilter; label: string }[] = [
+    { value: 'all', label: t('all') },
+    { value: 'RAW_MATERIAL', label: t('rawMaterial') },
+    { value: 'SEMI_FINISHED', label: t('semiFinished') },
+    { value: 'CONSUMABLE', label: t('consumable') },
+    { value: 'COMMERCIAL', label: t('commercial') },
+  ];
+
+  const MOVEMENT_TYPE_CONFIG: Record<string, { label: string; color: string }> = {
+    IN: { label: t('movement.in'), color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+    OUT: { label: t('movement.out'), color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+    ADJUSTMENT: { label: t('movement.adjustment'), color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+    PRODUCTION_IN: { label: t('movement.productionIn'), color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' },
+    PRODUCTION_OUT: { label: t('movement.productionOut'), color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' },
+  };
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<ProductTypeFilter>('all');
@@ -230,11 +233,11 @@ export default function StockPage() {
 
   const handleMovementSubmit = useCallback(async () => {
     if (!movementForm.productId) {
-      toast.error('Lütfen bir ürün seçin');
+      toast.error(t('productRequired'));
       return;
     }
     if (!movementForm.quantity || Number(movementForm.quantity) <= 0) {
-      toast.error('Lütfen geçerli bir miktar girin');
+      toast.error(t('quantityRequired'));
       return;
     }
 
@@ -256,19 +259,15 @@ export default function StockPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(
-          movementDialogType === 'IN'
-            ? 'Stok girişi başarıyla kaydedildi'
-            : 'Stok çıkışı başarıyla kaydedildi'
-        );
+        toast.success(t('movementSuccess'));
         setMovementDialogType(null);
         resetMovementForm();
         mutateStock();
       } else {
-        toast.error(data.error || 'Bir hata oluştu');
+        toast.error(data.error || t('movementError'));
       }
     } catch {
-      toast.error('İşlem sırasında bir hata oluştu');
+      toast.error(t('movementError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -348,10 +347,10 @@ export default function StockPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-            Stok Takibi
+            {t('title')}
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Ürün stok seviyelerini izleyin ve stok hareketlerini yönetin
+            {t('kpi.trackedProducts')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -360,14 +359,14 @@ export default function StockPage() {
             className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-green-500/25"
           >
             <PackagePlus className="mr-2 h-4 w-4" />
-            Stok Girişi
+            {t('stockIn')}
           </Button>
           <Button
             onClick={() => openMovementDialog('OUT')}
             className="rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-lg shadow-red-500/25"
           >
             <PackageMinus className="mr-2 h-4 w-4" />
-            Stok Çıkışı
+            {t('stockOut')}
           </Button>
         </div>
       </div>
@@ -381,12 +380,12 @@ export default function StockPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-blue-100 text-xs font-medium">
               <Package className="h-3.5 w-3.5" />
-              Toplam Ürün
+              {t('kpi.totalProducts')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
               {kpiData.totalProducts}
             </p>
-            <p className="text-xs text-blue-200 mt-1">Stok takibinde</p>
+            <p className="text-xs text-blue-200 mt-1">{t('kpi.trackedProducts')}</p>
           </div>
         </div>
 
@@ -397,12 +396,12 @@ export default function StockPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-orange-100 text-xs font-medium">
               <AlertTriangle className="h-3.5 w-3.5" />
-              Düşük Stok
+              {t('kpi.lowStockAlerts')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
               {kpiData.lowStockCount}
             </p>
-            <p className="text-xs text-orange-200 mt-1">Uyarı mevcut</p>
+            <p className="text-xs text-orange-200 mt-1">{t('kpi.productsBelowMin')}</p>
           </div>
         </div>
 
@@ -413,12 +412,12 @@ export default function StockPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-emerald-100 text-xs font-medium">
               <Wallet className="h-3.5 w-3.5" />
-              Stok Değeri
+              {t('kpi.totalStockValue')}
             </div>
             <p className="text-lg md:text-xl font-bold mt-2 tracking-tight">
               {formatCurrency(kpiData.totalValue)}
             </p>
-            <p className="text-xs text-emerald-200 mt-1">Toplam maliyet</p>
+            <p className="text-xs text-emerald-200 mt-1">{t('kpi.basedOnCost')}</p>
           </div>
         </div>
 
@@ -429,12 +428,12 @@ export default function StockPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-rose-100 text-xs font-medium">
               <XCircle className="h-3.5 w-3.5" />
-              Stok Tükendi
+              {t('kpi.outOfStock')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
               {kpiData.outOfStockCount}
             </p>
-            <p className="text-xs text-rose-200 mt-1">Acil tedarik</p>
+            <p className="text-xs text-rose-200 mt-1">{t('kpi.needsRestock')}</p>
           </div>
         </div>
       </div>
@@ -444,7 +443,7 @@ export default function StockPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Ürün adı veya kodu ara..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-blue-500/20"
@@ -453,7 +452,7 @@ export default function StockPage() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="min-w-[140px] justify-between rounded-xl">
-              {PRODUCT_TYPE_OPTIONS.find((o) => o.value === filterType)?.label ?? 'Tümü'}
+              {PRODUCT_TYPE_OPTIONS.find((o) => o.value === filterType)?.label ?? t('all')}
               <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -483,14 +482,14 @@ export default function StockPage() {
           )}
         >
           <AlertTriangle className="mr-2 h-4 w-4" />
-          Düşük Stok
+          {t('lowStockOnly')}
         </Button>
       </div>
 
       {/* ── Error ── */}
       {stockError && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
-          Stok verileri yüklenirken bir hata oluştu.
+          {t('movementError')}
         </div>
       )}
 
@@ -504,17 +503,17 @@ export default function StockPage() {
             <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600" />
           </div>
           <h3 className="mt-6 text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Stok kaydı bulunamadı
+            {t('noProducts')}
           </h3>
           <p className="mt-2 max-w-sm text-center text-sm text-gray-500 dark:text-gray-400">
-            Arama kriterlerinize uygun ürün bulunamadı. Filtreleri değiştirmeyi veya yeni stok girişi yapmayı deneyin.
+            {t('noProductsFiltered')}
           </p>
           <Button
             onClick={() => openMovementDialog('IN')}
             className="mt-6 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-lg shadow-green-500/25"
           >
             <PackagePlus className="mr-2 h-4 w-4" />
-            Stok Girişi Yap
+            {t('stockIn')}
           </Button>
         </div>
       )}
@@ -525,14 +524,14 @@ export default function StockPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/80 dark:bg-gray-900/50">
-                <TableHead>Ürün Adı</TableHead>
-                <TableHead>Kod</TableHead>
-                <TableHead>Tür</TableHead>
-                <TableHead>Birim</TableHead>
-                <TableHead className="text-right">Stok Miktarı</TableHead>
-                <TableHead className="text-right">Min. Seviye</TableHead>
-                <TableHead>Durum</TableHead>
-                <TableHead className="text-right">Maliyet</TableHead>
+                <TableHead>{t('table.product')}</TableHead>
+                <TableHead>{t('table.product')}</TableHead>
+                <TableHead>{t('table.type')}</TableHead>
+                <TableHead>{t('detail.unit')}</TableHead>
+                <TableHead className="text-right">{t('table.stock')}</TableHead>
+                <TableHead className="text-right">{t('table.minLevel')}</TableHead>
+                <TableHead>{t('table.status')}</TableHead>
+                <TableHead className="text-right">{t('table.costPrice')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -562,17 +561,17 @@ export default function StockPage() {
                       {level === 'critical' ? (
                         <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                           <XCircle className="mr-1 h-3 w-3" />
-                          Tükendi
+                          {t('table.outOfStock')}
                         </Badge>
                       ) : level === 'low' ? (
                         <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                           <AlertTriangle className="mr-1 h-3 w-3" />
-                          Düşük
+                          {t('table.low')}
                         </Badge>
                       ) : (
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                           <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Normal
+                          {t('table.ok')}
                         </Badge>
                       )}
                     </TableCell>
@@ -611,33 +610,33 @@ export default function StockPage() {
                   {level === 'critical' ? (
                     <Badge className="ml-2 shrink-0 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                       <XCircle className="mr-1 h-3 w-3" />
-                      Tükendi
+                      {t('table.outOfStock')}
                     </Badge>
                   ) : level === 'low' ? (
                     <Badge className="ml-2 shrink-0 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                       <AlertTriangle className="mr-1 h-3 w-3" />
-                      Düşük
+                      {t('table.low')}
                     </Badge>
                   ) : (
                     <Badge className="ml-2 shrink-0 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                       <CheckCircle2 className="mr-1 h-3 w-3" />
-                      Normal
+                      {t('table.ok')}
                     </Badge>
                   )}
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Stok</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('table.stock')}</p>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {product.stockQuantity} {product.unit}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Min.</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('table.minLevel')}</p>
                     <p className="font-medium text-gray-700 dark:text-gray-300">{product.minStockLevel}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Maliyet</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('table.costPrice')}</p>
                     <p className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(product.costPrice)}</p>
                   </div>
                 </div>
@@ -656,7 +655,7 @@ export default function StockPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Toplam {pagination.total} ürün
+            {t('total')} {pagination.total} {t('productCount')}
           </p>
           <div className="flex gap-2">
             <Button
@@ -666,7 +665,7 @@ export default function StockPage() {
               onClick={() => setCurrentPage((p) => p - 1)}
               className="rounded-xl"
             >
-              Önceki
+              {t('previous')}
             </Button>
             <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">
               {currentPage} / {totalPages}
@@ -678,7 +677,7 @@ export default function StockPage() {
               onClick={() => setCurrentPage((p) => p + 1)}
               className="rounded-xl"
             >
-              Sonraki
+              {t('next')}
             </Button>
           </div>
         </div>
@@ -697,22 +696,22 @@ export default function StockPage() {
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>
-              {movementDialogType === 'IN' ? 'Stok Girişi' : 'Stok Çıkışı'}
+              {movementDialogType === 'IN' ? t('movement.stockInTitle') : t('movement.stockOutTitle')}
             </DialogTitle>
             <DialogDescription>
               {movementDialogType === 'IN'
-                ? 'Depoya ürün girişi yapın'
-                : 'Depodan ürün çıkışı yapın'}
+                ? t('movement.stockInDesc')
+                : t('movement.stockOutDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
             {/* Product selector */}
             <div className="flex flex-col gap-2">
-              <Label>Ürün *</Label>
+              <Label>{t('selectProduct')}</Label>
               <div className="relative">
                 <Input
-                  placeholder="Ürün adı veya kodu ile arayın..."
+                  placeholder={t('movement.searchProduct')}
                   value={movementForm.productSearch}
                   onChange={(e) =>
                     setMovementForm((f) => ({
@@ -751,7 +750,7 @@ export default function StockPage() {
 
             {/* Quantity */}
             <div className="flex flex-col gap-2">
-              <Label>Miktar *</Label>
+              <Label>{t('movement.quantity')}</Label>
               <Input
                 type="number"
                 min="0"
@@ -765,12 +764,12 @@ export default function StockPage() {
 
             {/* Unit price */}
             <div className="flex flex-col gap-2">
-              <Label>Birim Fiyat</Label>
+              <Label>{t('movement.unitPrice')}</Label>
               <Input
                 type="number"
                 min="0"
                 step="any"
-                placeholder="Opsiyonel"
+                placeholder={t('movement.notesPlaceholder')}
                 value={movementForm.unitPrice}
                 onChange={(e) => setMovementForm((f) => ({ ...f, unitPrice: e.target.value }))}
                 className="rounded-xl bg-gray-50 dark:bg-gray-900"
@@ -779,9 +778,9 @@ export default function StockPage() {
 
             {/* Reference */}
             <div className="flex flex-col gap-2">
-              <Label>Referans</Label>
+              <Label>{t('movement.reference')}</Label>
               <Input
-                placeholder="Ör: Sipariş No, Fatura No"
+                placeholder={t('movement.referencePlaceholder')}
                 value={movementForm.reference}
                 onChange={(e) => setMovementForm((f) => ({ ...f, reference: e.target.value }))}
                 className="rounded-xl bg-gray-50 dark:bg-gray-900"
@@ -790,10 +789,10 @@ export default function StockPage() {
 
             {/* Notes */}
             <div className="flex flex-col gap-2">
-              <Label>Not</Label>
+              <Label>{t('movement.notes')}</Label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-xl border border-input bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                placeholder="Ek açıklama..."
+                placeholder={t('movement.notesPlaceholder')}
                 value={movementForm.notes}
                 onChange={(e) => setMovementForm((f) => ({ ...f, notes: e.target.value }))}
               />
@@ -809,7 +808,7 @@ export default function StockPage() {
                 resetMovementForm();
               }}
             >
-              İptal
+              {t('movement.cancel')}
             </Button>
             <Button
               onClick={handleMovementSubmit}
@@ -822,7 +821,7 @@ export default function StockPage() {
               )}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {movementDialogType === 'IN' ? 'Giriş Yap' : 'Çıkış Yap'}
+              {isSubmitting ? t('movement.submitting') : movementDialogType === 'IN' ? t('movement.submitIn') : t('movement.submitOut')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -848,25 +847,25 @@ export default function StockPage() {
                 {/* Product Info */}
                 <div className="rounded-2xl border p-4 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
                   <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Ürün Bilgileri
+                    {t('table.product')}
                   </h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Kod</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('table.product')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{selectedProduct.code ?? '-'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Tür</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('table.type')}</p>
                       <Badge className={cn('text-xs', PRODUCT_TYPE_COLORS[selectedProduct.productType])}>
                         {PRODUCT_TYPE_LABELS[selectedProduct.productType] ?? selectedProduct.productType}
                       </Badge>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Birim</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('detail.unit')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{selectedProduct.unit}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Maliyet</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('detail.costPrice')}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(selectedProduct.costPrice)}</p>
                     </div>
                   </div>
@@ -884,35 +883,35 @@ export default function StockPage() {
                   )}
                 >
                   <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Stok Durumu
+                    {t('table.status')}
                   </h3>
                   <div className="grid grid-cols-3 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Mevcut</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('detail.currentStock')}</p>
                       <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                         {selectedProduct.stockQuantity}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Min. Seviye</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('detail.minLevel')}</p>
                       <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedProduct.minStockLevel}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 dark:text-gray-400">Durum</p>
+                      <p className="text-gray-500 dark:text-gray-400">{t('table.status')}</p>
                       {isOutOfStock(selectedProduct) ? (
                         <Badge className="mt-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                           <XCircle className="mr-1 h-3 w-3" />
-                          Tükendi
+                          {t('table.outOfStock')}
                         </Badge>
                       ) : isLowStock(selectedProduct) ? (
                         <Badge className="mt-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                           <AlertTriangle className="mr-1 h-3 w-3" />
-                          Düşük
+                          {t('table.low')}
                         </Badge>
                       ) : (
                         <Badge className="mt-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                           <CheckCircle2 className="mr-1 h-3 w-3" />
-                          Normal
+                          {t('table.ok')}
                         </Badge>
                       )}
                     </div>
@@ -922,7 +921,7 @@ export default function StockPage() {
                 {/* Recent Movements */}
                 <div>
                   <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Son Hareketler
+                    {t('detail.movements')}
                   </h3>
                   {movements.length === 0 ? (
                     <div className="flex flex-col items-center py-8">
@@ -930,7 +929,7 @@ export default function StockPage() {
                         <RotateCcw className="h-6 w-6 text-gray-400 dark:text-gray-500" />
                       </div>
                       <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                        Henüz stok hareketi bulunmuyor
+                        {t('detail.noMovements')}
                       </p>
                     </div>
                   ) : (

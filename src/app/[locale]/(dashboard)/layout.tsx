@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, type ComponentType } from 'react'
 import { ConfirmProvider } from '@/shared/components/confirm-dialog'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { signOut, useSession } from 'next-auth/react'
 import { useTheme } from 'next-themes'
 import {
@@ -117,6 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const locale = useLocale()
   const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
+  const t = useTranslations('layout')
 
   const labels = navLabels[locale] || navLabels.tr
 
@@ -148,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const user = session?.user
-  const userName = user?.name || (locale === 'tr' ? 'Kullanıcı' : 'User')
+  const userName = user?.name || t('user')
   const userEmail = user?.email || ''
   const userInitials = userName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
 
@@ -193,7 +194,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="min-w-0">
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">TeklifPro</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {locale === 'tr' ? 'Teklif Platformu' : 'Quote Platform'}
+                  {t('quotePlatform')}
                 </p>
               </div>
             )}
@@ -278,7 +279,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-md transition-colors duration-200 border border-slate-200 dark:border-slate-700/30"
               >
                 <LogOut className="w-4 h-4" />
-                <span>{locale === 'tr' ? 'Çıkış Yap' : 'Sign Out'}</span>
+                <span>{t('signOut')}</span>
               </button>
             </div>
           )}
@@ -341,7 +342,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button
                 onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
                 className="hidden md:flex p-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-lg transition-colors duration-200 text-slate-600 dark:text-slate-300"
-                title={locale === 'tr' ? 'Çıkış Yap' : 'Sign Out'}
+                title={t('signOut')}
               >
                 <LogOut className="w-5 h-5" />
               </button>
@@ -427,7 +428,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className="flex items-center gap-3 px-4 py-3 w-full text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                   >
                     <LogOut className="w-5 h-5" />
-                    <span className="text-sm font-medium">{locale === 'tr' ? 'Çıkış Yap' : 'Sign Out'}</span>
+                    <span className="text-sm font-medium">{t('signOut')}</span>
                   </button>
                 </div>
               </div>

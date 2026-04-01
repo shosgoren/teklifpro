@@ -30,7 +30,7 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { cn } from '@/shared/utils/cn';
 
 const fetcher = (url: string) =>
@@ -57,6 +57,8 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
 export default function DashboardPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('dashboardPage');
+  const tStatus = useTranslations('proposals');
   const [isSyncing, setIsSyncing] = useState(false);
 
   const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher);
@@ -105,9 +107,9 @@ export default function DashboardPage() {
     const date = new Date(dateStr);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Bugün';
-    if (diffDays === 1) return 'Dün';
-    if (diffDays < 7) return `${diffDays} gün önce`;
+    if (diffDays === 0) return t('today');
+    if (diffDays === 1) return t('yesterday');
+    if (diffDays < 7) return t('daysAgo', { count: diffDays });
     return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   };
 
@@ -138,10 +140,10 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Hoş Geldin 👋
+            {t('welcome')} 👋
           </h1>
           <p className="text-muted-foreground mt-1">
-            İşte güncel durumun
+            {t('currentStatus')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -153,7 +155,7 @@ export default function DashboardPage() {
             className="rounded-xl"
           >
             <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-            Senkronize
+            {t('sync')}
           </Button>
           <Button
             onClick={() => router.push(`/${locale}/proposals/new`)}
@@ -161,7 +163,7 @@ export default function DashboardPage() {
             className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Yeni Teklif
+            {t('newProposal')}
           </Button>
         </div>
       </div>
@@ -174,12 +176,12 @@ export default function DashboardPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-blue-100 text-xs font-medium">
               <Wallet className="h-3.5 w-3.5" />
-              Toplam Gelir
+              {t('totalRevenue')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
               {formatAmount(totalRevenue)}
             </p>
-            <p className="text-xs text-blue-200 mt-1">{acceptedCount} kabul edilen teklif</p>
+            <p className="text-xs text-blue-200 mt-1">{acceptedCount} {t('acceptedProposals')}</p>
           </div>
         </div>
 
@@ -189,11 +191,11 @@ export default function DashboardPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-purple-100 text-xs font-medium">
               <FileText className="h-3.5 w-3.5" />
-              Teklifler
+              {t('proposals')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2">{proposalTotal}</p>
             <p className="text-xs text-purple-200 mt-1">
-              {pendingCount} beklemede{revisionCount > 0 ? ` · ${revisionCount} revize` : ''}
+              {pendingCount} {t('pending')}{revisionCount > 0 ? ` · ${revisionCount} ${t('revision')}` : ''}
             </p>
           </div>
         </div>
@@ -204,7 +206,7 @@ export default function DashboardPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-emerald-100 text-xs font-medium">
               <TrendingUp className="h-3.5 w-3.5" />
-              Kabul Oranı
+              {t('acceptanceRate')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2">{acceptRate}%</p>
             <div className="mt-1 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
@@ -222,10 +224,10 @@ export default function DashboardPage() {
           <div className="relative">
             <div className="flex items-center gap-2 text-amber-100 text-xs font-medium">
               <Users className="h-3.5 w-3.5" />
-              Müşteriler
+              {t('customers')}
             </div>
             <p className="text-xl md:text-2xl font-bold mt-2">{customerTotal}</p>
-            <p className="text-xs text-amber-200 mt-1">toplam müşteri</p>
+            <p className="text-xs text-amber-200 mt-1">{t('totalCustomers')}</p>
           </div>
         </div>
       </div>
@@ -237,9 +239,9 @@ export default function DashboardPage() {
             <div className="p-1.5 rounded-lg bg-violet-100 dark:bg-violet-900">
               <FileText className="h-4 w-4 text-violet-600 dark:text-violet-400" />
             </div>
-            <h3 className="font-semibold text-violet-800 dark:text-violet-200">Revize Bekleyen Teklifler</h3>
+            <h3 className="font-semibold text-violet-800 dark:text-violet-200">{t('revisionPending')}</h3>
             <Badge className="bg-violet-200 text-violet-800 dark:bg-violet-800 dark:text-violet-200 text-xs ml-auto">
-              {revisionCount} teklif
+              {revisionCount} {t('proposal')}
             </Badge>
           </div>
           <div className="flex flex-col gap-2">
@@ -257,11 +259,11 @@ export default function DashboardPage() {
                       {proposal.title || proposal.proposalNumber}
                     </p>
                     <p className="text-xs text-violet-600 dark:text-violet-400 truncate">
-                      {proposal.customer?.name ?? 'Müşteri belirtilmemiş'} · {formatAmount(Number(proposal.grandTotal) || 0)}
+                      {proposal.customer?.name ?? t('customerNotSpecified')} · {formatAmount(Number(proposal.grandTotal) || 0)}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 text-violet-500 group-hover:text-violet-700 dark:group-hover:text-violet-300">
-                    <span className="text-xs font-medium hidden sm:block">Düzenle</span>
+                    <span className="text-xs font-medium hidden sm:block">{t('edit')}</span>
                     <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </button>
@@ -277,9 +279,9 @@ export default function DashboardPage() {
             <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900">
               <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
             </div>
-            <h3 className="font-semibold text-orange-800 dark:text-orange-200">Düşük Stok Uyarısı</h3>
+            <h3 className="font-semibold text-orange-800 dark:text-orange-200">{t('lowStockAlert')}</h3>
             <Badge className="bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200 text-xs ml-auto">
-              {alerts.length} ürün
+              {alerts.length} {t('product')}
             </Badge>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -300,7 +302,7 @@ export default function DashboardPage() {
                 onClick={() => router.push(`/${locale}/products`)}
                 className="text-xs text-orange-600 hover:text-orange-800 font-medium px-3 py-2"
               >
-                +{alerts.length - 5} daha
+                +{alerts.length - 5} {t('more')}
               </button>
             )}
           </div>
@@ -313,8 +315,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 rounded-2xl border bg-card p-4 md:p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-semibold">Teklif Trendi</h3>
-              <p className="text-xs text-muted-foreground">Son 10 teklifin tutarları</p>
+              <h3 className="font-semibold">{t('proposalTrend')}</h3>
+              <p className="text-xs text-muted-foreground">{t('last10Amounts')}</p>
             </div>
           </div>
           <div className="w-full h-56 md:h-64">
@@ -336,7 +338,7 @@ export default function DashboardPage() {
                     borderRadius: '12px',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   }}
-                  formatter={(value: number) => [formatAmount(value), 'Tutar']}
+                  formatter={(value: number) => [formatAmount(value), t('amount')]}
                 />
                 <Area
                   type="monotone"
@@ -352,7 +354,7 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="rounded-2xl border bg-card p-4 md:p-5 flex flex-col">
-          <h3 className="font-semibold mb-4">Hızlı İşlemler</h3>
+          <h3 className="font-semibold mb-4">{t('quickActions')}</h3>
           <div className="flex flex-col gap-3 flex-1">
             <button
               onClick={() => router.push(`/${locale}/proposals/new`)}
@@ -362,8 +364,8 @@ export default function DashboardPage() {
                 <Plus className="h-4 w-4" />
               </div>
               <div className="text-left flex-1">
-                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Yeni Teklif</p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">Hızlı teklif oluştur</p>
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{t('newProposal')}</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">{t('createQuickProposal')}</p>
               </div>
               <ArrowRight className="h-4 w-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -376,8 +378,8 @@ export default function DashboardPage() {
                 <Users className="h-4 w-4" />
               </div>
               <div className="text-left flex-1">
-                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Müşteriler</p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">{customerTotal} müşteri</p>
+                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">{t('customers')}</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">{customerTotal} {t('customerCount')}</p>
               </div>
               <ArrowRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -390,8 +392,8 @@ export default function DashboardPage() {
                 <Package className="h-4 w-4" />
               </div>
               <div className="text-left flex-1">
-                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Ürünler</p>
-                <p className="text-xs text-amber-600 dark:text-amber-400">Stok ve ürün yönetimi</p>
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">{t('products')}</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t('stockAndProductMgmt')}</p>
               </div>
               <ArrowRight className="h-4 w-4 text-amber-400 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -405,8 +407,8 @@ export default function DashboardPage() {
                 <RefreshCw className={cn('h-4 w-4', isSyncing && 'animate-spin')} />
               </div>
               <div className="text-left flex-1">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Paraşüt Sync</p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">Verileri güncelle</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{t('parasutSync')}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">{t('updateData')}</p>
               </div>
               <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
             </button>
@@ -418,8 +420,8 @@ export default function DashboardPage() {
       <div className="rounded-2xl border bg-card">
         <div className="flex items-center justify-between p-4 md:p-5 border-b">
           <div>
-            <h3 className="font-semibold">Son Teklifler</h3>
-            <p className="text-xs text-muted-foreground">En son oluşturulan teklifler</p>
+            <h3 className="font-semibold">{t('recentProposals')}</h3>
+            <p className="text-xs text-muted-foreground">{t('recentProposalsDesc')}</p>
           </div>
           <Button
             variant="ghost"
@@ -427,7 +429,7 @@ export default function DashboardPage() {
             onClick={() => router.push(`/${locale}/proposals`)}
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950 rounded-xl"
           >
-            Tümünü Gör
+            {t('viewAll')}
             <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
@@ -437,14 +439,14 @@ export default function DashboardPage() {
             <div className="p-4 rounded-full bg-muted mb-4">
               <FileText className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">Henüz teklif bulunmuyor</p>
+            <p className="text-sm font-medium text-muted-foreground">{t('noProposals')}</p>
             <Button
               onClick={() => router.push(`/${locale}/proposals/new`)}
               className="mt-4 rounded-xl"
               size="sm"
             >
               <Plus className="mr-2 h-4 w-4" />
-              İlk Teklifini Oluştur
+              {t('createFirst')}
             </Button>
           </div>
         ) : (
@@ -469,7 +471,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {proposal.customer?.name ?? 'Müşteri belirtilmemiş'}
+                      {proposal.customer?.name ?? t('customerNotSpecified')}
                     </p>
                   </div>
 
@@ -477,7 +479,7 @@ export default function DashboardPage() {
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold">{formatAmount(amount)}</p>
                     <Badge className={cn('text-[10px] mt-1 font-medium', status.color)}>
-                      {status.label}
+                      {tStatus(`status.${proposal.status}` as any)}
                     </Badge>
                   </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import { Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, Users, Phone, Mail, MapPin, AlertCircle } from 'lucide-react';
@@ -63,6 +64,7 @@ const fetcher = (url: string) =>
   });
 
 export default function CustomersPage() {
+  const t = useTranslations('customersPage');
   const confirm = useConfirm();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
@@ -97,7 +99,7 @@ export default function CustomersPage() {
   const pagination = data?.data?.pagination ?? { total: 0, pages: 1, page: 1 };
   const totalPages = pagination.pages;
 
-  const filterLabels: Record<FilterStatus, string> = { all: 'Tümü', active: 'Aktif', inactive: 'Pasif' };
+  const filterLabels: Record<FilterStatus, string> = { all: t('all'), active: t('active'), inactive: t('inactive') };
 
   const handleSync = useCallback(async () => {
     setIsSyncing(true);
@@ -109,32 +111,32 @@ export default function CustomersPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success(`${data.data.syncedCount} müşteri senkronize edildi`);
+        toast.success(t('syncSuccess', { count: data.data.syncedCount }));
         mutate();
       } else {
-        toast.error(data.error || 'Bir hata oluştu');
+        toast.error(data.error || t('genericError'));
       }
     } catch {
-      toast.error('Senkronizasyon sırasında hata oluştu');
+      toast.error(t('syncError'));
     } finally {
       setIsSyncing(false);
     }
-  }, [mutate]);
+  }, [mutate, t]);
 
   const handleDeleteCustomer = useCallback(async (customerId: string) => {
-    const ok = await confirm({ message: 'Bu müşteriyi silmek istediğinize emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    const ok = await confirm({ message: t('deleteConfirm'), confirmText: t('deleteBtn'), variant: 'danger' });
     if (!ok) return;
     try {
       await fetch(`/api/v1/customers/${customerId}`, { method: 'DELETE' });
-      toast.success('Müşteri başarıyla silindi');
+      toast.success(t('deleteSuccess'));
       mutate();
     } catch {
-      toast.error('Silme işlemi sırasında hata oluştu');
+      toast.error(t('deleteError'));
     }
-  }, [mutate]);
+  }, [mutate, confirm, t]);
 
   const handleAddCustomer = useCallback(async () => {
-    if (!newCustomer.name) { toast.error('Firma adı zorunludur'); return; }
+    if (!newCustomer.name) { toast.error(t('companyNameRequired')); return; }
     setIsSubmitting(true);
     try {
       const payload: Record<string, string | boolean> = { name: newCustomer.name, isActive: true };
@@ -152,19 +154,19 @@ export default function CustomersPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success(`${newCustomer.name} başarıyla eklendi`);
+        toast.success(t('addSuccess', { name: newCustomer.name }));
         setNewCustomer({ name: '', shortName: '', phone: '', email: '', city: '', address: '', taxNumber: '' });
         setIsAddDialogOpen(false);
         mutate();
       } else {
-        toast.error(data.error || 'Müşteri eklenirken bir hata oluştu');
+        toast.error(data.error || t('addError'));
       }
     } catch {
-      toast.error('Müşteri eklenirken bir hata oluştu');
+      toast.error(t('addError'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [newCustomer, mutate]);
+  }, [newCustomer, mutate, t]);
 
   const openEditDialog = useCallback((customer: Customer) => {
     setEditingCustomer(customer);
@@ -180,7 +182,7 @@ export default function CustomersPage() {
   }, []);
 
   const handleEditCustomer = useCallback(async () => {
-    if (!editingCustomer || !editForm.name) { toast.error('Firma adı zorunludur'); return; }
+    if (!editingCustomer || !editForm.name) { toast.error(t('companyNameRequired')); return; }
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/v1/customers/${editingCustomer.id}`, {
@@ -197,19 +199,19 @@ export default function CustomersPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Müşteri başarıyla güncellendi');
+        toast.success(t('editSuccess'));
         setIsEditDialogOpen(false);
         setEditingCustomer(null);
         mutate();
       } else {
-        toast.error(data.error || 'Güncelleme sırasında hata oluştu');
+        toast.error(data.error || t('editError'));
       }
     } catch {
-      toast.error('Güncelleme sırasında hata oluştu');
+      toast.error(t('editError'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [editingCustomer, editForm, mutate]);
+  }, [editingCustomer, editForm, mutate, t]);
 
   const formatBalance = (balance: number) =>
     (balance || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 });
@@ -234,8 +236,8 @@ export default function CustomersPage() {
           <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-950/40 dark:to-rose-950/40 rounded-2xl flex items-center justify-center mb-4">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Veriler yuklenemedi</p>
-          <p className="text-sm text-gray-400">Lutfen sayfayi yenileyin veya daha sonra tekrar deneyin.</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('errorLoad')}</p>
+          <p className="text-sm text-gray-400">{t('errorLoadDesc')}</p>
         </div>
       </div>
     );
@@ -245,16 +247,16 @@ export default function CustomersPage() {
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Müşteriler</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('title')}</h1>
         <div className="flex gap-2">
           <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm" className="rounded-xl">
             <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-            Senkronize
+            {t('sync')}
           </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} size="sm"
             className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25">
             <Plus className="mr-2 h-4 w-4" />
-            Yeni Müşteri
+            {t('newCustomer')}
           </Button>
         </div>
       </div>
@@ -264,7 +266,7 @@ export default function CustomersPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Müşteri ara..."
+            placeholder={t('searchPlaceholder')}
             className="pl-10 rounded-xl"
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
@@ -297,7 +299,7 @@ export default function CustomersPage() {
           <div className="p-4 rounded-full bg-muted mb-4">
             <Users className="h-8 w-8 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Müşteri bulunamadı</p>
+          <p className="text-sm font-medium text-muted-foreground">{t('noCustomers')}</p>
         </div>
       ) : (
         <div className="rounded-2xl border bg-card overflow-hidden">
@@ -349,10 +351,10 @@ export default function CustomersPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditDialog(customer); }}>
-                      <Edit className="mr-2 h-4 w-4" /> Düzenle
+                      <Edit className="mr-2 h-4 w-4" /> {t('editBtn')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteCustomer(customer.id); }} className="text-red-600">
-                      <Trash2 className="mr-2 h-4 w-4" /> Sil
+                      <Trash2 className="mr-2 h-4 w-4" /> {t('deleteBtn')}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -364,10 +366,10 @@ export default function CustomersPage() {
           <table className="w-full hidden md:table">
             <thead>
               <tr className="border-b bg-muted/50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Müşteri</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">İletişim</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Şehir</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bakiye</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('customer')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contact')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('city')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('balance')}</th>
                 <th className="px-4 py-3 w-12"></th>
               </tr>
             </thead>
@@ -429,10 +431,10 @@ export default function CustomersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditDialog(customer); }}>
-                          <Edit className="mr-2 h-4 w-4" /> Düzenle
+                          <Edit className="mr-2 h-4 w-4" /> {t('editBtn')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteCustomer(customer.id); }} className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" /> Sil
+                          <Trash2 className="mr-2 h-4 w-4" /> {t('deleteBtn')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -446,16 +448,16 @@ export default function CustomersPage() {
           {totalPages > 1 && (
             <div className="border-t px-4 py-3 flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Toplam {pagination.total} müşteri · Sayfa {currentPage}/{totalPages}
+                {t('total')} {pagination.total} {t('customerCount')} · {t('page')} {currentPage}/{totalPages}
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="rounded-lg"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                  Önceki
+                  {t('previous')}
                 </Button>
                 <Button variant="outline" size="sm" className="rounded-lg"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                  Sonraki
+                  {t('next')}
                 </Button>
               </div>
             </div>
@@ -467,54 +469,54 @@ export default function CustomersPage() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Yeni Müşteri Ekle</DialogTitle>
-            <DialogDescription>Müşteri bilgilerini girin.</DialogDescription>
+            <DialogTitle>{t('addTitle')}</DialogTitle>
+            <DialogDescription>{t('addDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Firma Adı *</Label>
-              <Input placeholder="Firma adını girin" value={newCustomer.name}
+              <Label>{t('companyName')}</Label>
+              <Input placeholder={t('companyNamePlaceholder')} value={newCustomer.name}
                 onChange={(e) => setNewCustomer((c) => ({ ...c, name: e.target.value }))} />
             </div>
             <div className="grid gap-2">
-              <Label>Kısa Ad</Label>
-              <Input placeholder="Kısa ad (opsiyonel)" value={newCustomer.shortName}
+              <Label>{t('shortName')}</Label>
+              <Input placeholder={t('shortNamePlaceholder')} value={newCustomer.shortName}
                 onChange={(e) => setNewCustomer((c) => ({ ...c, shortName: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Telefon</Label>
-                <Input type="tel" placeholder="0xxx xxx xx xx" value={newCustomer.phone}
+                <Label>{t('phone')}</Label>
+                <Input type="tel" placeholder={t('phonePlaceholder')} value={newCustomer.phone}
                   onChange={(e) => setNewCustomer((c) => ({ ...c, phone: e.target.value }))} />
               </div>
               <div className="grid gap-2">
-                <Label>E-posta</Label>
-                <Input type="email" placeholder="ornek@firma.com" value={newCustomer.email}
+                <Label>{t('email')}</Label>
+                <Input type="email" placeholder={t('emailPlaceholder')} value={newCustomer.email}
                   onChange={(e) => setNewCustomer((c) => ({ ...c, email: e.target.value }))} />
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Şehir</Label>
-              <Input placeholder="Şehir" value={newCustomer.city}
+              <Label>{t('cityLabel')}</Label>
+              <Input placeholder={t('cityPlaceholder')} value={newCustomer.city}
                 onChange={(e) => setNewCustomer((c) => ({ ...c, city: e.target.value }))} />
             </div>
             <div className="grid gap-2">
-              <Label>Adres</Label>
+              <Label>{t('address')}</Label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="Açık adres (opsiyonel)" value={newCustomer.address}
+                placeholder={t('addressPlaceholder')} value={newCustomer.address}
                 onChange={(e) => setNewCustomer((c) => ({ ...c, address: e.target.value }))} />
             </div>
             <div className="grid gap-2">
-              <Label>Vergi Numarası</Label>
-              <Input placeholder="Vergi numarası" value={newCustomer.taxNumber}
+              <Label>{t('taxNumber')}</Label>
+              <Input placeholder={t('taxNumberPlaceholder')} value={newCustomer.taxNumber}
                 onChange={(e) => setNewCustomer((c) => ({ ...c, taxNumber: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>İptal</Button>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>{t('cancel')}</Button>
             <Button onClick={handleAddCustomer} disabled={isSubmitting}>
-              {isSubmitting ? 'Ekleniyor...' : 'Müşteri Ekle'}
+              {isSubmitting ? t('adding') : t('addCustomer')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -524,43 +526,43 @@ export default function CustomersPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => { if (!open) { setIsEditDialogOpen(false); setEditingCustomer(null); } }}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Müşteriyi Düzenle</DialogTitle>
-            <DialogDescription>Müşteri bilgilerini güncelleyin.</DialogDescription>
+            <DialogTitle>{t('editTitle')}</DialogTitle>
+            <DialogDescription>{t('editDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Firma Adı *</Label>
+              <Label>{t('companyName')}</Label>
               <Input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Telefon</Label>
+                <Label>{t('phone')}</Label>
                 <Input type="tel" value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} />
               </div>
               <div className="grid gap-2">
-                <Label>E-posta</Label>
+                <Label>{t('email')}</Label>
                 <Input type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Şehir</Label>
+              <Label>{t('cityLabel')}</Label>
               <Input value={editForm.city} onChange={(e) => setEditForm((f) => ({ ...f, city: e.target.value }))} />
             </div>
             <div className="grid gap-2">
-              <Label>Adres</Label>
+              <Label>{t('address')}</Label>
               <textarea
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={editForm.address} onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))} />
             </div>
             <div className="grid gap-2">
-              <Label>Vergi Numarası</Label>
+              <Label>{t('taxNumber')}</Label>
               <Input value={editForm.taxNumber} onChange={(e) => setEditForm((f) => ({ ...f, taxNumber: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingCustomer(null); }} disabled={isSubmitting}>İptal</Button>
+            <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingCustomer(null); }} disabled={isSubmitting}>{t('cancel')}</Button>
             <Button onClick={handleEditCustomer} disabled={isSubmitting}>
-              {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
+              {isSubmitting ? t('saving') : t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -584,7 +586,7 @@ export default function CustomersPage() {
                   <div>
                     <SheetTitle>{selectedCustomer.name}</SheetTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {selectedCustomer.syncedFromParasut ? 'Paraşüt\'ten senkronize' : 'Manuel eklenmiş'}
+                      {selectedCustomer.syncedFromParasut ? t('syncedFrom') : t('manuallyAdded')}
                     </p>
                   </div>
                 </div>
@@ -592,7 +594,7 @@ export default function CustomersPage() {
 
               <div className="space-y-4">
                 <div className="rounded-xl border p-4 space-y-3">
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">İletişim</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contactInfo')}</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
@@ -611,11 +613,11 @@ export default function CustomersPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-xl border p-4">
-                    <p className="text-xs text-muted-foreground">Vergi No</p>
+                    <p className="text-xs text-muted-foreground">{t('taxNo')}</p>
                     <p className="font-medium mt-1">{selectedCustomer.taxNumber || '-'}</p>
                   </div>
                   <div className="rounded-xl border p-4">
-                    <p className="text-xs text-muted-foreground">Bakiye</p>
+                    <p className="text-xs text-muted-foreground">{t('balance')}</p>
                     <p className={cn('font-bold text-lg mt-1',
                       selectedCustomer.balance > 0 ? 'text-emerald-600' : selectedCustomer.balance < 0 ? 'text-red-600' : ''
                     )}>
@@ -626,7 +628,7 @@ export default function CustomersPage() {
 
                 <Button onClick={() => { setSelectedCustomer(null); openEditDialog(selectedCustomer); }} className="w-full rounded-xl" variant="outline">
                   <Edit className="mr-2 h-4 w-4" />
-                  Düzenle
+                  {t('editBtn')}
                 </Button>
               </div>
             </>

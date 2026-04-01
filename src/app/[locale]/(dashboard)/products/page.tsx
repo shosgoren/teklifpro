@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
 import { Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, AlertTriangle } from 'lucide-react';
@@ -69,13 +69,6 @@ const fetcher = (url: string) =>
     return data;
   });
 
-const PRODUCT_TYPE_LABELS: Record<string, string> = {
-  COMMERCIAL: 'Ticari',
-  RAW_MATERIAL: 'Hammadde',
-  SEMI_FINISHED: 'Yarı Mamül',
-  CONSUMABLE: 'Sarf',
-};
-
 const PRODUCT_TYPE_COLORS: Record<string, string> = {
   COMMERCIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   RAW_MATERIAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
@@ -83,21 +76,29 @@ const PRODUCT_TYPE_COLORS: Record<string, string> = {
   CONSUMABLE: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
 };
 
-const PRODUCT_TYPE_OPTIONS = [
-  { value: 'all', label: 'Tümü' },
-  { value: 'COMMERCIAL', label: 'Ticari' },
-  { value: 'RAW_MATERIAL', label: 'Hammadde' },
-  { value: 'SEMI_FINISHED', label: 'Yarı Mamül' },
-  { value: 'CONSUMABLE', label: 'Sarf Malzeme' },
-];
-
 const isLowStock = (product: Product) =>
   product.trackStock && product.minStockLevel > 0 && product.stockQuantity < product.minStockLevel;
 
 export default function ProductsPage() {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('productsPage');
   const confirm = useConfirm();
+
+  const PRODUCT_TYPE_LABELS: Record<string, string> = {
+    COMMERCIAL: t('commercial'),
+    RAW_MATERIAL: t('rawMaterial'),
+    SEMI_FINISHED: t('semiFinished'),
+    CONSUMABLE: t('consumable'),
+  };
+
+  const PRODUCT_TYPE_OPTIONS = [
+    { value: 'all', label: t('all') },
+    { value: 'COMMERCIAL', label: t('commercial') },
+    { value: 'RAW_MATERIAL', label: t('rawMaterial') },
+    { value: 'SEMI_FINISHED', label: t('semiFinished') },
+    { value: 'CONSUMABLE', label: t('consumable') },
+  ];
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProductType, setFilterProductType] = useState<FilterProductType>('all');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -146,33 +147,33 @@ export default function ProductsPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`${data.data.syncedCount} ürün senkronize edildi`);
+        toast.success(t('syncSuccess', { count: data.data.syncedCount }));
         mutate();
       } else {
-        toast.error(data.error || 'Bir hata oluştu');
+        toast.error(data.error || t('genericError'));
       }
     } catch (error) {
-      toast.error('Senkronizasyon sırasında hata oluştu');
+      toast.error(t('syncError'));
     } finally {
       setIsSyncing(false);
     }
-  }, [mutate]);
+  }, [mutate, t]);
 
   const handleDeleteProduct = useCallback(async (productId: string) => {
-    const ok = await confirm({ message: 'Bu ürünü silmek istediğinize emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    const ok = await confirm({ message: t('deleteConfirm'), confirmText: t('deleteBtn'), variant: 'danger' });
     if (!ok) return;
     try {
       await fetch(`/api/v1/products/${productId}`, { method: 'DELETE' });
-      toast.success('Ürün başarıyla silindi');
+      toast.success(t('deleteSuccess'));
       mutate();
     } catch (error) {
-      toast.error('Silme işlemi sırasında hata oluştu');
+      toast.error(t('deleteError'));
     }
-  }, [mutate]);
+  }, [mutate, confirm, t]);
 
   const handleAddProduct = useCallback(async () => {
     if (!newProduct.code || !newProduct.name || !newProduct.unit) {
-      toast.error('Ürün kodu, adı ve birim alanları zorunludur');
+      toast.error(t('requiredFields'));
       return;
     }
     setIsSubmitting(true);
@@ -190,19 +191,19 @@ export default function ProductsPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success(`${newProduct.name} başarıyla eklendi`);
+        toast.success(t('addSuccess', { name: newProduct.name }));
         setNewProduct({ code: '', name: '', category: '', productType: 'COMMERCIAL', unit: 'Adet', listPrice: 0, costPrice: 0, minStockLevel: 0, vatRate: 18, description: '' });
         setIsAddDialogOpen(false);
         mutate();
       } else {
-        toast.error(data.error || 'Ürün eklenirken bir hata oluştu');
+        toast.error(data.error || t('addError'));
       }
     } catch (error) {
-      toast.error('Ürün eklenirken bir hata oluştu');
+      toast.error(t('addError'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [newProduct, mutate]);
+  }, [newProduct, mutate, t]);
 
   const formatPrice = (price: number) => {
     return (price || 0).toLocaleString('tr-TR', {
@@ -229,7 +230,7 @@ export default function ProductsPage() {
     return (
       <div className="p-4 md:p-6">
         <div className="text-center py-12 text-red-600">
-          Veriler yüklenirken hata oluştu. Lütfen sayfayı yenileyin.
+          {t('errorLoad')}
         </div>
       </div>
     );
@@ -238,17 +239,17 @@ export default function ProductsPage() {
   return (
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Ürünler</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('title')}</h1>
 
         <div className="flex gap-2">
           <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm" className="rounded-xl">
             <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-            Senkronize
+            {t('sync')}
           </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} size="sm"
             className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25">
             <Plus className="mr-2 h-4 w-4" />
-            Yeni Ürün
+            {t('newProduct')}
           </Button>
         </div>
       </div>
@@ -257,14 +258,14 @@ export default function ProductsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Ürün ara..." className="pl-10 rounded-xl" value={searchQuery}
+          <Input placeholder={t('searchPlaceholder')} className="pl-10 rounded-xl" value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="rounded-xl min-w-[140px] justify-between">
               <Filter className="mr-2 h-4 w-4" />
-              {filterProductType === 'all' ? 'Tümü' : (PRODUCT_TYPE_LABELS[filterProductType] || filterProductType)}
+              {filterProductType === 'all' ? t('all') : (PRODUCT_TYPE_LABELS[filterProductType] || filterProductType)}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -283,9 +284,9 @@ export default function ProductsPage() {
           <div className="p-4 rounded-full bg-muted mb-4">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>
-          <p className="text-sm font-medium text-muted-foreground">Ürün bulunamadı</p>
+          <p className="text-sm font-medium text-muted-foreground">{t('noProducts')}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Arama kriterlerinizi değiştirin veya yeni ürün ekleyin
+            {t('noProductsHint')}
           </p>
         </div>
       ) : (
@@ -309,7 +310,7 @@ export default function ProductsPage() {
                       />
                       <p className="font-medium truncate">{product.name}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">{product.code ?? 'Kod yok'}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{product.code ?? t('noCode')}</p>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -323,7 +324,7 @@ export default function ProductsPage() {
                           router.push(`/${locale}/products/${product.id}`);
                         }}>
                         <Edit className="mr-2 h-4 w-4" />
-                        Düzenle
+                        {t('editBtn')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
@@ -333,7 +334,7 @@ export default function ProductsPage() {
                         className="text-red-600"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Sil
+                        {t('deleteBtn')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -347,7 +348,7 @@ export default function ProductsPage() {
                     )}
                     {product.trackStock && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        Stok: {product.stockQuantity}
+                        {t('stock')} {product.stockQuantity}
                         {isLowStock(product) && (
                           <AlertTriangle className="h-3 w-3 text-orange-500" />
                         )}
@@ -367,15 +368,15 @@ export default function ProductsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Ürün Kodu</TableHead>
-                    <TableHead className="whitespace-nowrap">Ürün Adı</TableHead>
-                    <TableHead className="whitespace-nowrap">Tür</TableHead>
-                    <TableHead className="whitespace-nowrap">Birim</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">Stok</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Maliyet</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Liste Fiyatı</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">KDV %</TableHead>
-                    <TableHead className="whitespace-nowrap">Durum</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('productCode')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('productName')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('type')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('unit')}</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">{t('stockHeader')}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">{t('cost')}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">{t('listPrice')}</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">{t('vatRate')}</TableHead>
+                    <TableHead className="whitespace-nowrap">{t('status')}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -421,7 +422,7 @@ export default function ProductsPage() {
                       <TableCell className="text-center text-sm">%{product.vatRate}</TableCell>
                       <TableCell>
                         <Badge variant={product.isActive ? 'default' : 'secondary'}>
-                          {product.isActive ? 'Aktif' : 'Pasif'}
+                          {product.isActive ? t('active') : t('inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -434,7 +435,7 @@ export default function ProductsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Düzenle
+                              {t('editBtn')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -444,7 +445,7 @@ export default function ProductsPage() {
                               className="text-red-600"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Sil
+                              {t('deleteBtn')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -461,16 +462,16 @@ export default function ProductsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between rounded-2xl border bg-card px-4 py-3">
           <p className="text-xs text-muted-foreground">
-            Toplam {pagination.total} ürün · Sayfa {currentPage}/{totalPages}
+            {t('total')} {pagination.total} {t('productCount')} · {t('page')} {currentPage}/{totalPages}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="rounded-lg"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-              Önceki
+              {t('previous')}
             </Button>
             <Button variant="outline" size="sm" className="rounded-lg"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-              Sonraki
+              {t('next')}
             </Button>
           </div>
         </div>
@@ -479,75 +480,75 @@ export default function ProductsPage() {
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Yeni Ürün Ekle</DialogTitle>
-            <DialogDescription>Ürün bilgilerini girerek yeni bir ürün oluşturun.</DialogDescription>
+            <DialogTitle>{t('addTitle')}</DialogTitle>
+            <DialogDescription>{t('addDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="product-code">Ürün Kodu *</Label>
+              <Label htmlFor="product-code">{t('productCodeLabel')}</Label>
               <Input
                 id="product-code"
-                placeholder="Örnek: PRD-001"
+                placeholder={t('productCodePlaceholder')}
                 value={newProduct.code}
                 onChange={(e) => setNewProduct((p) => ({ ...p, code: e.target.value }))}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product-name">Ürün Adı *</Label>
+              <Label htmlFor="product-name">{t('productNameLabel')}</Label>
               <Input
                 id="product-name"
-                placeholder="Ürün adını girin"
+                placeholder={t('productNamePlaceholder')}
                 value={newProduct.name}
                 onChange={(e) => setNewProduct((p) => ({ ...p, name: e.target.value }))}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product-type">Ürün Türü *</Label>
+              <Label htmlFor="product-type">{t('productTypeLabel')}</Label>
               <select
                 id="product-type"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={newProduct.productType}
                 onChange={(e) => setNewProduct((p) => ({ ...p, productType: e.target.value }))}
               >
-                <option value="COMMERCIAL">Ticari</option>
-                <option value="RAW_MATERIAL">Hammadde</option>
-                <option value="SEMI_FINISHED">Yarı Mamül</option>
-                <option value="CONSUMABLE">Sarf Malzeme</option>
+                <option value="COMMERCIAL">{t('commercial')}</option>
+                <option value="RAW_MATERIAL">{t('rawMaterial')}</option>
+                <option value="SEMI_FINISHED">{t('semiFinished')}</option>
+                <option value="CONSUMABLE">{t('consumable')}</option>
               </select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product-category">Kategori</Label>
+              <Label htmlFor="product-category">{t('category')}</Label>
               <select
                 id="product-category"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={newProduct.category}
                 onChange={(e) => setNewProduct((p) => ({ ...p, category: e.target.value }))}
               >
-                <option value="">Kategori seçin</option>
-                <option value="Yazılım">Yazılım</option>
-                <option value="Hizmet">Hizmet</option>
-                <option value="Donanım">Donanım</option>
+                <option value="">{t('selectCategory')}</option>
+                <option value="Yazılım">{t('software')}</option>
+                <option value="Hizmet">{t('service')}</option>
+                <option value="Donanım">{t('hardware')}</option>
               </select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product-unit">Birim *</Label>
+              <Label htmlFor="product-unit">{t('unitLabel')}</Label>
               <select
                 id="product-unit"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={newProduct.unit}
                 onChange={(e) => setNewProduct((p) => ({ ...p, unit: e.target.value }))}
               >
-                <option value="Adet">Adet</option>
-                <option value="Saat">Saat</option>
-                <option value="Gün">Gün</option>
-                <option value="Ay">Ay</option>
-                <option value="Yıl">Yıl</option>
-                <option value="Paket">Paket</option>
+                <option value="Adet">{t('unitPiece')}</option>
+                <option value="Saat">{t('unitHour')}</option>
+                <option value="Gün">{t('unitDay')}</option>
+                <option value="Ay">{t('unitMonth')}</option>
+                <option value="Yıl">{t('unitYear')}</option>
+                <option value="Paket">{t('unitPackage')}</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="product-price">Liste Fiyatı (TRY)</Label>
+                <Label htmlFor="product-price">{t('listPriceLabel')}</Label>
                 <Input
                   id="product-price"
                   type="number"
@@ -559,7 +560,7 @@ export default function ProductsPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="product-vat">KDV Oranı (%)</Label>
+                <Label htmlFor="product-vat">{t('vatRateLabel')}</Label>
                 <select
                   id="product-vat"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -576,11 +577,11 @@ export default function ProductsPage() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="product-description">Açıklama</Label>
+              <Label htmlFor="product-description">{t('description')}</Label>
               <textarea
                 id="product-description"
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                placeholder="Ürün açıklaması (opsiyonel)"
+                placeholder={t('descriptionPlaceholder')}
                 value={newProduct.description}
                 onChange={(e) => setNewProduct((p) => ({ ...p, description: e.target.value }))}
               />
@@ -588,10 +589,10 @@ export default function ProductsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>
-              İptal
+              {t('cancel')}
             </Button>
             <Button onClick={handleAddProduct} disabled={isSubmitting}>
-              {isSubmitting ? 'Ekleniyor...' : 'Ürün Ekle'}
+              {isSubmitting ? t('adding') : t('addProduct')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import {
@@ -171,6 +172,7 @@ const formatPrice = (price: number) =>
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function BomPage() {
+  const t = useTranslations('bomPage');
   const confirm = useConfirm();
   // List state
   const [searchQuery, setSearchQuery] = useState('');
@@ -358,15 +360,15 @@ export default function BomPage() {
 
   const handleSubmit = useCallback(async () => {
     if (!formProductId) {
-      toast.error('Urun secimi zorunludur');
+      toast.error(t('selectProductRequired'));
       return;
     }
     if (formMaterials.length === 0) {
-      toast.error('En az bir malzeme ekleyin');
+      toast.error(t('addMaterialRequired'));
       return;
     }
     if (formMaterials.some((m) => !m.materialId)) {
-      toast.error('Tum malzemeler secilmis olmali');
+      toast.error(t('addMaterialRequired'));
       return;
     }
 
@@ -396,17 +398,17 @@ export default function BomPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(editingBomId ? 'Recete guncellendi' : 'Recete olusturuldu');
+        toast.success(editingBomId ? t('updateSuccess') : t('createSuccess'));
         setIsDialogOpen(false);
         mutateBomList();
         if (editingBomId && selectedBomId === editingBomId) {
           mutateBomDetail();
         }
       } else {
-        toast.error(data.error || 'Bir hata olustu');
+        toast.error(data.error || t('createError'));
       }
     } catch {
-      toast.error('Islem sirasinda hata olustu');
+      toast.error(t('createError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -414,20 +416,20 @@ export default function BomPage() {
 
   const handleDelete = useCallback(
     async (bomId: string) => {
-      const ok = await confirm({ message: 'Bu reçeteyi silmek istediğinize emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+      const ok = await confirm({ message: t('deleteConfirm'), confirmText: t('deleteBtn'), variant: 'danger' });
       if (!ok) return;
       try {
         const response = await fetch(`/api/v1/bom/${bomId}`, { method: 'DELETE' });
         const data = await response.json();
         if (data.success) {
-          toast.success('Recete silindi');
+          toast.success(t('deleteSuccess'));
           setSelectedBomId(null);
           mutateBomList();
         } else {
-          toast.error(data.error || 'Silme islemi basarisiz');
+          toast.error(data.error || t('deleteError'));
         }
       } catch {
-        toast.error('Silme sirasinda hata olustu');
+        toast.error(t('deleteError'));
       }
     },
     [mutateBomList],
@@ -442,10 +444,10 @@ export default function BomPage() {
       if (data.success) {
         setCostData(data.data);
       } else {
-        toast.error(data.error || 'Maliyet hesaplanamadi');
+        toast.error(data.error || t('createError'));
       }
     } catch {
-      toast.error('Maliyet hesaplanirken hata olustu');
+      toast.error(t('createError'));
     } finally {
       setIsCalculatingCost(false);
     }
@@ -481,17 +483,17 @@ export default function BomPage() {
     return (
       <div className="flex flex-col gap-6 p-4 md:p-6">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          Uretim Receteleri
+          {t('title')}
         </h1>
         <div className="flex flex-col items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 py-12 px-6">
           <div className="rounded-2xl bg-gradient-to-br from-red-100 to-red-200 dark:from-red-950 dark:to-red-900 p-4 mb-4">
             <Layers className="h-8 w-8 text-red-600 dark:text-red-400" />
           </div>
           <p className="text-lg font-medium text-red-700 dark:text-red-300">
-            Veriler yuklenirken hata olustu
+            {t('createError')}
           </p>
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-            Lutfen sayfayi yenileyin.
+            {t('createError')}
           </p>
         </div>
       </div>
@@ -505,10 +507,10 @@ export default function BomPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          Uretim Receteleri
+          {t('title')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Urun recetelerini yonetin, malzeme listelerini duzenleyin
+          {t('noBomDesc')}
         </p>
       </div>
 
@@ -523,7 +525,7 @@ export default function BomPage() {
               <ClipboardList className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-blue-100">Toplam Recete</p>
+              <p className="text-sm font-medium text-blue-100">{t('kpi.totalBoms')}</p>
               <p className="text-2xl font-bold">{totalBomCount}</p>
             </div>
           </div>
@@ -538,7 +540,7 @@ export default function BomPage() {
               <Boxes className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-emerald-100">Toplam Malzeme</p>
+              <p className="text-sm font-medium text-emerald-100">{t('kpi.totalComponents')}</p>
               <p className="text-2xl font-bold">{totalComponentCount}</p>
             </div>
           </div>
@@ -553,7 +555,7 @@ export default function BomPage() {
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-violet-100">Ort. Malzeme/Recete</p>
+              <p className="text-sm font-medium text-violet-100">{t('kpi.avgPerBom')}</p>
               <p className="text-2xl font-bold">{avgComponentsPerBom}</p>
             </div>
           </div>
@@ -565,7 +567,7 @@ export default function BomPage() {
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Recete ara..."
+            placeholder={t('searchPlaceholder')}
             className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -573,7 +575,7 @@ export default function BomPage() {
         </div>
         <Button onClick={openCreateDialog} className="w-full sm:w-auto rounded-lg">
           <Plus className="mr-2 h-4 w-4" />
-          Yeni Recete
+          {t('newBom')}
         </Button>
       </div>
 
@@ -584,14 +586,14 @@ export default function BomPage() {
             <Layers className="h-10 w-10 text-blue-600 dark:text-blue-400" />
           </div>
           <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Recete bulunamadi
+            {t('noBoms')}
           </p>
           <p className="mt-2 text-sm text-muted-foreground max-w-sm text-center">
-            Yeni bir uretim recetesi olusturmak icin &quot;Yeni Recete&quot; butonuna tiklayin
+            {t('noBomDesc')}
           </p>
           <Button onClick={openCreateDialog} className="mt-5 rounded-lg">
             <Plus className="mr-2 h-4 w-4" />
-            Yeni Recete
+            {t('newBom')}
           </Button>
         </div>
       ) : (
@@ -629,14 +631,14 @@ export default function BomPage() {
                       bom.isActive && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
                     )}
                   >
-                    {bom.isActive ? 'Aktif' : 'Pasif'}
+                    {bom.isActive ? t('table.active') : t('table.inactive')}
                   </Badge>
                 </div>
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Boxes className="h-3.5 w-3.5" />
-                    <span>{bom.itemCount} malzeme</span>
+                    <span>{bom.itemCount} {t('kpi.materials')}</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
                     {new Date(bom.createdAt).toLocaleDateString('tr-TR')}
@@ -652,12 +654,12 @@ export default function BomPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50/80 dark:bg-gray-900/80">
-                    <TableHead className="whitespace-nowrap font-semibold">Urun Kodu</TableHead>
-                    <TableHead className="whitespace-nowrap font-semibold">Urun Adi</TableHead>
-                    <TableHead className="text-center whitespace-nowrap font-semibold">Versiyon</TableHead>
-                    <TableHead className="text-center whitespace-nowrap font-semibold">Malzeme Sayisi</TableHead>
-                    <TableHead className="whitespace-nowrap font-semibold">Durum</TableHead>
-                    <TableHead className="whitespace-nowrap font-semibold">Olusturulma</TableHead>
+                    <TableHead className="whitespace-nowrap font-semibold">{t('table.product')}</TableHead>
+                    <TableHead className="whitespace-nowrap font-semibold">{t('table.product')}</TableHead>
+                    <TableHead className="text-center whitespace-nowrap font-semibold">{t('table.version')}</TableHead>
+                    <TableHead className="text-center whitespace-nowrap font-semibold">{t('table.materials')}</TableHead>
+                    <TableHead className="whitespace-nowrap font-semibold">{t('table.status')}</TableHead>
+                    <TableHead className="whitespace-nowrap font-semibold">{t('table.updated')}</TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -702,7 +704,7 @@ export default function BomPage() {
                             bom.isActive && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
                           )}
                         >
-                          {bom.isActive ? 'Aktif' : 'Pasif'}
+                          {bom.isActive ? t('table.active') : t('table.inactive')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -724,7 +726,7 @@ export default function BomPage() {
                               }}
                             >
                               <Layers className="mr-2 h-4 w-4" />
-                              Detay
+                              {t('detail.title')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -734,7 +736,7 @@ export default function BomPage() {
                               className="text-red-600"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Sil
+                              {t('deleteBtn')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -762,14 +764,14 @@ export default function BomPage() {
                       bomDetail.isActive && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
                     )}
                   >
-                    {bomDetail.isActive ? 'Aktif' : 'Pasif'}
+                    {bomDetail.isActive ? t('table.active') : t('table.inactive')}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
-                    Versiyon {bomDetail.version}
+                    {t('detail.version')} {bomDetail.version}
                   </span>
                   {bomDetail.product.code && (
                     <span className="text-sm text-muted-foreground">
-                      Kod: {bomDetail.product.code}
+                      {bomDetail.product.code}
                     </span>
                   )}
                 </div>
@@ -777,18 +779,18 @@ export default function BomPage() {
 
               {/* Materials table */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Malzemeler</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('form.materials')}</h3>
                 <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50/80 dark:bg-gray-900/80">
-                        <TableHead>Malzeme</TableHead>
-                        <TableHead>Kod</TableHead>
-                        <TableHead className="text-right">Miktar</TableHead>
-                        <TableHead>Birim</TableHead>
-                        <TableHead className="text-right">Fire %</TableHead>
-                        <TableHead className="text-right">Birim Fiyat</TableHead>
-                        <TableHead className="text-right">Toplam</TableHead>
+                        <TableHead>{t('detail.material')}</TableHead>
+                        <TableHead>{t('table.product')}</TableHead>
+                        <TableHead className="text-right">{t('detail.quantity')}</TableHead>
+                        <TableHead>{t('detail.material')}</TableHead>
+                        <TableHead className="text-right">{t('detail.waste')}</TableHead>
+                        <TableHead className="text-right">{t('detail.unitPrice')}</TableHead>
+                        <TableHead className="text-right">{t('detail.totalCost')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -816,7 +818,7 @@ export default function BomPage() {
                 {/* Inline totals */}
                 <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Hammadde Maliyeti</span>
+                    <span className="text-muted-foreground">{t('detail.totalMaterialCost')}</span>
                     <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(totalMaterialCost)}</span>
                   </div>
                 </div>
@@ -825,26 +827,26 @@ export default function BomPage() {
                 {costData && (
                   <Card className="rounded-xl border-gray-200 dark:border-gray-800">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Maliyet Analizi</CardTitle>
-                      <CardDescription>Uretim maliyet hesaplama sonucu</CardDescription>
+                      <CardTitle className="text-base">{t('detail.costBreakdown')}</CardTitle>
+                      <CardDescription>{t('detail.costBreakdown')}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2 font-mono text-sm">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Hammadde Maliyeti:</span>
+                          <span className="text-muted-foreground">{t('detail.totalMaterialCost')}:</span>
                           <span className="text-gray-900 dark:text-gray-100">{formatPrice(costData.summary.totalMaterialCost)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Iscilik Maliyeti:</span>
+                          <span className="text-muted-foreground">{t('detail.laborCost')}:</span>
                           <span className="text-gray-900 dark:text-gray-100">{formatPrice(costData.summary.laborCost)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Genel Gider (%{costData.summary.overheadRate}):</span>
+                          <span className="text-muted-foreground">{t('detail.overheadCost')} (%{costData.summary.overheadRate}):</span>
                           <span className="text-gray-900 dark:text-gray-100">{formatPrice(costData.summary.overheadCost)}</span>
                         </div>
                         <div className="border-t border-dashed border-gray-300 dark:border-gray-700 pt-2 mt-2" />
                         <div className="flex justify-between font-bold text-base">
-                          <span className="text-gray-900 dark:text-gray-100">TOPLAM MALIYET:</span>
+                          <span className="text-gray-900 dark:text-gray-100">{t('detail.totalProductionCost')}:</span>
                           <span className="text-blue-600 dark:text-blue-400">{formatPrice(costData.summary.totalProductionCost)}</span>
                         </div>
                       </div>
@@ -855,7 +857,7 @@ export default function BomPage() {
                 {/* Notes */}
                 {bomDetail.notes && (
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">Notlar</h3>
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{t('detail.notes')}</h3>
                     <p className="text-sm text-muted-foreground rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
                       {bomDetail.notes}
                     </p>
@@ -871,7 +873,7 @@ export default function BomPage() {
                     className="flex-1 rounded-lg"
                   >
                     <Calculator className="mr-2 h-4 w-4" />
-                    {isCalculatingCost ? 'Hesaplaniyor...' : 'Maliyet Hesapla'}
+                    {isCalculatingCost ? t('detail.calculating') : t('detail.calculateCost')}
                   </Button>
                   <Button
                     onClick={() => openEditDialog(bomDetail)}
@@ -879,7 +881,7 @@ export default function BomPage() {
                     className="flex-1 rounded-lg"
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    Duzenle
+                    {t('editBtn')}
                   </Button>
                   <Button
                     onClick={() => handleDelete(bomDetail.id)}
@@ -887,7 +889,7 @@ export default function BomPage() {
                     className="flex-1 rounded-lg text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Sil
+                    {t('deleteBtn')}
                   </Button>
                 </div>
               </div>
@@ -906,18 +908,18 @@ export default function BomPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingBomId ? 'Recete Duzenle' : 'Yeni Recete Olustur'}</DialogTitle>
+            <DialogTitle>{editingBomId ? t('form.editTitle') : t('form.createTitle')}</DialogTitle>
             <DialogDescription>
               {editingBomId
-                ? 'Recete malzemelerini guncelleyin.'
-                : 'Urun secerek yeni bir uretim recetesi olusturun.'}
+                ? t('form.editDesc')
+                : t('form.createDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-5 py-4">
             {/* Product Selector */}
             <div className="grid gap-2">
-              <Label>Urun *</Label>
+              <Label>{t('form.selectProduct')}</Label>
               {editingBomId ? (
                 <Input
                   disabled
@@ -929,7 +931,7 @@ export default function BomPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Urun ara (Ticari veya Yari Mamul)..."
+                    placeholder={t('form.searchProduct')}
                     className="pl-10"
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
@@ -975,10 +977,10 @@ export default function BomPage() {
 
             {/* Notes */}
             <div className="grid gap-2">
-              <Label>Notlar</Label>
+              <Label>{t('form.notes')}</Label>
               <textarea
                 className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                placeholder="Recete notlari (opsiyonel)"
+                placeholder={t('form.notesPlaceholder')}
                 value={formNotes}
                 onChange={(e) => setFormNotes(e.target.value)}
               />
@@ -987,16 +989,16 @@ export default function BomPage() {
             {/* Materials */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Malzemeler *</Label>
+                <Label>{t('form.materials')}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addMaterialRow}>
                   <Plus className="mr-1 h-3 w-3" />
-                  Malzeme Ekle
+                  {t('form.addMaterial')}
                 </Button>
               </div>
 
               {formMaterials.length === 0 && (
                 <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-6 text-center text-sm text-muted-foreground bg-gray-50/50 dark:bg-gray-900/50">
-                  Henuz malzeme eklenmedi. &quot;Malzeme Ekle&quot; butonuna tiklayin.
+                  {t('form.noMaterials')}
                 </div>
               )}
 
@@ -1034,7 +1036,7 @@ export default function BomPage() {
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
-                          placeholder="Malzeme ara..."
+                          placeholder={t('form.searchMaterial')}
                           className="pl-10"
                           value={activeMatRowIndex === index ? materialSearch : ''}
                           onChange={(e) => {
@@ -1071,7 +1073,7 @@ export default function BomPage() {
                   {/* Quantity, waste, remove */}
                   <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
                     <div className="grid gap-1">
-                      <Label className="text-xs text-muted-foreground">Miktar</Label>
+                      <Label className="text-xs text-muted-foreground">{t('form.quantity')}</Label>
                       <Input
                         type="number"
                         min="0.01"
@@ -1083,7 +1085,7 @@ export default function BomPage() {
                       />
                     </div>
                     <div className="grid gap-1">
-                      <Label className="text-xs text-muted-foreground">Fire %</Label>
+                      <Label className="text-xs text-muted-foreground">{t('form.waste')}</Label>
                       <Input
                         type="number"
                         min="0"
@@ -1112,14 +1114,14 @@ export default function BomPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
-              Iptal
+              {t('form.cancel')}
             </Button>
             <Button onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting
-                ? 'Kaydediliyor...'
+                ? t('form.saving')
                 : editingBomId
-                  ? 'Guncelle'
-                  : 'Recete Olustur'}
+                  ? t('form.update')
+                  : t('form.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
