@@ -106,18 +106,25 @@ export default function ProposalsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="h-8 w-48 bg-muted animate-pulse rounded-xl" />
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800" />
-          ))}
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-violet-600 to-purple-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
+            <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg mt-2" />
+            <div className="h-11 bg-white/10 animate-pulse rounded-xl mt-4" />
+          </div>
         </div>
-        <div className="h-12 bg-muted animate-pulse rounded-xl" />
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
-          ))}
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse rounded-2xl bg-white dark:bg-gray-900 shadow-sm" />
+            ))}
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -125,13 +132,21 @@ export default function ProposalsPage() {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6">
-        <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
-            <FileText className="h-8 w-8 text-white" />
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-violet-600 to-purple-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Teklifler</h1>
+            <p className="text-white/70 text-sm mt-1">Teklif oluştur, takip et ve yonet</p>
           </div>
-          <p className="text-base font-semibold text-red-700 dark:text-red-400">Veriler yüklenirken hata oluştu</p>
-          <p className="text-sm text-muted-foreground mt-1">Lütfen sayfayı yenileyin.</p>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4">
+          <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
+              <FileText className="h-8 w-8 text-white" />
+            </div>
+            <p className="text-base font-semibold text-red-700 dark:text-red-400">Veriler yüklenirken hata oluştu</p>
+            <p className="text-sm text-muted-foreground mt-1">Lütfen sayfayı yenileyin.</p>
+          </div>
         </div>
       </div>
     );
@@ -146,105 +161,116 @@ export default function ProposalsPage() {
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* ─── Header ─── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Teklifler</h1>
-          <p className="text-sm text-muted-foreground mt-1">Teklif oluştur, takip et ve yonet</p>
-        </div>
-        <Button
-          onClick={() => router.push(`/${locale}/proposals/new`)}
-          className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Teklif
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
+      {/* ─── Gradient Hero ─── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
-      {/* ─── Mini Stats ─── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {/* Total */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-lg shadow-blue-500/20">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-          <p className="text-xs font-medium text-blue-100">Toplam</p>
-          <p className="text-2xl font-bold mt-1">{pagination.total}</p>
-        </div>
-
-        {/* Pending */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 p-4 text-white shadow-lg shadow-sky-500/20">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-          <p className="text-xs font-medium text-sky-100">Beklemede</p>
-          <p className="text-2xl font-bold mt-1">{pendingCount}</p>
-        </div>
-
-        {/* Revize - clickable */}
-        <button
-          onClick={() => setStatusFilter(statusFilter === 'REVISION_REQUESTED' ? 'ALL' : 'REVISION_REQUESTED')}
-          className={cn(
-            'relative overflow-hidden rounded-2xl p-4 text-white shadow-lg text-left transition-all',
-            statusFilter === 'REVISION_REQUESTED'
-              ? 'bg-gradient-to-br from-orange-600 to-orange-800 shadow-orange-600/30 ring-2 ring-orange-300 dark:ring-orange-500'
-              : 'bg-gradient-to-br from-orange-500 to-orange-700 shadow-orange-500/20 hover:shadow-orange-500/30'
-          )}
-        >
-          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-          <p className="text-xs font-medium text-orange-100">Revize</p>
-          <p className="text-2xl font-bold mt-1">{revisionCount}</p>
-          {revisionCount > 0 && (
-            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
-          )}
-        </button>
-
-        {/* Accepted */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white shadow-lg shadow-emerald-500/20">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-          <p className="text-xs font-medium text-emerald-100">Kabul</p>
-          <p className="text-2xl font-bold mt-1">{acceptedCount}</p>
-        </div>
-
-        {/* Total Value */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 p-4 text-white shadow-lg shadow-violet-500/20 col-span-2 md:col-span-1">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-          <p className="text-xs font-medium text-violet-100">Toplam Deger</p>
-          <p className="text-xl font-bold mt-1 truncate">{formatAmount(totalValue)}</p>
-        </div>
-      </div>
-
-      {/* ─── Filters ─── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Teklif No, Müşteri, Başlık..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:border-blue-500 focus:ring-blue-500/20 transition-all h-11"
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl min-w-[140px] justify-between h-11 border-gray-200 dark:border-gray-800">
-              {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as any)}
-              <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+        <div className="relative max-w-7xl mx-auto space-y-4">
+          {/* Title + Actions */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Teklifler</h1>
+              <p className="text-white/70 text-sm mt-1">Teklif oluştur, takip et ve yonet</p>
+            </div>
+            <Button
+              onClick={() => router.push(`/${locale}/proposals/new`)}
+              className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20 h-11 px-6"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Teklif
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48 rounded-xl">
-            <DropdownMenuItem onClick={() => { setStatusFilter('ALL'); setCurrentPage(1); }}>
-              Tum Durumlar
-            </DropdownMenuItem>
-            {(Object.keys(STATUS_CONFIG) as ProposalStatus[]).map((status) => (
-              <DropdownMenuItem key={status} onClick={() => { setStatusFilter(status); setCurrentPage(1); }}>
-                <div className={cn('h-2 w-2 rounded-full mr-2', STATUS_CONFIG[status].dot)} />
-                {t(`status.${status}` as any)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </div>
+
+          {/* Search + Filter */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+              <Input
+                placeholder="Teklif No, Müşteri, Başlık..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="pl-10 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 focus:border-white/30 h-11"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="rounded-xl min-w-[120px] justify-between border-white/20 text-white hover:bg-white/10 h-11">
+                  {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as any)}
+                  <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 rounded-xl">
+                <DropdownMenuItem onClick={() => { setStatusFilter('ALL'); setCurrentPage(1); }}>
+                  Tum Durumlar
+                </DropdownMenuItem>
+                {(Object.keys(STATUS_CONFIG) as ProposalStatus[]).map((status) => (
+                  <DropdownMenuItem key={status} onClick={() => { setStatusFilter(status); setCurrentPage(1); }}>
+                    <div className={cn('h-2 w-2 rounded-full mr-2', STATUS_CONFIG[status].dot)} />
+                    {t(`status.${status}` as any)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
       </div>
 
-      {/* ─── Proposals List ─── */}
-      {proposals.length === 0 ? (
+      {/* ─── Content ─── */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
+        {/* ─── Mini Stats ─── */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {/* Total */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-lg shadow-blue-500/20">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+            <p className="text-xs font-medium text-blue-100">Toplam</p>
+            <p className="text-2xl font-bold mt-1">{pagination.total}</p>
+          </div>
+
+          {/* Pending */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 p-4 text-white shadow-lg shadow-sky-500/20">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+            <p className="text-xs font-medium text-sky-100">Beklemede</p>
+            <p className="text-2xl font-bold mt-1">{pendingCount}</p>
+          </div>
+
+          {/* Revize - clickable */}
+          <button
+            onClick={() => setStatusFilter(statusFilter === 'REVISION_REQUESTED' ? 'ALL' : 'REVISION_REQUESTED')}
+            className={cn(
+              'relative overflow-hidden rounded-2xl p-4 text-white shadow-lg text-left transition-all',
+              statusFilter === 'REVISION_REQUESTED'
+                ? 'bg-gradient-to-br from-orange-600 to-orange-800 shadow-orange-600/30 ring-2 ring-orange-300 dark:ring-orange-500'
+                : 'bg-gradient-to-br from-orange-500 to-orange-700 shadow-orange-500/20 hover:shadow-orange-500/30'
+            )}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+            <p className="text-xs font-medium text-orange-100">Revize</p>
+            <p className="text-2xl font-bold mt-1">{revisionCount}</p>
+            {revisionCount > 0 && (
+              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
+            )}
+          </button>
+
+          {/* Accepted */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white shadow-lg shadow-emerald-500/20">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+            <p className="text-xs font-medium text-emerald-100">Kabul</p>
+            <p className="text-2xl font-bold mt-1">{acceptedCount}</p>
+          </div>
+
+          {/* Total Value */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 p-4 text-white shadow-lg shadow-violet-500/20 col-span-2 md:col-span-1">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
+            <p className="text-xs font-medium text-violet-100">Toplam Deger</p>
+            <p className="text-xl font-bold mt-1 truncate">{formatAmount(totalValue)}</p>
+          </div>
+        </div>
+
+        {/* ─── Proposals List ─── */}
+        {proposals.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
           <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
             <FileText className="h-10 w-10 text-white" />
@@ -438,6 +464,7 @@ export default function ProposalsPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

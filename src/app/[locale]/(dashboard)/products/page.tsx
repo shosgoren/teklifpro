@@ -302,11 +302,17 @@ export default function ProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="h-8 w-32 bg-muted animate-pulse rounded-lg" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-40 bg-muted animate-pulse rounded-2xl" />
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
+            <div className="h-4 w-64 bg-white/10 animate-pulse rounded-lg mt-2" />
+            <div className="h-11 bg-white/10 animate-pulse rounded-xl mt-4" />
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
           ))}
         </div>
       </div>
@@ -315,74 +321,101 @@ export default function ProductsPage() {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6">
-        <div className="text-center py-12 text-red-600">{t('errorLoad')}</div>
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
+            <p className="text-white/70 text-sm mt-1">Ürün kataloğunu yönet</p>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4">
+          <div className="text-center py-12 text-red-600 bg-white dark:bg-gray-900 rounded-xl shadow-sm">{t('errorLoad')}</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={() => setIsBulkPriceOpen(true)} variant="outline" size="sm" className="rounded-xl">
-            <Percent className="mr-2 h-4 w-4" />
-            {t('bulkPrice')}
-          </Button>
-          <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm" className="rounded-xl">
-            <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-            {t('sync')}
-          </Button>
-          <Button onClick={() => setIsAddDialogOpen(true)} size="sm"
-            className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-lg shadow-amber-500/25">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('newProduct')}
-          </Button>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
+      {/* Gradient Hero */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
+
+        <div className="relative max-w-7xl mx-auto space-y-4">
+          {/* Title + Actions */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
+              <p className="text-white/70 text-sm mt-1">Ürün kataloğunu yönet</p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={() => setIsBulkPriceOpen(true)} variant="outline" size="sm"
+                className="rounded-xl border-white/20 text-white hover:bg-white/10 hover:text-white">
+                <Percent className="mr-2 h-4 w-4" />
+                {t('bulkPrice')}
+              </Button>
+              <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm"
+                className="rounded-xl border-white/20 text-white hover:bg-white/10 hover:text-white">
+                <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
+                {t('sync')}
+              </Button>
+              <Button onClick={() => setIsAddDialogOpen(true)} size="sm"
+                className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('newProduct')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Search + Filter + View Toggle */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+              <Input placeholder={t('searchPlaceholder')}
+                className="pl-10 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 focus:border-white/30"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="rounded-xl min-w-[140px] justify-between border-white/20 text-white hover:bg-white/10 hover:text-white">
+                  <Filter className="mr-2 h-4 w-4" />
+                  {filterProductType === 'all' ? t('all') : (PRODUCT_TYPE_LABELS[filterProductType] || filterProductType)}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {PRODUCT_TYPE_OPTIONS.map((opt) => (
+                  <DropdownMenuCheckboxItem key={opt.value} checked={filterProductType === opt.value}
+                    onCheckedChange={() => { setFilterProductType(opt.value); setCurrentPage(1); }}>
+                    {opt.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* View Toggle */}
+            <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden">
+              <button
+                onClick={() => toggleViewMode('table')}
+                className={cn('p-2.5 transition-colors', viewMode === 'table' ? 'bg-white/30 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white')}
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => toggleViewMode('grid')}
+                className={cn('p-2.5 transition-colors', viewMode === 'grid' ? 'bg-white/30 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white')}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Filters + View Toggle */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={t('searchPlaceholder')} className="pl-10 rounded-xl" value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl min-w-[140px] justify-between">
-              <Filter className="mr-2 h-4 w-4" />
-              {filterProductType === 'all' ? t('all') : (PRODUCT_TYPE_LABELS[filterProductType] || filterProductType)}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {PRODUCT_TYPE_OPTIONS.map((opt) => (
-              <DropdownMenuCheckboxItem key={opt.value} checked={filterProductType === opt.value}
-                onCheckedChange={() => { setFilterProductType(opt.value); setCurrentPage(1); }}>
-                {opt.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* View Toggle */}
-        <div className="hidden md:flex items-center border rounded-xl overflow-hidden">
-          <button
-            onClick={() => toggleViewMode('table')}
-            className={cn('p-2.5 transition-colors', viewMode === 'table' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-muted-foreground hover:bg-muted')}
-          >
-            <List className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => toggleViewMode('grid')}
-            className={cn('p-2.5 transition-colors', viewMode === 'grid' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-muted-foreground hover:bg-muted')}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
 
       {products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
@@ -768,6 +801,7 @@ export default function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

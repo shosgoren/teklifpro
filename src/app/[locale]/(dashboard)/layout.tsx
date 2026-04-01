@@ -181,6 +181,19 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const isDark = theme === 'dark'
   const isSettingsPage = isActive('/settings')
 
+  // Gradient colors per page
+  const pageGradients: Record<string, { from: string; to: string }> = {
+    dashboard: { from: 'from-blue-600', to: 'to-indigo-700' },
+    proposals: { from: 'from-violet-600', to: 'to-purple-700' },
+    customers: { from: 'from-teal-500', to: 'to-cyan-600' },
+    products: { from: 'from-amber-500', to: 'to-orange-600' },
+    analytics: { from: 'from-rose-500', to: 'to-pink-600' },
+  }
+  const activeNavItem = navigationItems.find(item => isActive(item.href))
+  const activePageKey = activeNavItem?.nameKey || 'dashboard'
+  const pageGradient = pageGradients[activePageKey]
+  const hasGradientHeader = !!pageGradient && !isSettingsPage
+
   const mobilePrimaryItems = navigationItems.slice(0, MOBILE_PRIMARY_COUNT)
   const mobileSecondaryItems = navigationItems.slice(MOBILE_PRIMARY_COUNT)
   const isSecondaryActive = mobileSecondaryItems.some(item => isActive(item.href))
@@ -318,31 +331,20 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className="flex flex-col flex-1 min-w-0 relative">
         {/* Top Bar */}
-        <header className={`px-4 md:px-8 py-3 transition-colors duration-300 ${
-          isSettingsPage
-            ? 'absolute top-0 left-0 right-0 z-20 bg-transparent'
-            : 'relative z-10 bg-white/80 dark:bg-gradient-to-r dark:from-slate-900/80 dark:to-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-lg'
-        }`}>
+        <header className={`px-4 md:px-8 py-3 transition-colors duration-300 absolute top-0 left-0 right-0 z-20 bg-transparent`}>
           <div className="flex items-center justify-between">
             {/* Title */}
             <div className="flex items-center gap-3 min-w-0">
               {(() => {
-                const activeItem = navigationItems.find(item => isActive(item.href))
-                const ActiveIcon = activeItem?.icon
+                const ActiveIcon = activeNavItem?.icon
                 return ActiveIcon ? (
-                  <div className={`hidden sm:flex p-1.5 rounded-lg ${
-                    isSettingsPage
-                      ? 'bg-white/20 text-white'
-                      : `${activeItem?.iconColor} ${activeItem?.iconColorDark} bg-slate-100 dark:bg-slate-800/50`
-                  }`}>
+                  <div className="hidden sm:flex p-1.5 rounded-lg bg-white/20 text-white">
                     <ActiveIcon className="w-4 h-4" />
                   </div>
                 ) : null
               })()}
-              <h2 className={`text-lg font-semibold truncate ${
-                isSettingsPage ? 'text-white' : 'text-slate-900 dark:text-white'
-              }`}>
-                {labels[navigationItems.find(item => isActive(item.href))?.nameKey || 'dashboard'] || 'Dashboard'}
+              <h2 className="text-lg font-semibold truncate text-white">
+                {labels[activePageKey] || 'Dashboard'}
               </h2>
             </div>
 
@@ -351,11 +353,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               {mounted && (
                 <button
                   onClick={() => setTheme(isDark ? 'light' : 'dark')}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    isSettingsPage
-                      ? 'text-white/80 hover:bg-white/10 hover:text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                  }`}
+                  className="p-2 rounded-lg transition-colors duration-200 text-white/80 hover:bg-white/10 hover:text-white"
                 >
                   {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
@@ -364,11 +362,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               <div className="relative" ref={langMenuRef}>
                 <button
                   onClick={() => setLangMenuOpen(!langMenuOpen)}
-                  className={`flex items-center gap-1 px-2 py-2 rounded-lg transition-colors duration-200 text-sm font-medium ${
-                    isSettingsPage
-                      ? 'text-white/80 hover:bg-white/10 hover:text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                  }`}
+                  className="flex items-center gap-1 px-2 py-2 rounded-lg transition-colors duration-200 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
                 >
                   <Globe className="w-4 h-4" />
                   <span className="uppercase hidden sm:inline">{locale}</span>
@@ -399,11 +393,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               {/* Desktop user menu */}
               <button
                 onClick={handleLogout}
-                className={`hidden md:flex p-2 rounded-lg transition-colors duration-200 ${
-                  isSettingsPage
-                    ? 'text-white/80 hover:bg-white/10 hover:text-white'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                }`}
+                className="hidden md:flex p-2 rounded-lg transition-colors duration-200 text-white/80 hover:bg-white/10 hover:text-white"
                 title={t('signOut')}
               >
                 <LogOut className="w-5 h-5" />
@@ -413,18 +403,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content - add bottom padding on mobile for tab bar */}
-        <main className={`flex-1 overflow-y-auto ${
-          isSettingsPage
-            ? ''
-            : 'bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950'
-        }`}>
-          {isSettingsPage ? (
-            children
-          ) : (
-            <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
-              {children}
-            </div>
-          )}
+        <main className="flex-1 overflow-y-auto">
+          {children}
         </main>
       </div>
 

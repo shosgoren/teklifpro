@@ -343,14 +343,21 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="h-8 w-48 bg-muted animate-pulse rounded-lg" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 bg-muted animate-pulse rounded-2xl" />
-          ))}
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
+            <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg mt-2" />
+          </div>
         </div>
-        <div className="h-64 bg-muted animate-pulse rounded-2xl" />
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-28 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
+            ))}
+          </div>
+          <div className="h-64 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
+        </div>
       </div>
     );
   }
@@ -718,62 +725,74 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* ─── Welcome Header ─── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            {t('welcome')} 👋
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            {t('currentStatus')}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleSyncParasut}
-            variant="outline"
-            size="sm"
-            disabled={isSyncing}
-            className="rounded-xl"
-          >
-            <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-            {t('sync')}
-          </Button>
-          <Button
-            onClick={() => router.push(`/${locale}/proposals/new`)}
-            size="sm"
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t('newProposal')}
-          </Button>
-        </div>
-      </motion.div>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
+      {/* Gradient Hero */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
-      {/* ─── Draggable Widgets ─── */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
-          <div className="space-y-6">
-            {widgetOrder.map((widgetId) => (
-              <SortableWidget key={widgetId} id={widgetId}>
-                {widgetMap[widgetId]}
-              </SortableWidget>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+        <div className="relative max-w-7xl mx-auto">
+          {/* ─── Welcome Header ─── */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                {t('welcome')} 👋
+              </h1>
+              <p className="text-white/70 mt-1">
+                {t('currentStatus')}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSyncParasut}
+                variant="outline"
+                size="sm"
+                disabled={isSyncing}
+                className="rounded-xl border-white/20 text-white hover:bg-white/10"
+              >
+                <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
+                {t('sync')}
+              </Button>
+              <Button
+                onClick={() => router.push(`/${locale}/proposals/new`)}
+                size="sm"
+                className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t('newProposal')}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
-      {/* ─── FAB ─── */}
-      <FloatingActionButton locale={locale} lastProposalId={lastProposalId} />
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
+        {/* ─── Draggable Widgets ─── */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
+            <div className="space-y-6">
+              {widgetOrder.map((widgetId) => (
+                <SortableWidget key={widgetId} id={widgetId}>
+                  {widgetMap[widgetId]}
+                </SortableWidget>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        {/* ─── FAB ─── */}
+        <FloatingActionButton locale={locale} lastProposalId={lastProposalId} />
+      </div>
     </div>
   );
 }

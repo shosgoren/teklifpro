@@ -218,11 +218,17 @@ export default function CustomersPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-6">
-        <div className="h-8 w-40 bg-muted animate-pulse rounded-lg" />
-        <div className="space-y-3">
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-teal-500 to-cyan-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
+            <div className="h-4 w-64 bg-white/10 animate-pulse rounded-lg mt-2" />
+            <div className="h-11 bg-white/10 animate-pulse rounded-xl mt-4" />
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-20 bg-muted animate-pulse rounded-2xl" />
+            <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
           ))}
         </div>
       </div>
@@ -231,68 +237,92 @@ export default function CustomersPage() {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-950/40 dark:to-rose-950/40 rounded-2xl flex items-center justify-center mb-4">
-            <AlertCircle className="w-8 h-8 text-red-500" />
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gradient-to-br from-teal-500 to-cyan-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
           </div>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('errorLoad')}</p>
-          <p className="text-sm text-gray-400">{t('errorLoadDesc')}</p>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4">
+          <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-2xl shadow-sm">
+            <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-950/40 dark:to-rose-950/40 rounded-2xl flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('errorLoad')}</p>
+            <p className="text-sm text-gray-400">{t('errorLoadDesc')}</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('title')}</h1>
-        <div className="flex gap-2">
-          <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm" className="rounded-xl">
-            <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
-            {t('sync')}
-          </Button>
-          <Button onClick={() => setIsAddDialogOpen(true)} size="sm"
-            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25">
-            <Plus className="mr-2 h-4 w-4" />
-            {t('newCustomer')}
-          </Button>
+    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
+      {/* Gradient Hero */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-teal-500 to-cyan-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
+
+        <div className="relative max-w-7xl mx-auto space-y-4">
+          {/* Title + Actions */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
+              <p className="text-white/70 text-sm mt-1">{t('subtitle') || 'Müşteri bilgilerini yönet ve takip et'}</p>
+            </div>
+            <div className="flex gap-2">
+              {/* Sync button - glass style */}
+              <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm"
+                className="rounded-xl border-white/20 text-white hover:bg-white/10 hover:text-white">
+                <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
+                {t('sync')}
+              </Button>
+              {/* Add Customer button - glass style */}
+              <Button onClick={() => setIsAddDialogOpen(true)} size="sm"
+                className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('newCustomer')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Search + Filter */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+              <Input
+                placeholder={t('searchPlaceholder')}
+                className="pl-10 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 focus:border-white/30"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="rounded-xl min-w-[120px] justify-between border-white/20 text-white hover:bg-white/10 hover:text-white">
+                  <Filter className="mr-2 h-4 w-4" />
+                  {filterLabels[filterStatus]}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {(['all', 'active', 'inactive'] as FilterStatus[]).map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={filterStatus === status}
+                    onCheckedChange={() => { setFilterStatus(status); setCurrentPage(1); }}
+                  >
+                    {filterLabels[status]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder={t('searchPlaceholder')}
-            className="pl-10 rounded-xl"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl min-w-[120px] justify-between">
-              <Filter className="mr-2 h-4 w-4" />
-              {filterLabels[filterStatus]}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {(['all', 'active', 'inactive'] as FilterStatus[]).map((status) => (
-              <DropdownMenuCheckboxItem
-                key={status}
-                checked={filterStatus === status}
-                onCheckedChange={() => { setFilterStatus(status); setCurrentPage(1); }}
-              >
-                {filterLabels[status]}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
       {/* Customers List */}
       {customers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
@@ -464,6 +494,7 @@ export default function CustomersPage() {
           )}
         </div>
       )}
+      </div>
 
       {/* Add Customer Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
