@@ -696,7 +696,19 @@
     "stockHeader": "Stok",
     "cost": "Maliyet",
     "vatRate": "KDV %",
-    "category": "Kategori"
+    "category": "Kategori",
+    "bulkPrice": "Toplu Fiyat",
+    "bulkPriceTitle": "Toplu Fiyat Güncelleme",
+    "bulkPriceDescription": "Seçili ürünlerin fiyatlarını toplu olarak artırın veya azaltın.",
+    "bulkPriceField": "Güncellenecek Fiyat",
+    "bulkPricePercent": "Yüzde Oranı",
+    "bulkPriceFilter": "Ürün Türü Filtresi",
+    "bulkIncrease": "Artır",
+    "bulkDecrease": "Azalt",
+    "bulkPriceApply": "Uygula",
+    "bulkPriceConfirm": "Tüm eşleşen ürünlerin fiyatları %{percentage} {direction} edilecek. Bu işlem geri alınamaz.",
+    "bulkPriceSuccess": "{count} ürün fiyatı güncellendi",
+    "description": "Açıklama"
   },
   "stockPage": {
     "title": "Stok Yönetimi",

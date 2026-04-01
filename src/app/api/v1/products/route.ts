@@ -146,6 +146,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         parasutId: true,
         lastSyncAt: true,
         createdAt: true,
+        imageUrl: true,
+        trackStock: true,
+        stockQuantity: true,
       },
     });
 
@@ -167,6 +170,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       syncedFromParasut: !!p.parasutId,
       lastSyncAt: p.lastSyncAt?.toISOString?.() || null,
       createdAt: p.createdAt.toISOString(),
+      imageUrl: p.imageUrl || null,
+      trackStock: p.trackStock ?? false,
+      stockQuantity: p.stockQuantity?.toNumber?.() ?? 0,
     }));
 
     return NextResponse.json({
@@ -264,6 +270,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
         parasutId: true,
         lastSyncAt: true,
         createdAt: true,
+        imageUrl: true,
+        trackStock: true,
+        stockQuantity: true,
       },
     });
 

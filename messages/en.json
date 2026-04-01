@@ -696,7 +696,19 @@
     "stockHeader": "Stock",
     "cost": "Cost",
     "vatRate": "VAT %",
-    "category": "Category"
+    "category": "Category",
+    "bulkPrice": "Bulk Price",
+    "bulkPriceTitle": "Bulk Price Update",
+    "bulkPriceDescription": "Increase or decrease prices of matching products in bulk.",
+    "bulkPriceField": "Price Field to Update",
+    "bulkPricePercent": "Percentage",
+    "bulkPriceFilter": "Product Type Filter",
+    "bulkIncrease": "Increase",
+    "bulkDecrease": "Decrease",
+    "bulkPriceApply": "Apply",
+    "bulkPriceConfirm": "All matching product prices will be {direction}d by {percentage}%. This action cannot be undone.",
+    "bulkPriceSuccess": "{count} product prices updated",
+    "description": "Description"
   },
   "stockPage": {
     "title": "Stock Management",
