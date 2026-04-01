@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
-import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3 } from 'lucide-react';
+import KanbanBoard from './kanban-board';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -49,6 +50,17 @@ export default function ProposalsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('teklifpro-proposals-view') as 'list' | 'kanban') || 'list';
+    }
+    return 'list';
+  });
+
+  const toggleViewMode = (mode: 'list' | 'kanban') => {
+    setViewMode(mode);
+    localStorage.setItem('teklifpro-proposals-view', mode);
+  };
 
   const queryParams = new URLSearchParams({
     page: currentPage.toString(),
@@ -61,6 +73,25 @@ export default function ProposalsPage() {
     `/api/v1/proposals?${queryParams.toString()}`,
     fetcher
   );
+
+  // Kanban: fetch all proposals (no pagination, no filter)
+  const kanbanParams = new URLSearchParams({ page: '1', limit: '100', ...(searchTerm && { search: searchTerm }) });
+  const { data: kanbanData, mutate: kanbanMutate } = useSWR(
+    viewMode === 'kanban' ? `/api/v1/proposals?${kanbanParams.toString()}` : null,
+    fetcher
+  );
+  const kanbanProposals = kanbanData?.data?.proposals ?? [];
+
+  const handleStatusChange = async (proposalId: string, newStatus: ProposalStatus) => {
+    await fetch(`/api/v1/proposals/${proposalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    }).then(res => {
+      if (!res.ok) throw new Error('Status update failed');
+      return res.json();
+    });
+  };
 
   const proposals = data?.data?.proposals ?? [];
   const pagination = data?.data?.pagination ?? { total: 0, totalPages: 1, page: 1 };
@@ -175,13 +206,30 @@ export default function ProposalsPage() {
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Teklifler</h1>
               <p className="text-white/70 text-sm mt-1">Teklif oluştur, takip et ve yonet</p>
             </div>
-            <Button
-              onClick={() => router.push(`/${locale}/proposals/new`)}
-              className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20 h-11 px-6"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Yeni Teklif
-            </Button>
+            <div className="flex gap-2 items-center">
+              {/* View Toggle */}
+              <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => toggleViewMode('list')}
+                  className={cn('p-2.5 transition-colors', viewMode === 'list' ? 'bg-white/30 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white')}
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => toggleViewMode('kanban')}
+                  className={cn('p-2.5 transition-colors', viewMode === 'kanban' ? 'bg-white/30 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white')}
+                >
+                  <Columns3 className="h-4 w-4" />
+                </button>
+              </div>
+              <Button
+                onClick={() => router.push(`/${locale}/proposals/new`)}
+                className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20 h-11 px-6"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Yeni Teklif
+              </Button>
+            </div>
           </div>
 
           {/* Search + Filter */}
@@ -269,8 +317,14 @@ export default function ProposalsPage() {
           </div>
         </div>
 
-        {/* ─── Proposals List ─── */}
-        {proposals.length === 0 ? (
+        {/* ─── Kanban or List View ─── */}
+        {viewMode === 'kanban' ? (
+          <KanbanBoard
+            proposals={kanbanProposals}
+            onStatusChange={handleStatusChange}
+            mutate={() => { kanbanMutate(); mutate(); }}
+          />
+        ) : proposals.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
           <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
             <FileText className="h-10 w-10 text-white" />
@@ -468,3 +522,4 @@ export default function ProposalsPage() {
     </div>
   );
 }
+
