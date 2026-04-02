@@ -321,6 +321,11 @@
     "emailWillSentTo": "E-posta şu adrese gönderilecek:",
     "whatsappMessageWillSentTo": "WhatsApp mesajı şu numaraya gönderilecek:",
     "saved": "Teklif başarıyla kaydedildi.",
+    "updated": "Teklif başarıyla güncellendi.",
+    "editProposal": "Teklifi Düzenle",
+    "editDescription": "Mevcut teklif bilgilerini güncelleyin.",
+    "updateProposal": "Teklifi Güncelle",
+    "backToList": "Tekliflere Dön",
     "error": "Teklif oluşturulurken bir hata oluştu.",
     "previous": "Önceki",
     "next": "Sonraki",
@@ -710,7 +715,13 @@
     "bulkPriceApply": "Uygula",
     "bulkPriceConfirm": "Tüm eşleşen ürünlerin fiyatları %{percentage} {direction} edilecek. Bu işlem geri alınamaz.",
     "bulkPriceSuccess": "{count} ürün fiyatı güncellendi",
-    "description": "Açıklama"
+    "description": "Açıklama",
+    "editTitle": "Ürünü Düzenle",
+    "editDescription": "Ürün bilgilerini güncelleyin.",
+    "editSuccess": "{name} başarıyla güncellendi",
+    "editError": "Ürün güncellenirken bir hata oluştu",
+    "saving": "Kaydediliyor...",
+    "saveChanges": "Değişiklikleri Kaydet"
   },
   "stockPage": {
     "title": "Stok Yönetimi",

@@ -321,6 +321,11 @@
     "emailWillSentTo": "Email will be sent to:",
     "whatsappMessageWillSentTo": "WhatsApp message will be sent to:",
     "saved": "Proposal saved successfully.",
+    "updated": "Proposal updated successfully.",
+    "editProposal": "Edit Proposal",
+    "editDescription": "Update existing proposal information.",
+    "updateProposal": "Update Proposal",
+    "backToList": "Back to Proposals",
     "error": "An error occurred while creating the proposal.",
     "previous": "Previous",
     "next": "Next",
@@ -710,7 +715,13 @@
     "bulkPriceApply": "Apply",
     "bulkPriceConfirm": "All matching product prices will be {direction}d by {percentage}%. This action cannot be undone.",
     "bulkPriceSuccess": "{count} product prices updated",
-    "description": "Description"
+    "description": "Description",
+    "editTitle": "Edit Product",
+    "editDescription": "Update product information.",
+    "editSuccess": "{name} updated successfully",
+    "editError": "Error occurred while updating product",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes"
   },
   "stockPage": {
     "title": "Stock Management",

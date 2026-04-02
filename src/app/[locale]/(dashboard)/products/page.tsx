@@ -156,6 +156,12 @@ export default function ProductsPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editProduct, setEditProduct] = useState({
+    code: '', name: '', category: '', productType: 'COMMERCIAL', unit: 'Adet',
+    listPrice: 0, costPrice: 0, minStockLevel: 0, vatRate: 18, description: '',
+  });
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -260,6 +266,58 @@ export default function ProductsPage() {
       setIsSubmitting(false);
     }
   }, [newProduct, mutate, t]);
+
+  const handleEditProduct = useCallback((product: Product) => {
+    setEditingProduct(product);
+    setEditProduct({
+      code: product.code || '',
+      name: product.name,
+      category: product.category || '',
+      productType: product.productType,
+      unit: product.unit,
+      listPrice: product.listPrice,
+      costPrice: product.costPrice,
+      minStockLevel: product.minStockLevel,
+      vatRate: product.vatRate,
+      description: product.description || '',
+    });
+    setIsEditDialogOpen(true);
+  }, []);
+
+  const handleUpdateProduct = useCallback(async () => {
+    if (!editingProduct) return;
+    if (!editProduct.code || !editProduct.name || !editProduct.unit) {
+      toast.error(t('requiredFields'));
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/v1/products/${editingProduct.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...editProduct,
+          listPrice: Number(editProduct.listPrice),
+          costPrice: Number(editProduct.costPrice),
+          minStockLevel: Number(editProduct.minStockLevel),
+          vatRate: Number(editProduct.vatRate),
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success(t('editSuccess', { name: editProduct.name }));
+        setIsEditDialogOpen(false);
+        setEditingProduct(null);
+        mutate();
+      } else {
+        toast.error(data.error || t('editError'));
+      }
+    } catch {
+      toast.error(t('editError'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [editingProduct, editProduct, mutate, t]);
 
   const handleBulkPriceUpdate = useCallback(async () => {
     const direction = bulkPrice.percentage >= 0 ? t('bulkIncrease') : t('bulkDecrease');
@@ -447,7 +505,7 @@ export default function ProductsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/products/${product.id}`); }}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProduct(product); }}>
                           <Edit className="mr-2 h-4 w-4" /> {t('editBtn')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }} className="text-red-600">
@@ -520,7 +578,7 @@ export default function ProductsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/products/${product.id}`); }}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProduct(product); }}>
                             <Edit className="mr-2 h-4 w-4" /> {t('editBtn')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }} className="text-red-600">
@@ -607,7 +665,7 @@ export default function ProductsPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); router.push(`/${locale}/products/${product.id}`); }}>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProduct(product); }}>
                                   <Edit className="mr-2 h-4 w-4" /> {t('editBtn')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteProduct(product.id); }} className="text-red-600">
@@ -727,6 +785,92 @@ export default function ProductsPage() {
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>{t('cancel')}</Button>
             <Button onClick={handleAddProduct} disabled={isSubmitting}>
               {isSubmitting ? t('adding') : t('addProduct')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Edit Product Dialog ─── */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) setEditingProduct(null); }}>
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('editTitle')}</DialogTitle>
+            <DialogDescription>{t('editDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-product-code">{t('productCodeLabel')}</Label>
+              <Input id="edit-product-code" placeholder={t('productCodePlaceholder')} value={editProduct.code}
+                onChange={(e) => setEditProduct((p) => ({ ...p, code: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-product-name">{t('productNameLabel')}</Label>
+              <Input id="edit-product-name" placeholder={t('productNamePlaceholder')} value={editProduct.name}
+                onChange={(e) => setEditProduct((p) => ({ ...p, name: e.target.value }))} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-product-type">{t('productTypeLabel')}</Label>
+              <select id="edit-product-type" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={editProduct.productType} onChange={(e) => setEditProduct((p) => ({ ...p, productType: e.target.value }))}>
+                <option value="COMMERCIAL">{t('commercial')}</option>
+                <option value="RAW_MATERIAL">{t('rawMaterial')}</option>
+                <option value="SEMI_FINISHED">{t('semiFinished')}</option>
+                <option value="CONSUMABLE">{t('consumable')}</option>
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-product-category">{t('category')}</Label>
+              <select id="edit-product-category" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={editProduct.category} onChange={(e) => setEditProduct((p) => ({ ...p, category: e.target.value }))}>
+                <option value="">{t('selectCategory')}</option>
+                <option value="Yazılım">{t('software')}</option>
+                <option value="Hizmet">{t('service')}</option>
+                <option value="Donanım">{t('hardware')}</option>
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-product-unit">{t('unitLabel')}</Label>
+              <select id="edit-product-unit" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={editProduct.unit} onChange={(e) => setEditProduct((p) => ({ ...p, unit: e.target.value }))}>
+                <option value="Adet">{t('unitPiece')}</option>
+                <option value="Saat">{t('unitHour')}</option>
+                <option value="Gün">{t('unitDay')}</option>
+                <option value="Ay">{t('unitMonth')}</option>
+                <option value="Yıl">{t('unitYear')}</option>
+                <option value="Paket">{t('unitPackage')}</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-product-price">{t('listPriceLabel')}</Label>
+                <Input id="edit-product-price" type="number" min="0" step="0.01" placeholder="0.00"
+                  value={editProduct.listPrice || ''} onChange={(e) => setEditProduct((p) => ({ ...p, listPrice: parseFloat(e.target.value) || 0 }))} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-product-vat">{t('vatRateLabel')}</Label>
+                <select id="edit-product-vat" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={editProduct.vatRate} onChange={(e) => setEditProduct((p) => ({ ...p, vatRate: parseInt(e.target.value) }))}>
+                  <option value={0}>%0</option>
+                  <option value={1}>%1</option>
+                  <option value={8}>%8</option>
+                  <option value={10}>%10</option>
+                  <option value={18}>%18</option>
+                  <option value={20}>%20</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-product-description">{t('descriptionLabel')}</Label>
+              <textarea id="edit-product-description"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                placeholder={t('descriptionPlaceholder')} value={editProduct.description}
+                onChange={(e) => setEditProduct((p) => ({ ...p, description: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingProduct(null); }} disabled={isSubmitting}>{t('cancel')}</Button>
+            <Button onClick={handleUpdateProduct} disabled={isSubmitting}>
+              {isSubmitting ? t('saving') : t('saveChanges')}
             </Button>
           </DialogFooter>
         </DialogContent>
