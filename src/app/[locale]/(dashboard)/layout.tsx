@@ -329,9 +329,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1 min-w-0 relative">
-        {/* Top Bar */}
-        <header className={`px-4 md:px-8 py-3 transition-colors duration-300 absolute top-0 left-0 right-0 z-20 bg-transparent`}>
+      <div className="flex flex-col flex-1 min-w-0">
+        <main className="flex-1 overflow-y-auto">
+        {/* Top Bar - sticky, negative margin-bottom so gradient extends behind it */}
+        <header className="sticky top-0 z-20 px-4 md:px-8 py-3 -mb-[52px] backdrop-blur-xl bg-gradient-to-r from-black/5 to-black/10 dark:from-black/20 dark:to-black/30">
           <div className="flex items-center justify-between">
             {/* Title */}
             <div className="flex items-center gap-3 min-w-0">
@@ -402,8 +403,6 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* Page Content - add bottom padding on mobile for tab bar */}
-        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
