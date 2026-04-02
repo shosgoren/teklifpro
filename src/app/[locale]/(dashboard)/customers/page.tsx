@@ -265,16 +265,12 @@ export default function CustomersPage() {
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative max-w-7xl mx-auto space-y-4">
-          {/* Title + Actions */}
+          {/* Subtitle + Actions */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
-              <p className="text-white/70 text-sm mt-1">{t('subtitle') || 'Müşteri bilgilerini yönet ve takip et'}</p>
-            </div>
+            <p className="text-white/70 text-sm">Müşteri bilgilerini yönet ve takip et</p>
             <div className="flex gap-2">
-              {/* Sync button - glass style */}
-              <Button onClick={handleSync} disabled={isSyncing} variant="outline" size="sm"
-                className="rounded-xl border-white/20 text-white hover:bg-white/10 hover:text-white">
+              <Button onClick={handleSync} disabled={isSyncing} size="sm"
+                className="rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20">
                 <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
                 {t('sync')}
               </Button>
@@ -300,7 +296,7 @@ export default function CustomersPage() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="rounded-xl min-w-[120px] justify-between border-white/20 text-white hover:bg-white/10 hover:text-white">
+                <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20">
                   <Filter className="mr-2 h-4 w-4" />
                   {filterLabels[filterStatus]}
                 </Button>

@@ -739,21 +739,15 @@ export default function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-                {t('welcome')} 👋
-              </h1>
-              <p className="text-white/70 mt-1">
-                {t('currentStatus')}
-              </p>
-            </div>
+            <p className="text-white/70">
+              {t('currentStatus')}
+            </p>
             <div className="flex gap-2">
               <Button
                 onClick={handleSyncParasut}
-                variant="outline"
                 size="sm"
                 disabled={isSyncing}
-                className="rounded-xl border-white/20 text-white hover:bg-white/10"
+                className="rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20"
               >
                 <RefreshCw className={cn('mr-2 h-4 w-4', isSyncing && 'animate-spin')} />
                 {t('sync')}

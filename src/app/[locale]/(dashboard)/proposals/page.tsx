@@ -200,12 +200,9 @@ export default function ProposalsPage() {
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative max-w-7xl mx-auto space-y-4">
-          {/* Title + Actions */}
+          {/* Subtitle + Actions */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Teklifler</h1>
-              <p className="text-white/70 text-sm mt-1">Teklif oluştur, takip et ve yonet</p>
-            </div>
+            <p className="text-white/70 text-sm">Teklif oluştur, takip et ve yönet</p>
             <div className="flex gap-2 items-center">
               {/* View Toggle */}
               <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden">
@@ -245,7 +242,7 @@ export default function ProposalsPage() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="rounded-xl min-w-[120px] justify-between border-white/20 text-white hover:bg-white/10 h-11">
+                <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20 h-11">
                   {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as any)}
                   <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>

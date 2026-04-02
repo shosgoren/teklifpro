@@ -355,10 +355,7 @@ export default function AnalyticsDashboard() {
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative max-w-7xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
-            {t('title')}
-          </h1>
-          <p className="text-white/70 text-sm mt-1">{t('subtitle')}</p>
+          <p className="text-white/70 text-sm">{t('subtitle')}</p>
         </div>
       </div>
 
