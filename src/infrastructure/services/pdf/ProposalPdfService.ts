@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf';
 import { Proposal, ProposalItem } from '@/domain/entities/Proposal';
 import { Tenant } from '@/domain/entities/Tenant';
-import { ROBOTO_REGULAR_BASE64, ROBOTO_BOLD_BASE64 } from './font-data';
 
 export interface ProposalPdfOptions {
   fontSize?: number;
@@ -18,16 +17,8 @@ const BG_LIGHT = [249, 250, 251] as const; // Gray-50
 const BG_HEADER = [37, 99, 235] as const; // Blue-600
 const WHITE = [255, 255, 255] as const;
 
-function loadFonts(pdf: jsPDF) {
-  try {
-    pdf.addFileToVFS('Roboto-Regular.ttf', ROBOTO_REGULAR_BASE64);
-    pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-    pdf.addFileToVFS('Roboto-Bold.ttf', ROBOTO_BOLD_BASE64);
-    pdf.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
-  } catch (err) {
-    console.warn('Failed to load Roboto fonts, falling back to helvetica:', err);
-  }
-}
+// Font family used throughout the PDF (helvetica supports Turkish chars in jsPDF 2.5+)
+const FONT_FAMILY = 'helvetica';
 
 export class ProposalPdfService {
   private static readonly PAGE_WIDTH = 210;
@@ -46,9 +37,7 @@ export class ProposalPdfService {
       format: 'A4',
     });
 
-    // Load Turkish-compatible fonts
-    loadFonts(pdf);
-    pdf.setFont('Roboto', 'normal');
+    pdf.setFont(FONT_FAMILY, 'normal');
 
     const margin = this.MARGIN;
     let y = margin;
@@ -90,12 +79,12 @@ export class ProposalPdfService {
 
     // Company name (white, bold)
     pdf.setTextColor(...WHITE);
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(22);
     pdf.text(tenant.name, margin, 18);
 
     // Company details under name
-    pdf.setFont('Roboto', 'normal');
+    pdf.setFont(FONT_FAMILY, 'normal');
     pdf.setFontSize(9);
     const details: string[] = [];
     if (tenant.email) details.push(tenant.email);
@@ -109,7 +98,7 @@ export class ProposalPdfService {
     }
 
     // "TEKLİF" label on the right side
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(16);
     pdf.text('TEKLİF', this.PAGE_WIDTH - margin, 18, { align: 'right' });
 
@@ -125,7 +114,7 @@ export class ProposalPdfService {
 
     pdf.setFontSize(8);
     pdf.setTextColor(...TEXT_SECONDARY);
-    pdf.setFont('Roboto', 'normal');
+    pdf.setFont(FONT_FAMILY, 'normal');
 
     const col1 = margin + 5;
     const col2 = margin + 45;
@@ -140,7 +129,7 @@ export class ProposalPdfService {
 
     // Row 1 values
     pdf.setTextColor(...TEXT_PRIMARY);
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(10);
     pdf.text(proposal.number, col1, infoBoxY + 13);
     pdf.text(this.formatDate(proposal.date), col2, infoBoxY + 13);
@@ -170,7 +159,7 @@ export class ProposalPdfService {
     y: number
   ): number {
     // Section title
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(...BRAND_DARK);
     pdf.text('Müşteri Bilgileri', margin, y);
@@ -190,54 +179,54 @@ export class ProposalPdfService {
     const labelWidth = 22;
 
     // Row 1: Company name + Tax number
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.text('Firma:', leftCol, y);
-    pdf.setFont('Roboto', 'normal');
+    pdf.setFont(FONT_FAMILY, 'normal');
     pdf.text(proposal.customer.companyName || proposal.customer.name, leftCol + labelWidth, y);
 
     if (proposal.customer.taxNumber) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Vergi No:', rightCol, y);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       pdf.text(proposal.customer.taxNumber, rightCol + labelWidth, y);
     }
     y += 5;
 
     // Row 2: Contact + Title
     if (proposal.customer.name && proposal.customer.name !== proposal.customer.companyName) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('İlgili:', leftCol, y);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       pdf.text(proposal.customer.name, leftCol + labelWidth, y);
     }
     if (proposal.customer.title) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Ünvan:', rightCol, y);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       pdf.text(proposal.customer.title, rightCol + labelWidth, y);
     }
     y += 5;
 
     // Row 3: Phone + Email
     if (proposal.customer.phone) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Telefon:', leftCol, y);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       pdf.text(proposal.customer.phone, leftCol + labelWidth, y);
     }
     if (proposal.customer.email) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('E-posta:', rightCol, y);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       pdf.text(proposal.customer.email, rightCol + labelWidth, y);
     }
     y += 5;
 
     // Row 4: Address
     if (proposal.customer.address) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Adres:', leftCol, y);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       const addressLines = pdf.splitTextToSize(proposal.customer.address, this.CONTENT_WIDTH - labelWidth);
       pdf.text(addressLines, leftCol + labelWidth, y);
       y += addressLines.length * 4;
@@ -256,7 +245,7 @@ export class ProposalPdfService {
     y: number
   ): number {
     // Section title
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(...BRAND_DARK);
     pdf.text('Teklif Kalemleri', margin, y);
@@ -285,7 +274,7 @@ export class ProposalPdfService {
     // Draw header row
     pdf.setFillColor(...BG_HEADER);
     pdf.setTextColor(...WHITE);
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(8);
 
     let x = margin;
@@ -302,7 +291,7 @@ export class ProposalPdfService {
 
     // Draw rows
     pdf.setTextColor(...TEXT_PRIMARY);
-    pdf.setFont('Roboto', 'normal');
+    pdf.setFont(FONT_FAMILY, 'normal');
     pdf.setFontSize(8);
 
     items.forEach((item, idx) => {
@@ -377,7 +366,7 @@ export class ProposalPdfService {
     pdf.setFontSize(9);
 
     // Subtotal
-    pdf.setFont('Roboto', 'normal');
+    pdf.setFont(FONT_FAMILY, 'normal');
     pdf.setTextColor(...TEXT_SECONDARY);
     pdf.text('Ara Toplam:', labelX, y);
     pdf.setTextColor(...TEXT_PRIMARY);
@@ -412,7 +401,7 @@ export class ProposalPdfService {
     pdf.setFillColor(...BRAND_PRIMARY);
     pdf.roundedRect(boxX, y - 3, boxWidth, 10, 2, 2, 'F');
     pdf.setTextColor(...WHITE);
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(11);
     pdf.text('GENEL TOPLAM', labelX, y + 4);
     pdf.text(this.formatCurrency(proposal.total), valueX, y + 4, { align: 'right' });
@@ -439,7 +428,7 @@ export class ProposalPdfService {
     }
 
     // Section title
-    pdf.setFont('Roboto', 'bold');
+    pdf.setFont(FONT_FAMILY, 'bold');
     pdf.setFontSize(11);
     pdf.setTextColor(...BRAND_DARK);
     pdf.text('Şartlar ve Koşullar', margin, y);
@@ -453,30 +442,30 @@ export class ProposalPdfService {
     pdf.setTextColor(...TEXT_PRIMARY);
 
     if (proposal.paymentTerms) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Ödeme Koşulları', margin, y);
       y += 4;
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       const lines = pdf.splitTextToSize(proposal.paymentTerms, this.CONTENT_WIDTH - 5);
       pdf.text(lines, margin + 3, y);
       y += lines.length * 4 + 4;
     }
 
     if (proposal.deliveryTerms) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Teslimat Koşulları', margin, y);
       y += 4;
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       const lines = pdf.splitTextToSize(proposal.deliveryTerms, this.CONTENT_WIDTH - 5);
       pdf.text(lines, margin + 3, y);
       y += lines.length * 4 + 4;
     }
 
     if (proposal.notes) {
-      pdf.setFont('Roboto', 'bold');
+      pdf.setFont(FONT_FAMILY, 'bold');
       pdf.text('Notlar', margin, y);
       y += 4;
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       const lines = pdf.splitTextToSize(proposal.notes, this.CONTENT_WIDTH - 5);
       pdf.text(lines, margin + 3, y);
       y += lines.length * 4;
@@ -501,7 +490,7 @@ export class ProposalPdfService {
       pdf.line(margin, footerY - 3, this.PAGE_WIDTH - margin, footerY - 3);
 
       pdf.setFontSize(7);
-      pdf.setFont('Roboto', 'normal');
+      pdf.setFont(FONT_FAMILY, 'normal');
       pdf.setTextColor(...TEXT_SECONDARY);
 
       // Left: company info
