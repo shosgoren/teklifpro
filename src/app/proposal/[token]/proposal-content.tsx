@@ -121,11 +121,45 @@ export default function ProposalContent({
 
   const currentStatus = statusDisplay[proposal.status]
 
+  const cardClass = "animate-fade-in-up"
+  const cardShadow = "shadow-sm hover:shadow-md transition-shadow"
+
   return (
     <div className="min-h-dvh bg-gray-50">
+      <style jsx global>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+          animation: fadeInUp 0.5s ease-out forwards;
+          opacity: 0;
+        }
+        .animate-fade-in-up:nth-child(1) { animation-delay: 0.1s; }
+        .animate-fade-in-up:nth-child(2) { animation-delay: 0.15s; }
+        .animate-fade-in-up:nth-child(3) { animation-delay: 0.2s; }
+        .animate-fade-in-up:nth-child(4) { animation-delay: 0.25s; }
+        .animate-fade-in-up:nth-child(5) { animation-delay: 0.3s; }
+        .animate-fade-in-up:nth-child(6) { animation-delay: 0.35s; }
+        .animate-fade-in-up:nth-child(7) { animation-delay: 0.4s; }
+        .animate-fade-in-up:nth-child(8) { animation-delay: 0.45s; }
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+          50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+        }
+        .animate-pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+        html { scroll-behavior: smooth; }
+      `}</style>
+
       {/* ─── Header ─── */}
-      <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white">
-        <div className="max-w-2xl mx-auto px-4 pt-6 pb-8 sm:px-6">
+      <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white overflow-hidden">
+        {/* Animated dot pattern */}
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        {/* Decorative circles */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
+
+        <div className="relative max-w-2xl mx-auto px-4 pt-6 pb-8 sm:px-6">
           {/* Tenant branding */}
           <div className="flex items-center gap-3 mb-6">
             {tenant.logo ? (
@@ -136,7 +170,10 @@ export default function ProposalContent({
               </div>
             )}
             <div>
-              <p className="font-bold text-lg">{tenant.name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-bold text-lg">{tenant.name}</p>
+                <svg className="w-4 h-4 text-blue-300" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+              </div>
               <p className="text-blue-200 text-xs">Teklif Sunumu</p>
             </div>
           </div>
@@ -149,12 +186,12 @@ export default function ProposalContent({
 
           {/* Date & expiry pills */}
           <div className="flex flex-wrap gap-2 mt-4">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 text-sm">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-sm">
               <Calendar className="w-3.5 h-3.5" />
               {proposal.createdDate}
             </div>
             {proposal.expiresDate && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/30 text-sm">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/30 backdrop-blur-sm border border-white/20 text-sm">
                 <Clock className="w-3.5 h-3.5" />
                 Geçerli: {proposal.expiresDate}
               </div>
@@ -166,7 +203,7 @@ export default function ProposalContent({
       <div className="max-w-2xl mx-auto px-4 sm:px-6 -mt-2 pb-32 print:pb-8">
         {/* ─── Voice Note ─── */}
         {voiceNote && (
-          <div className="mb-4">
+          <div className={`mb-4 ${cardClass}`}>
             <VoiceNotePlayer
               audioData={voiceNote.data}
               duration={voiceNote.duration}
@@ -181,7 +218,7 @@ export default function ProposalContent({
 
         {/* ─── Status Banner ─── */}
         {isResponded && currentStatus && (
-          <div className={`mb-4 p-4 rounded-2xl border ${currentStatus.bg} flex items-start gap-3`}>
+          <div className={`mb-4 p-4 rounded-2xl border ${currentStatus.bg} flex items-start gap-3 ${cardClass}`}>
             <currentStatus.icon className={`w-5 h-5 ${currentStatus.color} shrink-0 mt-0.5`} />
             <div>
               <p className={`font-bold text-sm ${currentStatus.color}`}>
@@ -199,7 +236,7 @@ export default function ProposalContent({
 
         {/* ─── Signature ─── */}
         {signature && proposal.status === 'ACCEPTED' && (
-          <div className="mb-4 p-5 bg-white rounded-2xl shadow-sm border border-emerald-100">
+          <div className={`mb-4 p-5 bg-white rounded-2xl ${cardShadow} border border-emerald-100 ${cardClass}`}>
             <div className="flex items-center gap-2 mb-3">
               <PenTool className="w-4 h-4 text-emerald-600" />
               <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Dijital İmza</p>
@@ -218,10 +255,13 @@ export default function ProposalContent({
         )}
 
         {/* ─── Customer Card ─── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Müşteri</p>
+        <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 ${cardClass}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1 h-4 rounded-full bg-blue-500" />
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Müşteri</p>
+          </div>
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0 ring-2 ring-blue-200 ring-offset-2">
               {customer.name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
@@ -248,7 +288,7 @@ export default function ProposalContent({
         {/* ─── Sender info (collapsible) ─── */}
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-3 mb-3 flex items-center justify-between text-left"
+          className={`w-full bg-white rounded-2xl ${cardShadow} border border-gray-100 px-5 py-3 mb-4 flex items-center justify-between text-left ${cardClass}`}
         >
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-gray-400" />
@@ -258,7 +298,7 @@ export default function ProposalContent({
         </button>
 
         {showDetails && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-3 space-y-2 text-sm text-gray-600">
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 space-y-2 text-sm text-gray-600 ${cardClass}`}>
             <p className="font-semibold text-gray-900">{tenant.name}</p>
             {userName && <div className="flex items-center gap-2"><User className="w-3.5 h-3.5 text-gray-400" />{userName}</div>}
             {tenant.address && <div className="flex items-start gap-2"><MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5" />{tenant.address}</div>}
@@ -269,12 +309,15 @@ export default function ProposalContent({
         )}
 
         {/* ─── Items ─── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-3">
+        <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
           <div className="px-5 py-4 border-b border-gray-100">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Ürünler / Hizmetler
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">{items.length} kalem</p>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-1 h-4 rounded-full bg-indigo-500" />
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Ürünler / Hizmetler
+              </p>
+            </div>
+            <p className="text-xs text-gray-400 ml-3">{items.length} kalem</p>
           </div>
 
           {/* Mobile: Card view */}
@@ -293,7 +336,12 @@ export default function ProposalContent({
                       <p className="text-xs text-gray-400 mt-1 ml-7">{item.description}</p>
                     )}
                   </div>
-                  <p className="font-bold text-gray-900 text-sm shrink-0">{fmt(item.lineTotal)}</p>
+                  <div className="text-right shrink-0">
+                    {item.discountRate > 0 && (
+                      <span className="text-xs text-gray-400 line-through mr-1">{fmt(item.quantity * item.unitPrice)}</span>
+                    )}
+                    <span className="font-bold text-gray-900 text-sm">{fmt(item.lineTotal)}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-4 mt-2 ml-7 text-xs text-gray-500">
                   <span>{item.quantity} {item.unit}</span>
@@ -323,7 +371,7 @@ export default function ProposalContent({
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-blue-50/50 transition-colors">
+                  <tr key={item.id} className="even:bg-gray-50/50 hover:bg-blue-50/80 transition-colors">
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-gray-900">{item.name}</p>
                       {item.description && <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>}
@@ -338,7 +386,12 @@ export default function ProposalContent({
                       )}
                     </td>
                     <td className="px-3 py-3.5 text-center">{item.vatRate}%</td>
-                    <td className="px-5 py-3.5 text-right font-bold text-gray-900">{fmt(item.lineTotal)}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      {item.discountRate > 0 && (
+                        <span className="text-xs text-gray-400 line-through mr-1">{fmt(item.quantity * item.unitPrice)}</span>
+                      )}
+                      <span className="font-bold text-gray-900">{fmt(item.lineTotal)}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -347,7 +400,7 @@ export default function ProposalContent({
         </div>
 
         {/* ─── Financial Summary ─── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-3">
+        <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 ${cardClass}`}>
           <div className="space-y-3">
             <div className="flex justify-between text-sm text-gray-600">
               <span>Ara Toplam</span>
@@ -376,10 +429,10 @@ export default function ProposalContent({
           </div>
 
           {/* Grand Total */}
-          <div className="mt-4 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white flex items-center justify-between">
+          <div className="mt-4 p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl text-white flex items-center justify-between animate-pulse-glow">
             <div>
-              <p className="text-blue-200 text-xs font-medium">Genel Toplam</p>
-              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight">{fmt(financials.grandTotal)}</p>
+              <p className="text-blue-200 text-xs font-medium uppercase tracking-wider">Genel Toplam</p>
+              <p className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">{fmt(financials.grandTotal)}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
               <FileText className="w-6 h-6" />
@@ -389,35 +442,50 @@ export default function ProposalContent({
 
         {/* ─── Notes & Terms ─── */}
         {(proposal.description || proposal.notes || proposal.paymentTerms || proposal.deliveryTerms || proposal.termsConditions) && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-3 space-y-4">
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 space-y-4 ${cardClass}`}>
             {proposal.description && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Açıklama</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proposal.description}</p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-1 h-4 rounded-full bg-blue-500" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Açıklama</p>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.description}</p>
               </div>
             )}
             {proposal.notes && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Notlar</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proposal.notes}</p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-1 h-4 rounded-full bg-amber-500" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Notlar</p>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.notes}</p>
               </div>
             )}
             {proposal.paymentTerms && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Ödeme Koşulları</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proposal.paymentTerms}</p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-1 h-4 rounded-full bg-emerald-500" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ödeme Koşulları</p>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.paymentTerms}</p>
               </div>
             )}
             {proposal.deliveryTerms && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Teslimat Koşulları</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proposal.deliveryTerms}</p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-1 h-4 rounded-full bg-violet-500" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Teslimat Koşulları</p>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.deliveryTerms}</p>
               </div>
             )}
             {proposal.termsConditions && (
               <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Genel Şartlar</p>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proposal.termsConditions}</p>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-1 h-4 rounded-full bg-gray-400" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Genel Şartlar</p>
+                </div>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.termsConditions}</p>
               </div>
             )}
           </div>
@@ -425,7 +493,7 @@ export default function ProposalContent({
 
         {/* ─── EFT / Havale Bank Info ─── */}
         {tenant.bankAccounts && tenant.bankAccounts.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-3">
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
             <button
               onClick={() => setShowBankInfo(!showBankInfo)}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
@@ -481,22 +549,21 @@ export default function ProposalContent({
         )}
 
         {/* ─── Trust Footer ─── */}
-        <div className="flex items-center justify-center gap-4 py-4 text-xs text-gray-400 print:hidden">
-          <div className="flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5" />
-            Güvenli bağlantı
+        <div className="flex items-center justify-center gap-6 py-6 text-xs text-gray-400 print:hidden">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
+            <Shield className="w-3.5 h-3.5 text-emerald-500" />
+            <span>SSL Güvenli</span>
           </div>
-          <span>·</span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
             <Eye className="w-3.5 h-3.5" />
-            {proposal.viewCount} görüntülenme
+            <span>{proposal.viewCount} görüntülenme</span>
           </div>
         </div>
       </div>
 
       {/* ─── Sticky Bottom Action Bar ─── */}
       {!isResponded && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50 print:hidden">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-50 print:hidden">
           <div className="max-w-2xl mx-auto px-4 py-3 sm:px-6">
             <ProposalActions proposalId={proposal.id} />
           </div>

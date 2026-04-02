@@ -21,6 +21,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
   const [customerNote, setCustomerNote] = useState('')
   const [signerName, setSignerName] = useState('')
   const [hasSigned, setHasSigned] = useState(false)
+  const [success, setSuccess] = useState(false)
   const sigCanvasRef = useRef<SignatureCanvas>(null)
 
   const handleSubmit = async (action: string, body: Record<string, string | undefined>) => {
@@ -36,8 +37,12 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         const data = await response.json()
         throw new Error(data.error?.message || 'İşlem başarısız oldu')
       }
-      router.refresh()
-      setActiveModal(null)
+      setSuccess(true)
+      setTimeout(() => {
+        router.refresh()
+        setActiveModal(null)
+        setSuccess(false)
+      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bir hata oluştu')
     } finally {
@@ -92,7 +97,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         <button
           onClick={() => setActiveModal('accept')}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 text-sm"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-emerald-500/30"
         >
           <CheckCircle className="w-4 h-4" />
           <span>Kabul Et</span>
@@ -101,7 +106,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         <button
           onClick={() => setActiveModal('revision')}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-2xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 text-sm"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-2xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-amber-500/30"
         >
           <RotateCw className="w-4 h-4" />
           <span>Revize</span>
@@ -110,7 +115,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         <button
           onClick={() => setActiveModal('reject')}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/25 disabled:opacity-50 text-sm"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-red-500/30"
         >
           <XCircle className="w-4 h-4" />
           <span>Reddet</span>
@@ -124,11 +129,22 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal} />
 
           {/* Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85dvh] overflow-hidden animate-slide-up">
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85dvh] overflow-hidden animate-slide-up relative">
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-gray-300" />
             </div>
+
+            {/* Success Overlay */}
+            {success && (
+              <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-t-3xl">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
+                  <CheckCircle className="w-8 h-8 text-emerald-500" />
+                </div>
+                <p className="text-lg font-bold text-gray-900">İşlem Başarılı!</p>
+                <p className="text-sm text-gray-500 mt-1">Yanıtınız iletildi.</p>
+              </div>
+            )}
 
             {/* Header */}
             <div className="px-6 py-3 flex items-center justify-between">
@@ -278,12 +294,12 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
               <button
                 onClick={activeModal === 'accept' ? handleAccept : activeModal === 'revision' ? handleRevision : handleReject}
                 disabled={isLoading}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-white font-semibold rounded-2xl text-sm disabled:opacity-50 ${
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-white font-semibold rounded-2xl text-sm disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98] ${
                   activeModal === 'accept'
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:shadow-xl hover:shadow-emerald-500/30'
                     : activeModal === 'revision'
-                      ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                      : 'bg-gradient-to-r from-red-500 to-red-600'
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:shadow-xl hover:shadow-amber-500/30'
+                      : 'bg-gradient-to-r from-red-500 to-red-600 hover:shadow-xl hover:shadow-red-500/30'
                 }`}
               >
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
