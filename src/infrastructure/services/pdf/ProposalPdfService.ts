@@ -80,7 +80,7 @@ export class ProposalPdfService {
 
     return {
       pageSize: 'A4',
-      pageMargins: [40, 130, 40, 60] as [number, number, number, number],
+      pageMargins: [40, 120, 40, 60] as [number, number, number, number],
       defaultStyle: { font: 'Roboto', fontSize: 9, color: TEXT_DARK, lineHeight: 1.2 },
       header: (currentPage: number) => this.buildHeader(tenant, proposal, currentPage),
       footer: (currentPage: number, pageCount: number) => this.buildFooter(tenant, hash, currentPage, pageCount),
@@ -107,32 +107,32 @@ export class ProposalPdfService {
     const statusText = STATUS_LABELS[proposal.status] ?? proposal.status;
     const statusColor = STATUS_COLORS[proposal.status] ?? '#64748B';
 
-    // Left side: logo + company name
-    const leftStack: any[] = [];
-
-    if (tenant.logo) {
-      leftStack.push({
-        image: tenant.logo,
-        width: 50,
-        height: 50,
-        margin: [0, 0, 0, 4] as [number, number, number, number],
-      });
-    }
-
-    leftStack.push(
-      { text: tenant.name, fontSize: 18, bold: true, color: PRIMARY },
-    );
+    // Left side: logo + company name (side by side)
+    const companyInfoStack: any[] = [
+      { text: tenant.name, fontSize: 16, bold: true, color: PRIMARY },
+    ];
 
     const details: string[] = [];
     if (tenant.phone) details.push(tenant.phone);
     if (tenant.email) details.push(tenant.email);
     if (tenant.taxNumber) details.push(`VN: ${tenant.taxNumber}`);
     if (details.length) {
-      leftStack.push({ text: details.join('  •  '), fontSize: 7.5, color: TEXT_LIGHT, margin: [0, 2, 0, 0] as [number, number, number, number] });
+      companyInfoStack.push({ text: details.join('  •  '), fontSize: 7.5, color: TEXT_LIGHT, margin: [0, 2, 0, 0] as [number, number, number, number] });
     }
     if (tenant.address) {
-      leftStack.push({ text: tenant.address, fontSize: 7.5, color: TEXT_LIGHT, margin: [0, 1, 0, 0] as [number, number, number, number] });
+      companyInfoStack.push({ text: tenant.address, fontSize: 7.5, color: TEXT_LIGHT, margin: [0, 1, 0, 0] as [number, number, number, number] });
     }
+
+    const leftContent: any = tenant.logo
+      ? {
+          columns: [
+            { width: 40, image: tenant.logo, fit: [36, 36] as [number, number] },
+            { width: '*', stack: companyInfoStack, margin: [6, 0, 0, 0] as [number, number, number, number] },
+          ],
+        }
+      : { stack: companyInfoStack };
+
+    const leftStack: any[] = [leftContent];
 
     // Right side: proposal info
     const rightStack: any[] = [
@@ -225,9 +225,21 @@ export class ProposalPdfService {
       margin: [0, 1.5, 0, 1.5] as [number, number, number, number],
     });
 
-    const rows: any[] = [
-      infoRow('Firma', c.companyName || c.name),
-    ];
+    const rows: any[] = [];
+
+    // Company name with optional logo inline
+    if (c.logo) {
+      rows.push({
+        columns: [
+          { width: 70, text: 'Firma', fontSize: 8, color: TEXT_MED, bold: true },
+          { width: 28, image: c.logo, fit: [24, 24] as [number, number] },
+          { width: '*', text: c.companyName || c.name, fontSize: 8.5, margin: [4, 6, 0, 0] as [number, number, number, number] },
+        ],
+        margin: [0, 1.5, 0, 1.5] as [number, number, number, number],
+      });
+    } else {
+      rows.push(infoRow('Firma', c.companyName || c.name));
+    }
 
     if (c.name && c.name !== c.companyName) {
       rows.push(infoRow('İlgili', c.name));

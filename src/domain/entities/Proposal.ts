@@ -17,6 +17,7 @@ export interface ProposalCustomer {
   phone?: string;
   email?: string;
   taxNumber?: string;
+  logo?: string;
 }
 
 export interface Proposal {

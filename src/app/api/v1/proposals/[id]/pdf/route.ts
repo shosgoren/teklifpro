@@ -27,6 +27,7 @@ function mapToProposalEntity(
       phone: dbProposal.customer.phone || undefined,
       email: dbProposal.customer.email || undefined,
       taxNumber: dbProposal.customer.taxNumber || undefined,
+      logo: dbProposal.customer.logo || undefined,
     },
     items: dbProposal.items.map((item) => ({
       name: item.name,
@@ -78,6 +79,7 @@ async function fetchProposal(id: string, tenantId: string) {
           phone: true,
           address: true,
           taxNumber: true,
+          logo: true,
         },
       },
       items: {
