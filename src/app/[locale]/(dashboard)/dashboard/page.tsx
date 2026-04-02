@@ -75,7 +75,7 @@ const statusConfig: Record<string, { label: string; color: string; dot: string }
 };
 
 const WIDGET_ORDER_KEY = 'teklifpro-dashboard-order';
-const DEFAULT_WIDGETS = ['kpi', 'alerts', 'chart', 'recent'];
+const DEFAULT_WIDGETS = ['alerts', 'chart', 'recent'];
 
 // ─── Animated Number ───
 function AnimatedNumber({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
@@ -343,20 +343,22 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+      <div className="flex flex-col h-full">
+        <div className="shrink-0 bg-gradient-to-br from-blue-600 to-indigo-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg mt-2" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-28 bg-white/15 backdrop-blur-sm border border-white/10 animate-pulse rounded-2xl" />
+              ))}
+            </div>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-28 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
-            ))}
+        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+            <div className="h-64 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
           </div>
-          <div className="h-64 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
         </div>
       </div>
     );
@@ -371,22 +373,18 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 md:p-5 text-white shadow-lg shadow-blue-500/20 dark:shadow-[0_0_40px_-8px_rgba(59,130,246,0.5)] hover:scale-[1.02] transition-transform cursor-default"
+          className="overflow-hidden rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10 p-4 md:p-5 text-white shadow-lg dark:shadow-[0_0_40px_-8px_rgba(59,130,246,0.5)] hover:scale-[1.02] transition-transform cursor-default"
         >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-8 -translate-x-4" />
-          <div className="relative">
-            <div className="flex items-center gap-2 text-blue-100 text-xs font-medium">
-              <Wallet className="h-3.5 w-3.5" />
-              {t('totalRevenue')}
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
-              <AnimatedCurrency value={totalRevenue} />
-            </p>
-            <p className="text-xs text-blue-200 mt-1">
-              <AnimatedNumber value={acceptedCount} /> {t('acceptedProposals')}
-            </p>
+          <div className="flex items-center gap-2 text-white/70 text-xs font-medium">
+            <Wallet className="h-3.5 w-3.5" />
+            {t('totalRevenue')}
           </div>
+          <p className="text-xl md:text-2xl font-bold mt-2 tracking-tight">
+            <AnimatedCurrency value={totalRevenue} />
+          </p>
+          <p className="text-xs text-white/70 mt-1">
+            <AnimatedNumber value={acceptedCount} /> {t('acceptedProposals')}
+          </p>
         </motion.div>
 
         {/* Total Proposals */}
@@ -394,22 +392,18 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 p-4 md:p-5 text-white shadow-lg shadow-purple-500/20 dark:shadow-[0_0_40px_-8px_rgba(139,92,246,0.5)] hover:scale-[1.02] transition-transform cursor-default"
+          className="overflow-hidden rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10 p-4 md:p-5 text-white shadow-lg dark:shadow-[0_0_40px_-8px_rgba(139,92,246,0.5)] hover:scale-[1.02] transition-transform cursor-default"
         >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-8 -translate-x-4" />
-          <div className="relative">
-            <div className="flex items-center gap-2 text-purple-100 text-xs font-medium">
-              <FileText className="h-3.5 w-3.5" />
-              {t('proposals')}
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-2">
-              <AnimatedNumber value={proposalTotal} />
-            </p>
-            <p className="text-xs text-purple-200 mt-1">
-              <AnimatedNumber value={pendingCount} /> {t('pending')}{revisionCount > 0 ? ` · ${revisionCount} ${t('revision')}` : ''}
-            </p>
+          <div className="flex items-center gap-2 text-white/70 text-xs font-medium">
+            <FileText className="h-3.5 w-3.5" />
+            {t('proposals')}
           </div>
+          <p className="text-xl md:text-2xl font-bold mt-2">
+            <AnimatedNumber value={proposalTotal} />
+          </p>
+          <p className="text-xs text-white/70 mt-1">
+            <AnimatedNumber value={pendingCount} /> {t('pending')}{revisionCount > 0 ? ` · ${revisionCount} ${t('revision')}` : ''}
+          </p>
         </motion.div>
 
         {/* Accept Rate */}
@@ -417,26 +411,22 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 p-4 md:p-5 text-white shadow-lg shadow-emerald-500/20 dark:shadow-[0_0_40px_-8px_rgba(16,185,129,0.5)] hover:scale-[1.02] transition-transform cursor-default"
+          className="overflow-hidden rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10 p-4 md:p-5 text-white shadow-lg dark:shadow-[0_0_40px_-8px_rgba(16,185,129,0.5)] hover:scale-[1.02] transition-transform cursor-default"
         >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-8 -translate-x-4" />
-          <div className="relative">
-            <div className="flex items-center gap-2 text-emerald-100 text-xs font-medium">
-              <TrendingUp className="h-3.5 w-3.5" />
-              {t('acceptanceRate')}
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-2">
-              <AnimatedNumber value={acceptRate} suffix="%" />
-            </p>
-            <div className="mt-1 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(acceptRate, 100)}%` }}
-                transition={{ duration: 1.4, ease: 'easeOut', delay: 0.3 }}
-                className="h-full bg-white/80 rounded-full"
-              />
-            </div>
+          <div className="flex items-center gap-2 text-white/70 text-xs font-medium">
+            <TrendingUp className="h-3.5 w-3.5" />
+            {t('acceptanceRate')}
+          </div>
+          <p className="text-xl md:text-2xl font-bold mt-2">
+            <AnimatedNumber value={acceptRate} suffix="%" />
+          </p>
+          <div className="mt-1 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(acceptRate, 100)}%` }}
+              transition={{ duration: 1.4, ease: 'easeOut', delay: 0.3 }}
+              className="h-full bg-white/80 rounded-full"
+            />
           </div>
         </motion.div>
 
@@ -445,20 +435,16 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 md:p-5 text-white shadow-lg shadow-amber-500/20 dark:shadow-[0_0_40px_-8px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-transform cursor-default"
+          className="overflow-hidden rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10 p-4 md:p-5 text-white shadow-lg dark:shadow-[0_0_40px_-8px_rgba(245,158,11,0.5)] hover:scale-[1.02] transition-transform cursor-default"
         >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-8 -translate-x-4" />
-          <div className="relative">
-            <div className="flex items-center gap-2 text-amber-100 text-xs font-medium">
-              <Users className="h-3.5 w-3.5" />
-              {t('customers')}
-            </div>
-            <p className="text-xl md:text-2xl font-bold mt-2">
-              <AnimatedNumber value={customerTotal} />
-            </p>
-            <p className="text-xs text-amber-200 mt-1">{t('totalCustomers')}</p>
+          <div className="flex items-center gap-2 text-white/70 text-xs font-medium">
+            <Users className="h-3.5 w-3.5" />
+            {t('customers')}
           </div>
+          <p className="text-xl md:text-2xl font-bold mt-2">
+            <AnimatedNumber value={customerTotal} />
+          </p>
+          <p className="text-xs text-white/70 mt-1">{t('totalCustomers')}</p>
         </motion.div>
       </div>
     ),
@@ -725,9 +711,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
+    <div className="flex flex-col h-full">
       {/* Gradient Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+      <div className="shrink-0 relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
@@ -762,30 +748,37 @@ export default function DashboardPage() {
               </Button>
             </div>
           </motion.div>
+
+          {/* ─── KPI Cards ─── */}
+          <div className="mt-6">
+            {widgetMap.kpi}
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
-        {/* ─── Draggable Widgets ─── */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
-            <div className="space-y-6">
-              {widgetOrder.map((widgetId) => (
-                <SortableWidget key={widgetId} id={widgetId}>
-                  {widgetMap[widgetId]}
-                </SortableWidget>
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+      <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+          {/* ─── Draggable Widgets ─── */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
+              <div className="space-y-6">
+                {widgetOrder.map((widgetId) => (
+                  <SortableWidget key={widgetId} id={widgetId}>
+                    {widgetMap[widgetId]}
+                  </SortableWidget>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
-        {/* ─── FAB ─── */}
-        <FloatingActionButton locale={locale} lastProposalId={lastProposalId} />
+          {/* ─── FAB ─── */}
+          <FloatingActionButton locale={locale} lastProposalId={lastProposalId} />
+        </div>
       </div>
     </div>
   );

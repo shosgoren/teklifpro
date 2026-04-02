@@ -284,23 +284,25 @@ export default function AnalyticsDashboard() {
   // ---- loading state ----
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-        <div className="bg-gradient-to-br from-rose-500 to-pink-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+      <div className="flex flex-col h-full">
+        <div className="shrink-0 bg-gradient-to-br from-rose-500 to-pink-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
             <div className="h-4 w-64 bg-white/10 animate-pulse rounded-lg mt-2" />
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-28 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
-            ))}
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-72 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
-            ))}
+        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-28 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-72 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -310,8 +312,8 @@ export default function AnalyticsDashboard() {
   // ---- error state ----
   if (hasError) {
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-        <div className="bg-gradient-to-br from-rose-500 to-pink-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+      <div className="flex flex-col h-full">
+        <div className="shrink-0 bg-gradient-to-br from-rose-500 to-pink-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
               {t('title')}
@@ -319,23 +321,25 @@ export default function AnalyticsDashboard() {
             <p className="text-white/70 text-sm mt-1">{t('subtitle')}</p>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 flex items-center justify-center py-16">
-          <div className="max-w-md w-full rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="h-1.5 bg-gradient-to-r from-red-500 to-rose-500" />
-            <div className="flex flex-col items-center gap-4 p-8">
-              <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-3">
-                <AlertCircle className="w-8 h-8 text-red-500" />
+        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 pb-24 md:pb-16 flex items-center justify-center">
+            <div className="max-w-md w-full rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-red-500 to-rose-500" />
+              <div className="flex flex-col items-center gap-4 p-8">
+                <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-3">
+                  <AlertCircle className="w-8 h-8 text-red-500" />
+                </div>
+                <p className="font-bold text-xl text-gray-900 dark:text-white">{t('errorLoad')}</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm text-center leading-relaxed">
+                  {proposalsError?.message || customersError?.message || productsError?.message}
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-medium text-sm hover:shadow-lg hover:shadow-red-500/25 transition-all"
+                >
+                  {t('retry')}
+                </button>
               </div>
-              <p className="font-bold text-xl text-gray-900 dark:text-white">{t('errorLoad')}</p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm text-center leading-relaxed">
-                {proposalsError?.message || customersError?.message || productsError?.message}
-              </p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-500 text-white font-medium text-sm hover:shadow-lg hover:shadow-red-500/25 transition-all"
-              >
-                {t('retry')}
-              </button>
             </div>
           </div>
         </div>
@@ -347,9 +351,9 @@ export default function AnalyticsDashboard() {
   const isEmpty = proposals.length === 0 && customers.length === 0 && products.length === 0;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
+    <div className="flex flex-col h-full">
       {/* Gradient Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-rose-500 to-pink-600 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+      <div className="shrink-0 relative overflow-hidden bg-gradient-to-br from-rose-500 to-pink-600 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
@@ -360,7 +364,8 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-8">
+      <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
         {isEmpty && (
           <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
@@ -735,6 +740,7 @@ export default function AnalyticsDashboard() {
             minute: '2-digit',
           })}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -330,9 +330,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <div className="flex flex-col flex-1 min-w-0">
-        <main className="flex-1 overflow-y-auto">
-        {/* Top Bar - sticky, negative margin-bottom so gradient extends behind it */}
-        <header className="sticky top-0 z-20 px-4 md:px-8 py-3 -mb-[52px] backdrop-blur-xl bg-gradient-to-r from-black/5 to-black/10 dark:from-black/20 dark:to-black/30">
+        {/* Top Bar - gradient matches page theme */}
+        <header className={`shrink-0 px-4 md:px-8 py-3 ${
+          isSettingsPage
+            ? `bg-gradient-to-br from-blue-500 to-indigo-600`
+            : hasGradientHeader
+              ? `bg-gradient-to-br ${pageGradient!.from} ${pageGradient!.to}`
+              : 'bg-gradient-to-br from-slate-600 to-slate-700'
+        }`}>
           <div className="flex items-center justify-between">
             {/* Title */}
             <div className="flex items-center gap-3 min-w-0">
@@ -403,8 +408,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        {/* Page Content */}
+        <div className="flex-1 overflow-hidden">
           {children}
-        </main>
+        </div>
       </div>
 
       {/* Mobile Bottom Tab Bar */}

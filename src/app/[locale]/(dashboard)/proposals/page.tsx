@@ -137,24 +137,25 @@ export default function ProposalsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-        <div className="bg-gradient-to-br from-violet-600 to-purple-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
-          <div className="max-w-7xl mx-auto">
-            <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
-            <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg mt-2" />
-            <div className="h-11 bg-white/10 animate-pulse rounded-xl mt-4" />
+      <div className="flex flex-col h-full">
+        <div className="shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+          <div className="max-w-7xl mx-auto space-y-3">
+            <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg" />
+            <div className="h-11 bg-white/10 animate-pulse rounded-xl" />
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-24 animate-pulse rounded-2xl bg-white dark:bg-gray-900 shadow-sm" />
-            ))}
-          </div>
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
-            ))}
+        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-20 animate-pulse rounded-2xl bg-white dark:bg-gray-900 shadow-sm" />
+              ))}
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -163,20 +164,21 @@ export default function ProposalsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950">
-        <div className="bg-gradient-to-br from-violet-600 to-purple-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+      <div className="flex flex-col h-full">
+        <div className="shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">Teklifler</h1>
-            <p className="text-white/70 text-sm mt-1">Teklif oluştur, takip et ve yonet</p>
+            <p className="text-white/70 text-sm">Teklif oluştur, takip et ve yönet</p>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4">
-          <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
-              <FileText className="h-8 w-8 text-white" />
+        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
+            <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
+                <FileText className="h-8 w-8 text-white" />
+              </div>
+              <p className="text-base font-semibold text-red-700 dark:text-red-400">Veriler yüklenirken hata oluştu</p>
+              <p className="text-sm text-muted-foreground mt-1">Lütfen sayfayı yenileyin.</p>
             </div>
-            <p className="text-base font-semibold text-red-700 dark:text-red-400">Veriler yüklenirken hata oluştu</p>
-            <p className="text-sm text-muted-foreground mt-1">Lütfen sayfayı yenileyin.</p>
           </div>
         </div>
       </div>
@@ -192,12 +194,11 @@ export default function ProposalsPage() {
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-gray-950 pb-24 md:pb-6">
-      {/* ─── Gradient Hero ─── */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 pt-16 pb-8 px-4 md:px-8 md:pt-[72px]">
+    <div className="flex flex-col h-full">
+      {/* ─── Gradient Hero (sticky) ─── */}
+      <div className="shrink-0 relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative max-w-7xl mx-auto space-y-4">
           {/* Subtitle + Actions */}
@@ -260,59 +261,47 @@ export default function ProposalsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+
+          {/* ─── Mini Stats (glass cards on gradient) ─── */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10">
+              <p className="text-xs font-medium text-white/70">Toplam</p>
+              <p className="text-2xl font-bold mt-1">{pagination.total}</p>
+            </div>
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10">
+              <p className="text-xs font-medium text-white/70">Beklemede</p>
+              <p className="text-2xl font-bold mt-1">{pendingCount}</p>
+            </div>
+            <button
+              onClick={() => setStatusFilter(statusFilter === 'REVISION_REQUESTED' ? 'ALL' : 'REVISION_REQUESTED')}
+              className={cn(
+                'rounded-2xl p-4 text-white text-left transition-all border',
+                statusFilter === 'REVISION_REQUESTED'
+                  ? 'bg-white/30 border-white/40 ring-2 ring-white/50'
+                  : 'bg-white/15 backdrop-blur-sm border-white/10 hover:bg-white/25'
+              )}
+            >
+              <p className="text-xs font-medium text-white/70">Revize</p>
+              <p className="text-2xl font-bold mt-1">{revisionCount}</p>
+              {revisionCount > 0 && (
+                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
+              )}
+            </button>
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10">
+              <p className="text-xs font-medium text-white/70">Kabul</p>
+              <p className="text-2xl font-bold mt-1">{acceptedCount}</p>
+            </div>
+            <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10 col-span-2 md:col-span-1">
+              <p className="text-xs font-medium text-white/70">Toplam Değer</p>
+              <p className="text-xl font-bold mt-1 truncate">{formatAmount(totalValue)}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ─── Content ─── */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 -mt-4 space-y-6">
-        {/* ─── Mini Stats ─── */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {/* Total */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-4 text-white shadow-lg shadow-blue-500/20">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-blue-100">Toplam</p>
-            <p className="text-2xl font-bold mt-1">{pagination.total}</p>
-          </div>
-
-          {/* Pending */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-500 to-sky-700 p-4 text-white shadow-lg shadow-sky-500/20">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-sky-100">Beklemede</p>
-            <p className="text-2xl font-bold mt-1">{pendingCount}</p>
-          </div>
-
-          {/* Revize - clickable */}
-          <button
-            onClick={() => setStatusFilter(statusFilter === 'REVISION_REQUESTED' ? 'ALL' : 'REVISION_REQUESTED')}
-            className={cn(
-              'relative overflow-hidden rounded-2xl p-4 text-white shadow-lg text-left transition-all',
-              statusFilter === 'REVISION_REQUESTED'
-                ? 'bg-gradient-to-br from-orange-600 to-orange-800 shadow-orange-600/30 ring-2 ring-orange-300 dark:ring-orange-500'
-                : 'bg-gradient-to-br from-orange-500 to-orange-700 shadow-orange-500/20 hover:shadow-orange-500/30'
-            )}
-          >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-orange-100">Revize</p>
-            <p className="text-2xl font-bold mt-1">{revisionCount}</p>
-            {revisionCount > 0 && (
-              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
-            )}
-          </button>
-
-          {/* Accepted */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 text-white shadow-lg shadow-emerald-500/20">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-emerald-100">Kabul</p>
-            <p className="text-2xl font-bold mt-1">{acceptedCount}</p>
-          </div>
-
-          {/* Total Value */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 p-4 text-white shadow-lg shadow-violet-500/20 col-span-2 md:col-span-1">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -translate-y-4 translate-x-4" />
-            <p className="text-xs font-medium text-violet-100">Toplam Deger</p>
-            <p className="text-xl font-bold mt-1 truncate">{formatAmount(totalValue)}</p>
-          </div>
-        </div>
+      {/* ─── Content (scrollable) ─── */}
+      <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
 
         {/* ─── Kanban or List View ─── */}
         {viewMode === 'kanban' ? (
@@ -515,6 +504,7 @@ export default function ProposalsPage() {
           )}
         </div>
       )}
+      </div>
       </div>
     </div>
   );
