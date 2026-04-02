@@ -165,6 +165,7 @@ export default function ProposalDetailPage() {
 
   const handleDownloadPDF = async () => {
     try {
+      toast.loading('PDF oluşturuluyor...', { id: 'pdf-download' });
       const res = await fetch(`/api/v1/proposals/${proposalId}/pdf`);
       if (res.ok) {
         const blob = await res.blob();
@@ -172,13 +173,19 @@ export default function ProposalDetailPage() {
         const a = document.createElement('a');
         a.href = url;
         a.download = `${proposal?.proposalNumber || 'teklif'}.pdf`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        toast.success('PDF indirildi!', { id: 'pdf-download' });
       } else {
-        toast.error('PDF indirme başlatılamadı.');
+        const errorData = await res.json().catch(() => ({}));
+        console.error('PDF download failed:', res.status, errorData);
+        toast.error(`PDF indirme başarısız (${res.status})`, { id: 'pdf-download' });
       }
-    } catch {
-      toast.error('PDF indirme sırasında hata oluştu.');
+    } catch (err) {
+      console.error('PDF download error:', err);
+      toast.error('PDF indirme sırasında hata oluştu.', { id: 'pdf-download' });
     }
   };
 

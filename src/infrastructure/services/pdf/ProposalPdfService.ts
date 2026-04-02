@@ -1,8 +1,7 @@
 import jsPDF from 'jspdf';
-import * as fs from 'fs';
-import * as path from 'path';
 import { Proposal, ProposalItem } from '@/domain/entities/Proposal';
 import { Tenant } from '@/domain/entities/Tenant';
+import { ROBOTO_REGULAR_BASE64, ROBOTO_BOLD_BASE64 } from './font-data';
 
 export interface ProposalPdfOptions {
   fontSize?: number;
@@ -19,32 +18,12 @@ const BG_LIGHT = [249, 250, 251] as const; // Gray-50
 const BG_HEADER = [37, 99, 235] as const; // Blue-600
 const WHITE = [255, 255, 255] as const;
 
-// Cache font data at module level, but always register on each jsPDF instance
-let cachedRegularFont: string | null = null;
-let cachedBoldFont: string | null = null;
-
 function loadFonts(pdf: jsPDF) {
   try {
-    const fontsDir = path.join(process.cwd(), 'public', 'fonts');
-    const regularPath = path.join(fontsDir, 'Roboto-Regular.ttf');
-    const boldPath = path.join(fontsDir, 'Roboto-Bold.ttf');
-
-    if (!cachedRegularFont && fs.existsSync(regularPath)) {
-      cachedRegularFont = fs.readFileSync(regularPath).toString('base64');
-    }
-    if (!cachedBoldFont && fs.existsSync(boldPath)) {
-      cachedBoldFont = fs.readFileSync(boldPath).toString('base64');
-    }
-
-    // Always register fonts on the new pdf instance
-    if (cachedRegularFont) {
-      pdf.addFileToVFS('Roboto-Regular.ttf', cachedRegularFont);
-      pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-    }
-    if (cachedBoldFont) {
-      pdf.addFileToVFS('Roboto-Bold.ttf', cachedBoldFont);
-      pdf.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
-    }
+    pdf.addFileToVFS('Roboto-Regular.ttf', ROBOTO_REGULAR_BASE64);
+    pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+    pdf.addFileToVFS('Roboto-Bold.ttf', ROBOTO_BOLD_BASE64);
+    pdf.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
   } catch (err) {
     console.warn('Failed to load Roboto fonts, falling back to helvetica:', err);
   }
