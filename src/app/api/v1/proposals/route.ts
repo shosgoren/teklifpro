@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { CreateProposalSchema, GetProposalsSchema } from '@/shared/validations/proposal';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('ProposalAPI');
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -57,38 +61,6 @@ function validateVoiceNote(dataUrl: string): { valid: boolean; error?: string } 
 
   return { valid: true };
 }
-
-// Validation schemas
-const CreateProposalSchema = z.object({
-  customerId: z.string(),
-  contactId: z.string().optional(),
-  title: z.string().min(1).max(255),
-  description: z.string().optional(),
-  items: z.array(
-    z.object({
-      name: z.string(),
-      description: z.string().optional(),
-      unit: z.string().default('Adet'),
-      quantity: z.number().positive(),
-      unitPrice: z.number().nonnegative(),
-      discountRate: z.number().min(0).max(100).default(0),
-      vatRate: z.number().min(0).max(100).default(18),
-    })
-  ),
-  expiresAt: z.string().optional(),
-  notes: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  deliveryTerms: z.string().optional(),
-  voiceNoteData: z.string().nullable().optional(),
-  voiceNoteDuration: z.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
-});
-
-const GetProposalsSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().positive().max(100).default(10),
-  search: z.string().optional(),
-  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED']).optional(),
-});
 
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
@@ -160,7 +132,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/proposals error:', error);
+    logger.error('GET /api/v1/proposals error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -265,7 +237,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/proposals error:', error);
+    logger.error('POST /api/v1/proposals error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

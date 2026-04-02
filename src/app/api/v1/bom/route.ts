@@ -2,21 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { createBomSchema } from '@/shared/validations/bom';
+import { Logger } from '@/infrastructure/logger';
 
-const bomItemSchema = z.object({
-  materialId: z.string().min(1, 'Malzeme ID gerekli'),
-  quantity: z.number().positive('Miktar pozitif olmali'),
-  unit: z.string().min(1).default('Adet'),
-  wasteRate: z.number().min(0).max(100).default(0),
-  notes: z.string().optional().default(''),
-  sortOrder: z.number().int().min(0).optional().default(0),
-});
-
-const createBomSchema = z.object({
-  productId: z.string().min(1, 'Urun ID gerekli'),
-  notes: z.string().optional().default(''),
-  items: z.array(bomItemSchema).min(1, 'En az bir malzeme gerekli'),
-});
+const logger = new Logger('BomAPI');
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,7 +65,7 @@ export async function GET(request: NextRequest) {
       data: formattedBoms,
     });
   } catch (error) {
-    console.error('GET /api/v1/bom error:', error);
+    logger.error('GET /api/v1/bom error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -226,7 +215,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/bom error:', error);
+    logger.error('POST /api/v1/bom error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

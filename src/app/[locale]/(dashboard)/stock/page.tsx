@@ -44,7 +44,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from '@/shared/components/ui/dialog';
 import { Label } from '@/presentation/components/ui/label';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';

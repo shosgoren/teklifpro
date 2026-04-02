@@ -9,4 +9,4 @@ export {
   SelectSeparator,
   SelectScrollUpButton,
   SelectScrollDownButton,
-} from '@/components/ui/select';
+} from '@/shared/components/ui/select';

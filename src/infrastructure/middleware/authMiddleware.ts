@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/shared/auth/authOptions'
 import { ApiResponse } from '@/shared/types'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('AuthMiddleware')
 
 /**
  * Session context extracted from JWT
@@ -35,20 +38,20 @@ export async function getServerSessionWithAuth(): Promise<AuthSession | null> {
     // For now, we return empty array and rely on permission checks
     return {
       user: {
-        id: (session.user as any).id || '',
+        id: session.user.id || '',
         email: session.user.email || '',
         name: session.user.name ?? undefined,
-        tenantId: (session.user as any).tenantId || '',
+        tenantId: session.user.tenantId || '',
       },
       tenant: {
-        id: (session.user as any).tenantId || '',
-        slug: (session as any).tenant?.slug || '',
-        plan: (session as any).tenant?.plan || 'STARTER',
+        id: session.user.tenantId || '',
+        slug: session.tenant?.slug || '',
+        plan: (session.tenant?.plan as 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE') || 'STARTER',
       },
-      permissions: (session as any).permissions || [],
+      permissions: session.permissions || [],
     }
   } catch (error) {
-    console.error('Error getting server session:', error)
+    logger.error('Error getting server session', error)
     return null
   }
 }
@@ -95,10 +98,10 @@ export function hasPermission(
  * Verifies session and checks permissions
  */
 export function withAuth(
-  handler: (request: NextRequest, context?: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, context?: { params: Record<string, string> }) => Promise<NextResponse>,
   requiredPermissions: string[] = [],
 ) {
-  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
+  return async (request: NextRequest, context?: { params: Record<string, string> }): Promise<NextResponse> => {
     try {
       const session = await getServerSessionWithAuth()
 
@@ -133,11 +136,11 @@ export function withAuth(
       }
 
       // Attach session to request for handler to use
-      ;(request as any).session = session
+      ;(request as unknown as { session: AuthSession }).session = session
 
       return await handler(request, context)
     } catch (error) {
-      console.error('Auth middleware error:', error)
+      logger.error('Auth middleware error', error)
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -156,5 +159,5 @@ export function withAuth(
  * Gets session from request (set by withAuth middleware)
  */
 export function getSessionFromRequest(request: NextRequest): AuthSession | null {
-  return (request as any).session || null
+  return (request as unknown as { session?: AuthSession }).session || null
 }

@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import { QRCodeSVG } from 'qrcode.react';
+import { Logger } from '@/infrastructure/logger';
 import {
   Edit,
   MessageCircle,
@@ -25,16 +26,18 @@ import {
   QrCode,
   X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Card } from '@/shared/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/shared/components/ui/dialog';
 import { toast } from 'sonner';
+
+const logger = new Logger('ProposalDetailPage');
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
 
@@ -180,11 +183,11 @@ export default function ProposalDetailPage() {
         toast.success('PDF indirildi!', { id: 'pdf-download' });
       } else {
         const errorData = await res.json().catch(() => ({}));
-        console.error('PDF download failed:', res.status, errorData);
+        logger.error('PDF download failed', { status: res.status, errorData });
         toast.error(`PDF indirme başarısız (${res.status})`, { id: 'pdf-download' });
       }
     } catch (err) {
-      console.error('PDF download error:', err);
+      logger.error('PDF download error', err);
       toast.error('PDF indirme sırasında hata oluştu.', { id: 'pdf-download' });
     }
   };

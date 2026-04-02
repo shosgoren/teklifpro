@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('BomCostAPI');
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -109,7 +112,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/bom/[id]/cost error:', error);
+    logger.error('GET /api/v1/bom/[id]/cost error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

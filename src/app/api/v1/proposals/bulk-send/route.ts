@@ -5,16 +5,10 @@ import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
 import { emailService } from '@/infrastructure/services/email/EmailService';
+import { Logger } from '@/infrastructure/logger';
+import { BulkSendSchema } from '@/shared/validations/proposal';
 
-// Bulk gonderim icin validasyon semasi
-const BulkSendSchema = z.object({
-  proposalIds: z.array(z.string().min(1), {
-    errorMap: () => ({ message: 'En az bir teklif ID\'si gerekli' }),
-  }).min(1, 'En az bir teklif ID\'si gerekli'),
-  channel: z.enum(['whatsapp', 'email', 'both']).default('whatsapp'),
-  scheduledAt: z.string().datetime().optional(),
-  message: z.string().max(1000).optional(),
-});
+const logger = new Logger('ProposalBulkSendAPI');
 
 // Gonderim sonucu arayuzu
 interface SendResultItem {
@@ -137,8 +131,8 @@ export async function POST(
                 result.channels.whatsapp = true;
               }
             } catch (whatsappError) {
-              console.error(
-                `WhatsApp gonderi hatasi (${proposal.id}):`,
+              logger.error(
+                `WhatsApp gonderi hatasi (${proposal.id})`,
                 whatsappError
               );
               if (!result.error) {
@@ -168,8 +162,8 @@ export async function POST(
                 result.channels.email = true;
               }
             } catch (emailError) {
-              console.error(
-                `Email gonderi hatasi (${proposal.id}):`,
+              logger.error(
+                `Email gonderi hatasi (${proposal.id})`,
                 emailError
               );
               if (!result.error) {
@@ -210,7 +204,7 @@ export async function POST(
           });
         }
       } catch (error) {
-        console.error(`Teklif gonderimi hatasi (${proposal.id}):`, error);
+        logger.error(`Teklif gonderimi hatasi (${proposal.id})`, error);
         result.status = 'failed';
         result.error =
           error instanceof Error ? error.message : 'Bilinmeyen hata';
@@ -261,7 +255,7 @@ export async function POST(
       { status: 200 }
     );
   } catch (error) {
-    console.error('POST /api/v1/proposals/bulk-send error:', error);
+    logger.error('POST /api/v1/proposals/bulk-send error', error);
 
     // Zod validasyon hatasi
     if (error instanceof z.ZodError) {

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('ApiDocsPage');
 export default function ApiDocsPage() {
   const [isDark, setIsDark] = useState(false);
   const [spec, setSpec] = useState<any>(null);
@@ -19,7 +22,7 @@ export default function ApiDocsPage() {
         const data = await response.json();
         setSpec(data);
       } catch (error) {
-        console.error('Failed to load OpenAPI spec:', error);
+        logger.error('Failed to load OpenAPI spec', error);
       } finally {
         setLoading(false);
       }

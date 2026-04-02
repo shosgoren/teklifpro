@@ -2,22 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { linkSupplierSchema, unlinkSupplierSchema } from '@/shared/validations/product';
+import { Logger } from '@/infrastructure/logger';
 
-// ==================== Schemas ====================
-
-const linkSupplierSchema = z.object({
-  supplierId: z.string().min(1, 'Tedarikci ID gerekli'),
-  unitPrice: z.number().nonnegative('Birim fiyat negatif olamaz'),
-  currency: z.string().max(10).default('TRY'),
-  leadTimeDays: z.number().int().nonnegative().nullable().optional(),
-  minOrderQty: z.number().nonnegative().nullable().optional(),
-  isPreferred: z.boolean().default(false),
-  notes: z.string().max(2000).nullable().optional(),
-});
-
-const unlinkSupplierSchema = z.object({
-  supplierId: z.string().min(1, 'Tedarikci ID gerekli'),
-});
+const logger = new Logger('ProductSuppliersAPI');
 
 // ==================== GET: List Suppliers for a Product ====================
 
@@ -97,7 +85,7 @@ export async function GET(
       data: { suppliers: formatted },
     });
   } catch (error) {
-    console.error('GET /api/v1/products/[id]/suppliers error:', error);
+    logger.error('GET /api/v1/products/[id]/suppliers error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error', code: 'INTERNAL_ERROR' },
       { status: 500 }
@@ -219,7 +207,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/products/[id]/suppliers error:', error);
+    logger.error('POST /api/v1/products/[id]/suppliers error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -305,7 +293,7 @@ export async function DELETE(
       data: { message: 'Supplier link removed' },
     });
   } catch (error) {
-    console.error('DELETE /api/v1/products/[id]/suppliers error:', error);
+    logger.error('DELETE /api/v1/products/[id]/suppliers error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -7,6 +7,9 @@
 
 import { prisma } from '@/shared/utils/prisma';
 import { WhatsAppService } from './WhatsAppService';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('NotifyProposalEvent');
 
 type ProposalEventType = 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED';
 
@@ -98,6 +101,6 @@ export async function notifyProposalEvent(params: NotifyParams): Promise<void> {
     await whatsappService.sendTextMessage(recipientPhone, lines.join('\n'));
   } catch (error) {
     // Never throw — notification failure must not break the main flow
-    console.error(`WhatsApp notification error [${params.eventType}]:`, error);
+    logger.error(`WhatsApp notification error [${params.eventType}]`, error);
   }
 }

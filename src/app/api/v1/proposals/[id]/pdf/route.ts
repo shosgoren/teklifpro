@@ -5,6 +5,9 @@ import { authOptions } from '@/shared/auth/authOptions';
 import { prisma } from '@/shared/utils/prisma';
 import type { Proposal } from '@/domain/entities/Proposal';
 import type { Tenant } from '@/domain/entities/Tenant';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('ProposalPdfAPI');
 
 /**
  * Map a Prisma proposal record to the Proposal domain entity used by ProposalPdfService.
@@ -162,7 +165,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    logger.error('Error generating PDF:', error);
 
     return NextResponse.json(
       {
@@ -231,7 +234,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Error previewing PDF:', error);
+    logger.error('Error previewing PDF:', error);
 
     return NextResponse.json(
       {

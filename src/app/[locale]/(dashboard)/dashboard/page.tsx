@@ -2,8 +2,9 @@
 
 import { useCallback, useState, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
-import { Button } from '@/shared/ui/button';
-import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { Badge } from '@/shared/components/ui/badge';
+import { Logger } from '@/infrastructure/logger';
 import {
   XAxis,
   YAxis,
@@ -52,6 +53,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCountUp } from '@/shared/hooks/useCountUp';
+
+const logger = new Logger('DashboardPage');
 
 const fetcher = (url: string) =>
   fetch(url)
@@ -155,11 +158,11 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
         toast.success(t('cloneSuccess'));
         router.push(`/${locale}/proposals/${data.data.id}`);
       } else {
-        console.error('Clone failed:', res.status, data);
+        logger.error('Clone failed', { status: res.status, data });
         toast.error(data.error?.message || data.error || t('cloneError'));
       }
     } catch (err) {
-      console.error('Clone error:', err);
+      logger.error('Clone error', err);
       toast.error(t('cloneError'));
     } finally {
       setCloning(false);

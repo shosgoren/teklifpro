@@ -3,6 +3,9 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/shared/utils/prisma'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('Auth')
 
 /**
  * NextAuth options for TeklifPro
@@ -76,7 +79,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           }
         } catch (error) {
-          console.error('Auth error:', error)
+          logger.error('Auth error', error)
           throw new Error(
             error instanceof Error ? error.message : 'Authentication failed',
           )
@@ -117,7 +120,7 @@ export const authOptions: NextAuthOptions = {
           }
           return true
         } catch (error) {
-          console.error('Google OAuth error:', error)
+          logger.error('Google OAuth error', error)
           return false
         }
       }
@@ -138,24 +141,24 @@ export const authOptions: NextAuthOptions = {
           }
         } else {
           token.id = user.id
-          token.tenantId = (user as any).tenantId
-          token.role = (user as any).role
+          token.tenantId = user.tenantId
+          token.role = user.role
         }
       }
 
       // Update token on refresh
       if (trigger === 'update' && session) {
-        token.tenantId = (session as any).tenantId
-        token.role = (session as any).role
+        token.tenantId = session.tenantId
+        token.role = session.role
       }
 
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        ;(session.user as any).id = token.id as string
-        ;(session.user as any).tenantId = token.tenantId as string
-        ;(session.user as any).role = token.role as string
+        session.user.id = token.id as string
+        session.user.tenantId = token.tenantId as string
+        session.user.role = token.role as string
       }
 
       return session
@@ -178,7 +181,7 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   events: {
     async signIn({ user, account }) {
-      console.log('[AUTH_SIGNIN]', {
+      logger.info('User signed in', {
         userId: user.id,
         email: user.email,
         provider: account?.provider,
@@ -186,7 +189,7 @@ export const authOptions: NextAuthOptions = {
       })
     },
     async signOut({ token }) {
-      console.log('[AUTH_SIGNOUT]', {
+      logger.info('User signed out', {
         userId: token.id,
         timestamp: new Date().toISOString(),
       })

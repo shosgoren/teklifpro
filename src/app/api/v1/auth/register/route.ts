@@ -6,31 +6,10 @@ import { prisma } from '@/shared/utils/prisma'
 import { emailService } from '@/infrastructure/services/email/EmailService'
 import { ApiResponse } from '@/shared/types'
 import { createApiHandler } from '@/infrastructure/middleware'
+import { Logger } from '@/infrastructure/logger'
+import { registerSchema } from '@/shared/validations/auth'
 
-/**
- * Validation schema for registration
- */
-const registerSchema = z.object({
-  name: z
-    .string()
-    .min(2, 'Ad en az 2 karakter olmalıdır')
-    .max(100, 'Ad en fazla 100 karakter olmalıdır'),
-  email: z.string().email('Geçerli bir e-posta adresi girin'),
-  companyName: z
-    .string()
-    .min(2, 'Şirket adı en az 2 karakter olmalıdır')
-    .max(255, 'Şirket adı en fazla 255 karakter olmalıdır'),
-  phone: z
-    .string()
-    .regex(/^[+]?[\d\s\-()]+$/, 'Geçerli bir telefon numarası girin'),
-  password: z
-    .string()
-    .min(8, 'Şifre en az 8 karakter olmalıdır')
-    .regex(/[A-Z]/, 'Şifre en az bir büyük harf içermelidir')
-    .regex(/[a-z]/, 'Şifre en az bir küçük harf içermelidir')
-    .regex(/\d/, 'Şifre en az bir rakam içermelidir')
-    .regex(/[!@#$%^&*]/, 'Şifre en az bir özel karakter içermelidir (!@#$%^&*)'),
-})
+const logger = new Logger('AuthRegisterAPI')
 
 type RegisterInput = z.infer<typeof registerSchema>
 
@@ -167,7 +146,7 @@ async function handleRegister(
     await sendEmailVerificationEmail(result.user.id, data.email)
 
     // Log registration
-    console.log('[REGISTRATION]', {
+    logger.info('REGISTRATION', {
       userId: result.user.id,
       email: data.email,
       tenantId: result.tenant.id,
@@ -190,7 +169,7 @@ async function handleRegister(
       { status: 201 },
     )
   } catch (error) {
-    console.error('Registration error:', error)
+    logger.error('Registration error', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json<ApiResponse<RegisterResponse>>(
@@ -299,7 +278,7 @@ async function sendEmailVerificationEmail(
 
     await emailService.sendVerificationEmail(email, html)
   } catch (error) {
-    console.error('Failed to send verification email:', error)
+    logger.error('Failed to send verification email', error)
     // Don't fail registration if email sending fails
   }
 }

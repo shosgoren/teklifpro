@@ -18,7 +18,7 @@ import {
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { FileText, GripVertical, User, Calendar, Banknote } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/shared/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 

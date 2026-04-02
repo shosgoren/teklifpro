@@ -3,6 +3,15 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { getServerSessionWithAuth } from './authMiddleware'
 import { ApiResponse } from '@/shared/types'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('RateLimitMiddleware')
+
+interface RateLimitInfo {
+  limit: number
+  remaining: number
+  reset: number
+}
 
 interface RateLimitOptions {
   /**
@@ -33,7 +42,7 @@ function initializeRateLimit(): Ratelimit | null {
       !process.env.UPSTASH_REDIS_REST_URL ||
       !process.env.UPSTASH_REDIS_REST_TOKEN
     ) {
-      console.warn('Upstash Redis credentials not configured')
+      logger.warn('Upstash Redis credentials not configured')
       return null
     }
 
@@ -49,7 +58,7 @@ function initializeRateLimit(): Ratelimit | null {
       prefix: 'teklifpro:ratelimit',
     })
   } catch (error) {
-    console.error('Failed to initialize rate limit:', error)
+    logger.error('Failed to initialize rate limit', error)
     return null
   }
 }
@@ -89,10 +98,10 @@ function getRateLimitKey(tenantId: string): string {
  * Uses tenant-based rate limiting (not per-user)
  */
 export function withRateLimit(
-  handler: (request: NextRequest, context?: any) => Promise<NextResponse>,
+  handler: (request: NextRequest, context?: { params: Record<string, string> }) => Promise<NextResponse>,
   options: RateLimitOptions = {},
 ) {
-  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
+  return async (request: NextRequest, context?: { params: Record<string, string> }): Promise<NextResponse> => {
     try {
       // Skip rate limiting in development
       if (process.env.NODE_ENV === 'development') {
@@ -165,7 +174,7 @@ export function withRateLimit(
 
         // Create a sliding window limiter for this specific limit
         const tenantLimiter = new Ratelimit({
-          redis: (rateLimiter as any).redis,
+          redis: (rateLimiter as unknown as { redis: Redis }).redis,
           limiter: Ratelimit.slidingWindow(limit, '1 m'),
           analytics: true,
           prefix: `teklifpro:ratelimit:${session.tenant.plan}`,
@@ -202,7 +211,7 @@ export function withRateLimit(
         }
 
         // Attach rate limit info to response
-        ;(request as any).rateLimitInfo = {
+        ;(request as unknown as { rateLimitInfo: RateLimitInfo }).rateLimitInfo = {
           limit,
           remaining: response.remaining ?? 0,
           reset: response.reset,
@@ -211,7 +220,7 @@ export function withRateLimit(
 
       return await handler(request, context)
     } catch (error) {
-      console.error('Rate limit middleware error:', error)
+      logger.error('Rate limit middleware error', error)
       // Don't block request if rate limiting fails
       return await handler(request, context)
     }
@@ -223,6 +232,6 @@ export function withRateLimit(
  */
 export function getRateLimitInfoFromRequest(
   request: NextRequest,
-): { limit: number; remaining: number; reset: number } | null {
-  return (request as any).rateLimitInfo || null
+): RateLimitInfo | null {
+  return (request as unknown as { rateLimitInfo?: RateLimitInfo }).rateLimitInfo || null
 }

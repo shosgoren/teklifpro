@@ -5,13 +5,10 @@ import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { SyncRequestSchema } from '@/shared/validations/integrations';
+import { Logger } from '@/infrastructure/logger';
 
-// Validation schema
-const SyncRequestSchema = z.object({
-  entities: z.array(
-    z.enum(['customers', 'products', 'bank_accounts', 'all'])
-  ).optional(),
-});
+const logger = new Logger('ParasutSyncAPI');
 
 type SyncRequest = z.infer<typeof SyncRequestSchema>;
 
@@ -103,7 +100,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
           errors: [],
         };
       } catch (error) {
-        console.error('Customer sync error:', error);
+        logger.error('Customer sync error:', error);
         syncResult.customers = {
           imported: 0,
           updated: 0,
@@ -124,7 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
           errors: [],
         };
       } catch (error) {
-        console.error('Product sync error:', error);
+        logger.error('Product sync error:', error);
         syncResult.products = {
           imported: 0,
           updated: 0,
@@ -143,7 +140,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
           errors: [],
         };
       } catch (error) {
-        console.error('Bank accounts sync error:', error);
+        logger.error('Bank accounts sync error:', error);
         syncResult.bankAccounts = {
           synced: 0,
           errors: [error instanceof Error ? error.message : 'Unknown error'],
@@ -156,7 +153,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       data: syncResult,
     });
   } catch (error) {
-    console.error('POST /api/v1/parasut/sync error:', error);
+    logger.error('POST /api/v1/parasut/sync error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

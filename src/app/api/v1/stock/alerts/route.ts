@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('StockAlertsAPI');
 
 export async function GET(_request: NextRequest) {
   try {
@@ -63,7 +66,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/stock/alerts error:', error);
+    logger.error('GET /api/v1/stock/alerts error:', error);
 
     return NextResponse.json(
       { success: false, error: 'Internal server error', code: 'INTERNAL_ERROR' },

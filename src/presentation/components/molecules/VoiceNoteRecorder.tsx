@@ -4,6 +4,9 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { Mic, Square, Play, Pause, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/presentation/components/ui/button'
 import { cn } from '@/shared/utils/cn'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('VoiceNoteRecorder')
 
 interface VoiceNoteRecorderProps {
   value: string | null // base64 audio data
@@ -78,7 +81,7 @@ export function VoiceNoteRecorder({
 
         // Client-side security: validate size (max 500KB)
         if (blob.size > 512_000) {
-          console.warn('Voice note too large:', blob.size)
+          logger.warn('Voice note too large', blob.size)
           stream.getTracks().forEach(t => t.stop())
           streamRef.current = null
           return
@@ -86,7 +89,7 @@ export function VoiceNoteRecorder({
 
         // Validate MIME type is audio
         if (!blob.type.startsWith('audio/')) {
-          console.warn('Invalid audio type:', blob.type)
+          logger.warn('Invalid audio type', blob.type)
           stream.getTracks().forEach(t => t.stop())
           streamRef.current = null
           return
@@ -97,7 +100,7 @@ export function VoiceNoteRecorder({
           const base64 = reader.result as string
           // Final check: must be a data:audio/* URL
           if (!base64.startsWith('data:audio/')) {
-            console.warn('Invalid data URL format')
+            logger.warn('Invalid data URL format')
             return
           }
           onChange(base64, recordingTime)

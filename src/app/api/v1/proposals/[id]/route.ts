@@ -2,30 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { UpdateProposalSchema, type UpdateProposalInput } from '@/shared/validations/proposal';
+import { Logger } from '@/infrastructure/logger';
 
-// Validation schemas
-const UpdateProposalSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED']).optional(),
-  items: z.array(z.object({
-    id: z.string().optional(),
-    productId: z.string().optional(),
-    name: z.string(),
-    description: z.string().optional(),
-    unit: z.string().default('Adet'),
-    quantity: z.number().positive(),
-    unitPrice: z.number().nonnegative(),
-    discountRate: z.number().min(0).max(100).default(0),
-    vatRate: z.number().min(0).max(100).default(18),
-  })).optional(),
-  notes: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  deliveryTerms: z.string().optional(),
-  customerId: z.string().optional(),
-});
-
-type UpdateProposalInput = z.infer<typeof UpdateProposalSchema>;
+const logger = new Logger('ProposalDetailAPI');
 
 /**
  * GET /api/v1/proposals/[id]
@@ -87,7 +67,7 @@ export async function GET(
       data: proposal,
     });
   } catch (error) {
-    console.error('GET /api/v1/proposals/[id] error:', error);
+    logger.error('GET /api/v1/proposals/[id] error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -238,7 +218,7 @@ export async function PUT(
       );
     }
 
-    console.error('PUT /api/v1/proposals/[id] error:', error);
+    logger.error('PUT /api/v1/proposals/[id] error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -290,7 +270,7 @@ export async function DELETE(
       message: 'Proposal deleted successfully',
     });
   } catch (error) {
-    console.error('DELETE /api/v1/proposals/[id] error:', error);
+    logger.error('DELETE /api/v1/proposals/[id] error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('ProductDetailAPI');
 
 /**
  * GET /api/v1/products/[id]
@@ -25,7 +28,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: product });
   } catch (error) {
-    console.error('GET /api/v1/products/[id] error:', error);
+    logger.error('GET /api/v1/products/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -75,7 +78,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error('PUT /api/v1/products/[id] error:', error);
+    logger.error('PUT /api/v1/products/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -108,7 +111,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Product deleted' });
   } catch (error) {
-    console.error('DELETE /api/v1/products/[id] error:', error);
+    logger.error('DELETE /api/v1/products/[id] error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

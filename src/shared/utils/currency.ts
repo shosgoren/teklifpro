@@ -9,6 +9,10 @@
  * - GBP (İngiliz Sterlini)
  */
 
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('CurrencyUtils');
+
 // ============================================================================
 // SABITLER VE TİP TANIMLARI
 // ============================================================================
@@ -208,7 +212,7 @@ export function formatCurrency(
 
     return formatter.format(amount);
   } catch (error) {
-    console.error('Para birimi biçimlendirme hatası:', error);
+    logger.error('Para birimi biçimlendirme hatası', error);
     return `${amount.toFixed(SUPPORTED_CURRENCIES[currency].decimals)} ${currency}`;
   }
 }
@@ -255,7 +259,7 @@ export function parseCurrency(value: string, currency: CurrencyCode): number {
 
     return amount;
   } catch (error) {
-    console.error('Para birimi ayrıştırma hatası:', error);
+    logger.error('Para birimi ayrıştırma hatası', error);
     return 0;
   }
 }
@@ -289,7 +293,7 @@ function parseTCMBXML(xmlText: string): Record<string, number> {
       rates.GBP = parseFloat(gbpMatch[1].replace(',', '.'));
     }
   } catch (error) {
-    console.error('TCMB XML ayrıştırma hatası:', error);
+    logger.error('TCMB XML ayrıştırma hatası', error);
   }
 
   return rates;
@@ -363,7 +367,7 @@ export async function getExchangeRates(
       return result;
     }
   } catch (error) {
-    console.error('Döviz kurları alma hatası:', error);
+    logger.error('Döviz kurları alma hatası', error);
   }
 
   // Fallback: Kachede olan veriler veya statik değerler
@@ -422,7 +426,7 @@ export function convertCurrency(
 
   // Kurlar farklı temel birimiyse uyarı ver
   if (rates.base !== from && rates.base !== 'TRY') {
-    console.warn(
+    logger.warn(
       `Döviz kurları ${rates.base} temeline göre, ama ${from} temelinden çevrilmeye çalışılıyor`
     );
   }
@@ -442,7 +446,7 @@ export function convertCurrency(
 
     return Math.round(result * 100) / 100; // 2 ondalak basamağa yuvarlat
   } catch (error) {
-    console.error('Para birimi dönüştürme hatası:', error);
+    logger.error('Para birimi dönüştürme hatası', error);
     return amount;
   }
 }

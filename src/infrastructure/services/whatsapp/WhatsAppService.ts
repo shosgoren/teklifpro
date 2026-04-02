@@ -9,6 +9,9 @@
 
 import crypto from 'crypto'
 import type { WhatsAppSendTemplateParams, WhatsAppMessageResponse } from '@/shared/types'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('WhatsAppService')
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v18.0'
 
@@ -104,7 +107,7 @@ export class WhatsAppService {
           messageId: templateResult?.messages?.[0]?.id,
         }
       } catch (templateError) {
-        console.error('[WhatsApp] Template mesaj hatasi:', templateError)
+        logger.error('Template mesaj hatasi', templateError)
         return {
           success: false,
           error: templateError instanceof Error ? templateError.message : 'Mesaj gonderilemedi',

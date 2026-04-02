@@ -4,23 +4,16 @@ import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
 import { generateProposalNumber, generatePublicToken } from '@/shared/utils/proposal';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { CloneProposalBodySchema, type CloneProposalInput } from '@/shared/validations/proposal';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('ProposalCloneAPI');
 
 
 /**
  * POST /api/v1/proposals/[id]/clone
  * Teklifi kopyala - yeni teklif numarasi ve token ile deep copy olustur
  */
-
-// Validation schemas
-const CloneProposalBodySchema = z.object({
-  customerId: z.string().uuid().optional(),
-  contactId: z.string().uuid().optional(),
-  title: z.string().min(1).max(255).optional(),
-  priceMultiplier: z.number().positive().optional(),
-  includeNotes: z.boolean().default(true),
-});
-
-type CloneProposalInput = z.infer<typeof CloneProposalBodySchema>;
 
 /**
  * Helper: UUID formati kontrol et
@@ -319,7 +312,7 @@ export async function POST(
         },
       }).catch(() => {
         // Audit log tablosu olmayabilir, bu durumda devam et
-        console.log('[AUDIT] Proposal cloned:', {
+        logger.info('[AUDIT] Proposal cloned:', {
           sourceProposalId,
           newProposalId: newProposal.id,
         });
@@ -381,7 +374,7 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/proposals/[id]/clone error:', error);
+    logger.error('POST /api/v1/proposals/[id]/clone error:', error);
 
     return NextResponse.json<ApiResponse>(
       {

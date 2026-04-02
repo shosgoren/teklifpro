@@ -2,14 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { stockQuerySchema } from '@/shared/validations/stock';
+import { Logger } from '@/infrastructure/logger';
 
-const querySchema = z.object({
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
-  search: z.string().optional().default(''),
-  type: z.string().optional().default(''),
-  lowStock: z.string().optional().default(''),
-});
+const logger = new Logger('StockAPI');
+
+const querySchema = stockQuerySchema;
 
 export async function GET(request: NextRequest) {
   try {
@@ -138,7 +136,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/stock error:', error);
+    logger.error('GET /api/v1/stock error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

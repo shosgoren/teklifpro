@@ -37,7 +37,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from '@/shared/components/ui/dialog';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 

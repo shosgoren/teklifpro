@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/shared/components/ui/select';
 import {
   CurrencyCode,
   SUPPORTED_CURRENCIES,
@@ -16,6 +16,9 @@ import {
   ExchangeRates,
   convertCurrency,
 } from '@/shared/utils/currency';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('CurrencySelector');
 
 /**
  * Para Birimi Seçici Bileşeni
@@ -80,7 +83,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         const fetchedRates = await getExchangeRates('TRY');
         setRates(fetchedRates);
       } catch (err) {
-        console.error('Döviz kurları yüklenemedi:', err);
+        logger.error('Doviz kurlari yuklenemedi', err);
         setError('Döviz kurları yüklenemedi');
       } finally {
         setLoading(false);
@@ -128,7 +131,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 
       return `(1 ₺ = ${rate.toFixed(4)} ${code})`;
     } catch (err) {
-      console.error('Döviz kuru hesaplanamadı:', err);
+      logger.error('Doviz kuru hesaplanamadi', err);
       return '';
     }
   };

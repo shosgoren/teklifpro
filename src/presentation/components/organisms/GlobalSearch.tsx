@@ -7,9 +7,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+} from '@/shared/components/ui/dialog';
+import { Input } from '@/shared/components/ui/input';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   FileText,
   Users,
@@ -18,7 +18,10 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils/cn';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('GlobalSearch');
 
 /**
  * Arama sonucu veri yapısı
@@ -312,7 +315,7 @@ export function GlobalSearch() {
         setResults([]);
       }
     } catch (error) {
-      console.error('Arama hatası:', error);
+      logger.error('Arama hatasi', error);
       setResults([]);
     } finally {
       setLoading(false);

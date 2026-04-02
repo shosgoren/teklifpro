@@ -4,28 +4,10 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/shared/utils/prisma'
 import { ApiResponse } from '@/shared/types'
 import { createApiHandler } from '@/infrastructure/middleware'
+import { Logger } from '@/infrastructure/logger'
+import { requestResetSchema, resetPasswordSchema } from '@/shared/validations/auth'
 
-/**
- * Validation schemas
- */
-const requestResetSchema = z.object({
-  email: z.string().email('Geçerli bir e-posta adresi girin'),
-})
-
-const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset kodu gerekli'),
-  password: z
-    .string()
-    .min(8, 'Şifre en az 8 karakter olmalıdır')
-    .regex(/[A-Z]/, 'Şifre en az bir büyük harf içermelidir')
-    .regex(/[a-z]/, 'Şifre en az bir küçük harf içermelidir')
-    .regex(/\d/, 'Şifre en az bir rakam içermelidir')
-    .regex(/[!@#$%^&*]/, 'Şifre en az bir özel karakter içermelidir (!@#$%^&*)'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Şifreler eşleşmiyor',
-  path: ['confirmPassword'],
-})
+const logger = new Logger('AuthResetPasswordAPI')
 
 type RequestResetInput = z.infer<typeof requestResetSchema>
 type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
@@ -149,11 +131,11 @@ async function handleRequestPasswordReset(
         .emailService as any
       await emailService.sendPasswordResetEmail(data.email, html)
     } catch (emailError) {
-      console.error('Failed to send password reset email:', emailError)
+      logger.error('Failed to send password reset email', emailError)
       // Don't fail the request if email sending fails
     }
 
-    console.log('[PASSWORD_RESET_REQUESTED]', {
+    logger.info('PASSWORD_RESET_REQUESTED', {
       userId: user.id,
       email: data.email,
       tokenHash: token.substring(0, 8),
@@ -172,7 +154,7 @@ async function handleRequestPasswordReset(
       { status: 200 },
     )
   } catch (error) {
-    console.error('Password reset request error:', error)
+    logger.error('Password reset request error', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json<ApiResponse<ResetRequestResponse>>(
@@ -283,7 +265,7 @@ async function handleResetPassword(
     // Optionally invalidate all other sessions
     // In production, you might want to revoke all refresh tokens here
 
-    console.log('[PASSWORD_RESET_COMPLETED]', {
+    logger.info('PASSWORD_RESET_COMPLETED', {
       userId: tokenRecord.user.id,
       email: tokenRecord.user.email,
       timestamp: new Date().toISOString(),
@@ -300,7 +282,7 @@ async function handleResetPassword(
       { status: 200 },
     )
   } catch (error) {
-    console.error('Password reset error:', error)
+    logger.error('Password reset error', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json<ApiResponse<ResetPasswordResponse>>(

@@ -1,4 +1,7 @@
 import { prisma } from '@/shared/utils/prisma';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('AiProposalService');
 
 // Stub client replacing @anthropic-ai/sdk
 interface ClaudeMessage {
@@ -13,7 +16,7 @@ class AnthropicStub {
       system: string;
       messages: Array<{ role: string; content: string }>;
     }): Promise<ClaudeMessage> => {
-      console.warn('[AiProposalService] Anthropic SDK stub called - returning empty response');
+      logger.warn('Anthropic SDK stub called - returning empty response');
       return {
         content: [{ type: 'text', text: '{}' }],
       };
@@ -137,9 +140,7 @@ class AiProposalService {
   ): Promise<ProductSuggestion[]> {
     try {
       if (!this.rateLimiter.isAllowed(tenantId)) {
-        console.warn(
-          `[AiProposalService] Rate limit exceeded for tenant: ${tenantId}`,
-        );
+        logger.warn(`Rate limit exceeded for tenant: ${tenantId}`);
         return [];
       }
 
@@ -176,7 +177,7 @@ class AiProposalService {
       this.setInCache(cacheKey, suggestions);
       return suggestions;
     } catch (error) {
-      console.error('[AiProposalService] Error in suggestProducts:', error);
+      logger.error('Error in suggestProducts', error);
       return [];
     }
   }
@@ -223,7 +224,7 @@ class AiProposalService {
       this.setInCache(cacheKey, suggestion);
       return suggestion;
     } catch (error) {
-      console.error('[AiProposalService] Error in suggestPricing:', error);
+      logger.error('Error in suggestPricing', error);
       return {
         originalTotal: items.reduce(
           (sum, item) => sum + item.quantity * item.unitPrice,
@@ -271,7 +272,7 @@ Notu kısa, çekici ve profesyonel tut. Sadece notu ver, başka birşey yazma.
       this.setInCache(cacheKey, note);
       return note;
     } catch (error) {
-      console.error('[AiProposalService] Error in generateProposalNote:', error);
+      logger.error('Error in generateProposalNote', error);
       return 'Teklif başarıyla hazırlanmıştır.';
     }
   }
@@ -313,7 +314,7 @@ Notu kısa, çekici ve profesyonel tut. Sadece notu ver, başka birşey yazma.
       this.setInCache(cacheKey, prediction);
       return prediction;
     } catch (error) {
-      console.error('[AiProposalService] Error in predictAcceptance:', error);
+      logger.error('Error in predictAcceptance', error);
       return {
         probability: 50,
         factors: [],
@@ -376,7 +377,7 @@ JSON formatında FollowUpSuggestion[] döndür:
       this.setInCache(cacheKey, suggestions);
       return suggestions;
     } catch (error) {
-      console.error('[AiProposalService] Error in suggestFollowUp:', error);
+      logger.error('Error in suggestFollowUp', error);
       return [];
     }
   }
@@ -412,7 +413,7 @@ ${text}
       this.setInCache(cacheKey, improvedText);
       return improvedText.trim();
     } catch (error) {
-      console.error('[AiProposalService] Error in improveProposalText:', error);
+      logger.error('Error in improveProposalText', error);
       return text;
     }
   }
@@ -450,7 +451,7 @@ ${text}
         date: p.createdAt.toISOString(),
       }));
     } catch (error) {
-      console.error('[AiProposalService] Error fetching customer history:', error);
+      logger.error('Error fetching customer history', error);
       return [];
     }
   }
@@ -473,7 +474,7 @@ ${text}
 
       return products;
     } catch (error) {
-      console.error('[AiProposalService] Error fetching product catalog:', error);
+      logger.error('Error fetching product catalog', error);
       return [];
     }
   }
@@ -574,7 +575,7 @@ JSON formatında AcceptancePrediction döndür.
 
       return JSON.parse(jsonMatch[0]) as T;
     } catch (error) {
-      console.warn('[AiProposalService] JSON parse error:', error);
+      logger.warn('JSON parse error', error);
       return defaultValue;
     }
   }

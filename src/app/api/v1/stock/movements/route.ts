@@ -3,24 +3,12 @@ import { z } from 'zod';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { stockMovementQuerySchema, createMovementSchema } from '@/shared/validations/stock';
+import { Logger } from '@/infrastructure/logger';
 
-const querySchema = z.object({
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
-  productId: z.string().optional().default(''),
-  type: z.string().optional().default(''),
-  from: z.string().optional().default(''),
-  to: z.string().optional().default(''),
-});
+const logger = new Logger('StockMovementsAPI');
 
-const createMovementSchema = z.object({
-  productId: z.string().min(1, 'Urun ID gerekli'),
-  type: z.enum(['IN', 'OUT', 'ADJUSTMENT', 'PRODUCTION_IN', 'PRODUCTION_OUT']),
-  quantity: z.number().positive('Miktar pozitif olmali'),
-  unitPrice: z.number().nonnegative('Birim fiyat negatif olamaz').optional(),
-  reference: z.string().max(255).optional(),
-  notes: z.string().max(1000).optional(),
-});
+const querySchema = stockMovementQuerySchema;
 
 export async function GET(request: NextRequest) {
   try {
@@ -116,7 +104,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/stock/movements error:', error);
+    logger.error('GET /api/v1/stock/movements error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -259,7 +247,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/stock/movements error:', error);
+    logger.error('POST /api/v1/stock/movements error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

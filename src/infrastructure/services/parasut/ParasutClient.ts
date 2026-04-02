@@ -9,6 +9,7 @@
  */
 
 import { prisma } from '@/shared/utils/prisma'
+import { Logger } from '@/infrastructure/logger'
 import type {
   ParasutCredentials,
   ParasutTokenResponse,
@@ -20,6 +21,8 @@ import type {
 
 const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/v4'
 const PARASUT_AUTH_URL = process.env.PARASUT_AUTH_URL || 'https://auth.parasut.com/oauth/token'
+
+const logger = new Logger('ParasutClient')
 
 export class ParasutClient {
   private tenantId: string
@@ -89,7 +92,7 @@ export class ParasutClient {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        console.error('[Parasut] Auth failed:', response.status, error)
+        logger.error(`Auth failed: ${response.status}`, error)
         return false
       }
 
@@ -98,7 +101,7 @@ export class ParasutClient {
 
       return true
     } catch (error) {
-      console.error('[Parasut] Auth error:', error)
+      logger.error('Auth error', error)
       return false
     }
   }
@@ -383,7 +386,7 @@ export class ParasutClient {
 
           synced++
         } catch (err) {
-          console.error(`[Parasut] Contact sync error (${contact.id}):`, err)
+          logger.error(`Contact sync error (${contact.id})`, err)
           errors++
         }
       }
@@ -468,7 +471,7 @@ export class ParasutClient {
           })
           synced++
         } catch (err) {
-          console.error(`[Parasut] Product sync error (${product.id}):`, err)
+          logger.error(`Product sync error (${product.id})`, err)
           errors++
         }
       }

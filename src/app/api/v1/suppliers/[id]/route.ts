@@ -2,20 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { updateSupplierSchema } from '@/shared/validations/supplier';
+import { Logger } from '@/infrastructure/logger';
 
-// ==================== Schemas ====================
-
-const updateSupplierSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  contactName: z.string().max(255).nullable().optional(),
-  phone: z.string().max(50).nullable().optional(),
-  email: z.string().email().max(255).nullable().optional(),
-  address: z.string().max(500).nullable().optional(),
-  taxNumber: z.string().max(50).nullable().optional(),
-  taxOffice: z.string().max(100).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-  isActive: z.boolean().optional(),
-});
+const logger = new Logger('SupplierDetailAPI');
 
 // ==================== GET: Get Supplier by ID ====================
 
@@ -94,7 +84,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: formatted });
   } catch (error) {
-    console.error('GET /api/v1/suppliers/[id] error:', error);
+    logger.error('GET /api/v1/suppliers/[id] error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error', code: 'INTERNAL_ERROR' },
       { status: 500 }
@@ -164,7 +154,7 @@ export async function PUT(
       },
     });
   } catch (error) {
-    console.error('PUT /api/v1/suppliers/[id] error:', error);
+    logger.error('PUT /api/v1/suppliers/[id] error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -230,7 +220,7 @@ export async function DELETE(
       data: { message: 'Supplier deleted' },
     });
   } catch (error) {
-    console.error('DELETE /api/v1/suppliers/[id] error:', error);
+    logger.error('DELETE /api/v1/suppliers/[id] error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error', code: 'INTERNAL_ERROR' },
       { status: 500 }

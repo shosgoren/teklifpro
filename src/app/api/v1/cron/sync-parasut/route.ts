@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('CronSyncParasutAPI');
 
 export async function GET(request: NextRequest) {
   // Verify cron secret for security
@@ -67,7 +70,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Cron sync-parasut error:', error);
+    logger.error('Cron sync-parasut error', error);
     return NextResponse.json(
       { success: false, error: 'Sync failed' },
       { status: 500 }

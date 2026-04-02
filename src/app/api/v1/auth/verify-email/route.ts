@@ -3,17 +3,10 @@ import { z } from 'zod'
 import { prisma } from '@/shared/utils/prisma'
 import { ApiResponse } from '@/shared/types'
 import { createApiHandler } from '@/infrastructure/middleware'
+import { Logger } from '@/infrastructure/logger'
+import { verifyEmailSchema, sendVerificationEmailSchema } from '@/shared/validations/auth'
 
-/**
- * Validation schema for email verification
- */
-const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Doğrulama kodu gerekli'),
-})
-
-const sendVerificationEmailSchema = z.object({
-  email: z.string().email('Geçerli bir e-posta adresi girin'),
-})
+const logger = new Logger('AuthVerifyEmailAPI')
 
 interface VerifyEmailResponse {
   message: string
@@ -101,7 +94,7 @@ async function handleSendVerificationEmail(
       .emailService as any
     await emailService.sendVerificationEmail(data.email, html)
 
-    console.log('[EMAIL_VERIFICATION_SENT]', {
+    logger.info('EMAIL_VERIFICATION_SENT', {
       userId: user.id,
       email: data.email,
       tokenHash: token.substring(0, 8),
@@ -119,7 +112,7 @@ async function handleSendVerificationEmail(
       { status: 200 },
     )
   } catch (error) {
-    console.error('Send verification email error:', error)
+    logger.error('Send verification email error', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json<ApiResponse<SendVerificationResponse>>(
@@ -209,7 +202,7 @@ async function handleVerifyEmailToken(
       where: { token: data.token },
     })
 
-    console.log('[EMAIL_VERIFIED]', {
+    logger.info('EMAIL_VERIFIED', {
       userId: user.id,
       email: user.email,
       timestamp: new Date().toISOString(),
@@ -226,7 +219,7 @@ async function handleVerifyEmailToken(
       { status: 200 },
     )
   } catch (error) {
-    console.error('Email verification error:', error)
+    logger.error('Email verification error', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json<ApiResponse<VerifyEmailResponse>>(

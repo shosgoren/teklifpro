@@ -8,6 +8,7 @@ import * as z from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Logger } from '@/infrastructure/logger'
 import { useUnsavedChanges } from '@/shared/hooks/useUnsavedChanges'
 import {
   Search,
@@ -65,6 +66,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/presentation/componen
 import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
 import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNoteRecorder'
+
+const logger = new Logger('ProposalNewPage')
 
 // ── Validation ────────────────────────────────────────────
 
@@ -1248,7 +1251,7 @@ export default function CreateProposalPage() {
       markClean()
       router.push(`/${locale}/proposals/${proposalId}`)
     } catch (error) {
-      console.error('Proposal save/send error:', error)
+      logger.error('Proposal save/send error', error)
       toast.error(error instanceof Error ? error.message : t('proposals.error'))
     } finally {
       setIsSubmitting(false)

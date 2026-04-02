@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { FollowupSettingsSchema } from '@/shared/validations/settings';
+import { Logger } from '@/infrastructure/logger';
 
-const FollowupSettingsSchema = z.object({
-  smartFollowupEnabled: z.boolean(),
-  followupDaysAfterView: z.number().int().min(1).max(30).default(3),
-  followupMessage: z.string().max(1000).nullable().optional(),
-  followupMaxReminders: z.number().int().min(1).max(5).default(2),
-});
+const logger = new Logger('FollowupSettingsAPI');
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: tenant });
   } catch (error) {
-    console.error('GET /api/v1/settings/followup error:', error);
+    logger.error('GET /api/v1/settings/followup error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -77,7 +74,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error('PUT /api/v1/settings/followup error:', error);
+    logger.error('PUT /api/v1/settings/followup error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

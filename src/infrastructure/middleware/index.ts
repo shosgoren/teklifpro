@@ -6,6 +6,9 @@ import {
 } from './rateLimitMiddleware'
 import { ApiResponse } from '@/shared/types'
 import { prisma } from '@/shared/utils/prisma'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('Middleware')
 
 interface CreateApiHandlerOptions {
   /**
@@ -42,7 +45,7 @@ interface CreateApiHandlerOptions {
 export function createApiHandler(
   handler: (
     request: NextRequest,
-    context?: any,
+    context?: { params: Record<string, string> },
   ) => Promise<NextResponse<ApiResponse>>,
   options: CreateApiHandlerOptions = {},
 ) {
@@ -54,12 +57,12 @@ export function createApiHandler(
     audit = false,
   } = options
 
-  return async (request: NextRequest, context?: any): Promise<NextResponse> => {
+  return async (request: NextRequest, context?: { params: Record<string, string> }): Promise<NextResponse> => {
     try {
       // Chain 1: Rate limiting (if enabled)
-      let limitedHandler: (request: NextRequest, context?: any) => Promise<NextResponse> = handler as any
+      let limitedHandler: (request: NextRequest, context?: { params: Record<string, string> }) => Promise<NextResponse> = handler
       if (rateLimit) {
-        limitedHandler = withRateLimit(handler as any, { requestsPerMinute })
+        limitedHandler = withRateLimit(handler, { requestsPerMinute })
       }
 
       // Chain 2: Authentication (unless public)
@@ -90,7 +93,7 @@ export function createApiHandler(
             status: statusCode >= 400 ? 'FAILED' : 'SUCCESS',
             resource: url.split('/').filter(Boolean)[3] || 'unknown', // Extract resource from URL
           }).catch((error) => {
-            console.error('Failed to log audit event:', error)
+            logger.error('Failed to log audit event', error)
           })
         }
       }
@@ -116,7 +119,7 @@ export function createApiHandler(
 
       return response
     } catch (error) {
-      console.error('Handler execution error:', error)
+      logger.error('Handler execution error', error)
 
       return NextResponse.json<ApiResponse>(
         {
@@ -157,10 +160,10 @@ async function logAuditAsync(data: {
       })
     } catch (error) {
       // Table might not exist yet, log to console instead
-      console.log('[AUDIT]', JSON.stringify(data))
+      logger.info('Audit event', data)
     }
   } catch (error) {
-    console.error('Audit logging failed:', error)
+    logger.error('Audit logging failed', error)
   }
 }
 

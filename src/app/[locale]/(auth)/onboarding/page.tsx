@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { Logger } from '@/infrastructure/logger';
 import {
   Building2,
   Lock,
@@ -31,6 +32,8 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Card } from '@/shared/components/ui/card';
 import { cn } from '@/shared/utils/cn';
+
+const logger = new Logger('OnboardingPage');
 
 // Shared style constants
 const inputClasses =
@@ -297,7 +300,7 @@ export default function OnboardingPage() {
       setCompletedSteps([...completedSteps, 1]);
       setCurrentStep(2);
     } catch (err) {
-      console.error(err);
+      logger.error('Onboarding company info error', err);
     } finally {
       setIsLoading(false);
     }
@@ -323,7 +326,7 @@ export default function OnboardingPage() {
       setCompletedSteps([...completedSteps, 2]);
       setCurrentStep(3);
     } catch (err) {
-      console.error(err);
+      logger.error('Onboarding parasut error', err);
     } finally {
       setIsLoading(false);
     }
@@ -349,7 +352,7 @@ export default function OnboardingPage() {
       setCompletedSteps([...completedSteps, 3]);
       setCurrentStep(4);
     } catch (err) {
-      console.error(err);
+      logger.error('Onboarding whatsapp error', err);
     } finally {
       setIsLoading(false);
     }

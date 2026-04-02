@@ -2,14 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { Logger } from '@/infrastructure/logger';
+import { parasutSchema } from '@/shared/validations/integrations';
 
-const parasutSchema = z.object({
-  companyId: z.string().min(1),
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
+const logger = new Logger('OnboardingParasutAPI');
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
     }
-    console.error('Onboarding parasut error:', error);
+    logger.error('Onboarding parasut error', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

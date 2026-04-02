@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('OnboardingCompanyInfoAPI');
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Company info saved' });
   } catch (error) {
-    console.error('Onboarding company-info error:', error);
+    logger.error('Onboarding company-info error', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -2,20 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { updateBomSchema } from '@/shared/validations/bom';
+import { Logger } from '@/infrastructure/logger';
 
-const bomItemSchema = z.object({
-  materialId: z.string().min(1, 'Malzeme ID gerekli'),
-  quantity: z.number().positive('Miktar pozitif olmali'),
-  unit: z.string().min(1).default('Adet'),
-  wasteRate: z.number().min(0).max(100).default(0),
-  notes: z.string().optional().default(''),
-  sortOrder: z.number().int().min(0).optional().default(0),
-});
-
-const updateBomSchema = z.object({
-  notes: z.string().optional(),
-  items: z.array(bomItemSchema).min(1, 'En az bir malzeme gerekli'),
-});
+const logger = new Logger('BomDetailAPI');
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -103,7 +93,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       data: formattedBom,
     });
   } catch (error) {
-    console.error('GET /api/v1/bom/[id] error:', error);
+    logger.error('GET /api/v1/bom/[id] error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -235,7 +225,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       data: formattedBom,
     });
   } catch (error) {
-    console.error('PUT /api/v1/bom/[id] error:', error);
+    logger.error('PUT /api/v1/bom/[id] error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -288,7 +278,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       data: { message: 'Recete basariyla silindi' },
     });
   } catch (error) {
-    console.error('DELETE /api/v1/bom/[id] error:', error);
+    logger.error('DELETE /api/v1/bom/[id] error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

@@ -2,25 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { createSupplierSchema, supplierQuerySchema } from '@/shared/validations/supplier';
+import { Logger } from '@/infrastructure/logger';
 
-// ==================== Schemas ====================
+const logger = new Logger('SupplierAPI');
 
-const createSupplierSchema = z.object({
-  name: z.string().min(1, 'Tedarikci adi gerekli').max(255),
-  contactName: z.string().max(255).optional(),
-  phone: z.string().max(50).optional(),
-  email: z.string().email('Gecerli bir e-posta adresi girin').max(255).optional().or(z.literal('')),
-  address: z.string().max(500).optional(),
-  taxNumber: z.string().max(50).optional(),
-  taxOffice: z.string().max(100).optional(),
-  notes: z.string().max(2000).optional(),
-});
-
-const querySchema = z.object({
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('10'),
-  search: z.string().optional().default(''),
-});
+const querySchema = supplierQuerySchema;
 
 // ==================== GET: List Suppliers ====================
 
@@ -113,7 +100,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/suppliers error:', error);
+    logger.error('GET /api/v1/suppliers error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -183,7 +170,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/suppliers error:', error);
+    logger.error('POST /api/v1/suppliers error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

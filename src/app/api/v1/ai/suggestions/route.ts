@@ -1,70 +1,15 @@
-// POST /api/v1/ai/suggestions — AI destekli teklif önerileri
-// Ürün önerisi, fiyat optimizasyonu, kabul tahmini, takip önerisi
+// POST /api/v1/ai/suggestions — AI destekli teklif onerileri
+// Urun onerisi, fiyat optimizasyonu, kabul tahmini, takip onerisi
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import aiProposalService from '@/infrastructure/services/ai/AiProposalService';
+import { Logger } from '@/infrastructure/logger';
+import { aiRequestSchema } from '@/shared/validations/ai';
 
-// --- Zod Şemaları ---
+const logger = new Logger('AISuggestionsAPI');
 
-const suggestProductsSchema = z.object({
-  action: z.literal('suggest-products'),
-  customerId: z.string().uuid(),
-});
-
-const suggestPricingSchema = z.object({
-  action: z.literal('suggest-pricing'),
-  customerId: z.string().uuid(),
-  items: z.array(z.object({
-    productId: z.string(),
-    productName: z.string(),
-    quantity: z.number().positive(),
-    unitPrice: z.number().min(0),
-    discount: z.number().min(0).max(100).optional(),
-  })),
-});
-
-const predictAcceptanceSchema = z.object({
-  action: z.literal('predict-acceptance'),
-  proposalData: z.object({
-    customerId: z.string(),
-    totalAmount: z.number(),
-    itemCount: z.number(),
-    averageDiscount: z.number(),
-    currency: z.string().optional(),
-  }),
-});
-
-const suggestFollowUpSchema = z.object({
-  action: z.literal('suggest-followup'),
-  proposalId: z.string().uuid(),
-});
-
-const improveTextSchema = z.object({
-  action: z.literal('improve-text'),
-  text: z.string().min(10).max(5000),
-  locale: z.enum(['tr', 'en']).optional().default('tr'),
-});
-
-const generateNoteSchema = z.object({
-  action: z.literal('generate-note'),
-  customerName: z.string(),
-  items: z.array(z.object({
-    productName: z.string(),
-    quantity: z.number(),
-    unitPrice: z.number(),
-  })),
-  locale: z.enum(['tr', 'en']).optional().default('tr'),
-});
-
-const requestSchema = z.discriminatedUnion('action', [
-  suggestProductsSchema,
-  suggestPricingSchema,
-  predictAcceptanceSchema,
-  suggestFollowUpSchema,
-  improveTextSchema,
-  generateNoteSchema,
-]);
+const requestSchema = aiRequestSchema;
 
 // --- POST Handler ---
 
@@ -133,7 +78,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('[AI Suggestions API] Hata:', error);
+    logger.error('AI Suggestions API error', error);
 
     // Rate limit aşımı
     if (error.message?.includes('rate limit') || error.message?.includes('Rate limit')) {

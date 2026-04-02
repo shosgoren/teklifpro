@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { Logger } from '@/infrastructure/logger';
+import { testParasutSchema } from '@/shared/validations/integrations';
+
+const logger = new Logger('TestParasutAPI');
 
 const PARASUT_AUTH_URL = process.env.PARASUT_AUTH_URL || 'https://auth.parasut.com/oauth/token';
 const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/v4';
 
-const testSchema = z.object({
-  companyId: z.string().min(1),
-  clientId: z.string().min(1),
-  clientSecret: z.string().min(1),
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
+const testSchema = testParasutSchema;
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
     }
-    console.error('Test parasut connection error:', error);
+    logger.error('Test parasut connection error', error);
     return NextResponse.json({ success: false, error: 'Connection test failed' }, { status: 500 });
   }
 }

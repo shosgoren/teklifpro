@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { createNoteSchema } from '@/shared/validations/customer';
+import { Logger } from '@/infrastructure/logger';
 
-const createNoteSchema = z.object({
-  content: z.string().min(1, 'Not icerigi bos olamaz').max(5000),
-});
+const logger = new Logger('CustomerNotesAPI');
 
 /**
  * GET /api/v1/customers/[id]/notes
@@ -62,7 +62,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/customers/[id]/notes error:', error);
+    logger.error('GET /api/v1/customers/[id]/notes error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -112,7 +112,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    console.error('POST /api/v1/customers/[id]/notes error:', error);
+    logger.error('POST /api/v1/customers/[id]/notes error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -155,7 +155,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Not silindi' });
   } catch (error) {
-    console.error('DELETE /api/v1/customers/[id]/notes error:', error);
+    logger.error('DELETE /api/v1/customers/[id]/notes error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

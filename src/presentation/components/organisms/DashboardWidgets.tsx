@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Logger } from '@/infrastructure/logger';
 import {
   GripVertical,
   Settings,
@@ -19,8 +20,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+} from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -28,15 +29,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from '@/shared/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+} from '@/shared/components/ui/select';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   AreaChart,
   Area,
@@ -50,6 +51,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+
+const logger = new Logger('DashboardWidgets');
 
 // ============================================================================
 // TÜR TANIMLARı (Type Definitions)
@@ -896,7 +899,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
         //   setWidgets(data.widgets);
         // }
       } catch (error) {
-        console.error('Dashboard düzeni yüklenirken hata oluştu:', error);
+        logger.error('Dashboard duzeni yuklenirken hata olustu', error);
       } finally {
         setIsLoading(false);
       }
@@ -915,10 +918,10 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
       //   body: JSON.stringify({ widgets: updatedWidgets }),
       // });
       // if (!response.ok) {
-      //   console.error('Dashboard düzeni kaydedilemedi');
+      //   logger.error('Dashboard duzeni kaydedilemedi');
       // }
     } catch (error) {
-      console.error('Dashboard düzeni kaydedilirken hata oluştu:', error);
+      logger.error('Dashboard duzeni kaydedilirken hata olustu', error);
     }
   }, []);
 

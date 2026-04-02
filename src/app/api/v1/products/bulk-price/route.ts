@@ -2,14 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { bulkPriceSchema } from '@/shared/validations/product';
+import { Logger } from '@/infrastructure/logger';
 
-const bulkPriceSchema = z.object({
-  percentage: z.number().min(-99).max(1000),
-  field: z.enum(['listPrice', 'costPrice']).default('listPrice'),
-  category: z.string().optional(),
-  productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE']).optional(),
-  productIds: z.array(z.string().uuid()).optional(),
-});
+const logger = new Logger('BulkPriceAPI');
 
 /**
  * PUT /api/v1/products/bulk-price
@@ -75,7 +71,7 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error('PUT /api/v1/products/bulk-price error:', error);
+    logger.error('PUT /api/v1/products/bulk-price error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

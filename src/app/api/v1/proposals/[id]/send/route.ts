@@ -5,12 +5,10 @@ import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
 import { emailService } from '@/infrastructure/services/email/EmailService';
+import { SendProposalSchema } from '@/shared/validations/proposal';
+import { Logger } from '@/infrastructure/logger';
 
-// Validation schema
-const SendProposalSchema = z.object({
-  method: z.enum(['whatsapp', 'email', 'sms']).default('whatsapp'),
-  message: z.string().optional(),
-});
+const logger = new Logger('ProposalSendAPI');
 
 interface SendResult {
   proposalId: string;
@@ -155,7 +153,6 @@ Iyi calismalar!`.trim();
       }
 
       // TODO: Implement SMS sending
-      console.log('SMS sending would be implemented here');
     }
 
     const sentAt = new Date();
@@ -198,7 +195,7 @@ Iyi calismalar!`.trim();
       { status: 200 }
     );
   } catch (error) {
-    console.error('POST /api/v1/proposals/[id]/send error:', error);
+    logger.error('POST /api/v1/proposals/[id]/send error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

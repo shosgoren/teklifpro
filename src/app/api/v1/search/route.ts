@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('SearchAPI');
 
 /**
  * Arama sonuclarinin veri yapisi
@@ -422,7 +425,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
       },
     });
   } catch (error) {
-    console.error('Arama hatasi:', error);
+    logger.error('Arama hatasi', error);
 
     return NextResponse.json(
       {

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
+import { Logger } from '@/infrastructure/logger'
+
+const logger = new Logger('ProposalRespondAPI')
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
       data: { status: updatedProposal.status },
     })
   } catch (error) {
-    console.error('Proposal respond error:', error)
+    logger.error('Proposal respond error', error)
     return NextResponse.json(
       { success: false, error: { message: 'Bir hata oluştu' } },
       { status: 500 }

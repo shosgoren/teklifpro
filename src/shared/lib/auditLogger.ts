@@ -1,5 +1,8 @@
 import { prisma } from '@/shared/utils/prisma';
 import type { Prisma } from '@prisma/client';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('AuditLogger');
 
 interface AuditLogEntry {
   userId: string;
@@ -30,7 +33,7 @@ export class AuditLogger {
         },
       });
     } catch (error) {
-      console.error('[AuditLog] Failed to persist audit log:', error);
+      logger.error('[AuditLog] Failed to persist audit log:', error);
     }
   }
 }

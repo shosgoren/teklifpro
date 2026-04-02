@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { createCustomerSchema, customerQuerySchema } from '@/shared/validations/customer';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('CustomerAPI');
 
 interface ApiResponse<T> {
   success: boolean;
@@ -10,23 +14,7 @@ interface ApiResponse<T> {
   code?: string;
 }
 
-const createCustomerSchema = z.object({
-  name: z.string().min(1, 'Firma adı gerekli').max(255),
-  shortName: z.string().max(255).optional(),
-  phone: z.string().max(20).optional(),
-  email: z.string().email('Geçerli e-posta adresi girin').optional(),
-  city: z.string().max(100).optional(),
-  address: z.string().optional(),
-  taxNumber: z.string().optional(),
-  isActive: z.boolean().default(true),
-});
-
-const querySchema = z.object({
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('10'),
-  search: z.string().optional().default(''),
-  status: z.enum(['all', 'active', 'inactive']).optional().default('all'),
-});
+const querySchema = customerQuerySchema;
 
 type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 type QueryInput = z.infer<typeof querySchema>;
@@ -155,7 +143,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/customers error:', error);
+    logger.error('GET /api/v1/customers error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -242,7 +230,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/customers error:', error);
+    logger.error('POST /api/v1/customers error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

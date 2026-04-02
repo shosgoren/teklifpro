@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('LogoSettingsAPI');
 
 // GET - fetch tenant info including logo
 export async function GET() {
@@ -91,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: tenant });
   } catch (error) {
-    console.error('Logo upload error:', error);
+    logger.error('Logo upload error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

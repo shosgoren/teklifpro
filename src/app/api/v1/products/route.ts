@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { getSession } from '@/shared/lib/auth';
+import { createProductSchema, productQuerySchema } from '@/shared/validations/product';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('ProductAPI');
 
 interface ApiResponse<T> {
   success: boolean;
@@ -10,30 +14,7 @@ interface ApiResponse<T> {
   code?: string;
 }
 
-const createProductSchema = z.object({
-  code: z.string().min(1, 'Urun kodu gerekli').max(50),
-  name: z.string().min(1, 'Urun adi gerekli').max(255),
-  category: z.string().max(100).optional(),
-  unit: z.string().min(1, 'Birim gerekli').max(50),
-  listPrice: z.number().nonnegative('Liste fiyati negatif olamaz'),
-  vatRate: z.number().min(0).max(100).default(18),
-  isActive: z.boolean().default(true),
-  description: z.string().optional().default(''),
-  productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE']).optional().default('COMMERCIAL'),
-  costPrice: z.number().nonnegative().optional(),
-  laborCost: z.number().nonnegative().optional(),
-  overheadRate: z.number().min(0).max(100).optional(),
-  minStockLevel: z.number().nonnegative().optional(),
-});
-
-const querySchema = z.object({
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('10'),
-  search: z.string().optional().default(''),
-  category: z.string().optional().default(''),
-  status: z.enum(['all', 'active', 'inactive']).optional().default('all'),
-  productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE', '']).optional().default(''),
-});
+const querySchema = productQuerySchema;
 
 type CreateProductInput = z.infer<typeof createProductSchema>;
 type QueryInput = z.infer<typeof querySchema>;
@@ -188,7 +169,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       },
     });
   } catch (error) {
-    console.error('GET /api/v1/products error:', error);
+    logger.error('GET /api/v1/products error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -304,7 +285,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       { status: 201 }
     );
   } catch (error) {
-    console.error('POST /api/v1/products error:', error);
+    logger.error('POST /api/v1/products error:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

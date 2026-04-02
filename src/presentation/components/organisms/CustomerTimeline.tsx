@@ -1,20 +1,19 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { Logger } from '@/infrastructure/logger';
 import { useConfirm } from '@/shared/components/confirm-dialog';
-import {
-  Card,
-  Badge,
-  Button,
-  Textarea,
-} from '@/components/ui';
+import { Card } from '@/shared/components/ui/card';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { Textarea } from '@/presentation/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/shared/components/ui/select';
 import {
   MessageCircle,
   Phone,
@@ -26,10 +25,12 @@ import {
   Plus,
   Pin,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/utils/cn';
 import { format, formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/shared/components/ui/use-toast';
+
+const logger = new Logger('CustomerTimeline');
 
 // i18n - Çeviriler için placeholder fonksiyonu
 const t = (key: string, defaultValue?: string) => {
@@ -228,7 +229,7 @@ export function CustomerTimeline({
         setHasMore(data.pagination.hasNextPage);
         setPage(pageNum);
       } catch (error) {
-        console.error('Zaman çizelgesi yükleme hatası:', error);
+        logger.error('Zaman cizelgesi yukleme hatasi', error);
         toast({
           title: 'Hata',
           description: t('timeline.error'),
@@ -323,7 +324,7 @@ export function CustomerTimeline({
         variant: 'default',
       });
     } catch (error) {
-      console.error('Not kaydetme hatası:', error);
+      logger.error('Not kaydetme hatasi', error);
       toast({
         title: 'Hata',
         description: t('timeline.error'),
@@ -359,7 +360,7 @@ export function CustomerTimeline({
         variant: 'default',
       });
     } catch (error) {
-      console.error('Not silme hatası:', error);
+      logger.error('Not silme hatasi', error);
       toast({
         title: 'Hata',
         description: t('timeline.error'),

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
+import { Logger } from '@/infrastructure/logger';
+
+const logger = new Logger('CronSmartFollowupAPI');
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s timeout for cron
@@ -146,12 +149,12 @@ export async function GET(request: NextRequest) {
 
             sent++;
           } catch (err) {
-            console.error(`Follow-up error for proposal ${proposal.id}:`, err);
+            logger.error(`Follow-up error for proposal ${proposal.id}`, err);
             errors++;
           }
         }
       } catch (err) {
-        console.error(`Follow-up error for tenant ${tenant.id}:`, err);
+        logger.error(`Follow-up error for tenant ${tenant.id}`, err);
         errors++;
       }
 
@@ -172,7 +175,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Smart follow-up cron error:', error);
+    logger.error('Smart follow-up cron error', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
