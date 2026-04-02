@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/shared/utils/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('SearchAPI');
@@ -324,16 +324,9 @@ async function searchProducts(
  * - page: sayfa numarasi (varsayilan: 1)
  * - limit: sayfa basina sonuc sayisi (varsayilan: 10, maksimum: 50)
  */
-export async function GET(request: NextRequest): Promise<NextResponse<SearchResponse>> {
+async function handleGet(request: NextRequest): Promise<NextResponse<SearchResponse>> {
   try {
-    // Kullanici kimligini dogrula
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Yetkisiz erisim' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const tenantId = session.tenant.id;
 
@@ -436,3 +429,5 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchResp
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['proposal.read']);

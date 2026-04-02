@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('LogoSettingsAPI');
 
 // GET - fetch tenant info including logo
-export async function GET() {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
 
     const tenant = await prisma.tenant.findUnique({
-      where: { id: session.user.tenantId },
+      where: { id: session.tenant.id },
       select: {
         id: true,
         name: true,
@@ -38,12 +35,9 @@ export async function GET() {
 }
 
 // POST - upload logo (base64)
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const { logo, name, phone, address, taxNumber, taxOffice, bankAccounts } = body;
@@ -77,7 +71,7 @@ export async function POST(request: NextRequest) {
     if (bankAccounts !== undefined) updateData.bankAccounts = bankAccounts;
 
     const tenant = await prisma.tenant.update({
-      where: { id: session.user.tenantId },
+      where: { id: session.tenant.id },
       data: updateData,
       select: {
         id: true,
@@ -101,3 +95,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['settings.manage']);
+export const POST = withAuth(handlePost, ['settings.manage']);

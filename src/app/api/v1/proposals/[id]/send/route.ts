@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/shared/utils/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
 import { emailService } from '@/infrastructure/services/email/EmailService';
 import { SendProposalSchema } from '@/shared/validations/proposal';
@@ -19,18 +19,13 @@ interface SendResult {
   sentAt: Date;
 }
 
-export async function POST(
+async function handlePost(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ): Promise<NextResponse> {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const proposalId = params.id;
     const body = await request.json();
@@ -210,3 +205,5 @@ Iyi calismalar!`.trim();
     );
   }
 }
+
+export const POST = withAuth(handlePost, ['proposal.send']);

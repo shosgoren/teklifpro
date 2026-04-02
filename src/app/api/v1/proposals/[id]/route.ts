@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { UpdateProposalSchema, type UpdateProposalInput } from '@/shared/validations/proposal';
 import { Logger } from '@/infrastructure/logger';
 
@@ -10,15 +10,13 @@ const logger = new Logger('ProposalDetailAPI');
 /**
  * GET /api/v1/proposals/[id]
  */
-export async function GET(
+async function handleGet(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const proposalId = params.id;
 
@@ -78,15 +76,13 @@ export async function GET(
 /**
  * PUT /api/v1/proposals/[id]
  */
-export async function PUT(
+async function handlePut(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const proposalId = params.id;
     const body = await request.json();
@@ -229,15 +225,13 @@ export async function PUT(
 /**
  * DELETE /api/v1/proposals/[id]
  */
-export async function DELETE(
+async function handleDelete(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const proposalId = params.id;
 
@@ -308,3 +302,7 @@ function calculateTotals(items: Array<{
     grandTotal: subtotal - totalDiscount + totalVat,
   };
 }
+
+export const GET = withAuth(handleGet, ['proposal.read']);
+export const PUT = withAuth(handlePut, ['proposal.update']);
+export const DELETE = withAuth(handleDelete, ['proposal.delete']);

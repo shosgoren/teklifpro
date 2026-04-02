@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { stockMovementQuerySchema, createMovementSchema } from '@/shared/validations/stock';
 import { Logger } from '@/infrastructure/logger';
 
@@ -10,15 +10,9 @@ const logger = new Logger('StockMovementsAPI');
 
 const querySchema = stockMovementQuerySchema;
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const queryData = querySchema.parse({
@@ -35,7 +29,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
     };
 
     if (queryData.productId) {
@@ -120,15 +114,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = createMovementSchema.parse(body);
@@ -137,7 +125,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.product.findFirst({
       where: {
         id: data.productId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
     });
 
@@ -196,7 +184,7 @@ export async function POST(request: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       const movement = await tx.stockMovement.create({
         data: {
-          tenantId: session.user.tenantId,
+          tenantId: session.tenant.id,
           productId: data.productId,
           type: data.type,
           quantity: new Decimal(data.quantity),
@@ -266,3 +254,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['stock.read']);
+export const POST = withAuth(handlePost, ['stock.create']);

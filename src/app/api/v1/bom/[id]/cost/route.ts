@@ -1,30 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('BomCostAPI');
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+async function handleGet(request: NextRequest, context?: { params: Record<string, string> }) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
 
     const bom = await prisma.billOfMaterial.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
       include: {
         product: {
@@ -119,3 +109,5 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['bom.read']);

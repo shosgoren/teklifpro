@@ -1,18 +1,9 @@
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { getServerSessionWithAuth, type AuthSession } from '@/infrastructure/middleware/authMiddleware';
 
 /**
  * Get session for use in API routes and server components.
  * Returns null if not authenticated.
  */
-export async function getSession() {
-  const session = await getServerSessionWithAuth();
-  if (!session) return null;
-  return {
-    user: {
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      tenantId: session.user.tenantId,
-    },
-  };
+export async function getSession(): Promise<AuthSession | null> {
+  return getServerSessionWithAuth();
 }

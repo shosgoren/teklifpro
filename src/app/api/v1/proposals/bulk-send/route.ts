@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/shared/utils/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
 import { emailService } from '@/infrastructure/services/email/EmailService';
 import { Logger } from '@/infrastructure/logger';
@@ -35,18 +35,11 @@ interface BulkSendResponse {
  * POST /api/v1/proposals/bulk-send
  * Coklu teklifi bir sefer gonder
  */
-export async function POST(
+async function handlePost(
   request: NextRequest
 ): Promise<NextResponse> {
   try {
-    // Kimlik dogrulamayi kontrol et
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Yetkisiz erisim' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     // Istek govdesini isle
     const body = await request.json();
@@ -272,3 +265,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withAuth(handlePost, ['proposal.send']);

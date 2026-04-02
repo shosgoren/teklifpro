@@ -1,32 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { updateBomSchema } from '@/shared/validations/bom';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('BomDetailAPI');
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+async function handleGet(request: NextRequest, context?: { params: Record<string, string> }) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
 
     const bom = await prisma.billOfMaterial.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
       include: {
         product: {
@@ -101,17 +91,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+async function handlePut(request: NextRequest, context?: { params: Record<string, string> }) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
     const body = await request.json();
     const data = updateBomSchema.parse(body);
 
@@ -119,7 +103,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const existingBom = await prisma.billOfMaterial.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
     });
 
@@ -135,7 +119,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const materials = await prisma.product.findMany({
       where: {
         id: { in: materialIds },
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
     });
 
@@ -241,22 +225,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+async function handleDelete(request: NextRequest, context?: { params: Record<string, string> }) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
 
     const existingBom = await prisma.billOfMaterial.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
     });
 
@@ -285,3 +263,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['bom.read']);
+export const PUT = withAuth(handlePut, ['bom.update']);
+export const DELETE = withAuth(handleDelete, ['bom.delete']);

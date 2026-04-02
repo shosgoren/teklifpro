@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { bulkPriceSchema } from '@/shared/validations/product';
 import { Logger } from '@/infrastructure/logger';
 
@@ -11,19 +11,16 @@ const logger = new Logger('BulkPriceAPI');
  * PUT /api/v1/products/bulk-price
  * Toplu fiyat güncelleme (% artır/azalt)
  */
-export async function PUT(request: NextRequest) {
+async function handlePut(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = bulkPriceSchema.parse(body);
     const multiplier = 1 + data.percentage / 100;
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
       deletedAt: null,
       isActive: true,
     };
@@ -75,3 +72,5 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const PUT = withAuth(handlePut, ['product.update']);

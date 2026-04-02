@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { CreateProposalSchema, GetProposalsSchema } from '@/shared/validations/proposal';
 import { Logger } from '@/infrastructure/logger';
 
@@ -62,15 +62,9 @@ function validateVoiceNote(dataUrl: string): { valid: boolean; error?: string } 
   return { valid: true };
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
+async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const queryParams = GetProposalsSchema.parse({
@@ -148,15 +142,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
   }
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
+async function handlePost(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const payload = CreateProposalSchema.parse(body);
@@ -252,3 +240,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['proposal.read']);
+export const POST = withAuth(handlePost, ['proposal.create']);

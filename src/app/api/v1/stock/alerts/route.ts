@@ -1,24 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('StockAlertsAPI');
 
-export async function GET(_request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     // Fetch all products with stock tracking enabled and minStockLevel > 0
     const products = await prisma.product.findMany({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         trackStock: true,
         minStockLevel: { gt: 0 },
       },
@@ -74,3 +68,5 @@ export async function GET(_request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['stock.read']);

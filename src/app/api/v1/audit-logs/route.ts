@@ -10,7 +10,7 @@ import {
   ApiResponse,
 } from '@/shared/utils/errorHandler';
 import { sanitizeInput } from '@/shared/utils/sanitize';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 
 /**
  * Audit log entry response type
@@ -80,14 +80,10 @@ interface AuditLogsQuery {
 async function handleGet(
   req: NextRequest
 ): Promise<Response> {
-  // Get session from auth middleware
-  const session = await getServerSessionWithAuth();
-  if (!session) {
-    throw badRequest('Authentication required');
-  }
+  const session = getSessionFromRequest(req)!;
 
   const userId = session.user.id;
-  const userRole = (session as any).user?.role || 'OWNER';
+  const userRole = session.user.role || 'OWNER';
   const tenantId = session.tenant.id;
 
   // Validate authorization
@@ -386,7 +382,12 @@ async function handleDelete(
   return successResponse<{ id: string }>({ id: sanitizedId }, 200);
 }
 
-// Export wrapped handlers with error handling
-export const GET = withErrorHandling(handleGet);
+// Export wrapped handlers with auth and error handling
+// GET uses withAuth for permission check, then withErrorHandling for error boundaries
+const wrappedHandleGet = withErrorHandling(handleGet);
+export const GET = withAuth(
+  async (req: NextRequest) => (await wrappedHandleGet(req)) as any,
+  ['audit.read']
+);
 export const POST = withErrorHandling(handlePost);
 export const DELETE = withErrorHandling(handleDelete);

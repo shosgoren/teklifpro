@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createNoteSchema } from '@/shared/validations/customer';
 import { Logger } from '@/infrastructure/logger';
 
@@ -10,15 +10,13 @@ const logger = new Logger('CustomerNotesAPI');
 /**
  * GET /api/v1/customers/[id]/notes
  */
-export async function GET(
+async function handleGet(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(req)!;
+    const params = context!.params;
 
     const customerId = params.id;
     const { searchParams } = new URL(req.url);
@@ -70,15 +68,13 @@ export async function GET(
 /**
  * POST /api/v1/customers/[id]/notes
  */
-export async function POST(
+async function handlePost(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(req)!;
+    const params = context!.params;
 
     const customerId = params.id;
     const body = await req.json();
@@ -120,15 +116,13 @@ export async function POST(
 /**
  * DELETE /api/v1/customers/[id]/notes
  */
-export async function DELETE(
+async function handleDelete(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(req)!;
+    const params = context!.params;
 
     const customerId = params.id;
     const { searchParams } = new URL(req.url);
@@ -159,3 +153,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withAuth(handleGet, ['customer.read']);
+export const POST = withAuth(handlePost, ['customer.update']);
+export const DELETE = withAuth(handleDelete, ['customer.update']);

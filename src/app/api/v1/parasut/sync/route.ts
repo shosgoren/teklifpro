@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { SyncRequestSchema } from '@/shared/validations/integrations';
 import { Logger } from '@/infrastructure/logger';
 
@@ -31,21 +31,9 @@ interface SyncResult {
   };
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<SyncResult>>> {
+async function handlePost(request: NextRequest): Promise<NextResponse<ApiResponse<SyncResult>>> {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Unauthorized',
-          },
-        },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const payload = SyncRequestSchema.parse(body);
@@ -180,3 +168,5 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     );
   }
 }
+
+export const POST = withAuth(handlePost, ['integration.sync']);

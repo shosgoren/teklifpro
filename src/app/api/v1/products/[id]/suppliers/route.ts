@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { linkSupplierSchema, unlinkSupplierSchema } from '@/shared/validations/product';
 import { Logger } from '@/infrastructure/logger';
 
@@ -9,26 +9,20 @@ const logger = new Logger('ProductSuppliersAPI');
 
 // ==================== GET: List Suppliers for a Product ====================
 
-export async function GET(
+async function handleGet(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id: productId } = await params;
+    const productId = context!.params.id;
 
     // Verify product belongs to tenant
     const product = await prisma.product.findFirst({
       where: {
         id: productId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
       select: { id: true },
@@ -95,20 +89,14 @@ export async function GET(
 
 // ==================== POST: Link Supplier to Product ====================
 
-export async function POST(
+async function handlePost(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id: productId } = await params;
+    const productId = context!.params.id;
     const body = await request.json();
     const data = linkSupplierSchema.parse(body);
 
@@ -116,7 +104,7 @@ export async function POST(
     const product = await prisma.product.findFirst({
       where: {
         id: productId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
       select: { id: true },
@@ -133,7 +121,7 @@ export async function POST(
     const supplier = await prisma.supplier.findFirst({
       where: {
         id: data.supplierId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
       select: { id: true },
@@ -233,20 +221,14 @@ export async function POST(
 
 // ==================== DELETE: Remove Supplier Link from Product ====================
 
-export async function DELETE(
+async function handleDelete(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id: productId } = await params;
+    const productId = context!.params.id;
     const body = await request.json();
     const data = unlinkSupplierSchema.parse(body);
 
@@ -254,7 +236,7 @@ export async function DELETE(
     const product = await prisma.product.findFirst({
       where: {
         id: productId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
       select: { id: true },
@@ -308,3 +290,7 @@ export async function DELETE(
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['product.read']);
+export const POST = withAuth(handlePost, ['product.update']);
+export const DELETE = withAuth(handleDelete, ['product.update']);

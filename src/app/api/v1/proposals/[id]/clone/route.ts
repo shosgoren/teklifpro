@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { ApiResponse } from '@/shared/types';
 import { generateProposalNumber, generatePublicToken } from '@/shared/utils/proposal';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { CloneProposalBodySchema, type CloneProposalInput } from '@/shared/validations/proposal';
 import { Logger } from '@/infrastructure/logger';
 
@@ -62,12 +62,12 @@ async function getProposalWithRelations(proposalId: string) {
 /**
  * Handler: Teklif Kopyala
  */
-export async function POST(
+async function handlePost(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> | { id: string } }
+  context?: { params: Record<string, string> }
 ): Promise<NextResponse<ApiResponse>> {
   try {
-    const resolvedParams = await Promise.resolve(context.params);
+    const resolvedParams = context!.params;
     const sourceProposalId = resolvedParams.id;
 
     // ============ 1. DOGRULAMA ============
@@ -87,19 +87,7 @@ export async function POST(
     }
 
     // Kullanici kimligini kontrol et
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Kimlik dogrulama gerekli',
-          },
-        },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
     const userId = session.user.id;
 
     // Request body'yi validate et
@@ -388,3 +376,5 @@ export async function POST(
     );
   }
 }
+
+export const POST = withAuth(handlePost, ['proposal.clone']);

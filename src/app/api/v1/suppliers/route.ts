@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createSupplierSchema, supplierQuerySchema } from '@/shared/validations/supplier';
 import { Logger } from '@/infrastructure/logger';
 
@@ -11,15 +11,9 @@ const querySchema = supplierQuerySchema;
 
 // ==================== GET: List Suppliers ====================
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const query = querySchema.parse({
@@ -33,7 +27,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
       deletedAt: null,
     };
 
@@ -118,15 +112,9 @@ export async function GET(request: NextRequest) {
 
 // ==================== POST: Create Supplier ====================
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = createSupplierSchema.parse(body);
@@ -134,7 +122,7 @@ export async function POST(request: NextRequest) {
     // Filter out empty email string
     const supplierData: any = {
       ...data,
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
     };
     if (supplierData.email === '') {
       delete supplierData.email;
@@ -193,3 +181,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['supplier.read']);
+export const POST = withAuth(handlePost, ['supplier.create']);

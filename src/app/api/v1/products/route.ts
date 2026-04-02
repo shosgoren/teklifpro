@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createProductSchema, productQuerySchema } from '@/shared/validations/product';
 import { Logger } from '@/infrastructure/logger';
 
@@ -49,19 +49,9 @@ interface ListResponse {
   };
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<ListResponse>>> {
+async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse<ListResponse>>> {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          code: 'UNAUTHORIZED',
-        } as ApiResponse<ListResponse>,
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const queryData = querySchema.parse({
@@ -78,7 +68,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     const skip = (page - 1) * limit;
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
     };
 
     if (queryData.search) {
@@ -193,26 +183,16 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
   }
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<ProductResponse>>> {
+async function handlePost(request: NextRequest): Promise<NextResponse<ApiResponse<ProductResponse>>> {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          code: 'UNAUTHORIZED',
-        } as ApiResponse<ProductResponse>,
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = createProductSchema.parse(body);
 
     const existingProduct = await prisma.product.findFirst({
       where: {
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         code: data.code,
       },
     });
@@ -231,7 +211,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     const product = await prisma.product.create({
       data: {
         ...data,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
       select: {
         id: true,
@@ -308,3 +288,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['product.read']);
+export const POST = withAuth(handlePost, ['product.create']);

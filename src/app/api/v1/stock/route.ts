@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { stockQuerySchema } from '@/shared/validations/stock';
 import { Logger } from '@/infrastructure/logger';
 
@@ -9,15 +9,9 @@ const logger = new Logger('StockAPI');
 
 const querySchema = stockQuerySchema;
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const queryData = querySchema.parse({
@@ -33,7 +27,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
       trackStock: true,
     };
 
@@ -151,3 +145,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['stock.read']);

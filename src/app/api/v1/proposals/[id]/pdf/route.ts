@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProposalPdfService } from '@/infrastructure/services/pdf/ProposalPdfService';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/shared/auth/authOptions';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { prisma } from '@/shared/utils/prisma';
 import type { Proposal } from '@/domain/entities/Proposal';
 import type { Tenant } from '@/domain/entities/Tenant';
@@ -97,24 +96,17 @@ async function fetchProposal(id: string, tenantId: string) {
  *
  * Generate and download PDF for a proposal
  */
-export async function GET(
+async function handleGet(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ): Promise<NextResponse> {
   try {
-    // Authentication check
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const id = params.id;
 
-    // Get tenant ID from session
-    const tenantId = (session.user as any).tenantId as string | undefined;
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 401 });
-    }
+    const tenantId = session.tenant.id;
 
     // Fetch proposal from DB
     const dbProposal = await fetchProposal(id, tenantId);
@@ -182,22 +174,16 @@ export async function GET(
  *
  * Preview PDF generation (optional - for validating before download)
  */
-export async function POST(
+async function handlePost(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ): Promise<NextResponse> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const id = params.id;
-    const tenantId = (session.user as any).tenantId as string | undefined;
-
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Tenant not found' }, { status: 401 });
-    }
+    const tenantId = session.tenant.id;
 
     const dbProposal = await fetchProposal(id, tenantId);
     if (!dbProposal) {
@@ -245,3 +231,6 @@ export async function POST(
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['proposal.read']);
+export const POST = withAuth(handlePost, ['proposal.read']);

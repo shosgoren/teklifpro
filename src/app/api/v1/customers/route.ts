@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createCustomerSchema, customerQuerySchema } from '@/shared/validations/customer';
 import { Logger } from '@/infrastructure/logger';
 
@@ -45,19 +45,9 @@ interface ListResponse {
   };
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse<ListResponse>>> {
+async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse<ListResponse>>> {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          code: 'UNAUTHORIZED',
-        } as ApiResponse<ListResponse>,
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const queryData = querySchema.parse({
@@ -72,7 +62,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     const skip = (page - 1) * limit;
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
     };
 
     if (queryData.search) {
@@ -167,19 +157,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
   }
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse<CustomerResponse>>> {
+async function handlePost(request: NextRequest): Promise<NextResponse<ApiResponse<CustomerResponse>>> {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          code: 'UNAUTHORIZED',
-        } as ApiResponse<CustomerResponse>,
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = createCustomerSchema.parse(body);
@@ -187,7 +167,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     const customer = await prisma.customer.create({
       data: {
         ...data,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
       select: {
         id: true,
@@ -253,3 +233,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['customer.read']);
+export const POST = withAuth(handlePost, ['customer.create']);

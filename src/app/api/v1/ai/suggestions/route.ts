@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import aiProposalService from '@/infrastructure/services/ai/AiProposalService';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 import { aiRequestSchema } from '@/shared/validations/ai';
 
@@ -13,8 +14,10 @@ const requestSchema = aiRequestSchema;
 
 // --- POST Handler ---
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
+    const session = getSessionFromRequest(request)!;
+
     const body = await request.json();
     const parsed = requestSchema.safeParse(body);
 
@@ -27,8 +30,7 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // Tenant ID — gerçek uygulamada auth middleware'den gelir
-    const tenantId = request.headers.get('x-tenant-id') || 'default';
+    const tenantId = session.tenant.id;
 
     let result: any;
 
@@ -94,3 +96,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withAuth(handlePost, ['ai.use']);

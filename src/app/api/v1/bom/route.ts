@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createBomSchema } from '@/shared/validations/bom';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('BomAPI');
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const searchParams = request.nextUrl.searchParams;
     const productId = searchParams.get('productId') || '';
 
     const where: any = {
-      tenantId: session.user.tenantId,
+      tenantId: session.tenant.id,
       isActive: true,
     };
 
@@ -73,15 +67,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = createBomSchema.parse(body);
@@ -90,7 +78,7 @@ export async function POST(request: NextRequest) {
     const product = await prisma.product.findFirst({
       where: {
         id: data.productId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
     });
 
@@ -106,7 +94,7 @@ export async function POST(request: NextRequest) {
     const materials = await prisma.product.findMany({
       where: {
         id: { in: materialIds },
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
     });
 
@@ -121,7 +109,7 @@ export async function POST(request: NextRequest) {
     const latestBom = await prisma.billOfMaterial.findFirst({
       where: {
         productId: data.productId,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
       },
       orderBy: { version: 'desc' },
     });
@@ -134,7 +122,7 @@ export async function POST(request: NextRequest) {
       await tx.billOfMaterial.updateMany({
         where: {
           productId: data.productId,
-          tenantId: session.user.tenantId,
+          tenantId: session.tenant.id,
           isActive: true,
         },
         data: { isActive: false },
@@ -143,7 +131,7 @@ export async function POST(request: NextRequest) {
       // Create new BOM with items
       return tx.billOfMaterial.create({
         data: {
-          tenantId: session.user.tenantId,
+          tenantId: session.tenant.id,
           productId: data.productId,
           version: nextVersion,
           isActive: true,
@@ -230,3 +218,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['bom.read']);
+export const POST = withAuth(handlePost, ['bom.create']);

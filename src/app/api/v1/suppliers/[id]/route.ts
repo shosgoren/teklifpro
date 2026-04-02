@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
-import { getSession } from '@/shared/lib/auth';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { updateSupplierSchema } from '@/shared/validations/supplier';
 import { Logger } from '@/infrastructure/logger';
 
@@ -9,25 +9,19 @@ const logger = new Logger('SupplierDetailAPI');
 
 // ==================== GET: Get Supplier by ID ====================
 
-export async function GET(
+async function handleGet(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
 
     const supplier = await prisma.supplier.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
       include: {
@@ -94,27 +88,21 @@ export async function GET(
 
 // ==================== PUT: Update Supplier ====================
 
-export async function PUT(
+async function handlePut(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
     const body = await request.json();
     const data = updateSupplierSchema.parse(body);
 
     const existing = await prisma.supplier.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
     });
@@ -180,25 +168,19 @@ export async function PUT(
 
 // ==================== DELETE: Soft Delete Supplier ====================
 
-export async function DELETE(
+async function handleDelete(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user?.tenantId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' },
-        { status: 401 }
-      );
-    }
+    const session = getSessionFromRequest(request)!;
 
-    const { id } = await params;
+    const id = context!.params.id;
 
     const existing = await prisma.supplier.findFirst({
       where: {
         id,
-        tenantId: session.user.tenantId,
+        tenantId: session.tenant.id,
         deletedAt: null,
       },
     });
@@ -227,3 +209,7 @@ export async function DELETE(
     );
   }
 }
+
+export const GET = withAuth(handleGet, ['supplier.read']);
+export const PUT = withAuth(handlePut, ['supplier.update']);
+export const DELETE = withAuth(handleDelete, ['supplier.delete']);

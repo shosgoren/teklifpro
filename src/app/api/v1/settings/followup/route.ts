@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { FollowupSettingsSchema } from '@/shared/validations/settings';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('FollowupSettingsAPI');
 
-export async function GET(request: NextRequest) {
+async function handleGet(request: NextRequest) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: session.tenant.id },
@@ -31,12 +28,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function handlePut(request: NextRequest) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
     const data = FollowupSettingsSchema.parse(body);
@@ -86,3 +80,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withAuth(handleGet, ['settings.manage']);
+export const PUT = withAuth(handlePut, ['settings.manage']);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/lib/prisma';
-import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
+import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProductDetailAPI');
@@ -8,15 +8,13 @@ const logger = new Logger('ProductDetailAPI');
 /**
  * GET /api/v1/products/[id]
  */
-export async function GET(
+async function handleGet(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const product = await prisma.product.findFirst({
       where: { id: params.id, tenantId: session.tenant.id, deletedAt: null },
@@ -36,15 +34,13 @@ export async function GET(
 /**
  * PUT /api/v1/products/[id]
  */
-export async function PUT(
+async function handlePut(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const body = await request.json();
 
@@ -86,15 +82,13 @@ export async function PUT(
 /**
  * DELETE /api/v1/products/[id] (soft delete)
  */
-export async function DELETE(
+async function handleDelete(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context?: { params: Record<string, string> }
 ) {
   try {
-    const session = await getServerSessionWithAuth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const session = getSessionFromRequest(request)!;
+    const params = context!.params;
 
     const existing = await prisma.product.findFirst({
       where: { id: params.id, tenantId: session.tenant.id, deletedAt: null },
@@ -115,3 +109,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export const GET = withAuth(handleGet, ['product.read']);
+export const PUT = withAuth(handlePut, ['product.update']);
+export const DELETE = withAuth(handleDelete, ['product.delete']);

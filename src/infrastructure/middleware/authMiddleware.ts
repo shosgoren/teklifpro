@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/shared/auth/authOptions'
 import { ApiResponse } from '@/shared/types'
 import { Logger } from '@/infrastructure/logger'
+import { getPermissionsForRole } from '@/shared/auth/permissions'
 
 const logger = new Logger('AuthMiddleware')
 
@@ -15,6 +16,7 @@ export interface AuthSession {
     email: string
     name?: string
     tenantId: string
+    role: string
   }
   tenant: {
     id: string
@@ -34,21 +36,23 @@ export async function getServerSessionWithAuth(): Promise<AuthSession | null> {
       return null
     }
 
-    // In production, permissions would be fetched from database
-    // For now, we return empty array and rely on permission checks
+    const role = session.user.role || 'VIEWER'
+    const permissions = getPermissionsForRole(role)
+
     return {
       user: {
         id: session.user.id || '',
         email: session.user.email || '',
         name: session.user.name ?? undefined,
         tenantId: session.user.tenantId || '',
+        role,
       },
       tenant: {
         id: session.user.tenantId || '',
         slug: session.tenant?.slug || '',
         plan: (session.tenant?.plan as 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE') || 'STARTER',
       },
-      permissions: session.permissions || [],
+      permissions,
     }
   } catch (error) {
     logger.error('Error getting server session', error)
