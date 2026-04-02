@@ -333,7 +333,7 @@ export default function CustomersPage() {
           <p className="text-sm font-medium text-muted-foreground">{t('noCustomers')}</p>
         </div>
       ) : (
-        <div className="rounded-2xl border bg-card overflow-hidden">
+        <div className="rounded-2xl border bg-card overflow-clip">
           {/* Mobile Cards */}
           <div className="divide-y md:hidden">
             {customers.map((customer) => (
@@ -395,8 +395,8 @@ export default function CustomersPage() {
 
           {/* Desktop Table */}
           <table className="w-full hidden md:table">
-            <thead>
-              <tr className="border-b bg-muted/50">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b bg-gray-50 dark:bg-gray-900">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('customer')}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contact')}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('city')}</th>

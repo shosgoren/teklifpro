@@ -326,11 +326,11 @@ export default function ProposalsPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-card overflow-hidden shadow-sm">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-card overflow-clip shadow-sm">
           {/* Desktop Table */}
           <table className="w-full hidden md:table">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teklif</th>
                 <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Müşteri</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tutar</th>

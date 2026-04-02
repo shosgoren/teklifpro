@@ -544,11 +544,11 @@ export default function ProductsPage() {
               </div>
 
               {/* ─── DESKTOP TABLE VIEW ─── */}
-              <div className="hidden md:block overflow-hidden rounded-2xl border bg-card">
+              <div className="hidden md:block overflow-clip rounded-2xl border bg-card">
                 <div className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
+                    <TableHeader className="sticky top-0 z-10">
+                      <TableRow className="bg-gray-50 dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900">
                         <TableHead className="w-12"></TableHead>
                         <TableHead className="whitespace-nowrap">{t('productCode')}</TableHead>
                         <TableHead className="whitespace-nowrap">{t('productName')}</TableHead>
