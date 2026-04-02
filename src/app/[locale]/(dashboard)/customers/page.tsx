@@ -218,15 +218,15 @@ export default function CustomersPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+      <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
+        <div className="md:shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
             <div className="h-4 w-64 bg-white/10 animate-pulse rounded-lg mt-2" />
             <div className="h-11 bg-white/10 animate-pulse rounded-xl mt-4" />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+        <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
@@ -239,13 +239,13 @@ export default function CustomersPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+      <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
+        <div className="md:shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+        <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
             <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-2xl shadow-sm">
               <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-950/40 dark:to-rose-950/40 rounded-2xl flex items-center justify-center mb-4">
@@ -261,9 +261,9 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
       {/* Gradient Hero */}
-      <div className="shrink-0 relative overflow-hidden bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
@@ -322,7 +322,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+      <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
       {/* Customers List */}
       {customers.length === 0 ? (

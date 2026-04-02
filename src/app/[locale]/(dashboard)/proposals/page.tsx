@@ -137,14 +137,14 @@ export default function ProposalsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+      <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
+        <div className="md:shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto space-y-3">
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg" />
             <div className="h-11 bg-white/10 animate-pulse rounded-xl" />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+        <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -164,13 +164,13 @@ export default function ProposalsPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+      <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
+        <div className="md:shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <p className="text-white/70 text-sm">Teklif oluştur, takip et ve yönet</p>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+        <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
           <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
             <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
@@ -194,9 +194,9 @@ export default function ProposalsPage() {
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* ─── Gradient Hero (sticky) ─── */}
-      <div className="shrink-0 relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+    <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
+      {/* ─── Gradient Hero ─── */}
+      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
 
@@ -299,8 +299,8 @@ export default function ProposalsPage() {
         </div>
       </div>
 
-      {/* ─── Content (scrollable) ─── */}
-      <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50/50 dark:bg-gray-950">
+      {/* ─── Content (scrollable on desktop) ─── */}
+      <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
 
         {/* ─── Kanban or List View ─── */}
