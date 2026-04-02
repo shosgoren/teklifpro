@@ -1260,7 +1260,7 @@ export default function CreateProposalPage() {
   }
 
   return (
-    <div className="min-h-screen py-4 md:py-8">
+    <div className="min-h-screen py-4 md:py-8 pb-24 md:pb-8">
       <div className="max-w-4xl mx-auto px-0">
         {/* Header */}
         <div className="mb-6 md:mb-8">
