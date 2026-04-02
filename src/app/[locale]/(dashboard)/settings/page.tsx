@@ -378,7 +378,7 @@ const SettingsPage = () => {
   return (
     <div className="h-full overflow-y-auto" onInput={markDirty} onChange={markDirty}>
       {/* ========== Gradient Background + Tabs ========== */}
-      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} pb-12 md:pb-14 px-4 md:px-8`}>
+      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} pb-8 md:pb-14 px-4 md:px-8`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
@@ -387,8 +387,8 @@ const SettingsPage = () => {
 
       <div className="bg-gray-50/50 dark:bg-gray-950">
       {/* ========== Tab Navigation ========== */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-10 md:-mt-12">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-6 md:-mt-12">
+        <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             const tabColor = TAB_COLORS[tab.key];
@@ -396,18 +396,18 @@ const SettingsPage = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`relative flex items-center gap-2.5 px-5 py-3.5 transition-all duration-300 shrink-0 rounded-2xl font-medium text-sm
+                className={`relative flex items-center gap-1.5 md:gap-2.5 px-3 py-2.5 md:px-5 md:py-3.5 transition-all duration-300 shrink-0 rounded-xl md:rounded-2xl font-medium text-xs md:text-sm
                   ${isActive
-                    ? `bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-xl ring-2 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-950 ${tabColor.border.replace('border-', 'ring-')}`
+                    ? `bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-xl ring-2 ring-offset-1 md:ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-950 ${tabColor.border.replace('border-', 'ring-')}`
                     : 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-900 hover:shadow-lg hover:text-gray-700'
                   }`}
               >
-                <span className={isActive ? `bg-gradient-to-br ${tabColor.from} ${tabColor.to} text-white p-1.5 rounded-lg` : 'p-1.5'}>
+                <span className={isActive ? `bg-gradient-to-br ${tabColor.from} ${tabColor.to} text-white p-1 md:p-1.5 rounded-md md:rounded-lg` : 'p-1 md:p-1.5'}>
                   {tab.icon}
                 </span>
                 <div className="text-left">
-                  <span className="block font-semibold">{t(TAB_TRANSLATION_KEYS[tab.key] as any)}</span>
-                  <span className={`block text-[10px] leading-tight hidden sm:block ${isActive ? 'text-gray-400' : 'text-gray-400/70'}`}>
+                  <span className="block font-semibold text-[11px] md:text-sm">{t(TAB_TRANSLATION_KEYS[tab.key] as any)}</span>
+                  <span className={`block text-[10px] leading-tight hidden md:block ${isActive ? 'text-gray-400' : 'text-gray-400/70'}`}>
                     {tab.desc}
                   </span>
                 </div>
