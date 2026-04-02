@@ -354,14 +354,14 @@ const SettingsPage = () => {
 
   if (sessionLoading) {
     return (
-      <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-        <div className="md:shrink-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pb-8 md:px-8">
+      <div className="h-full overflow-y-auto">
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pb-8 md:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl mb-2" />
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg" />
           </div>
         </div>
-        <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
+        <div className="bg-gray-50/50 dark:bg-gray-950">
           <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-6">
             <div className="flex gap-3 overflow-x-auto pb-4">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -376,16 +376,16 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col" onInput={markDirty} onChange={markDirty}>
+    <div className="h-full overflow-y-auto" onInput={markDirty} onChange={markDirty}>
       {/* ========== Gradient Background + Tabs ========== */}
-      <div className={`md:shrink-0 relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} pb-12 md:pb-14 px-4 md:px-8`}>
+      <div className={`relative overflow-hidden bg-gradient-to-br ${colors.from} ${colors.to} pb-12 md:pb-14 px-4 md:px-8`}>
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
       </div>
 
-      <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
+      <div className="bg-gray-50/50 dark:bg-gray-950">
       {/* ========== Tab Navigation ========== */}
       <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-10 md:-mt-12">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
