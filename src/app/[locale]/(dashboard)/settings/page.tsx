@@ -418,7 +418,7 @@ const SettingsPage = () => {
       </div>
 
       {/* ========== Tab Content ========== */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-6">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
 
         {/* ===== General Tab ===== */}
         {activeTab === 'general' && (
