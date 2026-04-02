@@ -135,7 +135,7 @@ export async function GET(
     const tenant = mapToTenantEntity(dbTenant);
 
     // Generate PDF
-    const pdfBuffer = ProposalPdfService.generateProposalPdf(proposal, tenant);
+    const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposal, tenant);
 
     // Create filename
     const filename = `TKL-${proposal.number}.pdf`;
@@ -215,7 +215,7 @@ export async function POST(
     const tenant = mapToTenantEntity(dbTenant);
 
     // Generate PDF
-    const pdfBuffer = ProposalPdfService.generateProposalPdf(proposal, tenant);
+    const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposal, tenant);
 
     // Return as base64 for preview
     const base64 = pdfBuffer.toString('base64');

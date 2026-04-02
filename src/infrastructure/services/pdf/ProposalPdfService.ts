@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Proposal, ProposalItem } from '@/domain/entities/Proposal';
 import { Tenant } from '@/domain/entities/Tenant';
 
@@ -7,506 +7,642 @@ export interface ProposalPdfOptions {
   margin?: number;
 }
 
-// Colors
-const BRAND_PRIMARY = [37, 99, 235] as const; // Blue-600
-const BRAND_DARK = [30, 64, 175] as const; // Blue-800
-const TEXT_PRIMARY = [17, 24, 39] as const; // Gray-900
-const TEXT_SECONDARY = [107, 114, 128] as const; // Gray-500
-const BORDER_COLOR = [229, 231, 235] as const; // Gray-200
-const BG_LIGHT = [249, 250, 251] as const; // Gray-50
-const BG_HEADER = [37, 99, 235] as const; // Blue-600
-const WHITE = [255, 255, 255] as const;
+// ── Colors (hex) ──────────────────────────────────────────
+const BRAND_PRIMARY = '#2563EB'; // Blue-600
+const BRAND_DARK = '#1E40AF'; // Blue-800
+const TEXT_PRIMARY = '#111827'; // Gray-900
+const TEXT_SECONDARY = '#6B7280'; // Gray-500
+const BORDER_COLOR = '#E5E7EB'; // Gray-200
+const BG_LIGHT = '#F9FAFB'; // Gray-50
+const WHITE = '#FFFFFF';
+const RED = '#DC2626'; // Red-600
 
-// Font family used throughout the PDF (helvetica supports Turkish chars in jsPDF 2.5+)
-const FONT_FAMILY = 'helvetica';
+// Status color map
+const STATUS_COLORS: Record<string, string> = {
+  DRAFT: '#6B7280',
+  SENT: '#2563EB',
+  VIEWED: '#EAB308',
+  ACCEPTED: '#16A34A',
+  REJECTED: '#DC2626',
+  REVISION_REQUESTED: '#EA580C',
+  REVISED: '#9333EA',
+  EXPIRED: '#475569',
+  CANCELLED: '#6B7280',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Taslak',
+  SENT: 'Gönderildi',
+  VIEWED: 'Görüntülendi',
+  ACCEPTED: 'Kabul Edildi',
+  REJECTED: 'Reddedildi',
+  REVISION_REQUESTED: 'Revizyon İstendi',
+  REVISED: 'Revize Edildi',
+  EXPIRED: 'Süresi Doldu',
+  CANCELLED: 'İptal Edildi',
+};
+
+/** Singleton: pdfmake instance with Roboto fonts loaded (lazy-initialized). */
+let _pdfmakeInstance: any = null;
+
+function getPdfMake(): any {
+  if (_pdfmakeInstance) return _pdfmakeInstance;
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const pdfmake = require('pdfmake/js/index') as any;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const vfsModule = require('pdfmake/build/vfs_fonts') as any;
+  const vfs: Record<string, string> = vfsModule.pdfMake
+    ? vfsModule.pdfMake.vfs
+    : vfsModule.vfs ?? vfsModule;
+
+  // Decode base64-encoded font files and load into pdfmake virtual filesystem
+  for (const [filename, base64Data] of Object.entries(vfs)) {
+    pdfmake.virtualfs.writeFileSync(filename, Buffer.from(base64Data, 'base64'));
+  }
+
+  pdfmake.fonts = {
+    Roboto: {
+      normal: 'Roboto-Regular.ttf',
+      bold: 'Roboto-Medium.ttf',
+      italics: 'Roboto-Italic.ttf',
+      bolditalics: 'Roboto-MediumItalic.ttf',
+    },
+  };
+
+  _pdfmakeInstance = pdfmake;
+  return pdfmake;
+}
 
 export class ProposalPdfService {
-  private static readonly PAGE_WIDTH = 210;
-  private static readonly PAGE_HEIGHT = 297;
-  private static readonly MARGIN = 20;
-  private static readonly CONTENT_WIDTH = 210 - 2 * 20; // 170mm
-
-  static generateProposalPdf(
+  /**
+   * Generates a premium PDF proposal document.
+   * Uses pdfmake with built-in Roboto font for full Unicode/Turkish support.
+   */
+  static async generateProposalPdf(
     proposal: Proposal,
     tenant: Tenant,
-    options: ProposalPdfOptions = {}
-  ): Buffer {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'A4',
-    });
-
-    pdf.setFont(FONT_FAMILY, 'normal');
-
-    const margin = this.MARGIN;
-    let y = margin;
-
-    // === HEADER: Company info + Proposal meta ===
-    y = this.drawHeader(pdf, tenant, proposal, margin, y);
-
-    // === CUSTOMER INFO ===
-    y = this.drawCustomerSection(pdf, proposal, margin, y);
-
-    // === ITEMS TABLE ===
-    y = this.drawItemsTable(pdf, proposal.items, margin, y);
-
-    // === TOTALS ===
-    y = this.drawTotals(pdf, proposal, margin, y);
-
-    // === TERMS & CONDITIONS ===
-    y = this.drawTerms(pdf, proposal, margin, y);
-
-    // === FOOTER on all pages ===
-    this.drawFooter(pdf, tenant, margin);
-
-    return Buffer.from(pdf.output('arraybuffer'));
+    _options: ProposalPdfOptions = {}
+  ): Promise<Buffer> {
+    const pdfmake = getPdfMake();
+    const docDefinition = this.buildDocDefinition(proposal, tenant);
+    const doc = pdfmake.createPdf(docDefinition);
+    const buffer: Buffer = await doc.getBuffer();
+    return buffer;
   }
 
   // ──────────────────────────────────────────────
-  //  HEADER
+  //  DOCUMENT DEFINITION
   // ──────────────────────────────────────────────
-  private static drawHeader(
-    pdf: jsPDF,
-    tenant: Tenant,
-    proposal: Proposal,
-    margin: number,
-    y: number
-  ): number {
-    // Blue header bar
-    pdf.setFillColor(...BRAND_PRIMARY);
-    pdf.rect(0, 0, this.PAGE_WIDTH, 40, 'F');
+  private static buildDocDefinition(proposal: Proposal, tenant: Tenant): any {
+    return {
+      pageSize: 'A4',
+      pageMargins: [40, 120, 40, 60] as [number, number, number, number],
+      defaultStyle: {
+        font: 'Roboto',
+        fontSize: 9,
+        color: TEXT_PRIMARY,
+      },
+      header: this.buildHeader(tenant),
+      footer: this.buildFooter(tenant),
+      content: [
+        this.buildInfoBoxRow(proposal),
+        { text: '', margin: [0, 10, 0, 0] as [number, number, number, number] },
+        this.buildCustomerSection(proposal),
+        { text: '', margin: [0, 10, 0, 0] as [number, number, number, number] },
+        this.buildItemsTable(proposal.items),
+        { text: '', margin: [0, 8, 0, 0] as [number, number, number, number] },
+        this.buildTotalsSection(proposal),
+        ...this.buildTermsSection(proposal),
+      ],
+    };
+  }
 
-    // Company name (white, bold)
-    pdf.setTextColor(...WHITE);
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(22);
-    pdf.text(tenant.name, margin, 18);
-
-    // Company details under name
-    pdf.setFont(FONT_FAMILY, 'normal');
-    pdf.setFontSize(9);
+  // ──────────────────────────────────────────────
+  //  HEADER (on every page)
+  // ──────────────────────────────────────────────
+  private static buildHeader(tenant: Tenant): any {
     const details: string[] = [];
     if (tenant.email) details.push(tenant.email);
     if (tenant.phone) details.push(tenant.phone);
     if (tenant.taxNumber) details.push(`VN: ${tenant.taxNumber}`);
-    if (details.length > 0) {
-      pdf.text(details.join('  |  '), margin, 26);
-    }
-    if (tenant.address) {
-      pdf.text(tenant.address, margin, 32);
-    }
+    const detailLine = details.join('  |  ');
 
-    // "TEKLİF" label on the right side
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(16);
-    pdf.text('TEKLİF', this.PAGE_WIDTH - margin, 18, { align: 'right' });
-
-    // Reset text color
-    pdf.setTextColor(...TEXT_PRIMARY);
-
-    y = 50;
-
-    // Proposal info row
-    const infoBoxY = y;
-    pdf.setFillColor(...BG_LIGHT);
-    pdf.roundedRect(margin, infoBoxY, this.CONTENT_WIDTH, 22, 2, 2, 'F');
-
-    pdf.setFontSize(8);
-    pdf.setTextColor(...TEXT_SECONDARY);
-    pdf.setFont(FONT_FAMILY, 'normal');
-
-    const col1 = margin + 5;
-    const col2 = margin + 45;
-    const col3 = margin + 95;
-    const col4 = margin + 140;
-
-    // Row 1 labels
-    pdf.text('Teklif No', col1, infoBoxY + 6);
-    pdf.text('Tarih', col2, infoBoxY + 6);
-    pdf.text('Geçerlilik', col3, infoBoxY + 6);
-    pdf.text('Durum', col4, infoBoxY + 6);
-
-    // Row 1 values
-    pdf.setTextColor(...TEXT_PRIMARY);
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(10);
-    pdf.text(proposal.number, col1, infoBoxY + 13);
-    pdf.text(this.formatDate(proposal.date), col2, infoBoxY + 13);
-    pdf.text(this.formatDate(proposal.validUntil), col3, infoBoxY + 13);
-
-    // Status badge
-    const statusText = this.getStatusText(proposal.status);
-    const statusColor = this.getStatusColor(proposal.status);
-    pdf.setFillColor(...statusColor);
-    pdf.setTextColor(...WHITE);
-    pdf.setFontSize(8);
-    const statusWidth = pdf.getTextWidth(statusText) + 6;
-    pdf.roundedRect(col4, infoBoxY + 8, statusWidth, 6, 1.5, 1.5, 'F');
-    pdf.text(statusText, col4 + 3, infoBoxY + 12.5);
-
-    pdf.setTextColor(...TEXT_PRIMARY);
-    return infoBoxY + 30;
+    return {
+      margin: [0, 0, 0, 0] as [number, number, number, number],
+      stack: [
+        // Blue header bar
+        {
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: 595.28, // A4 width in points
+              h: 80,
+              color: BRAND_PRIMARY,
+            },
+          ],
+        },
+        // Content overlaid on the blue bar
+        {
+          margin: [40, -70, 40, 0] as [number, number, number, number],
+          columns: [
+            {
+              width: '*',
+              stack: [
+                {
+                  text: tenant.name,
+                  fontSize: 20,
+                  bold: true,
+                  color: WHITE,
+                },
+                ...(detailLine
+                  ? [
+                      {
+                        text: detailLine,
+                        fontSize: 8,
+                        color: '#BFDBFE', // Blue-200
+                        margin: [0, 3, 0, 0] as [number, number, number, number],
+                      },
+                    ]
+                  : []),
+                ...(tenant.address
+                  ? [
+                      {
+                        text: tenant.address,
+                        fontSize: 8,
+                        color: '#BFDBFE',
+                        margin: [0, 2, 0, 0] as [number, number, number, number],
+                      },
+                    ]
+                  : []),
+              ],
+            },
+            {
+              width: 'auto',
+              stack: [
+                {
+                  text: 'TEKLİF',
+                  fontSize: 18,
+                  bold: true,
+                  color: WHITE,
+                  alignment: 'right',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
   }
 
   // ──────────────────────────────────────────────
-  //  CUSTOMER
+  //  FOOTER (on every page)
   // ──────────────────────────────────────────────
-  private static drawCustomerSection(
-    pdf: jsPDF,
-    proposal: Proposal,
-    margin: number,
-    y: number
-  ): number {
-    // Section title
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(...BRAND_DARK);
-    pdf.text('Müşteri Bilgileri', margin, y);
-    y += 2;
+  private static buildFooter(tenant: Tenant): any {
+    return (currentPage: number, pageCount: number) => ({
+      margin: [40, 10, 40, 0] as [number, number, number, number],
+      stack: [
+        {
+          canvas: [
+            {
+              type: 'line',
+              x1: 0,
+              y1: 0,
+              x2: 515.28,
+              y2: 0,
+              lineWidth: 0.5,
+              lineColor: BORDER_COLOR,
+            },
+          ],
+        },
+        {
+          margin: [0, 5, 0, 0] as [number, number, number, number],
+          columns: [
+            {
+              text: `${tenant.name}  |  TeklifPro ile oluşturuldu`,
+              fontSize: 7,
+              color: TEXT_SECONDARY,
+            },
+            {
+              text: `Sayfa ${currentPage} / ${pageCount}`,
+              fontSize: 7,
+              color: TEXT_SECONDARY,
+              alignment: 'right',
+            },
+          ],
+        },
+      ],
+    });
+  }
 
-    // Blue underline
-    pdf.setDrawColor(...BRAND_PRIMARY);
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, y, margin + 40, y);
-    y += 5;
+  // ──────────────────────────────────────────────
+  //  INFO BOX ROW
+  // ──────────────────────────────────────────────
+  private static buildInfoBoxRow(proposal: Proposal): any {
+    const statusText =
+      STATUS_LABELS[proposal.status] ??
+      STATUS_LABELS[proposal.status?.toUpperCase()] ??
+      proposal.status;
+    const statusColor =
+      STATUS_COLORS[proposal.status] ??
+      STATUS_COLORS[proposal.status?.toUpperCase()] ??
+      '#6B7280';
 
-    pdf.setTextColor(...TEXT_PRIMARY);
-    pdf.setFontSize(9);
+    const infoCell = (label: string, value: string) => ({
+      stack: [
+        { text: label, fontSize: 7, color: TEXT_SECONDARY, margin: [0, 0, 0, 2] as [number, number, number, number] },
+        { text: value, fontSize: 10, bold: true, color: TEXT_PRIMARY },
+      ],
+    });
 
-    const leftCol = margin;
-    const rightCol = margin + this.CONTENT_WIDTH / 2;
-    const labelWidth = 22;
+    return {
+      table: {
+        widths: ['*', '*', '*', '*'],
+        body: [
+          [
+            infoCell('Teklif No', proposal.number),
+            infoCell('Tarih', this.formatDate(proposal.date)),
+            infoCell('Geçerlilik', this.formatDate(proposal.validUntil)),
+            {
+              stack: [
+                {
+                  text: 'Durum',
+                  fontSize: 7,
+                  color: TEXT_SECONDARY,
+                  margin: [0, 0, 0, 2] as [number, number, number, number],
+                },
+                {
+                  table: {
+                    body: [
+                      [
+                        {
+                          text: statusText,
+                          fontSize: 8,
+                          bold: true,
+                          color: WHITE,
+                        },
+                      ],
+                    ],
+                  },
+                  layout: {
+                    fillColor: () => statusColor,
+                    hLineWidth: () => 0,
+                    vLineWidth: () => 0,
+                    paddingLeft: () => 6,
+                    paddingRight: () => 6,
+                    paddingTop: () => 2,
+                    paddingBottom: () => 2,
+                  },
+                },
+              ],
+            },
+          ],
+        ],
+      },
+      layout: {
+        fillColor: () => BG_LIGHT,
+        hLineWidth: () => 0,
+        vLineWidth: () => 0,
+        paddingLeft: () => 10,
+        paddingRight: () => 10,
+        paddingTop: () => 8,
+        paddingBottom: () => 8,
+      },
+    };
+  }
 
-    // Row 1: Company name + Tax number
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.text('Firma:', leftCol, y);
-    pdf.setFont(FONT_FAMILY, 'normal');
-    pdf.text(proposal.customer.companyName || proposal.customer.name, leftCol + labelWidth, y);
+  // ──────────────────────────────────────────────
+  //  CUSTOMER SECTION
+  // ──────────────────────────────────────────────
+  private static buildCustomerSection(proposal: Proposal): any {
+    const c = proposal.customer;
 
-    if (proposal.customer.taxNumber) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Vergi No:', rightCol, y);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      pdf.text(proposal.customer.taxNumber, rightCol + labelWidth, y);
+    // Build rows of label-value pairs
+    const rows: Array<[string, string, string, string]> = [];
+
+    rows.push([
+      'Firma:',
+      c.companyName || c.name,
+      c.taxNumber ? 'Vergi No:' : '',
+      c.taxNumber ?? '',
+    ]);
+
+    if (c.name && c.name !== c.companyName) {
+      rows.push([
+        'İlgili:',
+        c.name,
+        c.title ? 'Ünvan:' : '',
+        c.title ?? '',
+      ]);
     }
-    y += 5;
 
-    // Row 2: Contact + Title
-    if (proposal.customer.name && proposal.customer.name !== proposal.customer.companyName) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('İlgili:', leftCol, y);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      pdf.text(proposal.customer.name, leftCol + labelWidth, y);
-    }
-    if (proposal.customer.title) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Ünvan:', rightCol, y);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      pdf.text(proposal.customer.title, rightCol + labelWidth, y);
-    }
-    y += 5;
-
-    // Row 3: Phone + Email
-    if (proposal.customer.phone) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Telefon:', leftCol, y);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      pdf.text(proposal.customer.phone, leftCol + labelWidth, y);
-    }
-    if (proposal.customer.email) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('E-posta:', rightCol, y);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      pdf.text(proposal.customer.email, rightCol + labelWidth, y);
-    }
-    y += 5;
-
-    // Row 4: Address
-    if (proposal.customer.address) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Adres:', leftCol, y);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      const addressLines = pdf.splitTextToSize(proposal.customer.address, this.CONTENT_WIDTH - labelWidth);
-      pdf.text(addressLines, leftCol + labelWidth, y);
-      y += addressLines.length * 4;
+    if (c.phone || c.email) {
+      rows.push([
+        c.phone ? 'Telefon:' : '',
+        c.phone ?? '',
+        c.email ? 'E-posta:' : '',
+        c.email ?? '',
+      ]);
     }
 
-    return y + 8;
+    if (c.address) {
+      rows.push(['Adres:', c.address, '', '']);
+    }
+
+    const tableBody = rows.map((row) => [
+      { text: row[0], bold: true, fontSize: 9 },
+      { text: row[1], fontSize: 9 },
+      { text: row[2], bold: true, fontSize: 9 },
+      { text: row[3], fontSize: 9 },
+    ]);
+
+    return {
+      stack: [
+        // Section title bar
+        {
+          table: {
+            widths: ['*'],
+            body: [
+              [
+                {
+                  text: 'Müşteri Bilgileri',
+                  bold: true,
+                  fontSize: 11,
+                  color: WHITE,
+                },
+              ],
+            ],
+          },
+          layout: {
+            fillColor: () => BRAND_DARK,
+            hLineWidth: () => 0,
+            vLineWidth: () => 0,
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+          },
+        },
+        // Customer data table
+        {
+          table: {
+            widths: [55, '*', 55, '*'],
+            body: tableBody,
+          },
+          layout: {
+            hLineWidth: (i: number) => (i === 0 ? 0 : 0.5),
+            vLineWidth: () => 0,
+            hLineColor: () => BORDER_COLOR,
+            paddingLeft: () => 8,
+            paddingRight: () => 4,
+            paddingTop: () => 4,
+            paddingBottom: () => 4,
+          },
+          margin: [0, 2, 0, 0] as [number, number, number, number],
+        },
+      ],
+    };
   }
 
   // ──────────────────────────────────────────────
   //  ITEMS TABLE
   // ──────────────────────────────────────────────
-  private static drawItemsTable(
-    pdf: jsPDF,
-    items: ProposalItem[],
-    margin: number,
-    y: number
-  ): number {
-    // Section title
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(...BRAND_DARK);
-    pdf.text('Teklif Kalemleri', margin, y);
-    y += 2;
-    pdf.setDrawColor(...BRAND_PRIMARY);
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, y, margin + 40, y);
-    y += 5;
-
-    // Table column definitions
-    // #(8) | Ürün(50) | Miktar(18) | Birim(15) | B.Fiyat(25) | İsk%(15) | KDV%(12) | Toplam(27)
-    const cols = [
-      { header: '#', width: 8, align: 'center' as const },
-      { header: 'Ürün / Hizmet', width: 50, align: 'left' as const },
-      { header: 'Miktar', width: 18, align: 'right' as const },
-      { header: 'Birim', width: 15, align: 'left' as const },
-      { header: 'Birim Fiyat', width: 25, align: 'right' as const },
-      { header: 'İskonto', width: 15, align: 'right' as const },
-      { header: 'KDV', width: 12, align: 'right' as const },
-      { header: 'Toplam', width: 27, align: 'right' as const },
+  private static buildItemsTable(items: ProposalItem[]): any {
+    const headerRow = [
+      { text: '#', bold: true, color: WHITE, alignment: 'center', fontSize: 8 },
+      { text: 'Ürün / Hizmet', bold: true, color: WHITE, fontSize: 8 },
+      { text: 'Miktar', bold: true, color: WHITE, alignment: 'right', fontSize: 8 },
+      { text: 'Birim', bold: true, color: WHITE, fontSize: 8 },
+      { text: 'Birim Fiyat', bold: true, color: WHITE, alignment: 'right', fontSize: 8 },
+      { text: 'İskonto', bold: true, color: WHITE, alignment: 'right', fontSize: 8 },
+      { text: 'KDV', bold: true, color: WHITE, alignment: 'right', fontSize: 8 },
+      { text: 'Toplam', bold: true, color: WHITE, alignment: 'right', fontSize: 8 },
     ];
 
-    const tableWidth = cols.reduce((s, c) => s + c.width, 0);
-    const rowHeight = 7;
+    const dataRows = items.map((item, idx) => [
+      { text: (idx + 1).toString(), alignment: 'center', fontSize: 8 },
+      {
+        stack: [
+          { text: item.name, fontSize: 8 },
+          ...(item.description
+            ? [{ text: item.description, fontSize: 7, color: TEXT_SECONDARY }]
+            : []),
+        ],
+      },
+      { text: this.formatNumber(item.quantity), alignment: 'right', fontSize: 8 },
+      { text: item.unit, fontSize: 8 },
+      { text: this.formatCurrency(item.unitPrice), alignment: 'right', fontSize: 8 },
+      {
+        text: item.discount ? `%${this.formatNumber(item.discount)}` : '-',
+        alignment: 'right',
+        fontSize: 8,
+      },
+      {
+        text: item.tax ? `%${this.formatNumber(item.tax)}` : '-',
+        alignment: 'right',
+        fontSize: 8,
+      },
+      {
+        text: this.formatCurrency(item.total),
+        alignment: 'right',
+        fontSize: 8,
+        bold: true,
+      },
+    ]);
 
-    // Draw header row
-    pdf.setFillColor(...BG_HEADER);
-    pdf.setTextColor(...WHITE);
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(8);
-
-    let x = margin;
-    pdf.roundedRect(margin, y, tableWidth, rowHeight, 1, 1, 'F');
-    cols.forEach((col) => {
-      const textX = col.align === 'right' ? x + col.width - 2
-        : col.align === 'center' ? x + col.width / 2
-        : x + 2;
-      const alignOpt = col.align === 'center' ? 'center' : col.align === 'right' ? 'right' : 'left';
-      pdf.text(col.header, textX, y + 5, { align: alignOpt as any });
-      x += col.width;
-    });
-    y += rowHeight;
-
-    // Draw rows
-    pdf.setTextColor(...TEXT_PRIMARY);
-    pdf.setFont(FONT_FAMILY, 'normal');
-    pdf.setFontSize(8);
-
-    items.forEach((item, idx) => {
-      // Page break check
-      if (y > this.PAGE_HEIGHT - 40) {
-        pdf.addPage();
-        y = this.MARGIN;
-      }
-
-      // Alternate row background
-      if (idx % 2 === 0) {
-        pdf.setFillColor(...BG_LIGHT);
-        pdf.rect(margin, y, tableWidth, rowHeight, 'F');
-      }
-
-      // Bottom border
-      pdf.setDrawColor(...BORDER_COLOR);
-      pdf.setLineWidth(0.2);
-      pdf.line(margin, y + rowHeight, margin + tableWidth, y + rowHeight);
-
-      x = margin;
-      const rowData = [
-        (idx + 1).toString(),
-        item.name,
-        this.formatNumber(item.quantity),
-        item.unit,
-        this.formatCurrency(item.unitPrice),
-        item.discount ? `%${this.formatNumber(item.discount)}` : '-',
-        item.tax ? `%${this.formatNumber(item.tax)}` : '-',
-        this.formatCurrency(item.total),
-      ];
-
-      cols.forEach((col, colIdx) => {
-        let cellText = rowData[colIdx];
-
-        // Truncate long product names
-        if (colIdx === 1) {
-          const maxWidth = col.width - 4;
-          while (pdf.getTextWidth(cellText) > maxWidth && cellText.length > 3) {
-            cellText = cellText.slice(0, -4) + '...';
-          }
-        }
-
-        const textX = col.align === 'right' ? x + col.width - 2
-          : col.align === 'center' ? x + col.width / 2
-          : x + 2;
-        const alignOpt = col.align === 'center' ? 'center' : col.align === 'right' ? 'right' : 'left';
-        pdf.text(cellText, textX, y + 5, { align: alignOpt as any });
-        x += col.width;
-      });
-
-      y += rowHeight;
-    });
-
-    return y + 5;
+    return {
+      stack: [
+        // Section title bar
+        {
+          table: {
+            widths: ['*'],
+            body: [
+              [
+                {
+                  text: 'Teklif Kalemleri',
+                  bold: true,
+                  fontSize: 11,
+                  color: WHITE,
+                },
+              ],
+            ],
+          },
+          layout: {
+            fillColor: () => BRAND_DARK,
+            hLineWidth: () => 0,
+            vLineWidth: () => 0,
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 5,
+            paddingBottom: () => 5,
+          },
+        },
+        // Items table
+        {
+          table: {
+            headerRows: 1,
+            widths: [20, '*', 40, 35, 55, 40, 30, 60],
+            body: [headerRow, ...dataRows],
+          },
+          layout: {
+            fillColor: (rowIndex: number) => {
+              if (rowIndex === 0) return BRAND_PRIMARY;
+              return rowIndex % 2 === 0 ? BG_LIGHT : null;
+            },
+            hLineWidth: (i: number, node: any) =>
+              i === 0 || i === node.table.body.length ? 0 : 0.5,
+            vLineWidth: () => 0,
+            hLineColor: () => BORDER_COLOR,
+            paddingLeft: () => 4,
+            paddingRight: () => 4,
+            paddingTop: () => 4,
+            paddingBottom: () => 4,
+          },
+          margin: [0, 2, 0, 0] as [number, number, number, number],
+        },
+      ],
+    };
   }
 
   // ──────────────────────────────────────────────
-  //  TOTALS
+  //  TOTALS SECTION
   // ──────────────────────────────────────────────
-  private static drawTotals(
-    pdf: jsPDF,
-    proposal: Proposal,
-    margin: number,
-    y: number
-  ): number {
-    const boxWidth = 80;
-    const boxX = margin + this.CONTENT_WIDTH - boxWidth;
-    const labelX = boxX + 5;
-    const valueX = boxX + boxWidth - 5;
+  private static buildTotalsSection(proposal: Proposal): any {
+    const rows: any[][] = [];
 
-    pdf.setFontSize(9);
+    rows.push([
+      { text: 'Ara Toplam:', fontSize: 9, color: TEXT_SECONDARY, alignment: 'right' },
+      { text: this.formatCurrency(proposal.subtotal), fontSize: 9, alignment: 'right' },
+    ]);
 
-    // Subtotal
-    pdf.setFont(FONT_FAMILY, 'normal');
-    pdf.setTextColor(...TEXT_SECONDARY);
-    pdf.text('Ara Toplam:', labelX, y);
-    pdf.setTextColor(...TEXT_PRIMARY);
-    pdf.text(this.formatCurrency(proposal.subtotal), valueX, y, { align: 'right' });
-    y += 6;
-
-    // Discount
     if (proposal.discountAmount && proposal.discountAmount > 0) {
-      pdf.setTextColor(...TEXT_SECONDARY);
-      pdf.text('İskonto:', labelX, y);
-      pdf.setTextColor(220, 38, 38); // red-600
-      pdf.text(`-${this.formatCurrency(proposal.discountAmount)}`, valueX, y, { align: 'right' });
-      y += 6;
+      rows.push([
+        { text: 'İskonto:', fontSize: 9, color: TEXT_SECONDARY, alignment: 'right' },
+        {
+          text: `-${this.formatCurrency(proposal.discountAmount)}`,
+          fontSize: 9,
+          color: RED,
+          alignment: 'right',
+        },
+      ]);
     }
 
-    // Tax
     if (proposal.taxAmount && proposal.taxAmount > 0) {
-      pdf.setTextColor(...TEXT_SECONDARY);
-      pdf.text('KDV:', labelX, y);
-      pdf.setTextColor(...TEXT_PRIMARY);
-      pdf.text(this.formatCurrency(proposal.taxAmount), valueX, y, { align: 'right' });
-      y += 6;
+      rows.push([
+        { text: 'KDV:', fontSize: 9, color: TEXT_SECONDARY, alignment: 'right' },
+        { text: this.formatCurrency(proposal.taxAmount), fontSize: 9, alignment: 'right' },
+      ]);
     }
 
-    // Divider
-    pdf.setDrawColor(...BRAND_PRIMARY);
-    pdf.setLineWidth(0.5);
-    pdf.line(boxX, y, boxX + boxWidth, y);
-    y += 5;
+    // Grand total row
+    rows.push([
+      { text: 'GENEL TOPLAM', fontSize: 11, bold: true, color: WHITE, alignment: 'right' },
+      {
+        text: this.formatCurrency(proposal.total),
+        fontSize: 11,
+        bold: true,
+        color: WHITE,
+        alignment: 'right',
+      },
+    ]);
 
-    // Grand Total
-    pdf.setFillColor(...BRAND_PRIMARY);
-    pdf.roundedRect(boxX, y - 3, boxWidth, 10, 2, 2, 'F');
-    pdf.setTextColor(...WHITE);
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(11);
-    pdf.text('GENEL TOPLAM', labelX, y + 4);
-    pdf.text(this.formatCurrency(proposal.total), valueX, y + 4, { align: 'right' });
-
-    pdf.setTextColor(...TEXT_PRIMARY);
-    return y + 18;
+    return {
+      columns: [
+        { width: '*', text: '' },
+        {
+          width: 220,
+          table: {
+            widths: ['*', 'auto'],
+            body: rows,
+          },
+          layout: {
+            fillColor: (rowIndex: number) => {
+              return rowIndex === rows.length - 1 ? BRAND_PRIMARY : null;
+            },
+            hLineWidth: (i: number) => {
+              return i === rows.length - 1 ? 1 : 0;
+            },
+            vLineWidth: () => 0,
+            hLineColor: () => BRAND_PRIMARY,
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 4,
+            paddingBottom: () => 4,
+          },
+        },
+      ],
+    };
   }
 
   // ──────────────────────────────────────────────
   //  TERMS & CONDITIONS
   // ──────────────────────────────────────────────
-  private static drawTerms(
-    pdf: jsPDF,
-    proposal: Proposal,
-    margin: number,
-    y: number
-  ): number {
+  private static buildTermsSection(proposal: Proposal): any[] {
     const hasTerms = proposal.paymentTerms || proposal.deliveryTerms || proposal.notes;
-    if (!hasTerms) return y;
+    if (!hasTerms) return [];
 
-    if (y > this.PAGE_HEIGHT - 60) {
-      pdf.addPage();
-      y = this.MARGIN;
-    }
-
-    // Section title
-    pdf.setFont(FONT_FAMILY, 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(...BRAND_DARK);
-    pdf.text('Şartlar ve Koşullar', margin, y);
-    y += 2;
-    pdf.setDrawColor(...BRAND_PRIMARY);
-    pdf.setLineWidth(0.5);
-    pdf.line(margin, y, margin + 40, y);
-    y += 6;
-
-    pdf.setFontSize(9);
-    pdf.setTextColor(...TEXT_PRIMARY);
+    const termItems: any[] = [];
 
     if (proposal.paymentTerms) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Ödeme Koşulları', margin, y);
-      y += 4;
-      pdf.setFont(FONT_FAMILY, 'normal');
-      const lines = pdf.splitTextToSize(proposal.paymentTerms, this.CONTENT_WIDTH - 5);
-      pdf.text(lines, margin + 3, y);
-      y += lines.length * 4 + 4;
-    }
-
-    if (proposal.deliveryTerms) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Teslimat Koşulları', margin, y);
-      y += 4;
-      pdf.setFont(FONT_FAMILY, 'normal');
-      const lines = pdf.splitTextToSize(proposal.deliveryTerms, this.CONTENT_WIDTH - 5);
-      pdf.text(lines, margin + 3, y);
-      y += lines.length * 4 + 4;
-    }
-
-    if (proposal.notes) {
-      pdf.setFont(FONT_FAMILY, 'bold');
-      pdf.text('Notlar', margin, y);
-      y += 4;
-      pdf.setFont(FONT_FAMILY, 'normal');
-      const lines = pdf.splitTextToSize(proposal.notes, this.CONTENT_WIDTH - 5);
-      pdf.text(lines, margin + 3, y);
-      y += lines.length * 4;
-    }
-
-    return y + 5;
-  }
-
-  // ──────────────────────────────────────────────
-  //  FOOTER
-  // ──────────────────────────────────────────────
-  private static drawFooter(pdf: jsPDF, tenant: Tenant, margin: number): void {
-    const totalPages = pdf.getNumberOfPages();
-    const footerY = this.PAGE_HEIGHT - 10;
-
-    for (let i = 1; i <= totalPages; i++) {
-      pdf.setPage(i);
-
-      // Separator line
-      pdf.setDrawColor(...BORDER_COLOR);
-      pdf.setLineWidth(0.3);
-      pdf.line(margin, footerY - 3, this.PAGE_WIDTH - margin, footerY - 3);
-
-      pdf.setFontSize(7);
-      pdf.setFont(FONT_FAMILY, 'normal');
-      pdf.setTextColor(...TEXT_SECONDARY);
-
-      // Left: company info
-      pdf.text(`${tenant.name} | TeklifPro ile oluşturuldu`, margin, footerY);
-
-      // Right: page number
-      pdf.text(
-        `Sayfa ${i} / ${totalPages}`,
-        this.PAGE_WIDTH - margin,
-        footerY,
-        { align: 'right' }
+      termItems.push(
+        { text: 'Ödeme Koşulları', bold: true, fontSize: 9, margin: [0, 4, 0, 2] as [number, number, number, number] },
+        { text: proposal.paymentTerms, fontSize: 9, margin: [8, 0, 0, 4] as [number, number, number, number] }
       );
     }
 
-    // Reset
-    pdf.setTextColor(...TEXT_PRIMARY);
+    if (proposal.deliveryTerms) {
+      termItems.push(
+        { text: 'Teslimat Koşulları', bold: true, fontSize: 9, margin: [0, 4, 0, 2] as [number, number, number, number] },
+        { text: proposal.deliveryTerms, fontSize: 9, margin: [8, 0, 0, 4] as [number, number, number, number] }
+      );
+    }
+
+    if (proposal.notes) {
+      termItems.push(
+        { text: 'Notlar', bold: true, fontSize: 9, margin: [0, 4, 0, 2] as [number, number, number, number] },
+        { text: proposal.notes, fontSize: 9, margin: [8, 0, 0, 0] as [number, number, number, number] }
+      );
+    }
+
+    return [
+      { text: '', margin: [0, 12, 0, 0] as [number, number, number, number] },
+      {
+        stack: [
+          // Section title bar
+          {
+            table: {
+              widths: ['*'],
+              body: [
+                [
+                  {
+                    text: 'Şartlar ve Koşullar',
+                    bold: true,
+                    fontSize: 11,
+                    color: WHITE,
+                  },
+                ],
+              ],
+            },
+            layout: {
+              fillColor: () => BRAND_DARK,
+              hLineWidth: () => 0,
+              vLineWidth: () => 0,
+              paddingLeft: () => 8,
+              paddingRight: () => 8,
+              paddingTop: () => 5,
+              paddingBottom: () => 5,
+            },
+          },
+          // Terms content
+          {
+            stack: termItems,
+            margin: [8, 6, 0, 0] as [number, number, number, number],
+          },
+        ],
+      },
+    ];
   }
 
   // ──────────────────────────────────────────────
@@ -535,35 +671,5 @@ export class ProposalPdfService {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(num);
-  }
-
-  private static getStatusText(status: string): string {
-    const map: Record<string, string> = {
-      DRAFT: 'Taslak',
-      SENT: 'Gönderildi',
-      VIEWED: 'Görüntülendi',
-      ACCEPTED: 'Kabul Edildi',
-      REJECTED: 'Reddedildi',
-      REVISION_REQUESTED: 'Revizyon İstendi',
-      REVISED: 'Revize Edildi',
-      EXPIRED: 'Süresi Doldu',
-      CANCELLED: 'İptal Edildi',
-    };
-    return map[status] || map[status?.toUpperCase()] || status;
-  }
-
-  private static getStatusColor(status: string): readonly [number, number, number] {
-    const colors: Record<string, readonly [number, number, number]> = {
-      DRAFT: [107, 114, 128],       // gray
-      SENT: [37, 99, 235],          // blue
-      VIEWED: [234, 179, 8],        // yellow
-      ACCEPTED: [22, 163, 74],      // green
-      REJECTED: [220, 38, 38],      // red
-      REVISION_REQUESTED: [234, 88, 12], // orange
-      REVISED: [147, 51, 234],      // purple
-      EXPIRED: [71, 85, 105],       // slate
-      CANCELLED: [107, 114, 128],   // gray
-    };
-    return colors[status] || colors[status?.toUpperCase()] || [107, 114, 128];
   }
 }
