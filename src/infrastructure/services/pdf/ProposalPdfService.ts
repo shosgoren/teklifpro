@@ -19,31 +19,32 @@ const BG_LIGHT = [249, 250, 251] as const; // Gray-50
 const BG_HEADER = [37, 99, 235] as const; // Blue-600
 const WHITE = [255, 255, 255] as const;
 
-let fontsLoaded = false;
+// Cache font data at module level, but always register on each jsPDF instance
+let cachedRegularFont: string | null = null;
+let cachedBoldFont: string | null = null;
 
 function loadFonts(pdf: jsPDF) {
-  if (fontsLoaded) return;
-
   try {
     const fontsDir = path.join(process.cwd(), 'public', 'fonts');
     const regularPath = path.join(fontsDir, 'Roboto-Regular.ttf');
     const boldPath = path.join(fontsDir, 'Roboto-Bold.ttf');
 
-    if (fs.existsSync(regularPath)) {
-      const regularFont = fs.readFileSync(regularPath);
-      const regularBase64 = regularFont.toString('base64');
-      pdf.addFileToVFS('Roboto-Regular.ttf', regularBase64);
+    if (!cachedRegularFont && fs.existsSync(regularPath)) {
+      cachedRegularFont = fs.readFileSync(regularPath).toString('base64');
+    }
+    if (!cachedBoldFont && fs.existsSync(boldPath)) {
+      cachedBoldFont = fs.readFileSync(boldPath).toString('base64');
+    }
+
+    // Always register fonts on the new pdf instance
+    if (cachedRegularFont) {
+      pdf.addFileToVFS('Roboto-Regular.ttf', cachedRegularFont);
       pdf.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
     }
-
-    if (fs.existsSync(boldPath)) {
-      const boldFont = fs.readFileSync(boldPath);
-      const boldBase64 = boldFont.toString('base64');
-      pdf.addFileToVFS('Roboto-Bold.ttf', boldBase64);
+    if (cachedBoldFont) {
+      pdf.addFileToVFS('Roboto-Bold.ttf', cachedBoldFont);
       pdf.addFont('Roboto-Bold.ttf', 'Roboto', 'bold');
     }
-
-    fontsLoaded = true;
   } catch (err) {
     console.warn('Failed to load Roboto fonts, falling back to helvetica:', err);
   }
