@@ -61,6 +61,9 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
       category: searchParams.get('category') || '',
       status: searchParams.get('status') || 'all',
       productType: searchParams.get('productType') || '',
+      stockStatus: searchParams.get('stockStatus') || 'all',
+      sortBy: searchParams.get('sortBy') || 'createdAt',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
     });
 
     const page = Math.max(1, parseInt(queryData.page));
@@ -92,36 +95,90 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
       where.productType = queryData.productType;
     }
 
-    const total = await prisma.product.count({ where });
+    if (queryData.stockStatus === 'low') {
+      where.trackStock = true;
+      where.minStockLevel = { gt: 0 };
+      where.stockQuantity = { lt: prisma.product.fields?.minStockLevel ?? undefined };
+      // Use raw comparison: stockQuantity < minStockLevel
+      where.AND = [
+        ...(where.AND || []),
+        { stockQuantity: { gt: 0 } },
+      ];
+      // For Prisma, we use a rawFilter approach below
+    } else if (queryData.stockStatus === 'inStock') {
+      where.trackStock = true;
+      where.stockQuantity = { gt: 0 };
+    } else if (queryData.stockStatus === 'outOfStock') {
+      where.trackStock = true;
+      where.stockQuantity = { lte: 0 };
+    }
 
-    const products = await prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        category: true,
-        unit: true,
-        listPrice: true,
-        vatRate: true,
-        isActive: true,
-        description: true,
-        productType: true,
-        costPrice: true,
-        laborCost: true,
-        overheadRate: true,
-        minStockLevel: true,
-        parasutId: true,
-        lastSyncAt: true,
-        createdAt: true,
-        imageUrl: true,
-        trackStock: true,
-        stockQuantity: true,
-      },
-    });
+    // For low stock, we need post-filter since Prisma can't compare two columns directly
+    // So we handle it differently: fetch all tracked products and filter
+    let total: number;
+    let products: any[];
+
+    const orderBy = { [queryData.sortBy]: queryData.sortOrder };
+
+    if (queryData.stockStatus === 'low') {
+      // Remove the invalid stockQuantity filter for low stock
+      delete where.stockQuantity;
+      delete where.minStockLevel;
+      delete where.AND;
+      where.trackStock = true;
+
+      const allTracked = await prisma.product.findMany({
+        where,
+        select: {
+          id: true, code: true, name: true, category: true, unit: true,
+          listPrice: true, vatRate: true, isActive: true, description: true,
+          productType: true, costPrice: true, laborCost: true, overheadRate: true,
+          minStockLevel: true, parasutId: true, lastSyncAt: true, createdAt: true,
+          imageUrl: true, trackStock: true, stockQuantity: true,
+        },
+        orderBy,
+      });
+
+      const lowStockProducts = allTracked.filter((p) => {
+        const stock = Number(p.stockQuantity);
+        const minLevel = Number(p.minStockLevel);
+        return minLevel > 0 && stock < minLevel;
+      });
+
+      total = lowStockProducts.length;
+      products = lowStockProducts.slice(skip, skip + limit);
+    } else {
+      total = await prisma.product.count({ where });
+
+      products = await prisma.product.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          category: true,
+          unit: true,
+          listPrice: true,
+          vatRate: true,
+          isActive: true,
+          description: true,
+          productType: true,
+          costPrice: true,
+          laborCost: true,
+          overheadRate: true,
+          minStockLevel: true,
+          parasutId: true,
+          lastSyncAt: true,
+          createdAt: true,
+          imageUrl: true,
+          trackStock: true,
+          stockQuantity: true,
+        },
+      });
+    }
 
     const formattedProducts: ProductResponse[] = products.map((p) => ({
       id: p.id,

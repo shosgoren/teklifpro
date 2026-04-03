@@ -23,6 +23,9 @@ export const productQuerySchema = z.object({
   category: z.string().optional().default(''),
   status: z.enum(['all', 'active', 'inactive']).optional().default('all'),
   productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE', '']).optional().default(''),
+  stockStatus: z.enum(['all', 'low', 'inStock', 'outOfStock']).optional().default('all'),
+  sortBy: z.enum(['createdAt', 'name', 'listPrice', 'stockQuantity']).optional().default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 })
 
 export const bulkPriceSchema = z.object({

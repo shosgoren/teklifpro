@@ -7,7 +7,7 @@ import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
 import {
   Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, AlertTriangle,
-  LayoutGrid, List, Package, TrendingUp, TrendingDown, Percent,
+  LayoutGrid, List, Package, TrendingUp, TrendingDown, Percent, ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -154,6 +154,9 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProductType, setFilterProductType] = useState<FilterProductType>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterStockStatus, setFilterStockStatus] = useState<'all' | 'low' | 'inStock' | 'outOfStock'>('all');
+  const [sortBy, setSortBy] = useState<'createdAt' | 'name' | 'listPrice' | 'stockQuantity'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -184,12 +187,20 @@ export default function ProductsPage() {
     ...(searchQuery && { search: searchQuery }),
     ...(filterProductType !== 'all' && { productType: filterProductType }),
     ...(filterStatus !== 'all' && { status: filterStatus }),
+    ...(filterStockStatus !== 'all' && { stockStatus: filterStockStatus }),
+    sortBy,
+    sortOrder,
   });
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/v1/products?${queryParams.toString()}`,
     fetcher
   );
+
+  // Fetch dynamic categories and units for form suggestions
+  const { data: metaData } = useSWR('/api/v1/products/meta', fetcher);
+  const dynamicCategories: string[] = metaData?.data?.categories ?? [];
+  const dynamicUnits: string[] = metaData?.data?.units ?? [];
 
   const products: Product[] = data?.data?.products ?? [];
   const pagination = data?.data?.pagination ?? { total: 0, pages: 1, page: 1 };
@@ -479,6 +490,62 @@ export default function ProductsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Stock Status Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="rounded-xl min-w-[110px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20">
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  {filterStockStatus === 'all' ? t('all') : filterStockStatus === 'low' ? t('lowStock') : filterStockStatus === 'inStock' ? t('inStock') : t('outOfStock')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem checked={filterStockStatus === 'all'}
+                  onCheckedChange={() => { setFilterStockStatus('all'); setCurrentPage(1); }}>
+                  {t('all')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={filterStockStatus === 'low'}
+                  onCheckedChange={() => { setFilterStockStatus('low'); setCurrentPage(1); }}>
+                  {t('lowStock')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={filterStockStatus === 'inStock'}
+                  onCheckedChange={() => { setFilterStockStatus('inStock'); setCurrentPage(1); }}>
+                  {t('inStock')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={filterStockStatus === 'outOfStock'}
+                  onCheckedChange={() => { setFilterStockStatus('outOfStock'); setCurrentPage(1); }}>
+                  {t('outOfStock')}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Sort */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  {t('sort')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem checked={sortBy === 'createdAt'}
+                  onCheckedChange={() => { setSortBy('createdAt'); setSortOrder('desc'); setCurrentPage(1); }}>
+                  {t('sortByDate')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={sortBy === 'name'}
+                  onCheckedChange={() => { setSortBy('name'); setSortOrder('asc'); setCurrentPage(1); }}>
+                  {t('sortByName')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={sortBy === 'listPrice'}
+                  onCheckedChange={() => { setSortBy('listPrice'); setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc'); setCurrentPage(1); }}>
+                  {t('sortByPrice')} {sortBy === 'listPrice' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={sortBy === 'stockQuantity'}
+                  onCheckedChange={() => { setSortBy('stockQuantity'); setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc'); setCurrentPage(1); }}>
+                  {t('sortByStock')} {sortBy === 'stockQuantity' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* View Toggle */}
             <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden">
               <button
@@ -764,9 +831,14 @@ export default function ProductsPage() {
                 value={newProduct.category}
                 onChange={(e) => setNewProduct((p) => ({ ...p, category: e.target.value }))} />
               <datalist id="category-options">
-                <option value="Yazılım" />
-                <option value="Hizmet" />
-                <option value="Donanım" />
+                {dynamicCategories.length > 0
+                  ? dynamicCategories.map((cat) => <option key={cat} value={cat} />)
+                  : <>
+                      <option value="Yazılım" />
+                      <option value="Hizmet" />
+                      <option value="Donanım" />
+                    </>
+                }
               </datalist>
             </div>
             <div className="grid gap-2">
