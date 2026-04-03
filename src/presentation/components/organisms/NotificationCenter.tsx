@@ -40,26 +40,50 @@ export function NotificationCenter({
   const [notifications, setNotifications] = useState<Notification[]>(
     externalNotifications || []
   );
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data when no notifications provided
-  useEffect(() => {
-    if (!externalNotifications || externalNotifications.length === 0) {
-      setNotifications(getMockNotifications());
-    } else {
-      setNotifications(externalNotifications);
+  // Fetch notifications from server
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/notifications');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          setNotifications(data.data.map((n: any) => ({
+            ...n,
+            timestamp: new Date(n.timestamp),
+          })));
+        }
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsLoading(false);
     }
-  }, [externalNotifications]);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000); // 30s polling
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const handleMarkAsRead = useCallback(
-    (notificationId: string) => {
+    async (notificationId: string) => {
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === notificationId ? { ...n, isRead: true } : n
         )
       );
       onMarkAsRead?.(notificationId);
+      // Persist to server
+      fetch('/api/v1/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activityId: notificationId, action: 'markRead' }),
+      }).catch(() => {});
     },
     [onMarkAsRead]
   );
@@ -69,6 +93,12 @@ export function NotificationCenter({
       prev.map((n) => ({ ...n, isRead: true }))
     );
     onMarkAllAsRead?.();
+    // Persist to server
+    fetch('/api/v1/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'markAllRead' }),
+    }).catch(() => {});
   }, [onMarkAllAsRead]);
 
   const handleNotificationClick = useCallback(
@@ -129,7 +159,15 @@ export function NotificationCenter({
 
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              // Loading State
+              <div className="px-4 py-12 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3 animate-pulse">
+                  <Bell className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-sm">Bildirimler yükleniyor...</p>
+              </div>
+            ) : notifications.length === 0 ? (
               // Empty State
               <div className="px-4 py-12 text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
@@ -319,77 +357,3 @@ function getTimeAgo(date: Date | string): string {
   });
 }
 
-function getMockNotifications(): Notification[] {
-  const now = new Date();
-
-  return [
-    {
-      id: '1',
-      type: 'accepted',
-      title: 'Teklif Kabul Edildi',
-      description: 'Acme Corp. tarafından TKL-2026-001 nolu teklif kabul edildi.',
-      timestamp: new Date(now.getTime() - 2 * 60000), // 2 minutes ago
-      isRead: false,
-      proposalId: 'prop-001',
-    },
-    {
-      id: '2',
-      type: 'rejected',
-      title: 'Teklif Reddedildi',
-      description: 'Global Industries tarafından TKL-2026-003 nolu teklif reddedildi.',
-      timestamp: new Date(now.getTime() - 15 * 60000), // 15 minutes ago
-      isRead: false,
-      proposalId: 'prop-003',
-    },
-    {
-      id: '3',
-      type: 'revised',
-      title: 'Revize Talep Edildi',
-      description: 'Tech Solutions revize talebinde bulundu: Fiyat indirimini gözden geçir.',
-      timestamp: new Date(now.getTime() - 45 * 60000), // 45 minutes ago
-      isRead: false,
-      proposalId: 'prop-002',
-    },
-    {
-      id: '4',
-      type: 'viewed',
-      title: 'Teklif Görüntülendi',
-      description: 'Star Ventures, TKL-2026-005 teklifini görüntüledi.',
-      timestamp: new Date(now.getTime() - 2 * 3600000), // 2 hours ago
-      isRead: true,
-      proposalId: 'prop-005',
-    },
-    {
-      id: '5',
-      type: 'synced',
-      title: 'Paraşüt Senkronizasyonu Tamamlandı',
-      description: '245 müşteri başarıyla Paraşüt ile senkronize edildi.',
-      timestamp: new Date(now.getTime() - 5 * 3600000), // 5 hours ago
-      isRead: true,
-    },
-    {
-      id: '6',
-      type: 'expiring',
-      title: 'Deneme Süresi Bitiyor',
-      description: 'Deneme süreniz 3 gün içinde bitiyor. Planı yükselt.',
-      timestamp: new Date(now.getTime() - 1 * 86400000), // 1 day ago
-      isRead: true,
-    },
-    {
-      id: '7',
-      type: 'info',
-      title: 'Sistem Güncellemesi',
-      description: 'TeklifPro 2.1.0 sürümü dağıtıldı. Yeni özellikler kullanılabilir.',
-      timestamp: new Date(now.getTime() - 2 * 86400000), // 2 days ago
-      isRead: true,
-    },
-    {
-      id: '8',
-      type: 'warning',
-      title: 'Ödeme Başarısız',
-      description: 'Aylık faturanız işlenmedi. Ödeme yöntemini güncelleyin.',
-      timestamp: new Date(now.getTime() - 3 * 86400000), // 3 days ago
-      isRead: true,
-    },
-  ];
-}

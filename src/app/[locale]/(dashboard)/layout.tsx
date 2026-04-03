@@ -25,6 +25,7 @@ import {
   PanelLeftOpen,
   MoreHorizontal,
 } from 'lucide-react'
+import { NotificationCenter } from '@/presentation/components/organisms/NotificationCenter'
 
 interface NavItem {
   nameKey: string
@@ -356,6 +357,15 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
             {/* Right controls */}
             <div className="flex items-center gap-1">
+              <div className="[&_button]:text-white/80 [&_button]:hover:text-white [&_button]:hover:bg-white/10">
+                <NotificationCenter
+                  onNotificationClick={(n) => {
+                    if (n.proposalId) {
+                      router.push(getLocalizedHref(`/proposals/${n.proposalId}`))
+                    }
+                  }}
+                />
+              </div>
               {mounted && (
                 <button
                   onClick={() => setTheme(isDark ? 'light' : 'dark')}

@@ -3,6 +3,7 @@ import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import { withRateLimit } from '@/infrastructure/middleware/rateLimitMiddleware'
 import { Logger } from '@/infrastructure/logger'
+import { EmailService } from '@/infrastructure/services/email/EmailService'
 
 const logger = new Logger('ProposalRespondAPI')
 
@@ -29,6 +30,7 @@ async function handlePost(request: NextRequest) {
     // Find proposal
     const proposal = await prisma.proposal.findUnique({
       where: { id: proposalId },
+      include: { user: true, customer: true },
     })
 
     if (!proposal) {
@@ -42,6 +44,14 @@ async function handlePost(request: NextRequest) {
     if (['ACCEPTED', 'REJECTED', 'REVISION_REQUESTED'].includes(proposal.status)) {
       return NextResponse.json(
         { success: false, error: { message: 'Bu teklife zaten yanıt verilmiş' } },
+        { status: 400 }
+      )
+    }
+
+    // Check if proposal has expired
+    if (proposal.expiresAt && new Date(proposal.expiresAt) < new Date()) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Bu teklifin süresi dolmuştur' } },
         { status: 400 }
       )
     }
@@ -103,6 +113,26 @@ async function handlePost(request: NextRequest) {
       rejectionReason,
       revisionNote,
     }).catch(() => {})
+
+    // Send email notification to proposal owner (fire-and-forget)
+    const emailService = new EmailService()
+    const proposalData = {
+      id: proposal.id,
+      number: proposal.proposalNumber || proposal.id,
+      clientName: proposal.customer?.name || 'Müşteri',
+      clientEmail: proposal.customer?.email || '',
+      amount: Number(proposal.grandTotal) || 0,
+      currency: proposal.currency || 'TRY',
+      validUntil: proposal.expiresAt || new Date(),
+    }
+
+    if (action === 'ACCEPTED') {
+      emailService.sendProposalAccepted(proposal.user.email, proposalData).catch(() => {})
+    } else if (action === 'REJECTED') {
+      emailService.sendProposalRejected(proposal.user.email, proposalData).catch(() => {})
+    } else if (action === 'REVISION_REQUESTED') {
+      emailService.sendProposalRevisionRequested(proposal.user.email, proposalData, revisionNote || '').catch(() => {})
+    }
 
     return NextResponse.json({
       success: true,
