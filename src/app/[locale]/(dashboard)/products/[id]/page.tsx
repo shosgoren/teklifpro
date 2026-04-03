@@ -26,6 +26,11 @@ import {
   Star,
   X,
   ChevronDown,
+  Upload,
+  ImageIcon,
+  History,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -64,6 +69,7 @@ interface Product {
   vatRate: number;
   isActive: boolean;
   description: string | null;
+  imageUrl: string | null;
   trackStock: boolean;
   stockQuantity: number;
   minStockLevel: number;
@@ -141,6 +147,16 @@ interface ProductSupplier {
   minOrderQty: number | null;
   isPreferred: boolean;
   notes: string | null;
+}
+
+interface PriceHistoryEntry {
+  id: string;
+  field: string;
+  oldValue: number;
+  newValue: number;
+  changedBy: string | null;
+  notes: string | null;
+  createdAt: string;
 }
 
 // ─── Constants ───────────────────────────────────────────
@@ -225,6 +241,7 @@ export default function ProductDetailPage() {
     reference: '',
     notes: '',
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false);
   const [supplierForm, setSupplierForm] = useState({
     supplierId: '',
@@ -270,12 +287,18 @@ export default function ProductDetailPage() {
     fetcher
   );
 
+  const { data: priceHistoryData, mutate: mutatePriceHistory } = useSWR(
+    activeTab === 'general' ? `/api/v1/products/${productId}/price-history` : null,
+    fetcher
+  );
+
   const product: Product | null = productData?.data ?? null;
   const movements: StockMovement[] = movementsData?.data?.movements ?? movementsData?.data ?? [];
   const boms: Bom[] = bomData?.data?.boms ?? [];
   const activeBom = boms.find((b) => b.isActive) ?? boms[0] ?? null;
   const costBreakdown: CostBreakdown | null = costData?.data ?? null;
   const suppliers: ProductSupplier[] = suppliersData?.data?.suppliers ?? [];
+  const priceHistory: PriceHistoryEntry[] = priceHistoryData?.data?.history ?? [];
 
   // ─── Handlers ───
 
@@ -377,6 +400,55 @@ export default function ProductDetailPage() {
       setIsSubmitting(false);
     }
   }, [editForm, productId, mutateProduct]);
+
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Dosya boyutu 5MB\'dan küçük olmalıdır');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`/api/v1/products/${productId}/image`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Görsel yüklendi');
+        mutateProduct();
+      } else {
+        toast.error(data.error || 'Görsel yüklenemedi');
+      }
+    } catch {
+      toast.error('Görsel yüklenirken hata oluştu');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
+    }
+  }, [productId, mutateProduct]);
+
+  const handleImageDelete = useCallback(async () => {
+    if (!window.confirm('Ürün görselini kaldırmak istediğinize emin misiniz?')) return;
+    try {
+      const response = await fetch(`/api/v1/products/${productId}/image`, { method: 'DELETE' });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Görsel kaldırıldı');
+        mutateProduct();
+      } else {
+        toast.error(data.error || 'Görsel kaldırılamadı');
+      }
+    } catch {
+      toast.error('İşlem sırasında hata oluştu');
+    }
+  }, [productId, mutateProduct]);
 
   const availableSuppliers = (availableSuppliersData?.data?.suppliers ?? []).filter(
     (s: { id: string }) => !suppliers.some((ps) => ps.supplierId === s.id)
@@ -529,7 +601,15 @@ export default function ProductDetailPage() {
 
       {/* ─── Tab Content ─── */}
       <div className="p-4 md:p-0">
-        {activeTab === 'general' && <GeneralTab product={product} />}
+        {activeTab === 'general' && (
+          <GeneralTab
+            product={product}
+            priceHistory={priceHistory}
+            isUploadingImage={isUploadingImage}
+            onImageUpload={handleImageUpload}
+            onImageDelete={handleImageDelete}
+          />
+        )}
         {activeTab === 'stock' && (
           <StockTab
             product={product}
@@ -889,9 +969,77 @@ export default function ProductDetailPage() {
 
 // ─── General Tab ─────────────────────────────────────────
 
-function GeneralTab({ product }: { product: Product }) {
+const PRICE_FIELD_LABELS: Record<string, string> = {
+  listPrice: 'Liste Fiyatı',
+  costPrice: 'Maliyet Fiyatı',
+  laborCost: 'İşçilik Maliyeti',
+};
+
+function GeneralTab({
+  product,
+  priceHistory,
+  isUploadingImage,
+  onImageUpload,
+  onImageDelete,
+}: {
+  product: Product;
+  priceHistory: PriceHistoryEntry[];
+  isUploadingImage: boolean;
+  onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageDelete: () => void;
+}) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      {/* Product Image */}
+      <div className="rounded-lg border p-4 space-y-3 md:col-span-2">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Ürün Görseli
+        </h3>
+        <div className="flex items-center gap-4">
+          {product.imageUrl ? (
+            <div className="relative group">
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="w-24 h-24 rounded-xl object-cover border shadow-sm"
+              />
+              <button
+                onClick={onImageDelete}
+                className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-xl border-2 border-dashed flex items-center justify-center bg-muted/30">
+              <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+          )}
+          <div className="flex flex-col gap-2">
+            <label className={cn(
+              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium cursor-pointer transition-colors',
+              'hover:bg-muted/50',
+              isUploadingImage && 'opacity-50 pointer-events-none'
+            )}>
+              {isUploadingImage ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {isUploadingImage ? 'Yükleniyor...' : product.imageUrl ? 'Görseli Değiştir' : 'Görsel Yükle'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={onImageUpload}
+                className="hidden"
+                disabled={isUploadingImage}
+              />
+            </label>
+            <p className="text-xs text-muted-foreground">JPEG, PNG veya WebP. Max 5MB.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Basic Info */}
       <div className="rounded-lg border p-4 space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -997,6 +1145,53 @@ function GeneralTab({ product }: { product: Product }) {
           Oluşturulma: {formatDate(product.createdAt)}
         </p>
       </div>
+
+      {/* Price History */}
+      {priceHistory.length > 0 && (
+        <div className="rounded-lg border p-4 space-y-3 md:col-span-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Fiyat Geçmişi
+          </h3>
+          <div className="flex flex-col gap-2">
+            {priceHistory.slice(0, 10).map((entry) => {
+              const increased = entry.newValue > entry.oldValue;
+              const pctChange = entry.oldValue > 0
+                ? (((entry.newValue - entry.oldValue) / entry.oldValue) * 100).toFixed(1)
+                : '∞';
+              return (
+                <div key={entry.id} className="flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {increased
+                      ? <TrendingUp className="h-4 w-4 shrink-0 text-red-500" />
+                      : <TrendingDown className="h-4 w-4 shrink-0 text-green-500" />
+                    }
+                    <div className="min-w-0">
+                      <span className="font-medium">
+                        {PRICE_FIELD_LABELS[entry.field] || entry.field}
+                      </span>
+                      <span className="text-muted-foreground ml-2">
+                        {formatCurrency(entry.oldValue)} → {formatCurrency(entry.newValue)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-3">
+                    <Badge className={cn(
+                      'text-xs',
+                      increased
+                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    )}>
+                      {increased ? '+' : ''}{pctChange}%
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

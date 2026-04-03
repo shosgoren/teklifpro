@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
@@ -52,6 +53,27 @@ async function handlePut(
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
+    // Track price changes
+    const priceFields = [
+      { field: 'listPrice', bodyVal: body.listPrice, existingVal: existing.listPrice },
+      { field: 'costPrice', bodyVal: body.costPrice, existingVal: existing.costPrice },
+      { field: 'laborCost', bodyVal: body.laborCost, existingVal: existing.laborCost },
+    ];
+
+    const priceChanges = priceFields
+      .filter(({ bodyVal, existingVal }) => {
+        if (bodyVal === undefined) return false;
+        return Number(bodyVal) !== Number(existingVal);
+      })
+      .map(({ field, bodyVal, existingVal }) => ({
+        tenantId: session.tenant.id,
+        productId: params.id,
+        field,
+        oldValue: new Decimal(Number(existingVal)),
+        newValue: new Decimal(Number(bodyVal)),
+        changedBy: session.user.id,
+      }));
+
     const updated = await prisma.product.update({
       where: { id: params.id },
       data: {
@@ -71,6 +93,13 @@ async function handlePut(
         isActive: body.isActive !== undefined ? body.isActive : existing.isActive,
       },
     });
+
+    // Log price changes (fire-and-forget)
+    if (priceChanges.length > 0) {
+      prisma.priceHistory.createMany({ data: priceChanges }).catch((err) => {
+        logger.error('Failed to log price history:', err);
+      });
+    }
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {

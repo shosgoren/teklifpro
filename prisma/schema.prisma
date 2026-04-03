@@ -278,12 +278,33 @@ model Product {
 
   // Supplier relationships
   suppliers       ProductSupplier[]
+  priceHistory    PriceHistory[]
 
   @@unique([tenantId, parasutId])
   @@unique([tenantId, code])
   @@index([tenantId, name])
   @@index([tenantId, productType])
   @@map("products")
+}
+
+// ==================== PRICE HISTORY (Fiyat Geçmişi) ====================
+
+model PriceHistory {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  productId   String   @map("product_id")
+  field       String   // 'listPrice', 'costPrice', 'laborCost'
+  oldValue    Decimal  @db.Decimal(15, 2) @map("old_value")
+  newValue    Decimal  @db.Decimal(15, 2) @map("new_value")
+  changedBy   String?  @map("changed_by")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("price_history")
 }
 
 // ==================== BILL OF MATERIALS (BOM / Reçete) ====================
