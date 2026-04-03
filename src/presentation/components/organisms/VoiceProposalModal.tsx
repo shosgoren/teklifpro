@@ -8,10 +8,12 @@ import { cn } from '@/shared/utils/cn'
 import { VoiceActivityIndicator } from '@/presentation/components/molecules/VoiceActivityIndicator'
 import { LiveTranscript } from '@/presentation/components/molecules/LiveTranscript'
 import { VoiceEditHistory } from '@/presentation/components/molecules/VoiceEditHistory'
+import { OfflineIndicator } from '@/presentation/components/molecules/OfflineIndicator'
 import { VoiceProposalPreview } from '@/presentation/components/organisms/VoiceProposalPreview'
 import { VoiceActivityDetector } from '@/infrastructure/services/voice/VoiceActivityDetector'
 import { VoiceConfirmation } from '@/infrastructure/services/voice/VoiceConfirmation'
 import { VoiceSpeechCommands } from '@/infrastructure/services/voice/VoiceSpeechCommands'
+import { OfflineQueueService } from '@/infrastructure/services/voice/OfflineQueueService'
 import type { VoiceParseResult, VoiceEditChange } from '@/infrastructure/services/voice/types'
 import { VOICE_MAX_DURATION_MS } from '@/infrastructure/services/voice/types'
 import { Logger } from '@/infrastructure/logger'
@@ -44,6 +46,9 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false)
   const [whatsAppSent, setWhatsAppSent] = useState(false)
   const [isListeningCommands, setIsListeningCommands] = useState(false)
+  const [isOffline, setIsOffline] = useState(false)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [isQueueProcessing, setIsQueueProcessing] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -52,6 +57,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
   const vadRef = useRef<VoiceActivityDetector | null>(null)
   const voiceConfirmationRef = useRef<VoiceConfirmation | null>(null)
   const speechCommandsRef = useRef<VoiceSpeechCommands | null>(null)
+  const offlineQueueRef = useRef<OfflineQueueService | null>(null)
 
   // Cleanup everything on close / unmount
   const cleanup = useCallback(() => {
@@ -74,11 +80,53 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     vadRef.current = null
     timerRef.current = null
     setIsListeningCommands(false)
+    if (offlineQueueRef.current) {
+      offlineQueueRef.current.stopAutoSync()
+      offlineQueueRef.current = null
+    }
   }, [])
 
   useEffect(() => {
     return cleanup
   }, [cleanup])
+
+  // Online/offline event listeners
+  useEffect(() => {
+    setIsOffline(!navigator.onLine)
+
+    const handleOnline = async () => {
+      setIsOffline(false)
+      // Auto-process queue when coming back online
+      if (offlineQueueRef.current) {
+        const count = await offlineQueueRef.current.getPendingCount()
+        if (count > 0) {
+          setIsQueueProcessing(true)
+          try {
+            await offlineQueueRef.current.processQueue()
+            setPendingCount(0)
+          } catch {
+            // Silently handle
+          } finally {
+            setIsQueueProcessing(false)
+            const remaining = await offlineQueueRef.current!.getPendingCount()
+            setPendingCount(remaining)
+          }
+        }
+      }
+    }
+
+    const handleOffline = () => {
+      setIsOffline(true)
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   // Reset state when modal opens
   useEffect(() => {
@@ -100,6 +148,17 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       setIsSendingWhatsApp(false)
       setWhatsAppSent(false)
       setIsListeningCommands(false)
+
+      // Initialize OfflineQueueService
+      const queue = new OfflineQueueService()
+      offlineQueueRef.current = queue
+      queue.init().then(async () => {
+        queue.startAutoSync()
+        const count = await queue.getPendingCount()
+        setPendingCount(count)
+      }).catch(() => {
+        // IndexedDB may not be available
+      })
     } else {
       cleanup()
     }
@@ -287,6 +346,20 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
       setStep('PREVIEW')
     } catch (err) {
+      // If offline, enqueue for later processing
+      if (!navigator.onLine && offlineQueueRef.current) {
+        try {
+          await offlineQueueRef.current.enqueue(audioBase64, 'tr')
+          const count = await offlineQueueRef.current.getPendingCount()
+          setPendingCount(count)
+          setError('Cevrimdisisiniz. Kayit kuyruga eklendi.')
+          setStep('DONE')
+          return
+        } catch (queueErr) {
+          logger.error('Offline queue enqueue failed', queueErr)
+        }
+      }
+
       logger.error('Process audio failed', err)
       setError(err instanceof Error ? err.message : 'Bir hata olustu. Lutfen tekrar deneyin.')
       setStep('RECORDING')
@@ -520,6 +593,13 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-5">
+            {/* Offline indicator */}
+            <OfflineIndicator
+              pendingCount={pendingCount}
+              isProcessing={isQueueProcessing}
+              className="mb-4"
+            />
+
             <AnimatePresence mode="wait">
               {/* ── RECORDING ── */}
               {step === 'RECORDING' && (
