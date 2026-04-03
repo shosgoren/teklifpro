@@ -11,6 +11,22 @@ import {
 } from './types';
 import { buildGlossaryPrompt } from './glossary';
 
+/**
+ * VoiceEditResult genişletilmiş tipi.
+ * Düzenleme komutu hangi kaleme uygulanacağını belirleyemediğinde
+ * (birden fazla kalem varken komut muğlak ise) ambiguous: true döner.
+ */
+export interface VoiceEditResultExtended extends VoiceEditResult {
+  ambiguous?: boolean;
+  /** Kullanıcının belirsiz komutu */
+  ambiguousCommand?: string;
+  /** Hangi kalemlerin etkilenebileceğine dair seçenekler */
+  ambiguousOptions?: Array<{
+    itemIndex: number;
+    itemName: string;
+  }>;
+}
+
 const logger = new Logger('VoiceProposalParser');
 
 // ============================================================================
@@ -112,10 +128,23 @@ class VoiceProposalParser {
       const glossaryPrompt = buildGlossaryPrompt();
 
       const systemPrompt = `Sen TeklifPro ERP asistanısın. Ses dökümünü analiz et ve yapılandırılmış JSON döndür.
-Müşteri listesindeki isimlerle fuzzy match yap. Listede yoksa new_customer: true.
-Ürün listesindeki isimlerle fuzzy match yap. Fiyat belirtilmemişse listPrice kullan.
 
 ${glossaryPrompt}
+
+MÜŞTERI EŞLEŞTİRME KURALLARI:
+- Müşteri listesindeki isimlerle fuzzy/fonetik eşleştirme yap (farklı telaffuz, kısaltma veya yazım olabilir).
+- Eşleşme bulunursa matchedId ve matchedName doldur, isNewCustomer: false.
+- Listede hiç benzer müşteri yoksa matchedId: null, matchedName: null, isNewCustomer: true yap.
+- Güven skoru (confidence): 1.0 = kesin eşleşme, 0.5 = belirsiz, 0.0 = hiç eşleşme yok.
+
+ÜRÜN EŞLEŞTİRME KURALLARI:
+- Ürün kataloğundaki isimlerle fuzzy/fonetik eşleştirme yap.
+- Eşleşme bulunursa matchedProductId ve matchedProductName doldur.
+- Katalogda hiç benzer ürün yoksa matchedProductId: null, matchedProductName: null yap.
+  Bu durumda name alanına kullanıcının söylediği ürün adını yaz (ham haliyle).
+- Fiyat belirtilmemişse katalogdaki listPrice değerini unitPrice olarak kullan.
+- Birim belirtilmemişse katalogdaki unit değerini kullan, o da yoksa "adet" varsayılan.
+- vatRate belirtilmemişse 20 kullan.
 
 Müşteri Listesi:
 ${customerList || '(Müşteri bulunamadı)'}
@@ -134,7 +163,7 @@ Yanıtını SADECE aşağıdaki JSON formatında döndür, başka metin ekleme:
   },
   "items": [
     {
-      "name": "ürün adı",
+      "name": "ürün adı (kullanıcının söylediği, ham)",
       "matchedProductId": "eşleşen ürün ID veya null",
       "matchedProductName": "eşleşen ürün adı veya null",
       "quantity": 1,
@@ -195,7 +224,7 @@ ${transcript}
     currentProposal: VoiceParseResult,
     editCommand: string,
     tenantId: string,
-  ): Promise<VoiceEditResult> {
+  ): Promise<VoiceEditResultExtended> {
     try {
       logger.info('Editing proposal via voice command', {
         tenantId,
@@ -218,19 +247,79 @@ ${transcript}
         .map((c) => `- ${c.name} (ID: ${c.id})`)
         .join('\n');
 
-      const systemPrompt = `Mevcut teklif JSON'u ve düzenleme komutu verildi. Güncellenmiş JSON'u döndür.
-Sadece geçerli JSON döndür, başka metin ekleme.
+      const systemPrompt = `Sen TeklifPro ERP asistanısın. Mevcut teklif JSON'u ve bir düzenleme komutu verilecek.
+Komutu yorumlayıp güncellenmiş teklif JSON'unu döndür. SADECE geçerli JSON döndür, başka metin ekleme.
 
-ÖNEMLİ KURALLAR:
-- SADECE düzenleme komutunda belirtilen alanları değiştir.
-- Komutta bahsedilmeyen alanları KESİNLİKLE olduğu gibi bırak.
-- Özellikle: ürün adı (name), matchedProductId, matchedProductName alanlarını komutta açıkça ürün değişikliği istenmedikçe DEĞİŞTİRME.
-- "miktarı X yap" komutu SADECE quantity alanını değiştirir, ürün bilgilerini değiştirmez.
-- "fiyatı X yap" komutu SADECE unitPrice alanını değiştirir.
-- "iskontoyu X yap" komutu SADECE discountRate alanını değiştirir.
-- Birden fazla kalem varsa, komutta hangi kalemden bahsedildiğini anla ve sadece o kalemi değiştir.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEMEL KURALLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. SADECE komutta açıkça belirtilen alanları değiştir.
+2. Komutta bahsedilmeyen hiçbir alanı DEĞİŞTİRME — birebir kopyala.
+3. Özellikle: ürün adları (name), matchedProductId, matchedProductName — komutta ürün değişikliği istenmedikçe dokunma.
+4. Yanıt her zaman mevcut teklif yapısıyla TAMAMEN aynı JSON şemasında olmalı.
 
-Ürün veya müşteri değişikliği AÇIKÇA istenirse aşağıdaki listelerden eşleştir:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESTEKLENEN KOMUT TİPLERİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+** YENİ KALEM EKLEME **
+Örnek: "50 adet M10 somun da ekle", "listeye paslanmaz civata ekle"
+→ items dizisine yeni bir eleman ekle.
+→ Ürün kataloğundan fuzzy match yap; bulunursa matchedProductId/matchedProductName doldur, fiyatı listPrice'dan al.
+→ Katalogda yoksa matchedProductId: null, matchedProductName: null — adı name alanına yaz.
+→ Miktar/birim/fiyat belirtilmişse kullan, yoksa katalog değerlerini kullan.
+
+** KALEM SİLME **
+Örnek: "çelik levhayı çıkar", "M8 civatayı kaldır", "ilk kalemi sil"
+→ Belirtilen kalemi items dizisinden çıkar.
+→ Hangi kalemi kastettiğini ürün adı, sıra numarası veya bağlam üzerinden anla.
+
+** ÜRÜN DEĞİŞTİRME (SWAP) **
+Örnek: "M8 civata yerine M10 civata koy", "çelik boruyu paslanmaz boruyla değiştir"
+→ Belirtilen kalemi bul, ürün bilgilerini (name, matchedProductId, matchedProductName, unitPrice, unit) katalogdaki yeni ürünle güncelle.
+→ Miktar ve diğer alanlar değişmez.
+
+** MÜŞTERİ DEĞİŞTİRME **
+Örnek: "müşteriyi XYZ İnşaat yap", "müşteriyi Ahmet Bey olarak değiştir"
+→ customer nesnesini güncelle: query, matchedId, matchedName, confidence alanlarını değiştir.
+→ Müşteri listesinde eşleşme varsa matchedId/matchedName doldur. Yoksa matchedId: null, isNewCustomer: true.
+
+** KALEM ALANI DEĞİŞTİRME **
+- "miktarı X yap" / "X adet yap" → SADECE ilgili kalemin quantity alanı.
+- "fiyatı X yap" / "X liraya çek" → SADECE ilgili kalemin unitPrice alanı.
+- "birimi X yap" (kg, metre vb.) → SADECE ilgili kalemin unit alanı.
+- "KDV'yi %X yap" → SADECE ilgili kalemin vatRate alanı.
+- Birden fazla kalem varken komut hangi kaleme ait olduğunu açıkça belirtiyorsa SADECE o kalemi değiştir.
+
+** GLOBAL ALAN DEĞİŞTİRME **
+- "iskontoyu %X yap" → discountRate.
+- "ödeme koşulunu X yap" → paymentTerms.
+- "teslimat koşulunu X yap" → deliveryTerms.
+- "not ekle / notu değiştir" → notes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BELİRSİZ KOMUT DURUMU
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Eğer komut hangi kaleme uygulanacağını belirtmiyorsa VE birden fazla kalem varsa:
+→ Teklifi DEĞİŞTİRME.
+→ Aşağıdaki JSON formatında yanıt döndür:
+
+{
+  "ambiguous": true,
+  "ambiguousCommand": "kullanıcının komutu",
+  "ambiguousOptions": [
+    { "itemIndex": 0, "itemName": "Kalem 1 adı" },
+    { "itemIndex": 1, "itemName": "Kalem 2 adı" }
+  ]
+}
+
+Örnek: Teklifte "M8 Civata" ve "M10 Somun" varken kullanıcı sadece "miktarı 20 yap" derse → ambiguous: true döndür.
+Örnek: Tek kalem varsa veya komut kalemi açıkça belirtiyorsa → ambiguous durumu YOK, doğrudan değişikliği yap.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KATALOG VE MÜŞTERİ LİSTESİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Ürün veya müşteri değişikliği AÇIKÇA istenirse aşağıdaki listelerden fuzzy eşleştirme yap:
 
 Müşteri Listesi:
 ${customerList || '(Müşteri bulunamadı)'}
@@ -238,7 +327,8 @@ ${customerList || '(Müşteri bulunamadı)'}
 Ürün Kataloğu:
 ${productList || '(Ürün bulunamadı)'}
 
-JSON formatı mevcut yapıyla TAMAMEN aynı olmalıdır. Değişmeyen alanları birebir kopyala.`;
+Katalogda olmayan bir ürün eklenirse: matchedProductId: null, matchedProductName: null — adı name alanına yaz.
+Listede olmayan bir müşteri belirtilirse: matchedId: null, isNewCustomer: true.`;
 
       const userPrompt = `Mevcut Teklif:
 ${JSON.stringify(currentProposal, null, 2)}
@@ -253,6 +343,24 @@ ${editCommand}
       const updatedRaw = this.parseJsonResponse(responseText);
       if (!updatedRaw) {
         throw new Error('AI returned invalid JSON for edit');
+      }
+
+      // Handle ambiguous command: AI could not determine which item to update
+      if (updatedRaw.ambiguous === true) {
+        logger.info('Edit command is ambiguous', {
+          command: updatedRaw.ambiguousCommand,
+          optionCount: (updatedRaw.ambiguousOptions as unknown[])?.length ?? 0,
+        });
+        return {
+          updatedProposal: currentProposal,
+          changes: [],
+          ambiguous: true,
+          ambiguousCommand: (updatedRaw.ambiguousCommand as string) || editCommand,
+          ambiguousOptions: (updatedRaw.ambiguousOptions as Array<{
+            itemIndex: number;
+            itemName: string;
+          }>) || [],
+        };
       }
 
       const updatedProposal = this.refineWithFuzzyMatch(

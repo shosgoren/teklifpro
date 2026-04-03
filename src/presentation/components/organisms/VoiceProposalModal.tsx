@@ -157,7 +157,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
         const count = await queue.getPendingCount()
         setPendingCount(count)
       }).catch(() => {
-        // IndexedDB may not be available
+        setError('Çevrimdışı kayıt yapılamadı. Tarayıcı depolama alanı kullanılamıyor.')
       })
     } else {
       cleanup()
@@ -291,6 +291,14 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
       setTranscript(transcribeData.data.text)
 
+      // Validate transcript has enough content
+      const wordCount = transcribeData.data.text.trim().split(/\s+/).length
+      if (wordCount < 3) {
+        setError('Yeterli bilgi algılanamadı. Lütfen müşteri ve ürün bilgilerini belirterek tekrar söyleyin.')
+        setStep('RECORDING')
+        return
+      }
+
       // Step 2: Parse or Edit
       const endpoint = isEditMode
         ? '/api/v1/proposals/voice-edit'
@@ -337,6 +345,11 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
         setParseResult(result)
       } else {
         const result = parseData.data as VoiceParseResult
+        if (result.items.length === 0) {
+          setError('Ürün bilgisi algılanamadı. Lütfen ürün adı ve miktarı belirterek tekrar söyleyin.')
+          setStep('RECORDING')
+          return
+        }
         // Initialize history with the first parse result
         setEditHistory([result])
         setEditChanges([[]])
@@ -361,6 +374,11 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       }
 
       logger.error('Process audio failed', err)
+      if (isEditMode && parseResult) {
+        setError('Düzenleme başarısız oldu. Mevcut teklif korunuyor. Tekrar deneyin.')
+        setStep('PREVIEW')
+        return
+      }
       setError(err instanceof Error ? err.message : 'Bir hata olustu. Lutfen tekrar deneyin.')
       setStep('RECORDING')
     }
@@ -673,13 +691,36 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                     </>
                   )}
 
-                  {!isRecording && (
-                    <p className="text-sm text-slate-500 text-center max-w-xs">
-                      {isEditMode
-                        ? 'Degisikliginizi soylemek icin mikrofona basin. Ornegin: "Fiyati 500 lira yap"'
-                        : 'Teklifinizi soylemek icin mikrofona basin. Ornegin: "Ahmet Beye 10 adet laptop 15.000 liradan teklif hazirla"'
-                      }
-                    </p>
+                  {!isRecording && !isEditMode && (
+                    <div className="text-center space-y-3 max-w-sm">
+                      <p className="text-sm text-slate-500">Teklifinizi söylemek için mikrofona basın</p>
+                      <div className="text-left space-y-2">
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Örnek Kullanımlar:</p>
+                        <ul className="text-xs text-slate-400 space-y-1">
+                          <li>• &quot;Ahmet Beye 10 adet laptop 15.000 liradan teklif hazırla&quot;</li>
+                          <li>• &quot;ABC Mühendislik&apos;e 100 adet M8 civata ve 50 kilo çelik levha&quot;</li>
+                          <li>• &quot;XYZ İnşaat&apos;a yüzde 10 iskontolu 30 gün vadeli teklif&quot;</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {!isRecording && isEditMode && (
+                    <div className="text-center space-y-3 max-w-sm">
+                      <p className="text-sm text-slate-500">Değişikliğinizi söylemek için mikrofona basın</p>
+                      <div className="text-left space-y-2">
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Örnek Düzenlemeler:</p>
+                        <ul className="text-xs text-slate-400 space-y-1">
+                          <li>• &quot;Miktarı 200 yap&quot;</li>
+                          <li>• &quot;M8 civata yerine M10 civata koy&quot;</li>
+                          <li>• &quot;Fiyatı 5 lira yap&quot;</li>
+                          <li>• &quot;İskontoyu yüzde 15 yap&quot;</li>
+                          <li>• &quot;50 adet M10 somun da ekle&quot;</li>
+                          <li>• &quot;Çelik levhayı çıkar&quot;</li>
+                          <li>• &quot;Müşteriyi XYZ İnşaat yap&quot;</li>
+                        </ul>
+                      </div>
+                    </div>
                   )}
 
                   {error && (

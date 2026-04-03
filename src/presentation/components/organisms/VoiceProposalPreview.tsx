@@ -22,6 +22,7 @@ interface VoiceProposalPreviewProps {
   onVoiceEdit: () => void
   onApprove: () => void
   onRetry: () => void
+  onItemEdit?: (index: number) => void
   isLoading?: boolean
 }
 
@@ -88,6 +89,7 @@ export function VoiceProposalPreview({
   onVoiceEdit,
   onApprove,
   onRetry,
+  onItemEdit,
   isLoading = false,
 }: VoiceProposalPreviewProps) {
   const subtotal = data.items.reduce((sum, item) => {
@@ -156,6 +158,7 @@ export function VoiceProposalPreview({
                 <th className="text-right px-4 py-2 font-medium">Birim Fiyat</th>
                 <th className="text-right px-4 py-2 font-medium">Toplam</th>
                 <th className="text-center px-4 py-2 font-medium">Guven</th>
+                <th className="px-2 py-2" />
               </tr>
             </thead>
             <tbody>
@@ -178,6 +181,9 @@ export function VoiceProposalPreview({
                       {item.matchedProductName && item.name !== item.matchedProductName && (
                         <p className="text-xs text-slate-400 mt-0.5">Soylenen: &quot;{item.name}&quot;</p>
                       )}
+                      {item.matchedProductId === null && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Yeni urun olarak eklenecek</p>
+                      )}
                     </td>
                     <td className="text-right px-4 py-2.5 tabular-nums">
                       {item.quantity} {item.unit}
@@ -190,6 +196,17 @@ export function VoiceProposalPreview({
                     </td>
                     <td className="text-center px-4 py-2.5">
                       <ConfidenceBadge confidence={item.confidence} />
+                    </td>
+                    <td className="px-2 py-2.5">
+                      {onItemEdit && (
+                        <button
+                          onClick={() => onItemEdit(i)}
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors"
+                          title="Kalemi duzenle"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -220,10 +237,24 @@ export function VoiceProposalPreview({
                     <p className="text-xs text-slate-500 mt-0.5">
                       {item.quantity} {item.unit} x {item.unitPrice != null ? formatCurrency(item.unitPrice) : '?'}
                     </p>
+                    {item.matchedProductId === null && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Yeni urun olarak eklenecek</p>
+                    )}
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold tabular-nums">{formatCurrency(lineTotal)}</p>
-                    <ConfidenceBadge confidence={item.confidence} />
+                  <div className="flex items-start gap-1 shrink-0">
+                    <div className="text-right">
+                      <p className="text-sm font-semibold tabular-nums">{formatCurrency(lineTotal)}</p>
+                      <ConfidenceBadge confidence={item.confidence} />
+                    </div>
+                    {onItemEdit && (
+                      <button
+                        onClick={() => onItemEdit(i)}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-300 dark:hover:bg-slate-800 transition-colors mt-0.5"
+                        title="Kalemi duzenle"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -293,6 +324,17 @@ export function VoiceProposalPreview({
         <ConfidenceMeter confidence={data.overallConfidence} />
       </div>
 
+      {/* ── Low Confidence Warning ── */}
+      {data.overallConfidence < 0.6 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-3 flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-400">Dusuk Guven Skoru</p>
+            <p className="text-xs text-amber-600 dark:text-amber-500">Bazi bilgiler belirsiz. Onaylamadan once kontrol edin veya sesle duzenleyin.</p>
+          </div>
+        </div>
+      )}
+
       {/* ── Action Buttons ── */}
       <div className="grid grid-cols-2 gap-3">
         <Button
@@ -324,13 +366,51 @@ export function VoiceProposalPreview({
         </Button>
         <Button
           onClick={onApprove}
-          disabled={isLoading}
+          disabled={isLoading || data.overallConfidence < 0.4}
           className="gap-2 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white border-0"
         >
           <Check className="h-4 w-4" />
-          {isLoading ? 'Olusturuluyor...' : 'Onayla'}
+          {isLoading ? 'Olusturuluyor...' : data.overallConfidence < 0.4 ? 'Guven Cok Dusuk' : 'Onayla'}
         </Button>
       </div>
+
+      {/* ── Usage Examples ── */}
+      <details className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+        <summary className="px-4 py-3 text-sm font-semibold text-slate-600 dark:text-slate-400 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors list-none flex items-center justify-between">
+          <span>Kullanim Ornekleri</span>
+          <ChevronRight className="h-4 w-4 transition-transform" />
+        </summary>
+        <div className="px-4 pb-4 space-y-3 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
+          <div>
+            <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">Yeni Teklif</p>
+            <ul className="space-y-0.5 pl-2">
+              <li>&bull; &quot;Ahmet Beye 10 adet laptop 15.000 liradan teklif hazirla&quot;</li>
+              <li>&bull; &quot;ABC Muhendislik&apos;e 100 adet M8 civata ve 50 kilo celik levha&quot;</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">Duzenleme</p>
+            <ul className="space-y-0.5 pl-2">
+              <li>&bull; &quot;Miktari 200 yap&quot;</li>
+              <li>&bull; &quot;M8 civata yerine M10 civata koy&quot;</li>
+              <li>&bull; &quot;Fiyati 5 lira yap&quot;</li>
+              <li>&bull; &quot;Iskontoyu yuzde 15 yap&quot;</li>
+              <li>&bull; &quot;50 adet M10 somun da ekle&quot;</li>
+              <li>&bull; &quot;Celik levhayi cikar&quot;</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">Sesli Komutlar</p>
+            <ul className="space-y-0.5 pl-2">
+              <li>&bull; <span className="font-medium text-slate-600 dark:text-slate-300">&quot;Onayla&quot;</span> &mdash; Teklifi onayla</li>
+              <li>&bull; <span className="font-medium text-slate-600 dark:text-slate-300">&quot;Iptal&quot;</span> &mdash; Bastan basla</li>
+              <li>&bull; <span className="font-medium text-slate-600 dark:text-slate-300">&quot;Duzenle&quot;</span> &mdash; Sesle duzenle</li>
+              <li>&bull; <span className="font-medium text-slate-600 dark:text-slate-300">&quot;Gonder&quot;</span> &mdash; WhatsApp ile gonder</li>
+              <li>&bull; <span className="font-medium text-slate-600 dark:text-slate-300">&quot;Geri al&quot;</span> &mdash; Son degisikligi geri al</li>
+            </ul>
+          </div>
+        </div>
+      </details>
     </div>
   )
 }
