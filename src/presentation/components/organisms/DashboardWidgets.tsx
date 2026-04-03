@@ -892,12 +892,13 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
     const loadDashboardLayout = async () => {
       setIsLoading(true);
       try {
-        // TODO: API çağrısını gerçekleştir
-        // const response = await fetch('/api/v1/settings/dashboard');
-        // if (response.ok) {
-        //   const data = await response.json();
-        //   setWidgets(data.widgets);
-        // }
+        const response = await fetch('/api/v1/settings/dashboard');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data?.widgets) {
+            setWidgets(data.data.widgets);
+          }
+        }
       } catch (error) {
         logger.error('Dashboard duzeni yuklenirken hata olustu', error);
       } finally {
@@ -911,15 +912,14 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
   // Widget düzenini API'ye kaydet
   const saveDashboardLayout = useCallback(async (updatedWidgets: WidgetConfig[]) => {
     try {
-      // TODO: API çağrısını gerçekleştir
-      // const response = await fetch('/api/v1/settings/dashboard', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ widgets: updatedWidgets }),
-      // });
-      // if (!response.ok) {
-      //   logger.error('Dashboard duzeni kaydedilemedi');
-      // }
+      const response = await fetch('/api/v1/settings/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ widgets: updatedWidgets }),
+      });
+      if (!response.ok) {
+        logger.error('Dashboard duzeni kaydedilemedi');
+      }
     } catch (error) {
       logger.error('Dashboard duzeni kaydedilirken hata olustu', error);
     }

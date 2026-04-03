@@ -92,6 +92,7 @@ model User {
   emailVerified DateTime? @map("email_verified")
   twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
   isActive      Boolean   @default(true) @map("is_active")
+  preferences   Json?     @map("preferences")
   lastLoginAt   DateTime? @map("last_login_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
