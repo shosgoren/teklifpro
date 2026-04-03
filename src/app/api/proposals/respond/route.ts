@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
+import { withRateLimit } from '@/infrastructure/middleware/rateLimitMiddleware'
 import { Logger } from '@/infrastructure/logger'
 
 const logger = new Logger('ProposalRespondAPI')
 
-export async function POST(request: NextRequest) {
+async function handlePost(request: NextRequest) {
   try {
     const body = await request.json()
     const { proposalId, action, customerNote, rejectionReason, revisionNote, signatureData, signerName } = body
@@ -115,3 +116,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export const POST = withRateLimit(handlePost, { requestsPerMinute: 10 });
