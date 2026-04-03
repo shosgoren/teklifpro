@@ -220,7 +220,17 @@ ${transcript}
 
       const systemPrompt = `Mevcut teklif JSON'u ve düzenleme komutu verildi. Güncellenmiş JSON'u döndür.
 Sadece geçerli JSON döndür, başka metin ekleme.
-Ürün veya müşteri değişikliği varsa aşağıdaki listelerden eşleştir.
+
+ÖNEMLİ KURALLAR:
+- SADECE düzenleme komutunda belirtilen alanları değiştir.
+- Komutta bahsedilmeyen alanları KESİNLİKLE olduğu gibi bırak.
+- Özellikle: ürün adı (name), matchedProductId, matchedProductName alanlarını komutta açıkça ürün değişikliği istenmedikçe DEĞİŞTİRME.
+- "miktarı X yap" komutu SADECE quantity alanını değiştirir, ürün bilgilerini değiştirmez.
+- "fiyatı X yap" komutu SADECE unitPrice alanını değiştirir.
+- "iskontoyu X yap" komutu SADECE discountRate alanını değiştirir.
+- Birden fazla kalem varsa, komutta hangi kalemden bahsedildiğini anla ve sadece o kalemi değiştir.
+
+Ürün veya müşteri değişikliği AÇIKÇA istenirse aşağıdaki listelerden eşleştir:
 
 Müşteri Listesi:
 ${customerList || '(Müşteri bulunamadı)'}
@@ -228,7 +238,7 @@ ${customerList || '(Müşteri bulunamadı)'}
 Ürün Kataloğu:
 ${productList || '(Ürün bulunamadı)'}
 
-JSON formatı mevcut yapıyla aynı olmalıdır.`;
+JSON formatı mevcut yapıyla TAMAMEN aynı olmalıdır. Değişmeyen alanları birebir kopyala.`;
 
       const userPrompt = `Mevcut Teklif:
 ${JSON.stringify(currentProposal, null, 2)}
