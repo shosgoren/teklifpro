@@ -8,6 +8,10 @@ import { Logger } from '@/infrastructure/logger'
 
 const logger = new Logger('VoiceNoteRecorder')
 
+// NOTE: Voice notes are stored as base64 in the database (max ~500KB via API validation).
+// For scale (high volume tenants), migrate to S3/Supabase Storage with signed URLs.
+// See: proposals route.ts validateVoiceNote() for current size limits.
+
 interface VoiceNoteRecorderProps {
   value: string | null // base64 audio data
   duration: number | null
