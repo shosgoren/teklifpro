@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import Fuse from 'fuse.js';
 import { prisma } from '@/shared/utils/prisma';
 import { Logger } from '@/infrastructure/logger';
@@ -12,6 +12,17 @@ import {
 import { buildGlossaryPrompt } from './glossary';
 
 const logger = new Logger('VoiceProposalParser');
+
+// ============================================================================
+// PROVIDER CONFIG
+// ============================================================================
+
+/**
+ * AI provider seçimi. Şu an GPT-4o aktif.
+ * Claude'a geçmek için: provider'ı 'anthropic' yapın ve ANTHROPIC_API_KEY ayarlayın.
+ */
+type AIProvider = 'openai' | 'anthropic';
+const ACTIVE_PROVIDER: AIProvider = 'openai';
 
 // ============================================================================
 // CACHE
@@ -45,22 +56,25 @@ interface ProductRecord {
 // ============================================================================
 
 class VoiceProposalParser {
-  private client: Anthropic | null = null;
+  private openaiClient: OpenAI | null = null;
   private apiKey?: string;
-  private model = 'claude-sonnet-4-20250514';
+  private provider: AIProvider;
+  private model: string;
   private cache = new Map<string, CacheEntry<unknown>>();
 
-  constructor(apiKey?: string) {
+  constructor(apiKey?: string, provider: AIProvider = ACTIVE_PROVIDER) {
     this.apiKey = apiKey;
+    this.provider = provider;
+    this.model = provider === 'openai' ? 'gpt-4o' : 'claude-sonnet-4-20250514';
   }
 
-  private getClient(): Anthropic {
-    if (!this.client) {
-      this.client = new Anthropic({
-        apiKey: this.apiKey || process.env.ANTHROPIC_API_KEY,
+  private getOpenAIClient(): OpenAI {
+    if (!this.openaiClient) {
+      this.openaiClient = new OpenAI({
+        apiKey: this.apiKey || process.env.OPENAI_API_KEY,
       });
     }
-    return this.client;
+    return this.openaiClient;
   }
 
   /**
@@ -144,21 +158,13 @@ Ses Dökümü:
 ${transcript}
 """`;
 
-      // 3. Claude'u çağır
-      const message = await this.getClient().messages.create({
-        model: this.model,
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      });
-
-      const responseText =
-        message.content[0].type === 'text' ? message.content[0].text : '';
+      // 3. AI çağır (GPT-4o veya Claude)
+      const responseText = await this.callAI(systemPrompt, userPrompt);
 
       // 4. JSON yanıtını ayrıştır
       const parsed = this.parseJsonResponse(responseText);
       if (!parsed) {
-        throw new Error('Claude returned invalid JSON');
+        throw new Error('AI returned invalid JSON');
       }
 
       // 5. Fuse.js ile müşteri/ürün eşleşmelerini doğrula ve iyileştir
@@ -232,19 +238,11 @@ Düzenleme Komutu:
 ${editCommand}
 """`;
 
-      const message = await this.getClient().messages.create({
-        model: this.model,
-        max_tokens: 2048,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      });
-
-      const responseText =
-        message.content[0].type === 'text' ? message.content[0].text : '';
+      const responseText = await this.callAI(systemPrompt, userPrompt);
 
       const updatedRaw = this.parseJsonResponse(responseText);
       if (!updatedRaw) {
-        throw new Error('Claude returned invalid JSON for edit');
+        throw new Error('AI returned invalid JSON for edit');
       }
 
       const updatedProposal = this.refineWithFuzzyMatch(
@@ -264,6 +262,36 @@ ${editCommand}
       logger.error('Edit failed', error);
       throw error;
     }
+  }
+
+  // ==========================================================================
+  // AI PROVIDER ABSTRACTION
+  // ==========================================================================
+
+  /**
+   * AI sağlayıcıya göre istek gönder (OpenAI GPT-4o veya Anthropic Claude)
+   */
+  private async callAI(systemPrompt: string, userPrompt: string): Promise<string> {
+    if (this.provider === 'openai') {
+      const response = await this.getOpenAIClient().chat.completions.create({
+        model: this.model,
+        max_tokens: 2048,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        response_format: { type: 'json_object' },
+      });
+      return response.choices[0]?.message?.content || '';
+    }
+
+    // Anthropic Claude (opsiyonel - ANTHROPIC_API_KEY gerekli)
+    // Bu dalı kullanmak için: provider'ı 'anthropic' yapın
+    // ve @anthropic-ai/sdk paketini yükleyin
+    throw new Error(
+      'Anthropic provider şu an devre dışı. ACTIVE_PROVIDER değerini "openai" olarak kullanın ' +
+      'veya Anthropic SDK kurulumu yapıp bu metodu güncelleyin.'
+    );
   }
 
   // ==========================================================================

@@ -1,12 +1,14 @@
 import { VoiceProposalParser } from '@/infrastructure/services/voice/VoiceProposalParser';
 import type { VoiceParseResult } from '@/infrastructure/services/voice/types';
 
-// ── Anthropic mock ──
-const mockMessagesCreate = jest.fn();
-jest.mock('@anthropic-ai/sdk', () =>
+// ── OpenAI mock ──
+const mockChatCreate = jest.fn();
+jest.mock('openai', () =>
   jest.fn().mockImplementation(() => ({
-    messages: {
-      create: mockMessagesCreate,
+    chat: {
+      completions: {
+        create: mockChatCreate,
+      },
     },
   })),
 );
@@ -95,12 +97,12 @@ describe('VoiceProposalParser', () => {
     // Fuse.js default: musteri ve urun eslesmesi
     mockFuseSearch.mockReturnValue([]);
 
-    parser = new VoiceProposalParser('test-anthropic-key');
+    parser = new VoiceProposalParser('test-openai-key');
   });
 
   // ── parse ──
   describe('parse', () => {
-    it('Claude cagirisinda musteri listesi ve urun katalogu prompt icinde olmali', async () => {
+    it('AI cagirisinda musteri listesi ve urun katalogu prompt icinde olmali', async () => {
       const claudeResponse = JSON.stringify({
         customer: {
           query: 'ABC Muhendislik',
@@ -128,22 +130,23 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0.925,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: claudeResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: claudeResponse } }],
       });
 
       await parser.parse('ABC Muhendislik icin yuz adet M8 civata', 'tenant-1', 'tr');
 
-      expect(mockMessagesCreate).toHaveBeenCalledTimes(1);
-      const callArgs = mockMessagesCreate.mock.calls[0][0];
+      expect(mockChatCreate).toHaveBeenCalledTimes(1);
+      const callArgs = mockChatCreate.mock.calls[0][0];
+      const systemMsg = callArgs.messages.find((m: { role: string }) => m.role === 'system')?.content;
 
       // System prompt icinde musteri listesi olmali
-      expect(callArgs.system).toContain('ABC Muhendislik');
-      expect(callArgs.system).toContain('XYZ Insaat');
+      expect(systemMsg).toContain('ABC Muhendislik');
+      expect(systemMsg).toContain('XYZ Insaat');
       // System prompt icinde urun katalogu olmali
-      expect(callArgs.system).toContain('M8 Civata');
-      expect(callArgs.system).toContain('M10 Somun');
-      expect(callArgs.system).toContain('Celik Levha 2mm');
+      expect(systemMsg).toContain('M8 Civata');
+      expect(systemMsg).toContain('M10 Somun');
+      expect(systemMsg).toContain('Celik Levha 2mm');
     });
 
     it('VoiceParseResult dondurmeli (eslesen musteri ve kalemler ile)', async () => {
@@ -174,8 +177,8 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0.92,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: claudeResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: claudeResponse } }],
       });
 
       const result = await parser.parse(
@@ -208,8 +211,8 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: claudeResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: claudeResponse } }],
       });
 
       // Fuse.js da esleme bulamiyor
@@ -252,8 +255,8 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0.87,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: claudeResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: claudeResponse } }],
       });
 
       // Fuse.js urun eslestirsin
@@ -271,8 +274,8 @@ describe('VoiceProposalParser', () => {
     });
 
     it('Bos transkript icin hata firlatmali', async () => {
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: 'no json here' }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: 'no json here' } }],
       });
 
       await expect(parser.parse('', 'tenant-1')).rejects.toThrow();
@@ -281,27 +284,27 @@ describe('VoiceProposalParser', () => {
 
   // ── edit ──
   describe('edit', () => {
-    it('Mevcut JSON ve duzenleme komutunu Claude a gondermeli', async () => {
+    it('Mevcut JSON ve duzenleme komutunu AI a gondermeli', async () => {
       const editResponse = JSON.stringify({
         ...sampleParseResult,
         discountRate: 10,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: editResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: editResponse } }],
       });
 
       await parser.edit(sampleParseResult, 'iskontoyu yuzde on yap', 'tenant-1');
 
-      expect(mockMessagesCreate).toHaveBeenCalledTimes(1);
-      const callArgs = mockMessagesCreate.mock.calls[0][0];
-      const userContent = callArgs.messages[0].content;
+      expect(mockChatCreate).toHaveBeenCalledTimes(1);
+      const callArgs = mockChatCreate.mock.calls[0][0];
+      const userMsg = callArgs.messages.find((m: { role: string }) => m.role === 'user')?.content;
 
       // Mevcut teklif JSON icermeli
-      expect(userContent).toContain('ABC Muhendislik');
-      expect(userContent).toContain('M8 Civata');
+      expect(userMsg).toContain('ABC Muhendislik');
+      expect(userMsg).toContain('M8 Civata');
       // Duzenleme komutu icermeli
-      expect(userContent).toContain('iskontoyu yuzde on yap');
+      expect(userMsg).toContain('iskontoyu yuzde on yap');
     });
 
     it('Degisiklik dizisi (changes) ile alan aciklamalari dondurmeli', async () => {
@@ -315,8 +318,8 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0.92,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: editResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: editResponse } }],
       });
 
       const result = await parser.edit(
@@ -373,8 +376,8 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0.9,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: editResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: editResponse } }],
       });
 
       const result = await parser.edit(
@@ -399,7 +402,7 @@ describe('VoiceProposalParser', () => {
 
   // ── fuzzy matching ──
   describe('fuzzy matching', () => {
-    it('Fuse.js kullanarak Claude eslemelerini dogrulamali', async () => {
+    it('Fuse.js kullanarak AI eslemelerini dogrulamali', async () => {
       const claudeResponse = JSON.stringify({
         customer: {
           query: 'ABC Muh.',
@@ -427,8 +430,8 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0.5,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: claudeResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: claudeResponse } }],
       });
 
       // Fuse.js musteri eslestirsin
@@ -470,17 +473,18 @@ describe('VoiceProposalParser', () => {
         overallConfidence: 0,
       });
 
-      mockMessagesCreate.mockResolvedValueOnce({
-        content: [{ type: 'text', text: claudeResponse }],
+      mockChatCreate.mockResolvedValueOnce({
+        choices: [{ message: { content: claudeResponse } }],
       });
 
       await parser.parse('test', 'tenant-1');
 
-      const callArgs = mockMessagesCreate.mock.calls[0][0];
+      const callArgs = mockChatCreate.mock.calls[0][0];
+      const systemMsg = callArgs.messages.find((m: { role: string }) => m.role === 'system')?.content;
       // Glossary promptu system icinde olmali
-      expect(callArgs.system).toContain('Teknik Terim');
-      expect(callArgs.system).toContain('M8');
-      expect(callArgs.system).toContain('mm');
+      expect(systemMsg).toContain('Teknik Terim');
+      expect(systemMsg).toContain('M8');
+      expect(systemMsg).toContain('mm');
     });
   });
 });

@@ -65,9 +65,10 @@ jest.mock('next-intl', () => ({
 // Mock next/image
 jest.mock('next/image', () => ({
   __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   default: (props: any) => {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />;
+    const React = require('react');
+    return React.createElement('img', props);
   },
 }));
 

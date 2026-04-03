@@ -54,8 +54,23 @@ const config: Config = {
     {
       displayName: 'unit',
       testEnvironment: 'jsdom',
-      testMatch: ['<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}'],
+      testMatch: [
+        '<rootDir>/src/**/__tests__/**/*.test.{ts,tsx}',
+        '<rootDir>/__tests__/unit/**/*.test.{ts,tsx}',
+      ],
       setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+      },
+      transform: {
+        '^.+\\.(ts|tsx)$': ['ts-jest', {
+          tsconfig: {
+            jsx: 'react-jsx',
+            esModuleInterop: true,
+            allowSyntheticDefaultImports: true,
+          },
+        }],
+      },
     },
     {
       displayName: 'services',
@@ -63,8 +78,21 @@ const config: Config = {
       testMatch: [
         '<rootDir>/src/infrastructure/**/__tests__/**/*.test.ts',
         '<rootDir>/src/shared/**/__tests__/**/*.test.ts',
+        '<rootDir>/__tests__/unit/infrastructure/**/*.test.ts',
       ],
       setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+      },
+      transform: {
+        '^.+\\.(ts|tsx)$': ['ts-jest', {
+          tsconfig: {
+            jsx: 'react-jsx',
+            esModuleInterop: true,
+            allowSyntheticDefaultImports: true,
+          },
+        }],
+      },
     },
   ],
 };
