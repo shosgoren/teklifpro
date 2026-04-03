@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, Square, X, Loader2, CheckCircle2, MessageCircle, ExternalLink } from 'lucide-react'
+import { Mic, Square, X, Loader2, CheckCircle2, MessageCircle, ExternalLink, Send, Volume2 } from 'lucide-react'
 import { Button } from '@/presentation/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { VoiceActivityIndicator } from '@/presentation/components/molecules/VoiceActivityIndicator'
@@ -10,6 +10,8 @@ import { LiveTranscript } from '@/presentation/components/molecules/LiveTranscri
 import { VoiceEditHistory } from '@/presentation/components/molecules/VoiceEditHistory'
 import { VoiceProposalPreview } from '@/presentation/components/organisms/VoiceProposalPreview'
 import { VoiceActivityDetector } from '@/infrastructure/services/voice/VoiceActivityDetector'
+import { VoiceConfirmation } from '@/infrastructure/services/voice/VoiceConfirmation'
+import { VoiceSpeechCommands } from '@/infrastructure/services/voice/VoiceSpeechCommands'
 import type { VoiceParseResult, VoiceEditChange } from '@/infrastructure/services/voice/types'
 import { VOICE_MAX_DURATION_MS } from '@/infrastructure/services/voice/types'
 import { Logger } from '@/infrastructure/logger'
@@ -39,12 +41,17 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
   const [editHistory, setEditHistory] = useState<VoiceParseResult[]>([])
   const [editChanges, setEditChanges] = useState<VoiceEditChange[][]>([])
   const [historyIndex, setHistoryIndex] = useState(0)
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false)
+  const [whatsAppSent, setWhatsAppSent] = useState(false)
+  const [isListeningCommands, setIsListeningCommands] = useState(false)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const vadRef = useRef<VoiceActivityDetector | null>(null)
+  const voiceConfirmationRef = useRef<VoiceConfirmation | null>(null)
+  const speechCommandsRef = useRef<VoiceSpeechCommands | null>(null)
 
   // Cleanup everything on close / unmount
   const cleanup = useCallback(() => {
@@ -54,10 +61,19 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try { mediaRecorderRef.current.stop() } catch { /* ignore */ }
     }
+    if (voiceConfirmationRef.current) {
+      voiceConfirmationRef.current.stop()
+      voiceConfirmationRef.current = null
+    }
+    if (speechCommandsRef.current) {
+      speechCommandsRef.current.stopListening()
+      speechCommandsRef.current = null
+    }
     mediaRecorderRef.current = null
     streamRef.current = null
     vadRef.current = null
     timerRef.current = null
+    setIsListeningCommands(false)
   }, [])
 
   useEffect(() => {
@@ -81,6 +97,9 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       setEditHistory([])
       setEditChanges([])
       setHistoryIndex(0)
+      setIsSendingWhatsApp(false)
+      setWhatsAppSent(false)
+      setIsListeningCommands(false)
     } else {
       cleanup()
     }
@@ -274,6 +293,74 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     }
   }, [isEditMode, parseResult, historyIndex])
 
+  // ── Stop voice confirmation & speech commands ──
+  const stopVoiceServices = useCallback(() => {
+    if (voiceConfirmationRef.current) {
+      voiceConfirmationRef.current.stop()
+      voiceConfirmationRef.current = null
+    }
+    if (speechCommandsRef.current) {
+      speechCommandsRef.current.stopListening()
+      speechCommandsRef.current = null
+    }
+    setIsListeningCommands(false)
+  }, [])
+
+  // ── TTS confirmation & speech command listener on PREVIEW ──
+  useEffect(() => {
+    if (step !== 'PREVIEW' || !parseResult) {
+      stopVoiceServices()
+      return
+    }
+
+    // Speak the proposal confirmation via TTS
+    const vc = new VoiceConfirmation()
+    voiceConfirmationRef.current = vc
+
+    if (vc.isSupported()) {
+      const customerName = parseResult.customer.matchedName || parseResult.customer.query
+      const total = parseResult.items.reduce((sum, item) => {
+        return sum + item.quantity * (item.unitPrice ?? 0)
+      }, 0)
+
+      vc.speakProposalConfirmation(customerName, total).catch(() => {
+        // TTS failure is not critical
+      })
+    }
+
+    // Start listening for voice commands
+    const sc = new VoiceSpeechCommands()
+    speechCommandsRef.current = sc
+
+    if (sc.isSupported()) {
+      setIsListeningCommands(true)
+      sc.startListening((command) => {
+        switch (command) {
+          case 'approve':
+            handleApprove()
+            break
+          case 'cancel':
+            handleRetry()
+            break
+          case 'edit':
+            handleVoiceEdit()
+            break
+          case 'undo':
+            if (historyIndex > 0) {
+              handleHistoryChange(historyIndex - 1)
+            }
+            break
+          default:
+            break
+        }
+      })
+    }
+
+    return () => {
+      stopVoiceServices()
+    }
+  }, [step, parseResult]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Approve → Create draft proposal ──
   const handleApprove = useCallback(async () => {
     if (!parseResult) return
@@ -335,8 +422,36 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     }
   }, [editHistory])
 
+  // ── WhatsApp send via API ──
+  const handleWhatsAppSend = useCallback(async () => {
+    if (!createdProposalId) return
+    setIsSendingWhatsApp(true)
+
+    try {
+      const res = await fetch(`/api/v1/proposals/${createdProposalId}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: 'whatsapp' }),
+      })
+
+      const data = await res.json()
+
+      if (!data.success) {
+        throw new Error(data.error?.message || data.error || 'WhatsApp gonderilemedi')
+      }
+
+      setWhatsAppSent(true)
+    } catch (err) {
+      logger.error('WhatsApp send failed', err)
+      setError(err instanceof Error ? err.message : 'WhatsApp gonderilemedi')
+    } finally {
+      setIsSendingWhatsApp(false)
+    }
+  }, [createdProposalId])
+
   // ── Retry: start fresh ──
   const handleRetry = useCallback(() => {
+    stopVoiceServices()
     setIsEditMode(false)
     setParseResult(null)
     setTranscript('')
@@ -346,7 +461,10 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     setEditChanges([])
     setHistoryIndex(0)
     setCountdown(null)
-  }, [])
+    setIsSendingWhatsApp(false)
+    setWhatsAppSent(false)
+    setIsListeningCommands(false)
+  }, [stopVoiceServices])
 
   // ── WhatsApp link ──
   const whatsAppLink = createdProposalId
@@ -549,6 +667,20 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                     isLoading={isApproving}
                   />
 
+                  {/* Voice command listening indicator */}
+                  {isListeningCommands && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
+                    >
+                      <Volume2 className="h-4 w-4 text-blue-500 animate-pulse" />
+                      <span className="text-xs text-blue-600 dark:text-blue-400">
+                        Sesli komut dinleniyor... (&quot;onayla&quot;, &quot;iptal&quot;, &quot;düzenle&quot;)
+                      </span>
+                    </motion.div>
+                  )}
+
                   {/* Edit History (undo/redo) - shown when there are multiple versions */}
                   {editHistory.length > 1 && (
                     <VoiceEditHistory
@@ -602,15 +734,32 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                       Teklifi Goruntule
                     </Button>
 
-                    {/* WhatsApp */}
+                    {/* WhatsApp Send via API */}
                     <Button
                       variant="outline"
-                      asChild
+                      onClick={handleWhatsAppSend}
+                      disabled={isSendingWhatsApp || whatsAppSent}
                       className="gap-2 w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
                     >
+                      {isSendingWhatsApp ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : whatsAppSent ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      {whatsAppSent ? 'WhatsApp ile Gonderildi' : "WhatsApp'tan Gonder"}
+                    </Button>
+
+                    {/* Fallback: open WhatsApp manually */}
+                    <Button
+                      variant="ghost"
+                      asChild
+                      className="gap-2 w-full text-slate-500 text-xs"
+                    >
                       <a href={whatsAppLink} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="h-4 w-4" />
-                        WhatsApp&apos;tan Gonder
+                        <MessageCircle className="h-3 w-3" />
+                        Manuel WhatsApp Linki
                       </a>
                     </Button>
 
