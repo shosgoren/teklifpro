@@ -25,11 +25,18 @@ import {
   Loader2,
   Star,
   X,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
 import { Label } from '@/presentation/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -204,7 +211,7 @@ export default function ProductDetailPage() {
   const productId = params.id as string;
 
   const [activeTab, setActiveTab] = useState<TabKey>('general');
-  const [movementDialogType, setMovementDialogType] = useState<'IN' | 'OUT' | null>(null);
+  const [movementDialogType, setMovementDialogType] = useState<'IN' | 'OUT' | 'ADJUSTMENT' | 'PRODUCTION_IN' | 'PRODUCTION_OUT' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -216,6 +223,16 @@ export default function ProductDetailPage() {
     quantity: '',
     unitPrice: '',
     reference: '',
+    notes: '',
+  });
+  const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false);
+  const [supplierForm, setSupplierForm] = useState({
+    supplierId: '',
+    unitPrice: '',
+    currency: 'TRY',
+    leadTimeDays: '',
+    minOrderQty: '',
+    isPreferred: false,
     notes: '',
   });
 
@@ -243,8 +260,13 @@ export default function ProductDetailPage() {
     fetcher
   );
 
-  const { data: suppliersData } = useSWR(
+  const { data: suppliersData, mutate: mutateSuppliers } = useSWR(
     activeTab === 'suppliers' ? `/api/v1/products/${productId}/suppliers` : null,
+    fetcher
+  );
+
+  const { data: availableSuppliersData } = useSWR(
+    isAddSupplierOpen ? '/api/v1/suppliers?limit=100' : null,
     fetcher
   );
 
@@ -356,6 +378,66 @@ export default function ProductDetailPage() {
     }
   }, [editForm, productId, mutateProduct]);
 
+  const availableSuppliers = (availableSuppliersData?.data?.suppliers ?? []).filter(
+    (s: { id: string }) => !suppliers.some((ps) => ps.supplierId === s.id)
+  );
+
+  const handleAddSupplier = useCallback(async () => {
+    if (!supplierForm.supplierId || !supplierForm.unitPrice) {
+      toast.error('Tedarikçi ve birim fiyat zorunludur');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/v1/products/${productId}/suppliers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supplierId: supplierForm.supplierId,
+          unitPrice: Number(supplierForm.unitPrice),
+          currency: supplierForm.currency,
+          ...(supplierForm.leadTimeDays && { leadTimeDays: Number(supplierForm.leadTimeDays) }),
+          ...(supplierForm.minOrderQty && { minOrderQty: Number(supplierForm.minOrderQty) }),
+          isPreferred: supplierForm.isPreferred,
+          ...(supplierForm.notes && { notes: supplierForm.notes }),
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Tedarikçi eklendi');
+        setIsAddSupplierOpen(false);
+        setSupplierForm({ supplierId: '', unitPrice: '', currency: 'TRY', leadTimeDays: '', minOrderQty: '', isPreferred: false, notes: '' });
+        mutateSuppliers();
+      } else {
+        toast.error(data.error || 'Bir hata oluştu');
+      }
+    } catch {
+      toast.error('İşlem sırasında hata oluştu');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [supplierForm, productId, mutateSuppliers]);
+
+  const handleRemoveSupplier = useCallback(async (supplierId: string, supplierName: string) => {
+    if (!window.confirm(`${supplierName} tedarikçisini bu üründen kaldırmak istediğinize emin misiniz?`)) return;
+    try {
+      const response = await fetch(`/api/v1/products/${productId}/suppliers`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supplierId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Tedarikçi kaldırıldı');
+        mutateSuppliers();
+      } else {
+        toast.error(data.error || 'Bir hata oluştu');
+      }
+    } catch {
+      toast.error('İşlem sırasında hata oluştu');
+    }
+  }, [productId, mutateSuppliers]);
+
   // ─── Loading / Error ───
 
   if (isLoading) {
@@ -452,13 +534,19 @@ export default function ProductDetailPage() {
           <StockTab
             product={product}
             movements={movements}
-            onMovement={(type) => setMovementDialogType(type)}
+            onMovement={(type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'PRODUCTION_IN' | 'PRODUCTION_OUT') => setMovementDialogType(type)}
           />
         )}
         {activeTab === 'bom' && (
           <BomTab product={product} bom={activeBom} costBreakdown={costBreakdown} />
         )}
-        {activeTab === 'suppliers' && <SuppliersTab suppliers={suppliers} />}
+        {activeTab === 'suppliers' && (
+          <SuppliersTab
+            suppliers={suppliers}
+            onAdd={() => setIsAddSupplierOpen(true)}
+            onRemove={handleRemoveSupplier}
+          />
+        )}
       </div>
 
       {/* ─── Stock Movement Dialog ─── */}
@@ -474,10 +562,11 @@ export default function ProductDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {movementDialogType === 'IN' ? 'Stok Girişi' : 'Stok Çıkışı'}
+              {movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.label || 'Stok Hareketi'}
             </DialogTitle>
             <DialogDescription>
-              {product.name} için {movementDialogType === 'IN' ? 'stok girişi' : 'stok çıkışı'} yapın
+              {product.name} için {movementDialogType === 'ADJUSTMENT' ? 'stok düzeltmesi' : movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.label.toLowerCase()} yapın
+              {movementDialogType === 'ADJUSTMENT' && ' (Miktarı doğrudan yeni değere ayarlar)'}
             </DialogDescription>
           </DialogHeader>
 
@@ -529,13 +618,15 @@ export default function ProductDetailPage() {
               onClick={handleMovementSubmit}
               disabled={isSubmitting || !movementForm.quantity}
               className={cn(
-                movementDialogType === 'IN'
+                movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.positive
                   ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
+                  : movementDialogType === 'ADJUSTMENT'
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
               )}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {movementDialogType === 'IN' ? 'Giriş Yap' : 'Çıkış Yap'}
+              {movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.label || 'Kaydet'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -697,6 +788,101 @@ export default function ProductDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Add Supplier Dialog ─── */}
+      <Dialog open={isAddSupplierOpen} onOpenChange={(open) => {
+        setIsAddSupplierOpen(open);
+        if (!open) setSupplierForm({ supplierId: '', unitPrice: '', currency: 'TRY', leadTimeDays: '', minOrderQty: '', isPreferred: false, notes: '' });
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tedarikçi Ekle</DialogTitle>
+            <DialogDescription>Bu ürüne bir tedarikçi bağlayın</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-2">
+              <Label>Tedarikçi *</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={supplierForm.supplierId}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, supplierId: e.target.value }))}
+              >
+                <option value="">Tedarikçi seçin...</option>
+                {availableSuppliers.map((s: { id: string; name: string }) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              {availableSuppliers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Eklenecek tedarikçi bulunamadı</p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label>Birim Fiyat *</Label>
+                <Input
+                  type="number" min="0" step="0.01" placeholder="0.00"
+                  value={supplierForm.unitPrice}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, unitPrice: e.target.value }))}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Para Birimi</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={supplierForm.currency}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, currency: e.target.value }))}
+                >
+                  <option value="TRY">TRY</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label>Teslim Süresi (gün)</Label>
+                <Input
+                  type="number" min="0" step="1" placeholder="Opsiyonel"
+                  value={supplierForm.leadTimeDays}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, leadTimeDays: e.target.value }))}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Min. Sipariş</Label>
+                <Input
+                  type="number" min="0" step="1" placeholder="Opsiyonel"
+                  value={supplierForm.minOrderQty}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, minOrderQty: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox" id="supplier-preferred"
+                checked={supplierForm.isPreferred}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, isPreferred: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="supplier-preferred">Tercih Edilen Tedarikçi</Label>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Not</Label>
+              <textarea
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Ek açıklama..."
+                value={supplierForm.notes}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddSupplierOpen(false)}>İptal</Button>
+            <Button onClick={handleAddSupplier} disabled={isSubmitting || !supplierForm.supplierId || !supplierForm.unitPrice}>
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Ekleniyor...</> : 'Tedarikçi Ekle'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -824,7 +1010,7 @@ function StockTab({
 }: {
   product: Product;
   movements: StockMovement[];
-  onMovement: (type: 'IN' | 'OUT') => void;
+  onMovement: (type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'PRODUCTION_IN' | 'PRODUCTION_OUT') => void;
 }) {
   const low = isLowStock(product);
 
@@ -841,7 +1027,7 @@ function StockTab({
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Stok Durumu
           </h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               size="sm"
               onClick={() => onMovement('IN')}
@@ -858,6 +1044,28 @@ function StockTab({
               <PackageMinus className="mr-1.5 h-4 w-4" />
               Çıkış
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <ChevronDown className="mr-1.5 h-4 w-4" />
+                  Diğer
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onMovement('ADJUSTMENT')}>
+                  <RotateCcw className="mr-2 h-4 w-4 text-blue-500" />
+                  Stok Düzeltme
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onMovement('PRODUCTION_IN')}>
+                  <Factory className="mr-2 h-4 w-4 text-emerald-500" />
+                  Üretim Girişi
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onMovement('PRODUCTION_OUT')}>
+                  <Factory className="mr-2 h-4 w-4 text-orange-500" />
+                  Üretime Çıkış
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -1138,7 +1346,15 @@ function BomTab({
 
 // ─── Suppliers Tab ───────────────────────────────────────
 
-function SuppliersTab({ suppliers }: { suppliers: ProductSupplier[] }) {
+function SuppliersTab({
+  suppliers,
+  onAdd,
+  onRemove,
+}: {
+  suppliers: ProductSupplier[];
+  onAdd: () => void;
+  onRemove: (supplierId: string, supplierName: string) => void;
+}) {
   if (suppliers.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
@@ -1146,15 +1362,25 @@ function SuppliersTab({ suppliers }: { suppliers: ProductSupplier[] }) {
         <p className="text-sm font-medium text-muted-foreground">
           Bu ürün için henüz tedarikçi tanımlanmamış
         </p>
+        <Button variant="outline" size="sm" onClick={onAdd} className="mt-3">
+          <Plus className="mr-1.5 h-4 w-4" />
+          Tedarikçi Ekle
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-        {suppliers.length} Tedarikçi
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          {suppliers.length} Tedarikçi
+        </h3>
+        <Button variant="outline" size="sm" onClick={onAdd}>
+          <Plus className="mr-1.5 h-4 w-4" />
+          Tedarikçi Ekle
+        </Button>
+      </div>
       {suppliers.map((s) => (
         <div
           key={s.id}
@@ -1175,9 +1401,18 @@ function SuppliersTab({ suppliers }: { suppliers: ProductSupplier[] }) {
                 <p className="text-sm text-muted-foreground">{s.contactName}</p>
               )}
             </div>
-            <p className="font-semibold text-lg shrink-0 ml-3">
-              {formatCurrency(s.unitPrice)}
-            </p>
+            <div className="flex items-center gap-2 shrink-0 ml-3">
+              <p className="font-semibold text-lg">
+                {formatCurrency(s.unitPrice)}
+              </p>
+              <button
+                onClick={() => onRemove(s.supplierId, s.supplierName)}
+                className="p-1 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                title="Tedarikçiyi kaldır"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {s.phone && <span>{s.phone}</span>}

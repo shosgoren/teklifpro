@@ -153,6 +153,7 @@ export default function ProductsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProductType, setFilterProductType] = useState<FilterProductType>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -182,6 +183,7 @@ export default function ProductsPage() {
     limit: itemsPerPage.toString(),
     ...(searchQuery && { search: searchQuery }),
     ...(filterProductType !== 'all' && { productType: filterProductType }),
+    ...(filterStatus !== 'all' && { status: filterStatus }),
   });
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -451,6 +453,29 @@ export default function ProductsPage() {
                     {opt.label}
                   </DropdownMenuCheckboxItem>
                 ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Status Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="rounded-xl min-w-[110px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20">
+                  {filterStatus === 'all' ? t('all') : filterStatus === 'active' ? t('active') : t('inactive')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem checked={filterStatus === 'all'}
+                  onCheckedChange={() => { setFilterStatus('all'); setCurrentPage(1); }}>
+                  {t('all')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={filterStatus === 'active'}
+                  onCheckedChange={() => { setFilterStatus('active'); setCurrentPage(1); }}>
+                  {t('active')}
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={filterStatus === 'inactive'}
+                  onCheckedChange={() => { setFilterStatus('inactive'); setCurrentPage(1); }}>
+                  {t('inactive')}
+                </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -734,13 +759,15 @@ export default function ProductsPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product-category">{t('category')}</Label>
-              <select id="product-category" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={newProduct.category} onChange={(e) => setNewProduct((p) => ({ ...p, category: e.target.value }))}>
-                <option value="">{t('selectCategory')}</option>
-                <option value="Yazılım">{t('software')}</option>
-                <option value="Hizmet">{t('service')}</option>
-                <option value="Donanım">{t('hardware')}</option>
-              </select>
+              <Input id="product-category" list="category-options"
+                placeholder={t('selectCategory')}
+                value={newProduct.category}
+                onChange={(e) => setNewProduct((p) => ({ ...p, category: e.target.value }))} />
+              <datalist id="category-options">
+                <option value="Yazılım" />
+                <option value="Hizmet" />
+                <option value="Donanım" />
+              </datalist>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product-unit">{t('unitLabel')}</Label>
@@ -752,6 +779,10 @@ export default function ProductsPage() {
                 <option value="Ay">{t('unitMonth')}</option>
                 <option value="Yıl">{t('unitYear')}</option>
                 <option value="Paket">{t('unitPackage')}</option>
+                <option value="kg">kg</option>
+                <option value="m">m</option>
+                <option value="m²">m²</option>
+                <option value="lt">lt</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -820,13 +851,15 @@ export default function ProductsPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-product-category">{t('category')}</Label>
-              <select id="edit-product-category" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                value={editProduct.category} onChange={(e) => setEditProduct((p) => ({ ...p, category: e.target.value }))}>
-                <option value="">{t('selectCategory')}</option>
-                <option value="Yazılım">{t('software')}</option>
-                <option value="Hizmet">{t('service')}</option>
-                <option value="Donanım">{t('hardware')}</option>
-              </select>
+              <Input id="edit-product-category" list="edit-category-options"
+                placeholder={t('selectCategory')}
+                value={editProduct.category}
+                onChange={(e) => setEditProduct((p) => ({ ...p, category: e.target.value }))} />
+              <datalist id="edit-category-options">
+                <option value="Yazılım" />
+                <option value="Hizmet" />
+                <option value="Donanım" />
+              </datalist>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit-product-unit">{t('unitLabel')}</Label>
@@ -838,6 +871,10 @@ export default function ProductsPage() {
                 <option value="Ay">{t('unitMonth')}</option>
                 <option value="Yıl">{t('unitYear')}</option>
                 <option value="Paket">{t('unitPackage')}</option>
+                <option value="kg">kg</option>
+                <option value="m">m</option>
+                <option value="m²">m²</option>
+                <option value="lt">lt</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
