@@ -7,8 +7,10 @@ import { Button } from '@/presentation/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { VoiceActivityIndicator } from '@/presentation/components/molecules/VoiceActivityIndicator'
 import { LiveTranscript } from '@/presentation/components/molecules/LiveTranscript'
+import { VoiceEditHistory } from '@/presentation/components/molecules/VoiceEditHistory'
 import { VoiceProposalPreview } from '@/presentation/components/organisms/VoiceProposalPreview'
-import type { VoiceParseResult } from '@/infrastructure/services/voice/types'
+import { VoiceActivityDetector } from '@/infrastructure/services/voice/VoiceActivityDetector'
+import type { VoiceParseResult, VoiceEditChange } from '@/infrastructure/services/voice/types'
 import { VOICE_MAX_DURATION_MS } from '@/infrastructure/services/voice/types'
 import { Logger } from '@/infrastructure/logger'
 
@@ -33,30 +35,29 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
   const [error, setError] = useState<string | null>(null)
   const [isApproving, setIsApproving] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [editHistory, setEditHistory] = useState<VoiceParseResult[]>([])
+  const [editChanges, setEditChanges] = useState<VoiceEditChange[][]>([])
+  const [historyIndex, setHistoryIndex] = useState(0)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const animFrameRef = useRef<number | null>(null)
-  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const vadRef = useRef<VoiceActivityDetector | null>(null)
 
   // Cleanup everything on close / unmount
   const cleanup = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+    if (vadRef.current) vadRef.current.stop()
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try { mediaRecorderRef.current.stop() } catch { /* ignore */ }
     }
     mediaRecorderRef.current = null
     streamRef.current = null
-    analyserRef.current = null
+    vadRef.current = null
     timerRef.current = null
-    silenceTimerRef.current = null
-    animFrameRef.current = null
   }, [])
 
   useEffect(() => {
@@ -76,6 +77,10 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       setError(null)
       setIsApproving(false)
       setIsRecording(false)
+      setCountdown(null)
+      setEditHistory([])
+      setEditChanges([])
+      setHistoryIndex(0)
     } else {
       cleanup()
     }
@@ -96,34 +101,10 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
-  // ── Volume monitoring via AnalyserNode ──
-  const startVolumeMonitor = useCallback((stream: MediaStream) => {
-    try {
-      const audioContext = new AudioContext()
-      const source = audioContext.createMediaStreamSource(stream)
-      const analyser = audioContext.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
-      analyserRef.current = analyser
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount)
-
-      const tick = () => {
-        analyser.getByteFrequencyData(dataArray)
-        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-        // Normalize to 0-100 range
-        setVolume(Math.min(100, Math.round((avg / 128) * 100)))
-        animFrameRef.current = requestAnimationFrame(tick)
-      }
-      tick()
-    } catch (err) {
-      logger.warn('Volume monitor init failed', err)
-    }
-  }, [])
-
   // ── Start Recording ──
   const startRecording = useCallback(async () => {
     setError(null)
+    setCountdown(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
@@ -143,7 +124,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       }
 
       recorder.onstop = async () => {
-        if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+        if (vadRef.current) { vadRef.current.stop(); vadRef.current = null }
         stream.getTracks().forEach(t => t.stop())
         streamRef.current = null
 
@@ -169,27 +150,30 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       setRecordingTime(0)
       setStep('RECORDING')
 
-      // Volume monitoring
-      startVolumeMonitor(stream)
+      // Voice Activity Detection (replaces basic volume monitor + silence timer)
+      const vad = new VoiceActivityDetector({
+        silenceThreshold: -45,
+        silenceDuration: 3000,
+        maxDuration: VOICE_MAX_DURATION_MS,
+        countdownDuration: 3000,
+        onVolumeChange: (vol) => setVolume(vol),
+        onSilenceStart: () => setCountdown(3),
+        onSilenceEnd: () => setCountdown(null),
+        onCountdownTick: (sec) => setCountdown(sec),
+        onAutoStop: () => stopRecording(),
+      })
+      vad.start(stream)
+      vadRef.current = vad
 
       // Timer
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => {
-          const next = prev + 1
-          if (next >= VOICE_MAX_DURATION_MS / 1000) {
-            stopRecording()
-          }
-          return next
-        })
+        setRecordingTime(prev => prev + 1)
       }, 1000)
-
-      // Basic silence auto-stop: 3s timer (real VAD comes later)
-      // Reset on each volume change handled by the component
     } catch (err) {
       logger.error('Mic access failed', err)
       setError('Mikrofon erisimi reddedildi. Tarayici ayarlarindan mikrofon iznini acin.')
     }
-  }, [startVolumeMonitor]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Stop Recording ──
   const stopRecording = useCallback(() => {
@@ -200,12 +184,13 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       clearInterval(timerRef.current)
       timerRef.current = null
     }
-    if (silenceTimerRef.current) {
-      clearTimeout(silenceTimerRef.current)
-      silenceTimerRef.current = null
+    if (vadRef.current) {
+      vadRef.current.stop()
+      vadRef.current = null
     }
     setIsRecording(false)
     setVolume(0)
+    setCountdown(null)
   }, [])
 
   // ── Process Audio: Transcribe → Parse ──
@@ -256,18 +241,38 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
         throw new Error(parseData.error || 'Teklif olusturulamadi')
       }
 
-      const result = isEditMode
-        ? (parseData.data as { updatedProposal: VoiceParseResult }).updatedProposal
-        : (parseData.data as VoiceParseResult)
+      if (isEditMode) {
+        const editData = parseData.data as { updatedProposal: VoiceParseResult; changes: VoiceEditChange[] }
+        const result = editData.updatedProposal
+        const changes = editData.changes ?? []
 
-      setParseResult(result)
+        // Push to history (truncate any redo entries beyond current index)
+        setEditHistory(prev => {
+          const truncated = prev.slice(0, historyIndex + 1)
+          return [...truncated, result]
+        })
+        setEditChanges(prev => {
+          const truncated = prev.slice(0, historyIndex + 1)
+          return [...truncated, changes]
+        })
+        setHistoryIndex(prev => prev + 1)
+        setParseResult(result)
+      } else {
+        const result = parseData.data as VoiceParseResult
+        // Initialize history with the first parse result
+        setEditHistory([result])
+        setEditChanges([[]])
+        setHistoryIndex(0)
+        setParseResult(result)
+      }
+
       setStep('PREVIEW')
     } catch (err) {
       logger.error('Process audio failed', err)
       setError(err instanceof Error ? err.message : 'Bir hata olustu. Lutfen tekrar deneyin.')
       setStep('RECORDING')
     }
-  }, [isEditMode, parseResult])
+  }, [isEditMode, parseResult, historyIndex])
 
   // ── Approve → Create draft proposal ──
   const handleApprove = useCallback(async () => {
@@ -322,6 +327,14 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     setError(null)
   }, [])
 
+  // ── History navigation (undo/redo) ──
+  const handleHistoryChange = useCallback((index: number) => {
+    if (index >= 0 && index < editHistory.length) {
+      setHistoryIndex(index)
+      setParseResult(editHistory[index])
+    }
+  }, [editHistory])
+
   // ── Retry: start fresh ──
   const handleRetry = useCallback(() => {
     setIsEditMode(false)
@@ -329,6 +342,10 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     setTranscript('')
     setStep('RECORDING')
     setError(null)
+    setEditHistory([])
+    setEditChanges([])
+    setHistoryIndex(0)
+    setCountdown(null)
   }, [])
 
   // ── WhatsApp link ──
@@ -430,6 +447,23 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                         <p className="text-xs text-slate-500 mt-1">Maks 2 dakika</p>
                       </div>
 
+                      {/* Silence countdown */}
+                      {countdown !== null && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+                        >
+                          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                            Tamamlandi mi? {countdown}...
+                          </p>
+                          <p className="text-xs text-amber-500 dark:text-amber-500 mt-0.5">
+                            Konusmaya devam edin veya durdurun
+                          </p>
+                        </motion.div>
+                      )}
+
                       {/* Stop button */}
                       <Button
                         onClick={stopRecording}
@@ -514,6 +548,17 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                     onRetry={handleRetry}
                     isLoading={isApproving}
                   />
+
+                  {/* Edit History (undo/redo) - shown when there are multiple versions */}
+                  {editHistory.length > 1 && (
+                    <VoiceEditHistory
+                      history={editHistory}
+                      currentIndex={historyIndex}
+                      onChange={handleHistoryChange}
+                      changes={editChanges}
+                      className="mt-4"
+                    />
+                  )}
                 </motion.div>
               )}
 
