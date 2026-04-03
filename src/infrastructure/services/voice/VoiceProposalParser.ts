@@ -45,14 +45,22 @@ interface ProductRecord {
 // ============================================================================
 
 class VoiceProposalParser {
-  private client: Anthropic;
+  private client: Anthropic | null = null;
+  private apiKey?: string;
   private model = 'claude-sonnet-4-20250514';
   private cache = new Map<string, CacheEntry<unknown>>();
 
   constructor(apiKey?: string) {
-    this.client = new Anthropic({
-      apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
-    });
+    this.apiKey = apiKey;
+  }
+
+  private getClient(): Anthropic {
+    if (!this.client) {
+      this.client = new Anthropic({
+        apiKey: this.apiKey || process.env.ANTHROPIC_API_KEY,
+      });
+    }
+    return this.client;
   }
 
   /**
@@ -137,7 +145,7 @@ ${transcript}
 """`;
 
       // 3. Claude'u çağır
-      const message = await this.client.messages.create({
+      const message = await this.getClient().messages.create({
         model: this.model,
         max_tokens: 2048,
         system: systemPrompt,
@@ -224,7 +232,7 @@ Düzenleme Komutu:
 ${editCommand}
 """`;
 
-      const message = await this.client.messages.create({
+      const message = await this.getClient().messages.create({
         model: this.model,
         max_tokens: 2048,
         system: systemPrompt,

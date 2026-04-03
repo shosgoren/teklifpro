@@ -52,12 +52,20 @@ function isRateLimited(
 // ============================================================================
 
 class VoiceTranscriptionService {
-  private client: OpenAI;
+  private client: OpenAI | null = null;
+  private apiKey?: string;
 
   constructor(apiKey?: string) {
-    this.client = new OpenAI({
-      apiKey: apiKey || process.env.OPENAI_API_KEY,
-    });
+    this.apiKey = apiKey;
+  }
+
+  private getClient(): OpenAI {
+    if (!this.client) {
+      this.client = new OpenAI({
+        apiKey: this.apiKey || process.env.OPENAI_API_KEY,
+      });
+    }
+    return this.client;
   }
 
   /**
@@ -114,7 +122,7 @@ class VoiceTranscriptionService {
       });
 
       // Call Whisper API with verbose_json for detailed response
-      const response = await this.client.audio.transcriptions.create({
+      const response = await this.getClient().audio.transcriptions.create({
         model: 'whisper-1',
         file,
         language: language || 'tr',
