@@ -563,7 +563,8 @@
     "copyLastProposal": "Copy Last Proposal",
     "todayFollowups": "Today's Follow-ups",
     "cloneSuccess": "Proposal cloned successfully",
-    "cloneError": "Error cloning proposal"
+    "cloneError": "Error cloning proposal",
+    "voiceProposal": "Voice Proposal"
   },
   "customersPage": {
     "title": "Customers",
@@ -941,6 +942,38 @@
     "createBtn": "Create",
     "emptyTitle": "No proposal templates created yet",
     "emptyDesc": "With proposal templates, you can prepare your proposals faster. Start by creating your first template."
+  },
+  "voiceProposal": {
+    "voiceProposal": "Voice Proposal",
+    "voiceProposalTitle": "Create Voice Proposal",
+    "voiceRecording": "Recording...",
+    "voiceRecordingHint": "Speak naturally. Mention customer, products, quantities and discount.",
+    "voiceProcessing": "Analyzing your voice...",
+    "voiceTranscribing": "Converting speech to text...",
+    "voiceParsing": "Preparing proposal...",
+    "voicePreview": "Proposal Preview",
+    "voiceRetry": "Try Again",
+    "voiceEditSpeak": "Edit by Voice",
+    "voiceEditManual": "Edit Manually",
+    "voiceApprove": "Approve",
+    "voiceConfidence": "Confidence",
+    "voiceNewCustomer": "New Customer",
+    "voiceUnknownProduct": "Unknown Product",
+    "voiceSilenceDetected": "Finished?",
+    "voiceMaxDuration": "Maximum duration: 2 minutes",
+    "voiceSendWhatsApp": "Send via WhatsApp",
+    "voiceDraftCreated": "Draft proposal created",
+    "voiceMicPermission": "Microphone permission required",
+    "voiceBetaLimit": "Daily voice proposal limit reached",
+    "voiceError": "Error processing voice",
+    "voiceNotUnderstood": "Could not understand, please try again",
+    "voiceCustomer": "Customer",
+    "voiceItems": "Products",
+    "voiceSubtotal": "Subtotal",
+    "voiceDiscount": "Discount",
+    "voiceTotal": "TOTAL",
+    "voicePaymentTerms": "Payment Terms",
+    "voiceChange": "Change"
   },
   "layout": {
     "quotePlatform": "Quote Platform",

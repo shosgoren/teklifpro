@@ -29,6 +29,7 @@ import {
   Bell,
   Sparkles,
   X,
+  Mic,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -53,6 +54,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCountUp } from '@/shared/hooks/useCountUp';
+import { VoiceProposalModal } from '@/presentation/components/organisms/VoiceProposalModal';
 
 const logger = new Logger('DashboardPage');
 
@@ -141,6 +143,7 @@ function SortableWidget({ id, children }: { id: string; children: React.ReactNod
 function FloatingActionButton({ locale, lastProposalId }: { locale: string; lastProposalId?: string }) {
   const [open, setOpen] = useState(false);
   const [cloning, setCloning] = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const router = useRouter();
   const t = useTranslations('dashboardPage');
 
@@ -170,6 +173,12 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
   };
 
   const actions = [
+    {
+      icon: Mic,
+      label: t('voiceProposal'),
+      color: 'from-emerald-500 to-green-600',
+      onClick: () => setVoiceModalOpen(true),
+    },
     {
       icon: Plus,
       label: t('newProposal'),
@@ -222,19 +231,26 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
         )}
       </AnimatePresence>
 
-      <motion.button
-        onClick={() => setOpen(!open)}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        className={cn(
-          'w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300',
-          'bg-gradient-to-r from-blue-600 to-indigo-600 text-white',
-          'dark:shadow-blue-500/30 dark:shadow-xl',
-          open && 'rotate-45'
+      <div className="relative">
+        {!open && (
+          <span className="absolute inset-0 rounded-full border-2 border-emerald-400 animate-ping opacity-25 pointer-events-none" />
         )}
-      >
-        {open ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
-      </motion.button>
+        <motion.button
+          onClick={() => setOpen(!open)}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          className={cn(
+            'w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300',
+            'bg-gradient-to-r from-blue-600 to-indigo-600 text-white',
+            'dark:shadow-blue-500/30 dark:shadow-xl',
+            open && 'rotate-45'
+          )}
+        >
+          {open ? <X className="h-6 w-6" /> : <Sparkles className="h-6 w-6" />}
+        </motion.button>
+      </div>
+
+      <VoiceProposalModal isOpen={voiceModalOpen} onClose={() => setVoiceModalOpen(false)} locale={locale} />
     </div>
   );
 }

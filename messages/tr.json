@@ -563,7 +563,8 @@
     "copyLastProposal": "Son Teklifi Kopyala",
     "todayFollowups": "Bugünün Takipleri",
     "cloneSuccess": "Teklif başarıyla kopyalandı",
-    "cloneError": "Teklif kopyalanırken hata oluştu"
+    "cloneError": "Teklif kopyalanırken hata oluştu",
+    "voiceProposal": "Sesli Teklif"
   },
   "customersPage": {
     "title": "Müşteriler",
@@ -941,6 +942,38 @@
     "createBtn": "Oluştur",
     "emptyTitle": "Henüz teklif şablonu oluşturulmamış",
     "emptyDesc": "Teklif şablonları ile tekliflerinizi daha hızlı hazırlayabilirsiniz. İlk şablonunuzu oluşturarak başlayın."
+  },
+  "voiceProposal": {
+    "voiceProposal": "Sesli Teklif",
+    "voiceProposalTitle": "Sesli Teklif Oluştur",
+    "voiceRecording": "Kayıt yapılıyor...",
+    "voiceRecordingHint": "Doğal konuşun. Müşteri, ürünler, miktarlar ve iskonto belirtin.",
+    "voiceProcessing": "Sesiniz analiz ediliyor...",
+    "voiceTranscribing": "Ses metne çevriliyor...",
+    "voiceParsing": "Teklif hazırlanıyor...",
+    "voicePreview": "Teklif Önizleme",
+    "voiceRetry": "Tekrar Söyle",
+    "voiceEditSpeak": "Sesle Düzenle",
+    "voiceEditManual": "Elle Düzenle",
+    "voiceApprove": "Onayla",
+    "voiceConfidence": "Güven",
+    "voiceNewCustomer": "Yeni Müşteri",
+    "voiceUnknownProduct": "Tanınmayan Ürün",
+    "voiceSilenceDetected": "Tamamlandı mı?",
+    "voiceMaxDuration": "Maksimum süre: 2 dakika",
+    "voiceSendWhatsApp": "WhatsApp'tan Gönder",
+    "voiceDraftCreated": "Taslak teklif oluşturuldu",
+    "voiceMicPermission": "Mikrofon izni gerekli",
+    "voiceBetaLimit": "Günlük sesli teklif limitinize ulaştınız",
+    "voiceError": "Ses işlenirken hata oluştu",
+    "voiceNotUnderstood": "Sesiniz anlaşılamadı, tekrar deneyin",
+    "voiceCustomer": "Müşteri",
+    "voiceItems": "Ürünler",
+    "voiceSubtotal": "Ara Toplam",
+    "voiceDiscount": "İskonto",
+    "voiceTotal": "TOPLAM",
+    "voicePaymentTerms": "Ödeme Koşulları",
+    "voiceChange": "Değiştir"
   },
   "layout": {
     "quotePlatform": "Teklif Platformu",
