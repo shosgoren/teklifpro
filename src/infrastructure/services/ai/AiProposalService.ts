@@ -3,22 +3,53 @@ import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('AiProposalService');
 
-// Stub client replacing @anthropic-ai/sdk
+// Claude API client — uses real Anthropic SDK if API key is available, otherwise returns empty responses
+import Anthropic from '@anthropic-ai/sdk';
+
 interface ClaudeMessage {
   content: Array<{ type: string; text: string }>;
 }
 
-class AnthropicStub {
+function createAnthropicClient(): Anthropic | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    logger.warn('ANTHROPIC_API_KEY not set — AI features disabled');
+    return null;
+  }
+  return new Anthropic({ apiKey });
+}
+
+class AnthropicClient {
+  private client: Anthropic | null;
+
+  constructor() {
+    this.client = createAnthropicClient();
+  }
+
   messages = {
-    create: async (_params: {
+    create: async (params: {
       model: string;
       max_tokens: number;
       system: string;
       messages: Array<{ role: string; content: string }>;
     }): Promise<ClaudeMessage> => {
-      logger.warn('Anthropic SDK stub called - returning empty response');
+      if (!this.client) {
+        return { content: [{ type: 'text', text: '{}' }] };
+      }
+      const response = await this.client.messages.create({
+        model: params.model,
+        max_tokens: params.max_tokens,
+        system: params.system,
+        messages: params.messages.map((m) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+      });
       return {
-        content: [{ type: 'text', text: '{}' }],
+        content: response.content.map((block) => ({
+          type: block.type,
+          text: block.type === 'text' ? block.text : '',
+        })),
       };
     },
   };
@@ -122,13 +153,13 @@ class RateLimiter {
 // ============================================================================
 
 class AiProposalService {
-  private client: AnthropicStub;
+  private client: AnthropicClient;
   private cache: Map<string, CacheEntry<unknown>> = new Map();
   private rateLimiter = new RateLimiter();
   private model = 'claude-sonnet-4-20250514';
 
   constructor() {
-    this.client = new AnthropicStub();
+    this.client = new AnthropicClient();
   }
 
   /**

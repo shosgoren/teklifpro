@@ -174,7 +174,11 @@ Iyi calismalar!`.trim();
         );
       }
 
-      // TODO: Implement SMS sending
+      // SMS sending is not yet configured — return clear error
+      return NextResponse.json(
+        { success: false, error: 'SMS gönderimi henüz yapılandırılmamıştır. WhatsApp veya e-posta ile gönderin.' },
+        { status: 501 }
+      );
     }
 
     const sentAt = new Date();

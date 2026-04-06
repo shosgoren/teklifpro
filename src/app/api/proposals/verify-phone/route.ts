@@ -5,10 +5,23 @@ import { Logger } from '@/infrastructure/logger'
 
 const logger = new Logger('ProposalVerifyPhoneAPI')
 
-// In-memory rate limit (per IP, resets on redeploy)
+// In-memory rate limit (per IP)
+// Note: Resets on serverless cold start. For persistent rate limiting,
+// configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.
 const attempts = new Map<string, { count: number; blockedUntil: number }>()
 const MAX_ATTEMPTS = 5
 const BLOCK_DURATION = 15 * 60 * 1000 // 15 minutes
+
+// Periodic cleanup to prevent memory leak
+if (typeof globalThis !== 'undefined') {
+  const cleanup = () => {
+    const now = Date.now()
+    for (const [key, val] of attempts) {
+      if (val.blockedUntil < now && val.count === 0) attempts.delete(key)
+    }
+  }
+  setInterval(cleanup, 5 * 60 * 1000) // every 5 minutes
+}
 
 export async function POST(request: NextRequest) {
   try {

@@ -149,7 +149,8 @@ export class ParasutClient {
       await this.saveTokens(tokenData)
 
       return true
-    } catch {
+    } catch (error) {
+      logger.error('Parasut token refresh failed', error)
       return false
     }
   }
