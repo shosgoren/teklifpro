@@ -3,6 +3,7 @@ import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import ProposalActions from './proposal-actions'
 import ProposalContent from './proposal-content'
+import ProposalUnavailable from './proposal-unavailable'
 import { ViewTracker } from './view-tracker'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -43,7 +44,24 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
   })
 
   if (!proposal) {
+    // Check if it exists but was deleted — show friendly message
+    const deleted = await prisma.proposal.findFirst({
+      where: { publicToken: params.token, deletedAt: { not: null } },
+      select: { deletedAt: true },
+    })
+    if (deleted) {
+      return <ProposalUnavailable reason="deleted" />
+    }
     notFound()
+  }
+
+  // Check if expired
+  if (proposal.status === 'EXPIRED') {
+    return <ProposalUnavailable reason="expired" />
+  }
+
+  if (proposal.status === 'CANCELLED') {
+    return <ProposalUnavailable reason="cancelled" />
   }
 
   // Track view
