@@ -2,6 +2,7 @@
 
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 
 export interface Notification {
   id: string;
@@ -36,6 +37,7 @@ export function NotificationCenter({
   onMarkAllAsRead,
   onNotificationClick,
 }: NotificationCenterProps): JSX.Element {
+  const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(
     externalNotifications || []
@@ -259,7 +261,7 @@ export function NotificationCenter({
                 Tümünü Okundu İşaretle
               </button>
               <a
-                href="/notifications"
+                href={`/${locale}/notifications`}
                 className="flex-1 text-sm font-medium text-blue-600 hover:text-blue-700 text-right transition-colors duration-200"
               >
                 Tüm Bildirimleri Gör

@@ -97,23 +97,39 @@ async function handleGet(request: NextRequest): Promise<NextResponse> {
 
 /**
  * POST /api/v1/notifications
- * Marks a notification (activity) as read by its activity ID.
- * Body: { id: string }
+ * Actions: markRead (single), markAllRead (bulk)
+ * Body: { action: 'markRead', activityId: string } | { action: 'markAllRead' }
  */
 async function handlePost(request: NextRequest): Promise<NextResponse> {
   try {
     const session = getSessionFromRequest(request)!;
     const body = await request.json();
-    const { id } = body;
+    const { action, activityId } = body;
 
+    if (action === 'markAllRead') {
+      await prisma.proposalActivity.updateMany({
+        where: {
+          isRead: false,
+          type: { in: ['ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'VIEWED'] },
+          proposal: {
+            tenantId: session.user.tenantId,
+            deletedAt: null,
+          },
+        },
+        data: { isRead: true },
+      });
+      return NextResponse.json({ success: true });
+    }
+
+    // Default: markRead single
+    const id = activityId || body.id;
     if (!id || typeof id !== 'string') {
       return NextResponse.json(
-        { success: false, error: { message: 'id zorunludur' } },
+        { success: false, error: { message: 'activityId zorunludur' } },
         { status: 400 }
       );
     }
 
-    // Verify the activity belongs to the tenant before updating
     const activity = await prisma.proposalActivity.findUnique({
       where: { id },
       include: {
