@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { useConfirm } from '@/shared/components/confirm-dialog';
-import { Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, Users, Phone, Mail, MapPin, AlertCircle } from 'lucide-react';
+import { Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, Users, Phone, Mail, MapPin, AlertCircle, ExternalLink, Calendar, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import {
@@ -603,68 +603,122 @@ export default function CustomersPage() {
 
       {/* Detail Sheet */}
       <Sheet open={!!selectedCustomer} onOpenChange={(open) => !open && setSelectedCustomer(null)}>
-        <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
+        <SheetContent side="right" className="w-full sm:max-w-[480px] overflow-y-auto p-0">
           {selectedCustomer && (
-            <>
-              <SheetHeader className="mb-6">
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'h-12 w-12 rounded-full flex items-center justify-center text-lg font-bold',
-                    selectedCustomer.syncedFromParasut
-                      ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white'
-                      : 'bg-gradient-to-br from-slate-300 to-slate-400 text-white'
-                  )}>
+            <div className="flex flex-col min-h-full">
+              {/* Gradient Header */}
+              <div className={cn(
+                'relative px-6 pt-8 pb-6',
+                selectedCustomer.syncedFromParasut
+                  ? 'bg-gradient-to-br from-emerald-600 to-teal-600'
+                  : 'bg-gradient-to-br from-blue-600 to-indigo-600'
+              )}>
+                <button
+                  onClick={() => setSelectedCustomer(null)}
+                  className="absolute top-4 right-4 rounded-full p-1.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold bg-white/20 text-white ring-2 ring-white/50 shrink-0">
                     {selectedCustomer.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <SheetTitle>{selectedCustomer.name}</SheetTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                  <div className="min-w-0">
+                    <SheetHeader className="p-0 space-y-0">
+                      <SheetTitle className="text-white text-xl truncate">{selectedCustomer.name}</SheetTitle>
+                    </SheetHeader>
+                    <p className="text-sm text-white/70 mt-1">
                       {selectedCustomer.syncedFromParasut ? t('syncedFrom') : t('manuallyAdded')}
                     </p>
                   </div>
                 </div>
-              </SheetHeader>
+              </div>
 
-              <div className="space-y-4">
-                <div className="rounded-xl border p-4 space-y-3">
+              {/* Body Content */}
+              <div className="flex-1 px-6 py-5 space-y-4">
+                {/* Contact Info Card */}
+                <div className="rounded-2xl bg-gray-50 dark:bg-gray-900/50 p-4 space-y-3">
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('contactInfo')}</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{selectedCustomer.phone || '-'}</span>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                        <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <span className="text-foreground">{selectedCustomer.phone || '-'}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{selectedCustomer.email || '-'}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                        <Mail className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <span className="text-foreground truncate">{selectedCustomer.email || '-'}</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <span>{selectedCustomer.address || '-'}{selectedCustomer.city ? `, ${selectedCustomer.city}` : ''}</span>
+                    <div className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <span className="text-foreground">{selectedCustomer.address || '-'}{selectedCustomer.city ? `, ${selectedCustomer.city}` : ''}</span>
                     </div>
                   </div>
                 </div>
 
+                {/* Stats Grid */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border p-4">
-                    <p className="text-xs text-muted-foreground">{t('taxNo')}</p>
-                    <p className="font-medium mt-1">{selectedCustomer.taxNumber || '-'}</p>
+                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900/50 p-4">
+                    <p className="text-xs text-muted-foreground font-medium">{t('taxNo')}</p>
+                    <p className="font-semibold mt-1.5 text-foreground">{selectedCustomer.taxNumber || '-'}</p>
                   </div>
-                  <div className="rounded-xl border p-4">
-                    <p className="text-xs text-muted-foreground">{t('balance')}</p>
+                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900/50 p-4">
+                    <p className="text-xs text-muted-foreground font-medium">{t('balance')}</p>
                     <p className={cn('font-bold text-lg mt-1',
-                      selectedCustomer.balance > 0 ? 'text-emerald-600' : selectedCustomer.balance < 0 ? 'text-red-600' : ''
+                      selectedCustomer.balance > 0 ? 'text-emerald-600' : selectedCustomer.balance < 0 ? 'text-red-600' : 'text-foreground'
                     )}>
                       {formatBalance(selectedCustomer.balance)}
                     </p>
                   </div>
                 </div>
 
-                <Button onClick={() => { setSelectedCustomer(null); openEditDialog(selectedCustomer); }} className="w-full rounded-xl" variant="outline">
+                {/* Status & Date */}
+                <div className="flex items-center justify-between rounded-2xl bg-gray-50 dark:bg-gray-900/50 p-4">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedCustomer.isActive !== false ? 'default' : 'secondary'} className={cn(
+                      'rounded-full px-3',
+                      selectedCustomer.isActive !== false
+                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-gray-200 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400'
+                    )}>
+                      {selectedCustomer.isActive !== false ? 'Aktif' : 'Pasif'}
+                    </Badge>
+                  </div>
+                  {selectedCustomer.createdAt && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>{new Date(selectedCustomer.createdAt).toLocaleDateString('tr-TR')}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="sticky bottom-0 border-t bg-background px-6 py-4 flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => {
+                    toast.info('Yakında');
+                  }}
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Tam Ekran Görüntüle
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl"
+                  onClick={() => { setSelectedCustomer(null); openEditDialog(selectedCustomer); }}
+                >
                   <Edit className="mr-2 h-4 w-4" />
                   {t('editBtn')}
                 </Button>
               </div>
-            </>
+            </div>
           )}
         </SheetContent>
       </Sheet>

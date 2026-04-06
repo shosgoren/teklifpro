@@ -8,7 +8,7 @@ import useSWR from 'swr';
 import {
   Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, AlertTriangle,
   LayoutGrid, List, Package, TrendingUp, TrendingDown, Percent, ArrowUpDown,
-  Download, Upload,
+  Download, Upload, ExternalLink, Tag, Layers, Box,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/shared/components/ui/dialog';
 import { Label } from '@/shared/components/ui/label';
+import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
@@ -168,6 +169,7 @@ export default function ProductsPage() {
     listPrice: 0, costPrice: 0, minStockLevel: 0, vatRate: 18, description: '',
   });
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -661,7 +663,7 @@ export default function ProductsPage() {
               {products.map((product) => (
                 <div
                   key={product.id}
-                  onClick={() => router.push(`/${locale}/products/${product.id}`)}
+                  onClick={() => setSelectedProduct(product)}
                   className="rounded-2xl border bg-card p-4 cursor-pointer hover:shadow-lg hover:scale-[1.02] transition-all group relative overflow-hidden"
                 >
                   {/* Actions dropdown */}
@@ -731,7 +733,7 @@ export default function ProductsPage() {
                   <div
                     key={product.id}
                     className="p-4 space-y-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => router.push(`/${locale}/products/${product.id}`)}
+                    onClick={() => setSelectedProduct(product)}
                   >
                     <div className="flex items-start gap-3">
                       <ProductThumbnail product={product} size="sm" />
@@ -793,7 +795,7 @@ export default function ProductsPage() {
                         <TableRow
                           key={product.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => router.push(`/${locale}/products/${product.id}`)}
+                          onClick={() => setSelectedProduct(product)}
                         >
                           <TableCell>
                             <ProductThumbnail product={product} size="sm" />
@@ -1134,6 +1136,150 @@ export default function ProductsPage() {
       </Dialog>
       </div>
       </div>
+
+      {/* ─── Quick Preview Sheet ─── */}
+      <Sheet open={!!selectedProduct} onOpenChange={(open) => { if (!open) setSelectedProduct(null); }}>
+        <SheetContent className="sm:max-w-[480px] p-0 flex flex-col">
+          {selectedProduct && (
+            <>
+              {/* Header */}
+              <div className="bg-gradient-to-br from-violet-600 to-purple-600 px-6 py-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-white truncate">{selectedProduct.name}</h3>
+                    <p className="text-sm text-white/70 mt-0.5">{selectedProduct.code ?? '-'}</p>
+                    <Badge className="mt-2 bg-white/20 text-white border-0 hover:bg-white/30 text-xs">
+                      {PRODUCT_TYPE_LABELS[selectedProduct.productType] || selectedProduct.productType}
+                    </Badge>
+                  </div>
+                  {selectedProduct.imageUrl && (
+                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/20 shrink-0">
+                      <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                {/* Pricing Card */}
+                <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <Tag className="h-4 w-4" />
+                    Fiyatlandirma
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Liste Fiyati</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {formatPrice(selectedProduct.listPrice)}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      KDV %{selectedProduct.vatRate}
+                    </Badge>
+                  </div>
+                  {selectedProduct.costPrice > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Maliyet Fiyati</p>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {formatPrice(selectedProduct.costPrice)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Stock Card */}
+                {selectedProduct.trackStock && (
+                  <div className="rounded-2xl border p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                      <Box className="h-4 w-4" />
+                      Stok Durumu
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Mevcut Stok</p>
+                        <p className={cn(
+                          'text-xl font-bold',
+                          selectedProduct.minStockLevel > 0 && selectedProduct.stockQuantity < selectedProduct.minStockLevel
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-emerald-600 dark:text-emerald-400'
+                        )}>
+                          {selectedProduct.stockQuantity} {selectedProduct.unit}
+                        </p>
+                      </div>
+                      {selectedProduct.minStockLevel > 0 && (
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Min. Seviye</p>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            {selectedProduct.minStockLevel} {selectedProduct.unit}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {selectedProduct.minStockLevel > 0 && (
+                      <StockBar product={selectedProduct} />
+                    )}
+                  </div>
+                )}
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                      <Layers className="h-3.5 w-3.5" />
+                      Kategori
+                    </div>
+                    <p className="text-sm font-medium">{selectedProduct.category || '-'}</p>
+                  </div>
+                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                      <Package className="h-3.5 w-3.5" />
+                      Birim
+                    </div>
+                    <p className="text-sm font-medium">{selectedProduct.unit}</p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedProduct.description && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">Aciklama</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {selectedProduct.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="sticky bottom-0 border-t bg-white dark:bg-gray-950 p-4 flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl"
+                  onClick={() => {
+                    router.push(`/${locale}/products/${selectedProduct.id}`);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Tam Ekran Goruntule
+                </Button>
+                <Button
+                  className="flex-1 rounded-xl"
+                  onClick={() => {
+                    handleEditProduct(selectedProduct);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Duzenle
+                </Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
