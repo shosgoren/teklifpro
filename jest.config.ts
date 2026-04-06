@@ -94,6 +94,26 @@ const config: Config = {
         }],
       },
     },
+    {
+      displayName: 'integration',
+      testEnvironment: 'node',
+      testMatch: [
+        '<rootDir>/__tests__/integration/**/*.test.ts',
+      ],
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+      },
+      transform: {
+        '^.+\\.(ts|tsx)$': ['ts-jest', {
+          tsconfig: {
+            jsx: 'react-jsx',
+            esModuleInterop: true,
+            allowSyntheticDefaultImports: true,
+          },
+        }],
+      },
+    },
   ],
 };
 
