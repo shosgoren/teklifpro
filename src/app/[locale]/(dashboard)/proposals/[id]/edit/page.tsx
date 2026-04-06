@@ -122,12 +122,12 @@ const customerSchema = z.object({
 const productItemSchema = z.object({
   id: z.string().min(1, 'Product is required'),
   name: z.string(),
-  quantity: z.number().min(1, 'Quantity must be at least 1'),
-  unitPrice: z.number().min(0, 'Price cannot be negative'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+  unitPrice: z.coerce.number().min(0, 'Price cannot be negative'),
   discountType: z.enum(['percent', 'fixed']).default('percent'),
-  discountPercent: z.number().min(0).max(100).default(0),
-  discountFixed: z.number().min(0).default(0),
-  vatPercent: z.number().min(0).max(100).default(18),
+  discountPercent: z.coerce.number().min(0).max(100).default(0),
+  discountFixed: z.coerce.number().min(0).default(0),
+  vatPercent: z.coerce.number().min(0).max(100).default(18),
 })
 
 const proposalFormSchema = z.object({
@@ -136,9 +136,9 @@ const proposalFormSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   generalDiscount: z.object({
     type: z.enum(['percent', 'fixed']),
-    value: z.number().min(0).default(0),
+    value: z.coerce.number().min(0).default(0),
   }),
-  validityDays: z.number().min(1).max(365).default(30),
+  validityDays: z.coerce.number().min(1).max(365).default(30),
   paymentTerms: z.string().default('Net 30'),
   deliveryTerms: z.string().default('Standard'),
   notes: z.string().optional(),
