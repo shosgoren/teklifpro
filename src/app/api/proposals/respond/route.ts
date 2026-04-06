@@ -29,8 +29,8 @@ async function handlePost(request: NextRequest) {
     }
 
     // Find proposal with items for potential Parasut invoice creation
-    const proposal = await prisma.proposal.findUnique({
-      where: { id: proposalId },
+    const proposal = await prisma.proposal.findFirst({
+      where: { id: proposalId, deletedAt: null },
       include: {
         user: true,
         customer: true,

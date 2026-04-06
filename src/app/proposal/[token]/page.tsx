@@ -14,8 +14,8 @@ interface ProposalPageProps {
 }
 
 export async function generateMetadata({ params }: ProposalPageProps) {
-  const proposal = await prisma.proposal.findUnique({
-    where: { publicToken: params.token },
+  const proposal = await prisma.proposal.findFirst({
+    where: { publicToken: params.token, deletedAt: null },
     include: { customer: true, tenant: true },
   })
 
@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: ProposalPageProps) {
 }
 
 export default async function ProposalPage({ params }: ProposalPageProps) {
-  const proposal = await prisma.proposal.findUnique({
-    where: { publicToken: params.token },
+  const proposal = await prisma.proposal.findFirst({
+    where: { publicToken: params.token, deletedAt: null },
     include: {
       tenant: true,
       customer: true,
