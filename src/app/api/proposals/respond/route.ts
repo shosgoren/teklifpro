@@ -4,6 +4,7 @@ import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyPr
 import { withRateLimit } from '@/infrastructure/middleware/rateLimitMiddleware'
 import { Logger } from '@/infrastructure/logger'
 import { EmailService } from '@/infrastructure/services/email/EmailService'
+import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient'
 
 const logger = new Logger('ProposalRespondAPI')
 
@@ -27,10 +28,14 @@ async function handlePost(request: NextRequest) {
       )
     }
 
-    // Find proposal
+    // Find proposal with items for potential Parasut invoice creation
     const proposal = await prisma.proposal.findUnique({
       where: { id: proposalId },
-      include: { user: true, customer: true },
+      include: {
+        user: true,
+        customer: true,
+        items: { include: { product: true } },
+      },
     })
 
     if (!proposal) {
@@ -128,6 +133,11 @@ async function handlePost(request: NextRequest) {
 
     if (action === 'ACCEPTED') {
       emailService.sendProposalAccepted(proposal.user.email, proposalData).catch(() => {})
+
+      // Auto-create draft invoice in Parasut (fire-and-forget)
+      createParasutDraftInvoice(proposal).catch((err) => {
+        logger.error(`Auto Parasut invoice failed for proposal ${proposalId}`, err)
+      })
     } else if (action === 'REJECTED') {
       emailService.sendProposalRejected(proposal.user.email, proposalData).catch(() => {})
     } else if (action === 'REVISION_REQUESTED') {
@@ -145,6 +155,125 @@ async function handlePost(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * Auto-create a draft sales invoice in Parasut when proposal is accepted.
+ * Runs fire-and-forget — failures are logged but don't block the response.
+ */
+async function createParasutDraftInvoice(proposal: {
+  id: string
+  tenantId: string
+  title: string
+  currency: string
+  expiresAt: Date | null
+  notes: string | null
+  parasutOfferId: string | null
+  discountType: string | null
+  discountValue: { toNumber?: () => number } | number | null
+  customer: {
+    parasutId: string | null
+    taxNumber: string | null
+    taxOffice: string | null
+    address: string | null
+    city: string | null
+    district: string | null
+    phone: string | null
+  } | null
+  items: Array<{
+    name: string
+    description: string | null
+    quantity: { toNumber?: () => number } | number
+    unitPrice: { toNumber?: () => number } | number
+    vatRate: { toNumber?: () => number } | number
+    discountRate: { toNumber?: () => number } | number
+    product: { parasutId: string | null } | null
+  }>
+}) {
+  // Skip if customer not synced to Parasut
+  if (!proposal.customer?.parasutId) {
+    logger.info(`Skipping auto-invoice for ${proposal.id}: customer has no parasutId`)
+    return
+  }
+
+  let client: ParasutClient
+  try {
+    client = await ParasutClient.forTenant(proposal.tenantId)
+  } catch {
+    logger.info(`Skipping auto-invoice for ${proposal.id}: Parasut not configured for tenant`)
+    return
+  }
+
+  const toNum = (v: { toNumber?: () => number } | number | null | undefined): number =>
+    v == null ? 0 : typeof v === 'number' ? v : (v.toNumber?.() ?? Number(v))
+
+  const invoiceData = {
+    parasutOfferId: proposal.parasutOfferId || '',
+    title: proposal.title,
+    currency: proposal.currency,
+    expiresAt: proposal.expiresAt,
+    notes: proposal.notes,
+    discountType: proposal.discountType,
+    discountValue: proposal.discountValue ? toNum(proposal.discountValue) : null,
+    customer: {
+      parasutId: proposal.customer.parasutId,
+      taxNumber: proposal.customer.taxNumber,
+      taxOffice: proposal.customer.taxOffice,
+      address: proposal.customer.address,
+      city: proposal.customer.city,
+      district: proposal.customer.district,
+      phone: proposal.customer.phone,
+    },
+    items: proposal.items.map((item) => ({
+      name: item.name,
+      description: item.description,
+      quantity: toNum(item.quantity),
+      unitPrice: toNum(item.unitPrice),
+      vatRate: toNum(item.vatRate),
+      discountRate: toNum(item.discountRate),
+      product: item.product,
+    })),
+  }
+
+  const parasutInvoiceId = await client.convertOfferToInvoice(invoiceData)
+
+  // Update proposal with invoice ID and status
+  await prisma.proposal.update({
+    where: { id: proposal.id },
+    data: {
+      parasutInvoiceId,
+      parasutInvoiceSyncAt: new Date(),
+      status: 'INVOICED',
+    },
+  })
+
+  // Log the activity
+  await prisma.proposalActivity.create({
+    data: {
+      proposalId: proposal.id,
+      type: 'INVOICED',
+      description: 'Teklif kabul edildi, Paraşüt\'te otomatik taslak fatura oluşturuldu',
+      metadata: {
+        parasutInvoiceId,
+        parasutOfferId: proposal.parasutOfferId,
+        automatic: true,
+      },
+    },
+  })
+
+  // Sync log
+  await prisma.parasutSyncLog.create({
+    data: {
+      tenantId: proposal.tenantId,
+      entityType: 'sales_invoice',
+      direction: 'PUSH',
+      status: 'COMPLETED',
+      recordCount: 1,
+      errorCount: 0,
+    },
+  })
+
+  logger.info(`Auto-created Parasut draft invoice ${parasutInvoiceId} for proposal ${proposal.id}`)
 }
 
 export const POST = withRateLimit(handlePost, { requestsPerMinute: 10 });
