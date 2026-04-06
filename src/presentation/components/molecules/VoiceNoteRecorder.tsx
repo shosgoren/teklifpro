@@ -45,6 +45,7 @@ export function VoiceNoteRecorder({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const blobUrlRef = useRef<string | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -52,6 +53,7 @@ export function VoiceNoteRecorder({
       if (timerRef.current) clearInterval(timerRef.current)
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
       if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
     }
   }, [])
 
@@ -109,6 +111,10 @@ export function VoiceNoteRecorder({
           return
         }
 
+        // Create blob URL for immediate playback (before base64 conversion)
+        if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+        blobUrlRef.current = URL.createObjectURL(blob)
+
         const reader = new FileReader()
         reader.onloadend = () => {
           const base64 = reader.result as string
@@ -155,7 +161,7 @@ export function VoiceNoteRecorder({
     setIsRecording(false)
   }, [])
 
-  const playAudio = useCallback(() => {
+  const playAudio = useCallback(async () => {
     if (!value) return
     if (audioRef.current) {
       audioRef.current.pause()
@@ -163,29 +169,35 @@ export function VoiceNoteRecorder({
       setIsPlaying(false)
       return
     }
-    // Convert data URL to blob URL for better cross-browser playback
-    let src = value
-    try {
-      const [header, base64] = value.split(';base64,')
-      const mime = header.replace('data:', '')
-      const binary = atob(base64)
-      const bytes = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-      src = URL.createObjectURL(new Blob([bytes], { type: mime }))
-    } catch { /* fallback to data URL */ }
+    // Use blob URL if available (from fresh recording), otherwise convert data URL
+    let src = blobUrlRef.current
+    if (!src) {
+      try {
+        const resp = await fetch(value)
+        const blob = await resp.blob()
+        blobUrlRef.current = URL.createObjectURL(blob)
+        src = blobUrlRef.current
+      } catch {
+        src = value // fallback to data URL
+      }
+    }
     const audio = new Audio(src)
     audioRef.current = audio
     audio.onended = () => { setIsPlaying(false); audioRef.current = null }
     audio.onerror = () => { setIsPlaying(false); audioRef.current = null; logger.error('Audio playback failed') }
-    audio.play().then(() => setIsPlaying(true)).catch((err) => {
+    try {
+      await audio.play()
+      setIsPlaying(true)
+    } catch (err) {
       logger.error('Audio play error:', err)
       setIsPlaying(false)
       audioRef.current = null
-    })
+    }
   }, [value])
 
   const deleteRecording = useCallback(() => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null }
+    if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = null }
     setIsPlaying(false)
     setRecordingTime(0)
     onChange(null, null)
