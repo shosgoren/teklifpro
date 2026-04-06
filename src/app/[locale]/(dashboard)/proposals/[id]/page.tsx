@@ -318,11 +318,27 @@ export default function ProposalDetailPage() {
     }
   };
 
-  const handleSendWhatsApp = () => {
-    if (!proposal?.customer?.phone) return;
-    const message = `Merhaba, ${proposal.proposalNumber} numarali teklif hakkinda konusmak istiyorum.`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${proposal.customer.phone.replace(/\D/g, '')}?text=${encodedMessage}`);
+  const handleSendWhatsApp = async () => {
+    if (!proposal?.customer?.phone) {
+      toast.error('Müşteri telefon numarası bulunamadı');
+      return;
+    }
+    try {
+      toast.loading('WhatsApp mesajı gönderiliyor...', { id: 'whatsapp-send' });
+      const res = await fetch(`/api/v1/proposals/${proposalId}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method: 'whatsapp' }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Gönderim başarısız');
+      }
+      toast.success('WhatsApp mesajı gönderildi!', { id: 'whatsapp-send' });
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'WhatsApp gönderilemedi', { id: 'whatsapp-send' });
+    }
   };
 
   const handleSendEmail = () => {
