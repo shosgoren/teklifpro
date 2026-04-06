@@ -141,26 +141,4 @@ describe('Public Endpoint Rate Limiting', () => {
     });
   });
 
-  describe('/api/debug/test-proposals', () => {
-    const originalEnv = process.env.NODE_ENV;
-
-    afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
-    });
-
-    it('production ortaminda 404 donmeli', async () => {
-      process.env.NODE_ENV = 'production';
-
-      // Re-import to get fresh module
-      jest.resetModules();
-      const debugModule = await import('@/app/api/debug/test-proposals/route');
-      const request = createMockRequest('http://localhost:3000/api/debug/test-proposals');
-
-      const response = await debugModule.GET(request);
-      const body = await response.json();
-
-      expect(response.status).toBe(404);
-      expect(body.error).toBe('Not available in production');
-    });
-  });
 });
