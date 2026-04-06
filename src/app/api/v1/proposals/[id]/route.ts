@@ -127,8 +127,24 @@ async function handlePut(
     let vatTotal = Number(existingProposal.vatTotal);
     let grandTotal = Number(existingProposal.grandTotal);
 
+    const generalDiscount = validatedData.discountType && validatedData.discountValue !== undefined
+      ? { type: validatedData.discountType as 'PERCENTAGE' | 'FIXED', value: validatedData.discountValue }
+      : undefined;
+
     if (validatedData.items && validatedData.items.length > 0) {
-      const calculations = calculateTotals(validatedData.items);
+      const calculations = calculateTotals(validatedData.items, generalDiscount);
+      subtotal = calculations.subtotal;
+      discountAmount = calculations.discountAmount;
+      vatTotal = calculations.vatTotal;
+      grandTotal = calculations.grandTotal;
+    } else if (generalDiscount) {
+      // Recalculate with existing items but new general discount
+      const existingItems = await prisma.proposalItem.findMany({ where: { proposalId } });
+      const itemsForCalc = existingItems.map(i => ({
+        quantity: Number(i.quantity), unitPrice: Number(i.unitPrice),
+        discountRate: Number(i.discountRate), vatRate: Number(i.vatRate),
+      }));
+      const calculations = calculateTotals(itemsForCalc, generalDiscount);
       subtotal = calculations.subtotal;
       discountAmount = calculations.discountAmount;
       vatTotal = calculations.vatTotal;
@@ -175,6 +191,8 @@ async function handlePut(
           notes: validatedData.notes ?? undefined,
           paymentTerms: validatedData.paymentTerms ?? undefined,
           deliveryTerms: validatedData.deliveryTerms ?? undefined,
+          discountType: validatedData.discountType ?? undefined,
+          discountValue: validatedData.discountValue ?? undefined,
           voiceNoteData: validatedData.voiceNoteData !== undefined ? (validatedData.voiceNoteData || null) : undefined,
           voiceNoteDuration: validatedData.voiceNoteDuration !== undefined ? (validatedData.voiceNoteDuration || null) : undefined,
           subtotal,
@@ -297,14 +315,17 @@ async function handleDelete(
 
 // Helper functions
 
-function calculateTotals(items: Array<{
-  quantity: number;
-  unitPrice: number;
-  discountRate: number;
-  vatRate: number;
-}>) {
+function calculateTotals(
+  items: Array<{
+    quantity: number;
+    unitPrice: number;
+    discountRate: number;
+    vatRate: number;
+  }>,
+  generalDiscount?: { type: 'PERCENTAGE' | 'FIXED'; value: number }
+) {
   let subtotal = 0;
-  let totalDiscount = 0;
+  let itemDiscountTotal = 0;
   let totalVat = 0;
 
   items.forEach((item) => {
@@ -314,9 +335,26 @@ function calculateTotals(items: Array<{
     const itemVat = (itemBeforeVat * item.vatRate) / 100;
 
     subtotal += itemSubtotal;
-    totalDiscount += itemDiscount;
+    itemDiscountTotal += itemDiscount;
     totalVat += itemVat;
   });
+
+  // Apply general discount
+  let generalDiscountAmount = 0;
+  if (generalDiscount && generalDiscount.value > 0) {
+    const afterItemDiscount = subtotal - itemDiscountTotal;
+    if (generalDiscount.type === 'PERCENTAGE') {
+      generalDiscountAmount = afterItemDiscount * (generalDiscount.value / 100);
+    } else {
+      generalDiscountAmount = Math.min(generalDiscount.value, afterItemDiscount);
+    }
+    // Adjust VAT proportionally
+    if (afterItemDiscount > 0) {
+      totalVat = totalVat * ((afterItemDiscount - generalDiscountAmount) / afterItemDiscount);
+    }
+  }
+
+  const totalDiscount = itemDiscountTotal + generalDiscountAmount;
 
   return {
     subtotal,

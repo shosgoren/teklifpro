@@ -1242,7 +1242,10 @@ export default function EditProposalPage() {
       },
       items: formItems,
       title: proposal.title || '',
-      generalDiscount: { type: 'percent', value: 0 },
+      generalDiscount: {
+        type: proposal.discountType === 'FIXED' ? 'fixed' : 'percent',
+        value: Number(proposal.discountValue) || 0,
+      },
       validityDays,
       paymentTerms: proposal.paymentTerms || 'Net 30',
       deliveryTerms: proposal.deliveryTerms || 'Standard',
@@ -1338,6 +1341,8 @@ export default function EditProposalPage() {
       notes: data.notes || '',
       paymentTerms: data.paymentTerms || '',
       deliveryTerms: data.deliveryTerms || '',
+      discountType: data.generalDiscount.type === 'percent' ? 'PERCENTAGE' : 'FIXED',
+      discountValue: Number(data.generalDiscount.value) || 0,
       voiceNoteData: data.voiceNoteData || null,
       voiceNoteDuration: data.voiceNoteDuration || null,
     }
@@ -1460,7 +1465,7 @@ export default function EditProposalPage() {
           <p className="text-sm text-muted-foreground mt-1 ml-11">{t('proposals.editDescription')}</p>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="space-y-6">
+        <form onSubmit={(e) => { if (currentStep < steps.length - 1) { e.preventDefault(); return } handleFormSubmit(e) }} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < steps.length - 1) e.preventDefault() }} className="space-y-6">
           {/* Stepper */}
           <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm p-4 md:p-6">
             <div className="flex justify-between items-center">

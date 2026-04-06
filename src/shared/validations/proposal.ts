@@ -23,6 +23,8 @@ export const CreateProposalSchema = z.object({
   notes: z.string().optional(),
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
+  discountType: z.enum(['PERCENTAGE', 'FIXED']).optional(),
+  discountValue: z.coerce.number().min(0).optional(),
   voiceNoteData: z.string().nullable().optional(),
   voiceNoteDuration: z.coerce.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
 })
@@ -46,6 +48,8 @@ export const UpdateProposalSchema = z.object({
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
   customerId: z.string().optional(),
+  discountType: z.enum(['PERCENTAGE', 'FIXED']).optional(),
+  discountValue: z.coerce.number().min(0).optional(),
   voiceNoteData: z.string().nullable().optional(),
   voiceNoteDuration: z.coerce.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
 })

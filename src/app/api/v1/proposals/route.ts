@@ -163,12 +163,31 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
 
     // Calculate totals
     let subtotal = 0;
+    let itemDiscountTotal = 0;
     let vatTotal = 0;
     for (const item of payload.items) {
-      const lineTotal = item.quantity * item.unitPrice * (1 - item.discountRate / 100);
-      subtotal += lineTotal;
+      const itemSubtotal = item.quantity * item.unitPrice;
+      const itemDiscount = itemSubtotal * (item.discountRate / 100);
+      const lineTotal = itemSubtotal - itemDiscount;
+      subtotal += itemSubtotal;
+      itemDiscountTotal += itemDiscount;
       vatTotal += lineTotal * (item.vatRate / 100);
     }
+
+    // Apply general discount
+    let generalDiscountAmount = 0;
+    if (payload.discountValue && payload.discountValue > 0) {
+      const afterItemDiscount = subtotal - itemDiscountTotal;
+      if (payload.discountType === 'PERCENTAGE') {
+        generalDiscountAmount = afterItemDiscount * (payload.discountValue / 100);
+      } else {
+        generalDiscountAmount = Math.min(payload.discountValue, afterItemDiscount);
+      }
+      if (afterItemDiscount > 0) {
+        vatTotal = vatTotal * ((afterItemDiscount - generalDiscountAmount) / afterItemDiscount);
+      }
+    }
+    const totalDiscount = itemDiscountTotal + generalDiscountAmount;
 
     const { nanoid } = await import('nanoid');
     const proposalNumber = `TKL-${new Date().getFullYear()}-${nanoid(6).toUpperCase()}`;
@@ -186,8 +205,11 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
         description: payload.description,
         status: 'DRAFT',
         subtotal,
+        discountType: payload.discountType || null,
+        discountValue: payload.discountValue || 0,
+        discountAmount: totalDiscount,
         vatTotal,
-        grandTotal: subtotal + vatTotal,
+        grandTotal: subtotal - totalDiscount + vatTotal,
         expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : undefined,
         notes: payload.notes,
         paymentTerms: payload.paymentTerms,
