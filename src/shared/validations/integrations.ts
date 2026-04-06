@@ -24,7 +24,8 @@ export const testParasutSchema = z.object({
 
 export const whatsappSchema = z.object({
   phoneId: z.string().min(1),
-  accessToken: z.string().min(1),
+  accessToken: z.string().min(1).optional(),
+  businessAccountId: z.string().optional(),
 })
 
 export const shareProposalSchema = z.object({

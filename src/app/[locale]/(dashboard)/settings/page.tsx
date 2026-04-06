@@ -105,6 +105,9 @@ const SettingsPage = () => {
       address: string;
       taxNumber: string;
       taxOffice: string;
+      whatsappPhoneId: string | null;
+      whatsappAccessToken: string | null;
+      whatsappBusinessId: string | null;
     };
   }>('/api/v1/settings/logo', fetcher);
 
@@ -228,6 +231,16 @@ const SettingsPage = () => {
       if (Array.isArray(tenantWithBank.bankAccounts)) {
         setBankAccounts(tenantWithBank.bankAccounts);
       }
+      // Load WhatsApp settings
+      if (t.whatsappPhoneId) {
+        setWhatsapp(prev => ({
+          ...prev,
+          phoneNumberId: t.whatsappPhoneId || '',
+          accessToken: t.whatsappAccessToken || '',
+          businessAccountId: t.whatsappBusinessId || '',
+          connected: !!(t.whatsappPhoneId && t.whatsappAccessToken),
+        }));
+      }
     }
   }, [tenantData]);
 
@@ -300,13 +313,20 @@ const SettingsPage = () => {
   const handleWhatsAppSave = async () => {
     setSaving(true);
     try {
+      // Don't send masked token back — only send if user entered a new one
+      const isMaskedToken = whatsapp.accessToken.startsWith('•');
+      const payload: Record<string, string> = {
+        phoneId: whatsapp.phoneNumberId,
+        businessAccountId: whatsapp.businessAccountId,
+      };
+      if (!isMaskedToken && whatsapp.accessToken) {
+        payload.accessToken = whatsapp.accessToken;
+      }
+
       const res = await fetch('/api/onboarding/whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneId: whatsapp.phoneNumberId,
-          accessToken: whatsapp.accessToken,
-        }),
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');

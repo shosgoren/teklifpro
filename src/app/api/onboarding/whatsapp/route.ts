@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
       where: { id: session.tenant.id },
       data: {
         whatsappPhoneId: data.phoneId,
-        whatsappAccessToken: data.accessToken,
+        ...(data.accessToken && { whatsappAccessToken: data.accessToken }),
+        ...(data.businessAccountId && { whatsappBusinessId: data.businessAccountId }),
       },
     });
 

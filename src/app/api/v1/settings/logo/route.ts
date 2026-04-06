@@ -22,10 +22,21 @@ async function handleGet(request: NextRequest) {
         taxNumber: true,
         taxOffice: true,
         bankAccounts: true,
+        whatsappPhoneId: true,
+        whatsappAccessToken: true,
+        whatsappBusinessId: true,
       },
     });
 
-    return NextResponse.json({ success: true, data: tenant });
+    // Mask access token for security (only show last 8 chars)
+    const data = tenant ? {
+      ...tenant,
+      whatsappAccessToken: tenant.whatsappAccessToken
+        ? '•'.repeat(20) + tenant.whatsappAccessToken.slice(-8)
+        : null,
+    } : null;
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
