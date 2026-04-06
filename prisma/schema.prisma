@@ -220,6 +220,32 @@ model CustomerNote {
   @@map("customer_notes")
 }
 
+// ==================== PRODUCT CATEGORIES ====================
+
+model ProductCategory {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  parasutId   String?   @map("parasut_id")
+  name        String
+  parentId    String?   @map("parent_id")
+  bgColor     String?   @map("bg_color")
+  textColor   String?   @map("text_color")
+  sortOrder   Int       @default(0) @map("sort_order")
+  isActive    Boolean   @default(true) @map("is_active")
+  lastSyncAt  DateTime? @map("last_sync_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    ProductCategory[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@unique([tenantId, parasutId])
+  @@index([tenantId, name])
+  @@index([parentId])
+  @@map("product_categories")
+}
+
 // ==================== PRODUCTS (Parasut Sync) ====================
 
 enum ProductType {
@@ -238,6 +264,7 @@ model Product {
   name            String
   description     String?
   category        String?
+  categoryId      String?     @map("category_id")
   unit            String      @default("Adet")
   productType     ProductType @default(COMMERCIAL) @map("product_type")
 
@@ -265,6 +292,7 @@ model Product {
   deletedAt       DateTime?   @map("deleted_at")
 
   tenant          Tenant      @relation(fields: [tenantId], references: [id])
+  categoryRef     ProductCategory? @relation(fields: [categoryId], references: [id])
   proposalItems   ProposalItem[]
 
   // BOM: This product's recipe (what it's made from)
@@ -279,6 +307,7 @@ model Product {
   // Supplier relationships
   suppliers       ProductSupplier[]
   priceHistory    PriceHistory[]
+  purchaseBillItems PurchaseBillItem[]
 
   @@unique([tenantId, parasutId])
   @@unique([tenantId, code])
@@ -351,6 +380,7 @@ model BomItem {
 model Supplier {
   id            String    @id @default(cuid())
   tenantId      String    @map("tenant_id")
+  parasutId     String?   @map("parasut_id")
   name          String
   contactName   String?   @map("contact_name")
   phone         String?
@@ -365,7 +395,9 @@ model Supplier {
   deletedAt     DateTime? @map("deleted_at")
 
   products      ProductSupplier[]
+  purchaseBills PurchaseBill[]
 
+  @@unique([tenantId, parasutId])
   @@index([tenantId, name])
   @@map("suppliers")
 }
@@ -399,6 +431,7 @@ enum StockMovementType {
   ADJUSTMENT    // Düzeltme / Sayım
   PRODUCTION_IN // Üretimden giriş
   PRODUCTION_OUT // Üretime çıkış (hammadde tüketimi)
+  PURCHASE      // Alış faturasından giriş
 }
 
 model StockMovement {
@@ -418,6 +451,73 @@ model StockMovement {
   @@index([tenantId, createdAt])
   @@index([productId, createdAt])
   @@map("stock_movements")
+}
+
+// ==================== PURCHASE BILLS (Alış Faturaları) ====================
+
+enum PurchaseBillStatus {
+  DRAFT
+  RECEIVED
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+}
+
+model PurchaseBill {
+  id              String              @id @default(cuid())
+  tenantId        String              @map("tenant_id")
+  supplierId      String?             @map("supplier_id")
+  parasutId       String?             @map("parasut_id")
+
+  billNumber      String?             @map("bill_number")
+  description     String?
+  issueDate       DateTime            @map("issue_date")
+  dueDate         DateTime?           @map("due_date")
+  status          PurchaseBillStatus  @default(DRAFT)
+
+  // Financial
+  subtotal        Decimal             @default(0) @db.Decimal(15, 2)
+  vatTotal        Decimal             @default(0) @db.Decimal(15, 2) @map("vat_total")
+  grandTotal      Decimal             @default(0) @db.Decimal(15, 2) @map("grand_total")
+  currency        String              @default("TRY")
+  paidAmount      Decimal             @default(0) @db.Decimal(15, 2) @map("paid_amount")
+
+  // Parasut sync
+  lastSyncAt      DateTime?           @map("last_sync_at")
+  stockProcessed  Boolean             @default(false) @map("stock_processed")
+
+  // Metadata
+  createdBy       String?             @map("created_by")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  deletedAt       DateTime?           @map("deleted_at")
+
+  supplier        Supplier?           @relation(fields: [supplierId], references: [id])
+  items           PurchaseBillItem[]
+
+  @@unique([tenantId, parasutId])
+  @@index([tenantId, issueDate])
+  @@index([tenantId, status])
+  @@map("purchase_bills")
+}
+
+model PurchaseBillItem {
+  id              String        @id @default(cuid())
+  purchaseBillId  String        @map("purchase_bill_id")
+  productId       String?       @map("product_id")
+  name            String
+  description     String?
+  unit            String        @default("Adet")
+  quantity        Decimal       @default(1) @db.Decimal(15, 2)
+  unitPrice       Decimal       @default(0) @db.Decimal(15, 2) @map("unit_price")
+  vatRate         Decimal       @default(20) @db.Decimal(5, 2) @map("vat_rate")
+  lineTotal       Decimal       @default(0) @db.Decimal(15, 2) @map("line_total")
+
+  purchaseBill    PurchaseBill  @relation(fields: [purchaseBillId], references: [id], onDelete: Cascade)
+  product         Product?      @relation(fields: [productId], references: [id])
+
+  @@index([purchaseBillId])
+  @@map("purchase_bill_items")
 }
 
 // ==================== PROPOSALS ====================

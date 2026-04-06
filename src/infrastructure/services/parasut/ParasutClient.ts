@@ -26,6 +26,9 @@ import type {
   ParasutEInvoiceCreateData,
   ParasutEArchiveCreateData,
   ParasutEDocument,
+  ParasutPurchaseBill,
+  ParasutPurchaseBillCreateData,
+  ParasutProductCategory,
 } from '@/shared/types'
 
 const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/v4'
@@ -1163,5 +1166,245 @@ export class ParasutClient {
       eDocumentId: eDoc?.id || null,
       updatedAt: attrs.updated_at,
     }
+  }
+
+  // ==================== PURCHASE BILLS ====================
+
+  /**
+   * Alis faturalari listesi
+   */
+  async getPurchaseBills(
+    page = 1,
+    perPage = 25,
+    options?: { filter?: Record<string, string> }
+  ): Promise<ParasutPaginatedResponse<ParasutPurchaseBill>> {
+    const params = new URLSearchParams({
+      'page[number]': String(page),
+      'page[size]': String(perPage),
+    })
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([key, value]) => {
+        params.append(`filter[${key}]`, value)
+      })
+    }
+    return this.request<ParasutPaginatedResponse<ParasutPurchaseBill>>(
+      `purchase_bills?${params.toString()}`
+    )
+  }
+
+  /**
+   * Tek alis faturasi detay
+   */
+  async getPurchaseBill(id: string): Promise<{ data: ParasutPurchaseBill; included?: any[] }> {
+    return this.request<{ data: ParasutPurchaseBill; included?: any[] }>(
+      `purchase_bills/${id}?include=details,supplier`
+    )
+  }
+
+  /**
+   * Alis faturasi olustur
+   */
+  async createPurchaseBill(
+    body: ParasutPurchaseBillCreateData
+  ): Promise<{ data: ParasutPurchaseBill }> {
+    return this.request<{ data: ParasutPurchaseBill }>('purchase_bills', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Alis faturasi sil
+   */
+  async deletePurchaseBill(id: string): Promise<void> {
+    await this.request(`purchase_bills/${id}`, { method: 'DELETE' })
+  }
+
+  /**
+   * Alis faturasi odeme
+   */
+  async payPurchaseBill(
+    id: string,
+    paymentData: { account_id: string; date: string; amount: number }
+  ): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`purchase_bills/${id}/payments`, {
+      method: 'POST',
+      body: JSON.stringify({ data: { type: 'payments', attributes: paymentData } }),
+    })
+  }
+
+  /**
+   * Tum alis faturalarini Parasut'tan cek ve DB'ye kaydet
+   */
+  async syncAllPurchaseBills(): Promise<{ synced: number; errors: number }> {
+    let page = 1
+    let synced = 0
+    let errors = 0
+    let hasMore = true
+
+    while (hasMore) {
+      try {
+        const result = await this.getPurchaseBills(page, 25)
+        if (!result.data || result.data.length === 0) break
+
+        for (const bill of result.data) {
+          try {
+            const attrs = bill.attributes
+            const supplierId = bill.relationships?.supplier?.data?.id || null
+
+            // Find or skip supplier matching
+            let dbSupplierId: string | null = null
+            if (supplierId) {
+              const supplier = await prisma.supplier.findFirst({
+                where: { tenantId: this.tenantId, parasutId: supplierId },
+                select: { id: true },
+              })
+              dbSupplierId = supplier?.id || null
+            }
+
+            await prisma.purchaseBill.upsert({
+              where: {
+                tenantId_parasutId: { tenantId: this.tenantId, parasutId: bill.id },
+              },
+              create: {
+                tenantId: this.tenantId,
+                parasutId: bill.id,
+                supplierId: dbSupplierId,
+                description: attrs.description,
+                issueDate: new Date(attrs.issue_date),
+                dueDate: attrs.due_date ? new Date(attrs.due_date) : null,
+                status: attrs.payment_status === 'paid' ? 'PAID' : 'RECEIVED',
+                subtotal: attrs.gross_total,
+                vatTotal: attrs.total_vat,
+                grandTotal: attrs.net_total,
+                currency: attrs.currency === 'TRL' ? 'TRY' : (attrs.currency || 'TRY'),
+                lastSyncAt: new Date(),
+              },
+              update: {
+                description: attrs.description,
+                issueDate: new Date(attrs.issue_date),
+                dueDate: attrs.due_date ? new Date(attrs.due_date) : null,
+                status: attrs.payment_status === 'paid' ? 'PAID' : 'RECEIVED',
+                subtotal: attrs.gross_total,
+                vatTotal: attrs.total_vat,
+                grandTotal: attrs.net_total,
+                lastSyncAt: new Date(),
+              },
+            })
+            synced++
+          } catch (err) {
+            errors++
+            logger.error('Purchase bill sync error', { billId: bill.id, error: err })
+          }
+        }
+
+        hasMore = result.data.length === 25
+        page++
+      } catch (err) {
+        logger.error('Purchase bills page fetch error', { page, error: err })
+        break
+      }
+    }
+
+    await prisma.parasutSyncLog.create({
+      data: {
+        tenantId: this.tenantId,
+        entityType: 'purchase_bill',
+        direction: 'PULL',
+        status: errors === 0 ? 'COMPLETED' : (synced > 0 ? 'PARTIAL' : 'FAILED'),
+        recordCount: synced,
+        errorCount: errors,
+        completedAt: new Date(),
+      },
+    })
+
+    return { synced, errors }
+  }
+
+  // ==================== PRODUCT CATEGORIES ====================
+
+  /**
+   * Urun kategorileri listesi
+   */
+  async getProductCategories(
+    page = 1,
+    perPage = 25
+  ): Promise<ParasutPaginatedResponse<ParasutProductCategory>> {
+    const params = new URLSearchParams({
+      'page[number]': String(page),
+      'page[size]': String(perPage),
+      'filter[category_type]': 'Product',
+    })
+    return this.request<ParasutPaginatedResponse<ParasutProductCategory>>(
+      `item_categories?${params.toString()}`
+    )
+  }
+
+  /**
+   * Tum urun kategorilerini Parasut'tan cek ve DB'ye kaydet
+   */
+  async syncProductCategories(): Promise<{ synced: number; errors: number }> {
+    let page = 1
+    let synced = 0
+    let errors = 0
+    let hasMore = true
+
+    while (hasMore) {
+      try {
+        const result = await this.getProductCategories(page, 25)
+        if (!result.data || result.data.length === 0) break
+
+        for (const cat of result.data) {
+          try {
+            const attrs = cat.attributes
+            if (attrs.category_type !== 'Product') continue
+
+            await prisma.productCategory.upsert({
+              where: {
+                tenantId_parasutId: { tenantId: this.tenantId, parasutId: cat.id },
+              },
+              create: {
+                tenantId: this.tenantId,
+                parasutId: cat.id,
+                name: attrs.name,
+                bgColor: attrs.bg_color,
+                textColor: attrs.text_color,
+                lastSyncAt: new Date(),
+              },
+              update: {
+                name: attrs.name,
+                bgColor: attrs.bg_color,
+                textColor: attrs.text_color,
+                lastSyncAt: new Date(),
+              },
+            })
+            synced++
+          } catch (err) {
+            errors++
+            logger.error('Category sync error', { catId: cat.id, error: err })
+          }
+        }
+
+        hasMore = result.data.length === 25
+        page++
+      } catch (err) {
+        logger.error('Categories page fetch error', { page, error: err })
+        break
+      }
+    }
+
+    await prisma.parasutSyncLog.create({
+      data: {
+        tenantId: this.tenantId,
+        entityType: 'product_category',
+        direction: 'PULL',
+        status: errors === 0 ? 'COMPLETED' : (synced > 0 ? 'PARTIAL' : 'FAILED'),
+        recordCount: synced,
+        errorCount: errors,
+        completedAt: new Date(),
+      },
+    })
+
+    return { synced, errors }
   }
 }

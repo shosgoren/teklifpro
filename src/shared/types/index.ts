@@ -422,6 +422,105 @@ export interface ParasutEDocument {
   }
 }
 
+// Purchase Bill from Parasut API
+export interface ParasutPurchaseBill {
+  id: string
+  type: string
+  attributes: {
+    description: string | null
+    issue_date: string
+    due_date: string | null
+    invoice_id: number | null
+    invoice_series: string | null
+    item_type: string // 'purchase_bill' | 'refund'
+    currency: string
+    exchange_rate: number | null
+    net_total: number
+    gross_total: number
+    total_vat: number
+    total_discount: number
+    payment_status: string // 'paid' | 'overdue' | 'unpaid'
+    archived: boolean
+    created_at: string
+    updated_at: string
+  }
+  relationships?: {
+    supplier?: { data: { id: string; type: string } | null }
+    details?: { data: Array<{ id: string; type: string }> }
+  }
+}
+
+export interface ParasutPurchaseBillDetail {
+  id: string
+  type: string
+  attributes: {
+    description: string | null
+    net_total: number
+    unit_price: number
+    vat_rate: number
+    quantity: number
+    discount_type: string | null
+    discount_value: number | null
+    created_at: string
+    updated_at: string
+  }
+  relationships?: {
+    product?: { data: { id: string; type: string } | null }
+  }
+}
+
+export interface ParasutPurchaseBillCreateData {
+  data: {
+    type: 'purchase_bills'
+    attributes: {
+      item_type: 'purchase_bill' | 'refund'
+      issue_date: string
+      due_date?: string
+      description?: string
+      currency?: string
+      exchange_rate?: number
+    }
+    relationships: {
+      supplier: {
+        data: { id: string; type: 'contacts' }
+      }
+      details: {
+        data: Array<{
+          type: 'purchase_bill_details'
+          attributes: {
+            quantity: number
+            unit_price: number
+            vat_rate: number
+            description?: string
+            discount_type?: string
+            discount_value?: number
+          }
+          relationships?: {
+            product?: {
+              data: { id: string; type: 'products' }
+            }
+          }
+        }>
+      }
+    }
+  }
+}
+
+// Product Category from Parasut API
+export interface ParasutProductCategory {
+  id: string
+  type: string
+  attributes: {
+    name: string
+    bg_color: string | null
+    text_color: string | null
+    category_type: string // 'Product' | 'Contact'
+    parent_id: string | null
+    created_at: string
+    updated_at: string
+  }
+}
+
 // ==================== Proposal Types ====================
 
 export type ProposalStatusType =
