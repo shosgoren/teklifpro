@@ -363,7 +363,8 @@
       "REVISION_REQUESTED": "Revision Requested",
       "REVISED": "Revised",
       "EXPIRED": "Expired",
-      "CANCELLED": "Cancelled"
+      "CANCELLED": "Cancelled",
+      "INVOICED": "Invoiced"
     },
     "create": {
       "title": "Create New Proposal",

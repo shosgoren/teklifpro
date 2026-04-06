@@ -19,7 +19,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
+type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 const fetcher = (url: string) =>
   fetch(url).then(res => {
@@ -38,6 +38,7 @@ const STATUS_CONFIG: Record<ProposalStatus, { label: string; color: string; dot:
   REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500', border: 'border-l-red-500' },
   REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500', border: 'border-l-orange-500' },
   EXPIRED: { label: 'Süresi Doldu', color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-l-gray-400' },
+  INVOICED: { label: 'Faturalandı', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300', dot: 'bg-indigo-500', border: 'border-l-indigo-500' },
 };
 
 const ITEMS_PER_PAGE = 10;

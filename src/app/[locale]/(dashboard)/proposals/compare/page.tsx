@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/compo
 import { Checkbox } from '@/shared/components/ui/checkbox';
 
 // Types matching API response
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
+type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 interface ProposalItem {
   id: string;
@@ -71,6 +71,7 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
   REVISION_REQUESTED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
   EXPIRED: 'bg-slate-700 text-white dark:bg-slate-600 dark:text-slate-200',
+  INVOICED: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
 
 const STATUS_LABELS: Record<ProposalStatus, string> = {
@@ -81,6 +82,7 @@ const STATUS_LABELS: Record<ProposalStatus, string> = {
   REJECTED: 'Red',
   REVISION_REQUESTED: 'Revize',
   EXPIRED: 'Suresi Doldu',
+  INVOICED: 'Faturalandi',
 };
 
 const getStatusBadge = (status: ProposalStatus) => {

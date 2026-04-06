@@ -22,7 +22,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
+type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 interface Proposal {
   id: string;
@@ -48,6 +48,7 @@ const KANBAN_COLUMNS: { status: ProposalStatus; label: string; color: string; do
   { status: 'REVISION_REQUESTED', label: 'Revize', color: 'text-orange-600 dark:text-orange-400', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50/50 dark:bg-orange-950/30', borderColor: 'border-orange-200 dark:border-orange-800' },
   { status: 'ACCEPTED', label: 'Kabul Edildi', color: 'text-emerald-600 dark:text-emerald-400', dotColor: 'bg-emerald-500', bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/30', borderColor: 'border-emerald-200 dark:border-emerald-800' },
   { status: 'REJECTED', label: 'Reddedildi', color: 'text-red-600 dark:text-red-400', dotColor: 'bg-red-500', bgColor: 'bg-red-50/50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
+  { status: 'INVOICED', label: 'Faturalandı', color: 'text-indigo-600 dark:text-indigo-400', dotColor: 'bg-indigo-500', bgColor: 'bg-indigo-50/50 dark:bg-indigo-950/30', borderColor: 'border-indigo-200 dark:border-indigo-800' },
 ];
 
 const formatAmount = (amount: number) =>

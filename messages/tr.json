@@ -363,7 +363,8 @@
       "REVISION_REQUESTED": "Revize İstendi",
       "REVISED": "Revize Edildi",
       "EXPIRED": "Süresi Doldu",
-      "CANCELLED": "İptal Edildi"
+      "CANCELLED": "İptal Edildi",
+      "INVOICED": "Faturalandı"
     },
     "create": {
       "title": "Yeni Teklif Oluştur",

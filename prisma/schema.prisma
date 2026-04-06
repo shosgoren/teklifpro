@@ -477,8 +477,10 @@ model Proposal {
   whatsappMessageId String?         @map("whatsapp_message_id")
 
   // Parasut Integration
-  parasutOfferId    String?         @unique @map("parasut_offer_id")
-  parasutLastSyncAt DateTime?       @map("parasut_last_sync_at")
+  parasutOfferId       String?         @unique @map("parasut_offer_id")
+  parasutLastSyncAt    DateTime?       @map("parasut_last_sync_at")
+  parasutInvoiceId     String?         @unique @map("parasut_invoice_id")
+  parasutInvoiceSyncAt DateTime?       @map("parasut_invoice_sync_at")
 
   // Voice Note
   voiceNoteData     String?         @map("voice_note_data")     // base64 audio data
@@ -506,6 +508,7 @@ model Proposal {
   @@index([tenantId, status])
   @@index([publicToken])
   @@index([parasutOfferId])
+  @@index([parasutInvoiceId])
   @@map("proposals")
 }
 
@@ -519,6 +522,7 @@ enum ProposalStatus {
   REVISED
   EXPIRED
   CANCELLED
+  INVOICED
 }
 
 enum DiscountType {
@@ -580,6 +584,9 @@ enum ActivityType {
   WHATSAPP_READ
   LINK_CLICKED
   FOLLOWUP_SENT
+  INVOICED
+  E_FATURA_SENT
+  E_ARSIV_SENT
 }
 
 model ProposalRevision {

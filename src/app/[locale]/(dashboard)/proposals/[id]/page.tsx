@@ -44,7 +44,7 @@ import { toast } from 'sonner';
 
 const logger = new Logger('ProposalDetailPage');
 
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED';
+type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 const fetcher = (url: string) =>
   fetch(url).then(res => {
@@ -63,6 +63,7 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   REJECTED: 'bg-red-100 text-red-800',
   REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
   EXPIRED: 'bg-slate-700 text-white',
+  INVOICED: 'bg-indigo-100 text-indigo-800',
 };
 
 
@@ -75,6 +76,9 @@ const ACTIVITY_ICON_COLORS: Record<string, string> = {
   REVISION_REQUESTED: 'from-orange-500 to-orange-600',
   UPDATED: 'from-violet-500 to-violet-600',
   CANCELLED: 'from-gray-500 to-gray-600',
+  INVOICED: 'from-indigo-500 to-indigo-600',
+  E_FATURA_SENT: 'from-teal-500 to-teal-600',
+  E_ARSIV_SENT: 'from-teal-500 to-teal-600',
 };
 
 const getActivityIcon = (type: string) => {
@@ -208,6 +212,65 @@ export default function ProposalDetailPage() {
       }
     } catch {
       toast.error('E-posta gönderme hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
+
+  const handleParasutInvoice = async () => {
+    setParasutLoading('invoice');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut/invoice`, { method: 'POST' });
+      const result = await res.json();
+      if (result.success) {
+        toast.success('Fatura oluşturuldu!');
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'Fatura oluşturulamadı');
+      }
+    } catch {
+      toast.error('Fatura oluşturma hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
+
+  const handleParasutInvoiceStatus = async () => {
+    setParasutLoading('invoiceStatus');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut/invoice`);
+      const result = await res.json();
+      if (result.success) {
+        const d = result.data;
+        const statusText = d.paymentStatus === 'paid' ? 'Ödendi' : d.paymentStatus === 'overdue' ? 'Vadesi Geçmiş' : 'Ödenmedi';
+        const eDocText = d.eDocumentStatus ? ` | E-Belge: ${d.eDocumentStatus}` : '';
+        toast.success(`Fatura: ${statusText}${eDocText}`);
+      } else {
+        toast.error(result.error || 'Fatura durumu çekilemedi');
+      }
+    } catch {
+      toast.error('Fatura durum hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
+
+  const handleParasutEFatura = async (type: 'e_invoice' | 'e_archive') => {
+    setParasutLoading('efatura');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut/efatura`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast.success(result.data.message);
+      } else {
+        toast.error(result.error || 'E-belge gönderilemedi');
+      }
+    } catch {
+      toast.error('E-belge gönderme hatası');
     } finally {
       setParasutLoading(null);
     }
@@ -733,6 +796,65 @@ export default function ProposalDetailPage() {
                         {parasutLoading === 'share' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
                         E-posta
                       </Button>
+                    </div>
+
+                    {/* Invoice Section */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+                      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Fatura</p>
+                      {proposal.parasutInvoiceId ? (
+                        <div className="space-y-2">
+                          <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Fatura ID</p>
+                            <p className="text-sm font-mono font-medium text-gray-900 dark:text-white">{proposal.parasutInvoiceId}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              disabled={!!parasutLoading}
+                              onClick={handleParasutInvoiceStatus}
+                            >
+                              {parasutLoading === 'invoiceStatus' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                              Fatura Durum
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              disabled={!!parasutLoading}
+                              onClick={() => handleParasutEFatura('e_invoice')}
+                            >
+                              {parasutLoading === 'efatura' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                              E-Fatura
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs col-span-2"
+                              disabled={!!parasutLoading}
+                              onClick={() => handleParasutEFatura('e_archive')}
+                            >
+                              {parasutLoading === 'efatura' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                              E-Arşiv Fatura
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          size="sm"
+                          disabled={!!parasutLoading || (proposal.status !== 'ACCEPTED' && proposal.status !== 'INVOICED')}
+                          onClick={handleParasutInvoice}
+                        >
+                          {parasutLoading === 'invoice' ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <CloudUpload className="h-4 w-4 mr-2" />
+                          )}
+                          Faturaya Dönüştür
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ) : (

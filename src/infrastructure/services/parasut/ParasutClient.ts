@@ -21,6 +21,11 @@ import type {
   ParasutSalesOfferDetail,
   ParasutSalesOfferCreateData,
   ParasutSharingData,
+  ParasutSalesInvoice,
+  ParasutSalesInvoiceCreateData,
+  ParasutEInvoiceCreateData,
+  ParasutEArchiveCreateData,
+  ParasutEDocument,
 } from '@/shared/types'
 
 const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/v4'
@@ -865,6 +870,297 @@ export class ParasutClient {
       grossTotal: attrs.gross_total,
       totalVat: attrs.total_vat,
       totalDiscount: attrs.total_discount,
+      updatedAt: attrs.updated_at,
+    }
+  }
+
+  // ==================== SALES INVOICES ====================
+
+  /**
+   * Fatura listesi getir
+   */
+  async getSalesInvoices(
+    page = 1,
+    perPage = 25,
+    options?: { filter?: Record<string, string> }
+  ): Promise<ParasutPaginatedResponse<ParasutSalesInvoice>> {
+    const params = new URLSearchParams({
+      'page[number]': String(page),
+      'page[size]': String(perPage),
+    })
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([key, value]) => {
+        params.append(`filter[${key}]`, value)
+      })
+    }
+    return this.request<ParasutPaginatedResponse<ParasutSalesInvoice>>(
+      `sales_invoices?${params.toString()}`
+    )
+  }
+
+  /**
+   * Tek fatura detay getir
+   */
+  async getSalesInvoice(id: string): Promise<{ data: ParasutSalesInvoice; included?: any[] }> {
+    return this.request<{ data: ParasutSalesInvoice; included?: any[] }>(
+      `sales_invoices/${id}?include=details,contact,active_e_document`
+    )
+  }
+
+  /**
+   * Yeni fatura olustur
+   */
+  async createSalesInvoice(
+    body: ParasutSalesInvoiceCreateData
+  ): Promise<{ data: ParasutSalesInvoice }> {
+    return this.request<{ data: ParasutSalesInvoice }>('sales_invoices', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Fatura guncelle
+   */
+  async updateSalesInvoice(
+    id: string,
+    body: ParasutSalesInvoiceCreateData
+  ): Promise<{ data: ParasutSalesInvoice }> {
+    return this.request<{ data: ParasutSalesInvoice }>(`sales_invoices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Fatura sil
+   */
+  async deleteSalesInvoice(id: string): Promise<void> {
+    await this.request(`sales_invoices/${id}`, { method: 'DELETE' })
+  }
+
+  /**
+   * Fatura odeme durumu
+   */
+  async paySalesInvoice(
+    id: string,
+    paymentData: {
+      account_id: string
+      date: string
+      amount: number
+      exchange_rate?: number
+    }
+  ): Promise<{ data: any }> {
+    return this.request<{ data: any }>(`sales_invoices/${id}/payments`, {
+      method: 'POST',
+      body: JSON.stringify({
+        data: {
+          type: 'payments',
+          attributes: paymentData,
+        },
+      }),
+    })
+  }
+
+  /**
+   * Fatura arsivle
+   */
+  async archiveSalesInvoice(id: string): Promise<void> {
+    await this.request(`sales_invoices/${id}/archive`, { method: 'PATCH' })
+  }
+
+  /**
+   * Fatura arsivden cikar
+   */
+  async unarchiveSalesInvoice(id: string): Promise<void> {
+    await this.request(`sales_invoices/${id}/unarchive`, { method: 'PATCH' })
+  }
+
+  // ==================== E-FATURA / E-ARSIV ====================
+
+  /**
+   * E-Fatura gonder (GIB'e e-fatura olarak iletir)
+   * Alicinin e-fatura mukellifi olmasi gerekir
+   */
+  async createEInvoice(body: ParasutEInvoiceCreateData): Promise<{ data: ParasutEDocument }> {
+    return this.request<{ data: ParasutEDocument }>('e_invoices', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * E-Arsiv fatura olustur (GIB'e e-arsiv olarak gonderir)
+   * E-fatura mukellifi olmayan alicilar icin
+   */
+  async createEArchive(body: ParasutEArchiveCreateData): Promise<{ data: ParasutEDocument }> {
+    return this.request<{ data: ParasutEDocument }>('e_archives', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * E-Fatura durum sorgula
+   */
+  async getEInvoice(id: string): Promise<{ data: ParasutEDocument }> {
+    return this.request<{ data: ParasutEDocument }>(`e_invoices/${id}`)
+  }
+
+  /**
+   * E-Arsiv durum sorgula
+   */
+  async getEArchive(id: string): Promise<{ data: ParasutEDocument }> {
+    return this.request<{ data: ParasutEDocument }>(`e_archives/${id}`)
+  }
+
+  /**
+   * E-Fatura PDF indir
+   */
+  async getEInvoicePdf(id: string): Promise<{ data: { attributes: { url: string } } }> {
+    return this.request<{ data: { attributes: { url: string } } }>(`e_invoices/${id}/pdf`)
+  }
+
+  /**
+   * E-Arsiv PDF indir
+   */
+  async getEArchivePdf(id: string): Promise<{ data: { attributes: { url: string } } }> {
+    return this.request<{ data: { attributes: { url: string } } }>(`e_archives/${id}/pdf`)
+  }
+
+  // ==================== PROPOSAL → INVOICE CONVERSION ====================
+
+  /**
+   * Kabul edilmis teklifi faturaya donustur
+   * Parasut'ta once sales_offer'dan sales_invoice olusturur
+   */
+  async convertOfferToInvoice(proposal: {
+    parasutOfferId: string
+    title: string
+    currency: string
+    expiresAt: Date | null
+    notes: string | null
+    customer: {
+      parasutId: string | null
+      taxNumber: string | null
+      taxOffice: string | null
+      address: string | null
+      city: string | null
+      district: string | null
+      phone: string | null
+    }
+    items: Array<{
+      name: string
+      description: string | null
+      quantity: number
+      unitPrice: number
+      vatRate: number
+      discountRate: number
+      product: { parasutId: string | null } | null
+    }>
+    discountType: string | null
+    discountValue: number | null
+  }): Promise<string> {
+    if (!proposal.customer.parasutId) {
+      throw new Error('Customer does not have a Parasut ID. Sync the customer first.')
+    }
+
+    const currencyMap: Record<string, string> = {
+      TRY: 'TRL', USD: 'USD', EUR: 'EUR', GBP: 'GBP',
+    }
+
+    const issueDate = new Date().toISOString().split('T')[0]
+
+    const details = proposal.items.map((item) => {
+      const detail: any = {
+        type: 'sales_invoice_details' as const,
+        attributes: {
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          vat_rate: item.vatRate,
+          description: item.name + (item.description ? ` - ${item.description}` : ''),
+          discount_type: item.discountRate > 0 ? 'percentage' : undefined,
+          discount_value: item.discountRate > 0 ? item.discountRate : undefined,
+        },
+      }
+      if (item.product?.parasutId) {
+        detail.relationships = {
+          product: { data: { id: item.product.parasutId, type: 'products' } },
+        }
+      }
+      return detail
+    })
+
+    const body: ParasutSalesInvoiceCreateData = {
+      data: {
+        type: 'sales_invoices',
+        attributes: {
+          item_type: 'invoice',
+          issue_date: issueDate,
+          description: proposal.title,
+          currency: currencyMap[proposal.currency] || 'TRL',
+          billing_address: proposal.customer.address || undefined,
+          billing_phone: proposal.customer.phone || undefined,
+          tax_office: proposal.customer.taxOffice || undefined,
+          tax_number: proposal.customer.taxNumber || undefined,
+          city: proposal.customer.city || undefined,
+          district: proposal.customer.district || undefined,
+          invoice_discount_type: proposal.discountType === 'PERCENTAGE' ? 'percentage' : proposal.discountType === 'FIXED' ? 'amount' : undefined,
+          invoice_discount: proposal.discountValue ? Number(proposal.discountValue) : undefined,
+        },
+        relationships: {
+          contact: {
+            data: { id: proposal.customer.parasutId, type: 'contacts' },
+          },
+          details: { data: details },
+          sales_offer: {
+            data: { id: proposal.parasutOfferId, type: 'sales_offers' },
+          },
+        },
+      },
+    }
+
+    const result = await this.createSalesInvoice(body)
+    return result.data.id
+  }
+
+  /**
+   * Parasut'taki fatura durumunu cek
+   */
+  async pullSalesInvoiceStatus(parasutInvoiceId: string): Promise<{
+    paymentStatus: string
+    netTotal: number
+    grossTotal: number
+    totalVat: number
+    invoiceNumber: number | null
+    eDocumentStatus: string | null
+    eDocumentId: string | null
+    updatedAt: string
+  }> {
+    const result = await this.getSalesInvoice(parasutInvoiceId)
+    const attrs = result.data.attributes
+    const eDoc = result.data.relationships?.active_e_document?.data
+
+    let eDocStatus: string | null = null
+    if (eDoc?.id) {
+      try {
+        const eDocResult = eDoc.type === 'e_invoices'
+          ? await this.getEInvoice(eDoc.id)
+          : await this.getEArchive(eDoc.id)
+        eDocStatus = eDocResult.data.attributes.status
+      } catch {
+        // E-document may not be accessible
+      }
+    }
+
+    return {
+      paymentStatus: attrs.payment_status,
+      netTotal: attrs.net_total,
+      grossTotal: attrs.gross_total,
+      totalVat: attrs.total_vat,
+      invoiceNumber: attrs.invoice_id,
+      eDocumentStatus: eDocStatus,
+      eDocumentId: eDoc?.id || null,
       updatedAt: attrs.updated_at,
     }
   }
