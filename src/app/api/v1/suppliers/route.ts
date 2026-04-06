@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createSupplierSchema, supplierQuerySchema } from '@/shared/validations/supplier';
+import { Prisma } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('SupplierAPI');
@@ -26,7 +27,7 @@ async function handleGet(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(query.limit)));
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.SupplierWhereInput = {
       tenantId: session.tenant.id,
       deletedAt: null,
     };
@@ -120,7 +121,7 @@ async function handlePost(request: NextRequest) {
     const data = createSupplierSchema.parse(body);
 
     // Filter out empty email string
-    const supplierData: any = {
+    const supplierData: Prisma.SupplierUncheckedCreateInput = {
       ...data,
       tenantId: session.tenant.id,
     };

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createCustomerSchema, customerQuerySchema } from '@/shared/validations/customer';
+import { Prisma } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('CustomerAPI');
@@ -61,7 +62,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
     const limit = Math.min(100, Math.max(1, parseInt(queryData.limit)));
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.CustomerWhereInput = {
       tenantId: session.tenant.id,
     };
 

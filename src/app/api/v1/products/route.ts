@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createProductSchema, productQuerySchema } from '@/shared/validations/product';
+import { Prisma } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProductAPI');
@@ -70,7 +71,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
     const limit = Math.min(100, Math.max(1, parseInt(queryData.limit)));
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       tenantId: session.tenant.id,
     };
 
@@ -100,8 +101,9 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
       where.minStockLevel = { gt: 0 };
       where.stockQuantity = { lt: prisma.product.fields?.minStockLevel ?? undefined };
       // Use raw comparison: stockQuantity < minStockLevel
+      const existingAnd = where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : [];
       where.AND = [
-        ...(where.AND || []),
+        ...existingAnd,
         { stockQuantity: { gt: 0 } },
       ];
       // For Prisma, we use a rawFilter approach below

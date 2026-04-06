@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
@@ -91,7 +92,7 @@ async function searchProposals(
   limit: number,
   offset: number
 ) {
-  const searchFilter: any = {
+  const searchFilter: Prisma.ProposalWhereInput = {
     AND: [
       { tenantId },
       { deletedAt: null },
@@ -177,7 +178,7 @@ async function searchCustomers(
   limit: number,
   offset: number
 ) {
-  const searchFilter: any = {
+  const searchFilter: Prisma.CustomerWhereInput = {
     AND: [
       { tenantId },
       { deletedAt: null },
@@ -253,7 +254,7 @@ async function searchProducts(
   limit: number,
   offset: number
 ) {
-  const searchFilter: any = {
+  const searchFilter: Prisma.ProductWhereInput = {
     AND: [
       { tenantId },
       { deletedAt: null },

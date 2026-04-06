@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { createBomSchema } from '@/shared/validations/bom';
+import { Prisma } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('BomAPI');
@@ -14,7 +15,7 @@ async function handleGet(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const productId = searchParams.get('productId') || '';
 
-    const where: any = {
+    const where: Prisma.BillOfMaterialWhereInput = {
       tenantId: session.tenant.id,
       isActive: true,
     };

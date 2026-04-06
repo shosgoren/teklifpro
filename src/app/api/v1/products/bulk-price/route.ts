@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { bulkPriceSchema } from '@/shared/validations/product';
+import { Prisma } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('BulkPriceAPI');
@@ -19,7 +20,7 @@ async function handlePut(request: NextRequest) {
     const data = bulkPriceSchema.parse(body);
     const multiplier = 1 + data.percentage / 100;
 
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       tenantId: session.tenant.id,
       deletedAt: null,
       isActive: true,

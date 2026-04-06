@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { stockQuerySchema } from '@/shared/validations/stock';
+import { Prisma, ProductType } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('StockAPI');
@@ -26,7 +27,7 @@ async function handleGet(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(queryData.limit)));
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       tenantId: session.tenant.id,
       trackStock: true,
     };
@@ -39,7 +40,7 @@ async function handleGet(request: NextRequest) {
     }
 
     if (queryData.type) {
-      where.productType = queryData.type;
+      where.productType = queryData.type as ProductType;
     }
 
     if (queryData.lowStock === 'true') {

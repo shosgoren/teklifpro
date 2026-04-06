@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma, StockMovementType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/shared/lib/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
@@ -28,7 +29,7 @@ async function handleGet(request: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(queryData.limit)));
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.StockMovementWhereInput = {
       tenantId: session.tenant.id,
     };
 
@@ -37,7 +38,7 @@ async function handleGet(request: NextRequest) {
     }
 
     if (queryData.type) {
-      where.type = queryData.type;
+      where.type = queryData.type as StockMovementType;
     }
 
     if (queryData.from || queryData.to) {
