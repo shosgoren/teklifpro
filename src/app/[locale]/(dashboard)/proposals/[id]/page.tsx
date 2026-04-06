@@ -147,7 +147,8 @@ export default function ProposalDetailPage() {
 
   const { data, error, isLoading } = useSWR(
     proposalId ? `/api/v1/proposals/${proposalId}` : null,
-    fetcher
+    fetcher,
+    { refreshInterval: 10000 } // Auto-refresh every 10s for realtime status updates
   );
 
   const proposal = data?.data;

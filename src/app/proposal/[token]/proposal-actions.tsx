@@ -62,14 +62,20 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
   }
 
   const handleAccept = () => {
-    const signatureData = sigCanvasRef.current && !sigCanvasRef.current.isEmpty()
-      ? sigCanvasRef.current.getTrimmedCanvas().toDataURL('image/png')
-      : undefined
+    if (!signerName.trim()) {
+      setError('Lütfen ad soyad giriniz')
+      return
+    }
+    if (!sigCanvasRef.current || sigCanvasRef.current.isEmpty()) {
+      setError('Lütfen imzanızı atınız')
+      return
+    }
+    const signatureData = sigCanvasRef.current.getTrimmedCanvas().toDataURL('image/png')
 
     handleSubmit('ACCEPTED', {
       customerNote: customerNote.trim() || undefined,
       signatureData,
-      signerName: signerName.trim() || undefined,
+      signerName: signerName.trim(),
     })
   }
 

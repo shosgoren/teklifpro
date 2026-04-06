@@ -3,6 +3,7 @@
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 
 export interface Notification {
   id: string;
@@ -38,6 +39,7 @@ export function NotificationCenter({
   onNotificationClick,
 }: NotificationCenterProps): JSX.Element {
   const locale = useLocale();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(
     externalNotifications || []
@@ -107,8 +109,12 @@ export function NotificationCenter({
     (notification: Notification) => {
       handleMarkAsRead(notification.id);
       onNotificationClick?.(notification);
+      if (notification.proposalId) {
+        setIsOpen(false);
+        router.push(`/${locale}/proposals/${notification.proposalId}`);
+      }
     },
-    [handleMarkAsRead, onNotificationClick]
+    [handleMarkAsRead, onNotificationClick, router, locale]
   );
 
   const sortedNotifications = [...notifications].sort(

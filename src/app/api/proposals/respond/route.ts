@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import { withRateLimit } from '@/infrastructure/middleware/rateLimitMiddleware'
@@ -61,15 +62,26 @@ async function handlePost(request: NextRequest) {
       )
     }
 
-    // Validate signature if provided
-    if (signatureData) {
+    // Validate signature - required for acceptance
+    if (action === 'ACCEPTED') {
+      if (!signerName?.trim()) {
+        return NextResponse.json(
+          { success: false, error: { message: 'Kabul için ad soyad zorunludur' } },
+          { status: 400 }
+        )
+      }
+      if (!signatureData) {
+        return NextResponse.json(
+          { success: false, error: { message: 'Kabul için imza zorunludur' } },
+          { status: 400 }
+        )
+      }
       if (!signatureData.startsWith('data:image/png;base64,')) {
         return NextResponse.json(
           { success: false, error: { message: 'Geçersiz imza formatı' } },
           { status: 400 }
         )
       }
-      // Max 200KB for signature PNG
       const base64Part = signatureData.split(',')[1] || ''
       if (base64Part.length > 200 * 1024 * 1.37) {
         return NextResponse.json(
@@ -78,6 +90,17 @@ async function handlePost(request: NextRequest) {
         )
       }
     }
+
+    // Collect client info for legal audit trail
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown'
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+
+    // Compute signature hash for integrity verification
+    const signatureHash = signatureData
+      ? crypto.createHash('sha256').update(signatureData).digest('hex')
+      : null
 
     // Update proposal status
     const updatedProposal = await prisma.proposal.update({
@@ -88,21 +111,25 @@ async function handlePost(request: NextRequest) {
         ...(action === 'ACCEPTED' && {
           customerNote: customerNote || null,
           signatureData: signatureData || null,
-          signedAt: signatureData ? new Date() : null,
-          signerName: signerName || null,
+          signedAt: new Date(),
+          signerName: signerName.trim(),
         }),
         ...(action === 'REJECTED' && { rejectionReason: rejectionReason || null }),
         ...(action === 'REVISION_REQUESTED' && { revisionNote: revisionNote || null }),
       },
     })
 
-    // Log activity
+    // Log activity with audit trail
     await prisma.proposalActivity.create({
       data: {
         proposalId,
         type: action,
         metadata: {
           timestamp: new Date().toISOString(),
+          clientIp,
+          userAgent,
+          ...(signatureHash && { signatureHash }),
+          ...(signerName && { signerName: signerName.trim() }),
           ...(customerNote && { customerNote }),
           ...(rejectionReason && { rejectionReason }),
           ...(revisionNote && { revisionNote }),
