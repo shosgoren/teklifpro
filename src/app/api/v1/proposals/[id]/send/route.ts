@@ -137,6 +137,14 @@ Iyi calismalar!`.trim();
         companyName: tenant.name,
       });
 
+      if (!result.success) {
+        logger.error('WhatsApp send failed', { error: result.error, to: sentTo });
+        return NextResponse.json(
+          { success: false, error: result.error || 'WhatsApp mesajı gönderilemedi' },
+          { status: 502 }
+        );
+      }
+
       messageId = result.messageId;
     } else if (payload.method === 'email') {
       sentTo = proposal.customer.email || '';
