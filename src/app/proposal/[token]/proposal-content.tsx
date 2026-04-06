@@ -310,7 +310,7 @@ export default function ProposalContent({
 
         {/* ─── Items ─── */}
         <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
-          <div className="px-5 py-4 border-b border-gray-100">
+          <div className="px-3 sm:px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2 mb-1">
               <div className="w-1 h-4 rounded-full bg-indigo-500" />
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -323,7 +323,7 @@ export default function ProposalContent({
           {/* Mobile: Card view */}
           <div className="divide-y divide-gray-100 sm:hidden">
             {items.map((item, index) => (
-              <div key={item.id} className="px-5 py-4">
+              <div key={item.id} className="px-3 sm:px-5 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -343,7 +343,7 @@ export default function ProposalContent({
                     <span className="font-bold text-gray-900 text-sm">{fmt(item.lineTotal)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 mt-2 ml-7 text-xs text-gray-500">
+                <div className="flex items-center flex-wrap gap-2 sm:gap-4 mt-2 ml-0 sm:ml-7 text-xs text-gray-500">
                   <span>{item.quantity} {item.unit}</span>
                   <span>×</span>
                   <span>{fmt(item.unitPrice)}</span>
@@ -532,7 +532,7 @@ export default function ProposalContent({
                       onClick={() => copyIban(bank.iban)}
                       className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors group"
                     >
-                      <span className="font-mono text-sm text-gray-900 tracking-wider">{bank.iban}</span>
+                      <span className="font-mono text-xs sm:text-sm text-gray-900 tracking-normal sm:tracking-wider break-all">{bank.iban}</span>
                       <span className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-blue-600">
                         {copiedIban === bank.iban ? (
                           <><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Kopyalandı</>

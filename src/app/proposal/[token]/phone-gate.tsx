@@ -109,7 +109,7 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
           {/* Masked Phone */}
           <div className="flex items-center justify-center gap-2 mb-6 p-3 bg-gray-50 rounded-2xl">
             <Phone className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-mono text-gray-600 tracking-wider">{maskedPhone}</span>
+            <span className="text-sm font-mono text-gray-600 tracking-normal sm:tracking-wider">{maskedPhone}</span>
           </div>
 
           {/* 4 Digit Input */}

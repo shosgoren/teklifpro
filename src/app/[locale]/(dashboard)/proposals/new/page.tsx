@@ -1300,7 +1300,7 @@ export default function CreateProposalPage() {
 
   return (
     <div className="min-h-screen py-4 md:py-8 pb-24 md:pb-8">
-      <div className="max-w-4xl mx-auto px-0">
+      <div className="max-w-4xl mx-auto px-4 md:px-0">
         {/* Header */}
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">

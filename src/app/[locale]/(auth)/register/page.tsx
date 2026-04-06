@@ -183,7 +183,7 @@ export default function RegisterPage() {
             variant="outline"
             onClick={handleGoogleAuth}
             disabled={isLoading}
-            className="w-full h-10 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-all flex items-center justify-center gap-3"
+            className="w-full h-11 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-all flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -213,13 +213,13 @@ export default function RegisterPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
               {/* Company + Name row */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="companyName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                      <FormLabel className="text-gray-700 dark:text-gray-300 text-sm font-medium">
                         {t('register.companyName')}
                       </FormLabel>
                       <FormControl>
@@ -228,7 +228,7 @@ export default function RegisterPage() {
                           <Input
                             placeholder="Firma Adı"
                             className={cn(
-                              'pl-9 h-10 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
+                              'pl-9 h-11 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
                               form.formState.errors.companyName && 'border-red-500'
                             )}
                             {...field}
@@ -245,7 +245,7 @@ export default function RegisterPage() {
                   name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                      <FormLabel className="text-gray-700 dark:text-gray-300 text-sm font-medium">
                         {t('register.fullName')}
                       </FormLabel>
                       <FormControl>
@@ -254,7 +254,7 @@ export default function RegisterPage() {
                           <Input
                             placeholder="Ad Soyad"
                             className={cn(
-                              'pl-9 h-10 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
+                              'pl-9 h-11 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
                               form.formState.errors.fullName && 'border-red-500'
                             )}
                             {...field}
@@ -268,13 +268,13 @@ export default function RegisterPage() {
               </div>
 
               {/* Email + Phone row */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                      <FormLabel className="text-gray-700 dark:text-gray-300 text-sm font-medium">
                         {t('register.email')}
                       </FormLabel>
                       <FormControl>
@@ -284,7 +284,7 @@ export default function RegisterPage() {
                             type="email"
                             placeholder="email@firma.com"
                             className={cn(
-                              'pl-9 h-10 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
+                              'pl-9 h-11 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
                               form.formState.errors.email && 'border-red-500'
                             )}
                             {...field}
@@ -301,7 +301,7 @@ export default function RegisterPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                      <FormLabel className="text-gray-700 dark:text-gray-300 text-sm font-medium">
                         {t('register.phone')}
                       </FormLabel>
                       <FormControl>
@@ -310,7 +310,7 @@ export default function RegisterPage() {
                           <Input
                             placeholder="0535 000 00 00"
                             className={cn(
-                              'pl-9 h-10 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
+                              'pl-9 h-11 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
                               form.formState.errors.phone && 'border-red-500'
                             )}
                             {...field}
@@ -324,13 +324,13 @@ export default function RegisterPage() {
               </div>
 
               {/* Password + Confirm row */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                      <FormLabel className="text-gray-700 dark:text-gray-300 text-sm font-medium">
                         {t('register.password')}
                       </FormLabel>
                       <FormControl>
@@ -340,7 +340,7 @@ export default function RegisterPage() {
                             type="password"
                             placeholder="••••••••"
                             className={cn(
-                              'pl-9 h-10 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
+                              'pl-9 h-11 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
                               form.formState.errors.password && 'border-red-500'
                             )}
                             {...field}
@@ -357,7 +357,7 @@ export default function RegisterPage() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-gray-300 text-xs font-medium">
+                      <FormLabel className="text-gray-700 dark:text-gray-300 text-sm font-medium">
                         {t('register.confirmPassword')}
                       </FormLabel>
                       <FormControl>
@@ -367,7 +367,7 @@ export default function RegisterPage() {
                             type="password"
                             placeholder="••••••••"
                             className={cn(
-                              'pl-9 h-10 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
+                              'pl-9 h-11 rounded-xl text-sm border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 transition-colors',
                               form.formState.errors.confirmPassword && 'border-red-500'
                             )}
                             {...field}
@@ -383,7 +383,7 @@ export default function RegisterPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all group"
+                className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all group"
               >
                 {isLoading ? t('register.registering') : t('register.register')}
                 {!isLoading && <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 transition-transform" />}
