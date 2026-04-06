@@ -81,7 +81,8 @@ export class WhatsAppService {
         messageId: response?.messages?.[0]?.id,
       }
     } catch (ctaError) {
-      logger.warn('CTA URL failed, trying hello_world template', ctaError)
+      const ctaDetail = ctaError instanceof Error ? ctaError.message : String(ctaError)
+      logger.warn('CTA URL failed, trying hello_world template', { error: ctaDetail, to: formattedTo })
     }
 
     // 2. Fallback: hello_world template + text message with link
@@ -117,10 +118,26 @@ export class WhatsAppService {
         messageId: templateResult?.messages?.[0]?.id,
       }
     } catch (templateError) {
-      logger.error('Template mesaj hatasi', templateError)
+      const errorDetail = templateError instanceof Error ? templateError.message : String(templateError)
+      logger.error('Template mesaj hatasi', { error: errorDetail, to: formattedTo, phoneNumberId: this.phoneNumberId })
+
+      // Parse WhatsApp API error for user-friendly message
+      let userMessage = 'WhatsApp mesajı gönderilemedi.'
+      if (errorDetail.includes('131030') || errorDetail.includes('recipient')) {
+        userMessage += ' Müşterinin WhatsApp numarasını kontrol edin.'
+      } else if (errorDetail.includes('190') || errorDetail.includes('access_token') || errorDetail.includes('OAuthException')) {
+        userMessage += ' WhatsApp API erişim anahtarı geçersiz veya süresi dolmuş. Ayarlardan güncelleyin.'
+      } else if (errorDetail.includes('131047') || errorDetail.includes('re-engage')) {
+        userMessage += ' Müşteriyle 24 saat içinde iletişim penceresi açık değil. Önce template mesaj gerekli.'
+      } else if (errorDetail.includes('100') || errorDetail.includes('parameter')) {
+        userMessage += ' API yapılandırma hatası. WhatsApp Phone ID ve Access Token ayarlarını kontrol edin.'
+      } else {
+        userMessage += ` Detay: ${errorDetail.substring(0, 200)}`
+      }
+
       return {
         success: false,
-        error: 'WhatsApp mesajı gönderilemedi. Lütfen müşterinin WhatsApp numarasını kontrol edin.',
+        error: userMessage,
       }
     }
   }
