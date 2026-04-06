@@ -112,11 +112,11 @@ type ProposalFormField = keyof ProposalFormData
 const customerSchema = z.object({
   id: z.string().min(1, 'Customer is required'),
   name: z.string(),
-  email: z.string().email(),
+  email: z.string(),
   phone: z.string(),
   address: z.string(),
   taxNumber: z.string(),
-  contactPersonId: z.string().min(1, 'Contact person is required'),
+  contactPersonId: z.string(),
 })
 
 const productItemSchema = z.object({
@@ -1348,7 +1348,10 @@ export default function EditProposalPage() {
       body: JSON.stringify(payload),
     })
     const result = await res.json()
-    if (!res.ok || !result.success) throw new Error(result.error || t('proposals.error'))
+    if (!res.ok || !result.success) {
+      const details = result.details?.map((d: { path?: string[]; message?: string }) => `${d.path?.join('.')}: ${d.message}`).join(', ')
+      throw new Error(details || result.error || t('proposals.error'))
+    }
     return result.data.id
   }
 
@@ -1392,6 +1395,15 @@ export default function EditProposalPage() {
   const onSubmit = async (data: ProposalFormData) => {
     await handleSaveAndSend('draft')
   }
+
+  // Show toast when form validation fails on submit
+  const handleFormSubmit = handleSubmit(onSubmit, (formErrors) => {
+    const firstError = Object.values(formErrors).find(e => e?.message)
+    const nested = Object.values(formErrors).flatMap(e => e && typeof e === 'object' && 'message' in e ? [] : Object.values(e || {})).find((e: unknown) => e && typeof e === 'object' && 'message' in (e as Record<string, unknown>))
+    const msg = (firstError?.message || (nested as { message?: string } | undefined)?.message || t('proposals.error')) as string
+    toast.error(msg)
+    logger.error('Form validation failed', formErrors)
+  })
 
   // Loading state
   if (isLoading || !isDataLoaded) {
@@ -1448,7 +1460,7 @@ export default function EditProposalPage() {
           <p className="text-sm text-muted-foreground mt-1 ml-11">{t('proposals.editDescription')}</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleFormSubmit} className="space-y-6">
           {/* Stepper */}
           <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm p-4 md:p-6">
             <div className="flex justify-between items-center">

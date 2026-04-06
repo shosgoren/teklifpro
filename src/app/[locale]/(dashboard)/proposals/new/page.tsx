@@ -110,11 +110,11 @@ type ProposalFormField = keyof ProposalFormData
 const customerSchema = z.object({
   id: z.string().min(1, 'Customer is required'),
   name: z.string(),
-  email: z.string().email(),
+  email: z.string(),
   phone: z.string(),
   address: z.string(),
   taxNumber: z.string(),
-  contactPersonId: z.string().min(1, 'Contact person is required'),
+  contactPersonId: z.string(),
 })
 
 const productItemSchema = z.object({
