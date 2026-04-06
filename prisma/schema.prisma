@@ -105,6 +105,7 @@ model User {
   customerNotes           CustomerNote[]
 
   @@unique([tenantId, email])
+  @@index([tenantId, role])
   @@map("users")
 }
 
@@ -199,6 +200,7 @@ model CustomerContact {
   customer    Customer  @relation(fields: [customerId], references: [id])
   proposals   Proposal[]
 
+  @@index([customerId])
   @@map("customer_contacts")
 }
 
@@ -372,6 +374,7 @@ model BomItem {
   material      Product        @relation(fields: [materialId], references: [id])
 
   @@index([bomId])
+  @@index([materialId])
   @@map("bom_items")
 }
 
@@ -420,6 +423,7 @@ model ProductSupplier {
   supplier        Supplier  @relation(fields: [supplierId], references: [id])
 
   @@unique([productId, supplierId])
+  @@index([supplierId])
   @@map("product_suppliers")
 }
 
@@ -649,6 +653,7 @@ model ProposalItem {
   proposal      Proposal  @relation(fields: [proposalId], references: [id], onDelete: Cascade)
   product       Product?  @relation(fields: [productId], references: [id])
 
+  @@index([proposalId])
   @@map("proposal_items")
 }
 

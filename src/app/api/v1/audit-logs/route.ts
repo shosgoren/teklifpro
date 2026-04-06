@@ -389,5 +389,13 @@ export const GET = withAuth(
   async (req: NextRequest) => (await wrappedHandleGet(req)) as NextResponse,
   ['audit.read']
 );
-export const POST = withErrorHandling(handlePost);
-export const DELETE = withErrorHandling(handleDelete);
+const wrappedHandlePost = withErrorHandling(handlePost);
+export const POST = withAuth(
+  async (req: NextRequest) => (await wrappedHandlePost(req)) as NextResponse,
+  ['audit.write']
+);
+const wrappedHandleDelete = withErrorHandling(handleDelete);
+export const DELETE = withAuth(
+  async (req: NextRequest) => (await wrappedHandleDelete(req)) as NextResponse,
+  ['audit.write']
+);

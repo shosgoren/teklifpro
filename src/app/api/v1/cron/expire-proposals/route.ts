@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { prisma } from '@/shared/utils/prisma';
 import { WhatsAppService } from '@/infrastructure/services/whatsapp/WhatsAppService';
 import { Logger } from '@/infrastructure/logger';
@@ -8,10 +9,17 @@ const logger = new Logger('CronExpireProposalsAPI');
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // 60s timeout for cron
 
+function verifyCronSecret(authHeader: string | null): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || !authHeader?.startsWith('Bearer ')) return false;
+  const token = authHeader.slice(7);
+  if (token.length !== secret.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(secret));
+}
+
 export async function GET(request: NextRequest) {
-  // Verify cron secret
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Verify cron secret with timing-safe comparison
+  if (!verifyCronSecret(request.headers.get('authorization'))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

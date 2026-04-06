@@ -51,7 +51,8 @@ function verifyWebhookSignature(
     .update(payload)
     .digest('hex')
 
-  return hash === signatureHeader
+  if (hash.length !== signatureHeader.length) return false
+  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signatureHeader))
 }
 
 // ==================== TENANT RESOLUTION ====================
