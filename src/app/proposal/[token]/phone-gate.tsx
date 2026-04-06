@@ -113,7 +113,7 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
           </div>
 
           {/* 4 Digit Input */}
-          <div className="flex justify-center gap-3 mb-6" onPaste={handlePaste}>
+          <div className="flex justify-center gap-3 mb-6" role="form" aria-label="Doğrulama kodu" onPaste={handlePaste}>
             {digits.map((digit, i) => (
               <input
                 key={i}
@@ -125,18 +125,21 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
                 onChange={(e) => handleChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
                 disabled={isLoading}
+                aria-label={`Doğrulama kodu rakam ${i + 1}`}
                 className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all disabled:opacity-50 bg-white"
               />
             ))}
           </div>
 
           {/* Error */}
-          {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl mb-4">
-              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
+          <div aria-live="polite">
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-xl mb-4">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+          </div>
 
           {/* Loading */}
           {isLoading && (

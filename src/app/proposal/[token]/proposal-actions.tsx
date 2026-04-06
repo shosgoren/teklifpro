@@ -114,6 +114,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         <button
           onClick={() => setActiveModal('accept')}
           disabled={isLoading}
+          aria-label="Teklifi kabul et"
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-emerald-500/30"
         >
           <CheckCircle className="w-4 h-4" />
@@ -123,6 +124,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         <button
           onClick={() => setActiveModal('revision')}
           disabled={isLoading}
+          aria-label="Teklif için revize talep et"
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-2xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-amber-500/30"
         >
           <RotateCw className="w-4 h-4" />
@@ -132,6 +134,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         <button
           onClick={() => setActiveModal('reject')}
           disabled={isLoading}
+          aria-label="Teklifi reddet"
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-red-500/30"
         >
           <XCircle className="w-4 h-4" />

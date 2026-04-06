@@ -187,9 +187,10 @@ export function NotificationCenter({
                 </p>
               </div>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul role="list" className="divide-y divide-gray-100">
                 {sortedNotifications.map((notification) => (
                   <li
+                    role="listitem"
                     key={notification.id}
                     className={`px-4 py-3 transition-colors duration-200 cursor-pointer ${
                       notification.isRead
