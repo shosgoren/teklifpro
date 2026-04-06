@@ -83,6 +83,7 @@ function mockFetchError(status: number, body: unknown = {}) {
 describe('ParasutClient', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ParasutClient.resetRateLimit()
   })
 
   // --------------------------------------------------

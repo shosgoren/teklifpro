@@ -1,378 +1,420 @@
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { Logger } from '@/infrastructure/logger';
+/**
+ * Parasut Webhook Handler
+ *
+ * Receives real-time events from Parasut:
+ * - contact.created / contact.updated
+ * - product.created / product.updated
+ * - sales_offer.updated (status changes)
+ *
+ * DB operations are fully implemented.
+ * Idempotency is DB-based via ParasutSyncLog eventId lookup.
+ */
+import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
+import { prisma } from '@/shared/utils/prisma'
+import { Logger } from '@/infrastructure/logger'
 
-const logger = new Logger('ParasutWebhook');
+const logger = new Logger('ParasutWebhook')
 
 interface ParasutWebhookPayload {
-  event_type: string;
-  created_at: string;
-  id: string;
-  resource_type: string;
+  event_type: string
+  created_at: string
+  id: string
+  resource_type: string
   data: {
-    id: string;
-    type: string;
-    attributes: {
-      [key: string]: any;
-    };
-  };
+    id: string
+    type: string
+    attributes: Record<string, any>
+  }
 }
 
-interface ParasutSyncLogEntry {
-  id: string;
-  tenantId: string;
-  eventType: string;
-  resourceType: string;
-  resourceId: string;
-  status: 'success' | 'failed' | 'skipped';
-  details?: string;
-  timestamp: Date;
-}
+// ==================== SIGNATURE VERIFICATION ====================
 
-// Store for idempotency - in production, use Redis or database
-const processedEventIds = new Set<string>();
-
-/**
- * Verifies webhook authenticity using HMAC
- */
 function verifyWebhookSignature(
   payload: string,
   signatureHeader: string | null,
 ): boolean {
   if (!signatureHeader) {
-    logger.warn('Missing X-Parasut-Webhook-Signature header');
-    return false;
+    logger.warn('Missing X-Parasut-Webhook-Signature header')
+    return false
   }
 
-  const webhookSecret = process.env.PARASUT_WEBHOOK_SECRET || '';
-
+  const webhookSecret = process.env.PARASUT_WEBHOOK_SECRET || ''
   if (!webhookSecret) {
-    logger.error('PARASUT_WEBHOOK_SECRET not configured');
-    return false;
+    logger.error('PARASUT_WEBHOOK_SECRET not configured')
+    return false
   }
 
-  // Calculate HMAC SHA256
   const hash = crypto
     .createHmac('sha256', webhookSecret)
     .update(payload)
-    .digest('hex');
+    .digest('hex')
 
-  const expectedSignature = hash;
-  const isValid = signatureHeader === expectedSignature;
-
-  if (!isValid) {
-    logger.warn('Invalid webhook signature', { received: signatureHeader });
-  }
-
-  return isValid;
+  return hash === signatureHeader
 }
 
-/**
- * Handles contact.created and contact.updated events
- */
+// ==================== TENANT RESOLUTION ====================
+
+async function resolveTenantId(request: NextRequest): Promise<string | null> {
+  // Option 1: From custom header
+  const tenantIdHeader = request.headers.get('x-tenant-id')
+  if (tenantIdHeader) {
+    // Verify tenant exists
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantIdHeader },
+      select: { id: true, parasutSyncEnabled: true },
+    })
+    if (tenant?.parasutSyncEnabled) return tenant.id
+  }
+
+  // Option 2: From query parameter
+  const url = new URL(request.url)
+  const tenantIdParam = url.searchParams.get('tenant_id')
+  if (tenantIdParam) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantIdParam },
+      select: { id: true, parasutSyncEnabled: true },
+    })
+    if (tenant?.parasutSyncEnabled) return tenant.id
+  }
+
+  return null
+}
+
+// ==================== IDEMPOTENCY CHECK (DB-based) ====================
+
+async function isEventProcessed(eventId: string): Promise<boolean> {
+  const existing = await prisma.parasutSyncLog.findFirst({
+    where: {
+      errors: { path: ['eventId'], equals: eventId },
+    },
+    select: { id: true },
+  })
+  return !!existing
+}
+
+// ==================== EVENT HANDLERS ====================
+
 async function handleContactEvent(
   event: ParasutWebhookPayload,
   tenantId: string,
-): Promise<ParasutSyncLogEntry> {
-  try {
-    const { data } = event;
-    const contactId = data.id;
-    const attributes = data.attributes;
+): Promise<void> {
+  const { data } = event
+  const attrs = data.attributes
 
-    const {
-      email = '',
-      name = '',
-      phone = '',
-      tax_number = '',
-      tax_office = '',
-    } = attributes;
+  const name = attrs.name || ''
+  const isArchived = attrs.archived === true
 
-    logger.info('Processing contact event', {
-      eventType: event.event_type,
-      contactId,
-      name,
-    });
-
-    // In production:
-    // 1. Check if contact already exists in database
-    // 2. Create or update contact with attributes
-    // 3. Link to tenant if needed
-
-    // Simulated database operation
-    const isUpdate = event.event_type === 'contact.updated';
-
-    logger.info('Contact synced', {
-      contactId,
-      operation: isUpdate ? 'update' : 'create',
-      email,
-    });
-
-    // Log successful sync
-    const logEntry: ParasutSyncLogEntry = {
-      id: `sync_${Date.now()}_${Math.random()}`,
-      tenantId,
-      eventType: event.event_type,
-      resourceType: 'contact',
-      resourceId: contactId,
-      status: 'success',
-      details: `Contact ${isUpdate ? 'updated' : 'created'}: ${name}`,
-      timestamp: new Date(),
-    };
-
-    // Store log in database
-    // In production: await db.parasutSyncLog.create(logEntry)
-
-    return logEntry;
-  } catch (error) {
-    logger.error('Error handling contact event', error);
-
-    const logEntry: ParasutSyncLogEntry = {
-      id: `sync_${Date.now()}_${Math.random()}`,
-      tenantId,
-      eventType: event.event_type,
-      resourceType: 'contact',
-      resourceId: event.data.id,
-      status: 'failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date(),
-    };
-
-    // In production: await db.parasutSyncLog.create(logEntry)
-
-    return logEntry;
+  if (isArchived) {
+    logger.info('Skipping archived contact', { contactId: data.id })
+    // Soft-deactivate if exists
+    await prisma.customer.updateMany({
+      where: { tenantId, parasutId: data.id },
+      data: { isActive: false },
+    })
+    return
   }
+
+  await prisma.customer.upsert({
+    where: {
+      tenantId_parasutId: {
+        tenantId,
+        parasutId: data.id,
+      },
+    },
+    create: {
+      tenantId,
+      parasutId: data.id,
+      name,
+      shortName: attrs.short_name || null,
+      companyType: 'COMPANY',
+      taxNumber: attrs.tax_number || null,
+      taxOffice: attrs.tax_office || null,
+      email: attrs.email || null,
+      phone: attrs.phone || null,
+      fax: attrs.fax || null,
+      address: attrs.address || null,
+      city: attrs.city || null,
+      district: attrs.district || null,
+      balance: attrs.balance ? parseFloat(attrs.balance) : 0,
+      lastSyncAt: new Date(),
+    },
+    update: {
+      name,
+      shortName: attrs.short_name || null,
+      taxNumber: attrs.tax_number || null,
+      taxOffice: attrs.tax_office || null,
+      email: attrs.email || null,
+      phone: attrs.phone || null,
+      fax: attrs.fax || null,
+      address: attrs.address || null,
+      city: attrs.city || null,
+      district: attrs.district || null,
+      balance: attrs.balance ? parseFloat(attrs.balance) : 0,
+      lastSyncAt: new Date(),
+      isActive: true,
+    },
+  })
+
+  logger.info('Contact synced via webhook', {
+    contactId: data.id,
+    name,
+    operation: event.event_type,
+  })
 }
 
-/**
- * Handles product.created and product.updated events
- */
 async function handleProductEvent(
   event: ParasutWebhookPayload,
   tenantId: string,
-): Promise<ParasutSyncLogEntry> {
-  try {
-    const { data } = event;
-    const productId = data.id;
-    const attributes = data.attributes;
+): Promise<void> {
+  const { data } = event
+  const attrs = data.attributes
 
-    const {
-      name = '',
-      code = '',
-      unit_type = '',
-      list_price = 0,
-      archived = false,
-    } = attributes;
+  const name = attrs.name || ''
+  const isArchived = attrs.archived === true
 
-    logger.info('Processing product event', {
-      eventType: event.event_type,
-      productId,
-      name,
-    });
+  if (isArchived) {
+    logger.info('Skipping archived product', { productId: data.id })
+    await prisma.product.updateMany({
+      where: { tenantId, parasutId: data.id },
+      data: { isActive: false },
+    })
+    return
+  }
 
-    // In production:
-    // 1. Check if product already exists in database
-    // 2. Create or update product with attributes
-    // 3. Link to tenant
-
-    // Simulated database operation
-    const isUpdate = event.event_type === 'product.updated';
-
-    logger.info('Product synced', {
-      productId,
-      operation: isUpdate ? 'update' : 'create',
-      name,
-      price: list_price,
-      archived,
-    });
-
-    // Log successful sync
-    const logEntry: ParasutSyncLogEntry = {
-      id: `sync_${Date.now()}_${Math.random()}`,
+  await prisma.product.upsert({
+    where: {
+      tenantId_parasutId: {
+        tenantId,
+        parasutId: data.id,
+      },
+    },
+    create: {
       tenantId,
-      eventType: event.event_type,
-      resourceType: 'product',
-      resourceId: productId,
-      status: archived ? 'skipped' : 'success',
-      details: `Product ${isUpdate ? 'updated' : 'created'}: ${name} (${code})`,
-      timestamp: new Date(),
-    };
+      parasutId: data.id,
+      name,
+      code: attrs.code || null,
+      unit: attrs.unit || 'Adet',
+      listPrice: attrs.list_price ? parseFloat(attrs.list_price) : 0,
+      currency: attrs.currency === 'TRL' ? 'TRY' : (attrs.currency || 'TRY'),
+      vatRate: attrs.vat_rate ? parseFloat(attrs.vat_rate) : 20,
+      trackStock: attrs.inventory_tracking || false,
+      lastSyncAt: new Date(),
+    },
+    update: {
+      name,
+      code: attrs.code || null,
+      unit: attrs.unit || 'Adet',
+      listPrice: attrs.list_price ? parseFloat(attrs.list_price) : 0,
+      currency: attrs.currency === 'TRL' ? 'TRY' : (attrs.currency || 'TRY'),
+      vatRate: attrs.vat_rate ? parseFloat(attrs.vat_rate) : 20,
+      trackStock: attrs.inventory_tracking || false,
+      lastSyncAt: new Date(),
+      isActive: true,
+    },
+  })
 
-    // In production: await db.parasutSyncLog.create(logEntry)
+  logger.info('Product synced via webhook', {
+    productId: data.id,
+    name,
+    operation: event.event_type,
+  })
+}
 
-    return logEntry;
-  } catch (error) {
-    logger.error('Error handling product event', error);
+async function handleSalesOfferEvent(
+  event: ParasutWebhookPayload,
+  tenantId: string,
+): Promise<void> {
+  const { data } = event
+  const attrs = data.attributes
 
-    const logEntry: ParasutSyncLogEntry = {
-      id: `sync_${Date.now()}_${Math.random()}`,
+  // Find the linked proposal
+  const proposal = await prisma.proposal.findFirst({
+    where: {
       tenantId,
-      eventType: event.event_type,
-      resourceType: 'product',
-      resourceId: event.data.id,
-      status: 'failed',
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date(),
-    };
+      parasutOfferId: data.id,
+      deletedAt: null,
+    },
+    select: { id: true, status: true },
+  })
 
-    // In production: await db.parasutSyncLog.create(logEntry)
+  if (!proposal) {
+    logger.info('No linked proposal for Parasut offer', { offerId: data.id })
+    return
+  }
 
-    return logEntry;
+  // Map Parasut status to TeklifPro status
+  const parasutStatus = attrs.status as string
+  const statusMap: Record<string, string> = {
+    accepted: 'ACCEPTED',
+    rejected: 'REJECTED',
+  }
+
+  const newStatus = statusMap[parasutStatus]
+  if (newStatus && newStatus !== proposal.status) {
+    await prisma.proposal.update({
+      where: { id: proposal.id },
+      data: {
+        status: newStatus as any,
+        respondedAt: new Date(),
+        parasutLastSyncAt: new Date(),
+      },
+    })
+
+    // Create activity log
+    await prisma.proposalActivity.create({
+      data: {
+        proposalId: proposal.id,
+        type: newStatus === 'ACCEPTED' ? 'ACCEPTED' : 'REJECTED',
+        description: `Paraşüt üzerinden ${parasutStatus === 'accepted' ? 'onaylandı' : 'reddedildi'}`,
+        metadata: { source: 'parasut_webhook', parasutOfferId: data.id },
+      },
+    })
+
+    logger.info('Proposal status updated via webhook', {
+      proposalId: proposal.id,
+      oldStatus: proposal.status,
+      newStatus,
+    })
   }
 }
 
-/**
- * Extracts tenant ID from webhook
- * In production, you'd get this from authentication headers or database lookup
- */
-function extractTenantId(request: NextRequest): string {
-  // Option 1: From custom header
-  const tenantIdHeader = request.headers.get('x-tenant-id');
-  if (tenantIdHeader) {
-    return tenantIdHeader;
+// ==================== RATE LIMITING ====================
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(tenantId: string): boolean {
+  const now = Date.now()
+  const limit = rateLimitMap.get(tenantId)
+
+  if (!limit || now > limit.resetAt) {
+    rateLimitMap.set(tenantId, { count: 1, resetAt: now + 60_000 }) // 60s window
+    return true
   }
 
-  // Option 2: From authorization token (JWT decode)
-  // const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  // const decoded = decodeJwt(token);
-  // return decoded.tenantId;
-
-  // Option 3: From request path
-  const url = new URL(request.url);
-  const tenantIdParam = url.searchParams.get('tenant_id');
-  if (tenantIdParam) {
-    return tenantIdParam;
+  if (limit.count >= 100) { // max 100 webhook events per minute per tenant
+    return false
   }
 
-  // Fallback
-  return 'unknown_tenant';
+  limit.count++
+  return true
 }
 
-/**
- * POST handler for Paraşüt webhook events
- */
+// Clean up old rate limit entries periodically
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, val] of rateLimitMap) {
+    if (now > val.resetAt) rateLimitMap.delete(key)
+  }
+}, 300_000) // every 5 minutes
+
+// ==================== MAIN HANDLER ====================
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    // Get raw body for signature verification
-    const rawBody = await request.text();
-    const signature = request.headers.get('x-parasut-webhook-signature');
+    const rawBody = await request.text()
+    const signature = request.headers.get('x-parasut-webhook-signature')
 
-    // Verify webhook signature
+    // Verify signature
     if (!verifyWebhookSignature(rawBody, signature)) {
-      logger.warn('Webhook signature verification failed');
-      return NextResponse.json(
-        { error: 'Invalid signature' },
-        { status: 403 }
-      );
+      logger.warn('Webhook signature verification failed')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 })
     }
 
-    // Parse JSON
-    const payload: ParasutWebhookPayload = JSON.parse(rawBody);
+    const payload: ParasutWebhookPayload = JSON.parse(rawBody)
 
     // Validate payload
     if (!payload.event_type || !payload.data) {
-      logger.warn('Invalid webhook payload');
-      return NextResponse.json(
-        { error: 'Invalid payload' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
     }
 
-    // Extract tenant ID
-    const tenantId = extractTenantId(request);
+    // Resolve tenant
+    const tenantId = await resolveTenantId(request)
+    if (!tenantId) {
+      logger.warn('Could not resolve tenant for webhook')
+      return NextResponse.json({ error: 'Unknown tenant' }, { status: 400 })
+    }
 
-    // Idempotency check
-    const eventId = payload.id;
-    if (processedEventIds.has(eventId)) {
-      logger.info('Duplicate event, skipping', { eventId });
+    // Rate limit
+    if (!checkRateLimit(tenantId)) {
+      logger.warn('Webhook rate limit exceeded', { tenantId })
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
+
+    // DB-based idempotency check
+    const eventId = payload.id
+    if (eventId && await isEventProcessed(eventId)) {
       return NextResponse.json(
         { success: true, message: 'Event already processed' },
         { status: 200 }
-      );
+      )
     }
 
-    processedEventIds.add(eventId);
-
-    logger.info('Processing Paraşüt webhook', {
+    logger.info('Processing Parasut webhook', {
       eventType: payload.event_type,
-      resourceType: payload.resource_type,
+      resourceId: payload.data.id,
       tenantId,
       eventId,
-    });
+    })
 
-    let logEntry: ParasutSyncLogEntry;
+    // Route to handler
+    let status: 'COMPLETED' | 'FAILED' = 'COMPLETED'
+    let errorMsg: string | null = null
 
-    // Route to appropriate handler
-    if (
-      payload.event_type === 'contact.created' ||
-      payload.event_type === 'contact.updated'
-    ) {
-      logEntry = await handleContactEvent(payload, tenantId);
-    } else if (
-      payload.event_type === 'product.created' ||
-      payload.event_type === 'product.updated'
-    ) {
-      logEntry = await handleProductEvent(payload, tenantId);
-    } else {
-      // Unknown event type - log and skip
-      logger.warn('Unknown event type', {
-        eventType: payload.event_type,
-      });
+    try {
+      switch (payload.event_type) {
+        case 'contact.created':
+        case 'contact.updated':
+          await handleContactEvent(payload, tenantId)
+          break
+        case 'product.created':
+        case 'product.updated':
+          await handleProductEvent(payload, tenantId)
+          break
+        case 'sales_offer.updated':
+          await handleSalesOfferEvent(payload, tenantId)
+          break
+        default:
+          logger.warn('Unknown event type', { eventType: payload.event_type })
+          status = 'COMPLETED' // Don't fail on unknown events
+      }
+    } catch (err) {
+      status = 'FAILED'
+      errorMsg = err instanceof Error ? err.message : 'Unknown error'
+      logger.error('Webhook handler error', err)
+    }
 
-      logEntry = {
-        id: `sync_${Date.now()}_${Math.random()}`,
+    // Log to DB (also serves as idempotency store)
+    await prisma.parasutSyncLog.create({
+      data: {
         tenantId,
-        eventType: payload.event_type,
-        resourceType: payload.resource_type,
-        resourceId: payload.data.id,
-        status: 'skipped',
-        details: 'Unknown event type',
-        timestamp: new Date(),
-      };
-
-      // In production: await db.parasutSyncLog.create(logEntry)
-    }
-
-    // Clean up old processed event IDs periodically
-    if (processedEventIds.size > 10000) {
-      processedEventIds.clear();
-    }
-
-    logger.info('Webhook processed', {
-      eventId,
-      logEntryId: logEntry.id,
-      status: logEntry.status,
-    });
+        entityType: payload.resource_type || payload.event_type.split('.')[0],
+        direction: 'PULL',
+        status,
+        recordCount: status === 'COMPLETED' ? 1 : 0,
+        errorCount: status === 'FAILED' ? 1 : 0,
+        errors: eventId ? { eventId, error: errorMsg } : undefined,
+        completedAt: new Date(),
+      },
+    })
 
     return NextResponse.json(
-      {
-        success: true,
-        message: 'Webhook processed',
-        syncLogId: logEntry.id,
-      },
+      { success: true, message: 'Webhook processed' },
       { status: 200 }
-    );
+    )
   } catch (error) {
-    logger.error('Error processing webhook', error);
-
-    // Return 200 OK to prevent Paraşüt retries
-    // but log the error for investigation
+    logger.error('Error processing webhook', error)
+    // Return 200 to prevent Parasut retries on parse errors
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Processing error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { success: false, message: 'Processing error' },
       { status: 200 }
-    );
+    )
   }
 }
 
-/**
- * GET handler - not used by Paraşüt but good to have
- */
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json(
-    { message: 'Paraşüt webhook endpoint' },
+    { message: 'Parasut webhook endpoint', status: 'active' },
     { status: 200 }
-  );
+  )
 }

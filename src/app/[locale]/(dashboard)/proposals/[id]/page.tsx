@@ -25,6 +25,11 @@ import {
   Phone,
   QrCode,
   X,
+  CloudUpload,
+  RefreshCw,
+  ExternalLink,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -122,6 +127,91 @@ export default function ProposalDetailPage() {
 
   const proposal = data?.data;
   const [showQR, setShowQR] = useState(false);
+  const [parasutLoading, setParasutLoading] = useState<string | null>(null); // 'push' | 'pull' | 'pdf' | 'share'
+
+  // Parasut integration handlers
+  const handleParasutPush = async () => {
+    setParasutLoading('push');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut`, { method: 'POST' });
+      const result = await res.json();
+      if (result.success) {
+        toast.success('Teklif Paraşüt\'e gönderildi!');
+        window.location.reload();
+      } else {
+        toast.error(result.error || 'Paraşüt\'e gönderme başarısız');
+      }
+    } catch {
+      toast.error('Paraşüt bağlantı hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
+
+  const handleParasutPull = async () => {
+    setParasutLoading('pull');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut`);
+      const result = await res.json();
+      if (result.success) {
+        toast.success(`Paraşüt durumu: ${result.data.parasutStatus}`);
+        if (result.data.teklifproStatus !== proposal?.status) {
+          window.location.reload();
+        }
+      } else {
+        toast.error(result.error || 'Durum çekme başarısız');
+      }
+    } catch {
+      toast.error('Paraşüt bağlantı hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
+
+  const handleParasutPdf = async () => {
+    setParasutLoading('pdf');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut/pdf`, { method: 'POST' });
+      const result = await res.json();
+      if (result.success && result.data.pdfUrl) {
+        window.open(result.data.pdfUrl, '_blank');
+        toast.success('PDF hazır!');
+      } else if (result.success) {
+        toast.info('PDF hazırlanıyor, lütfen birkaç saniye sonra tekrar deneyin');
+      } else {
+        toast.error(result.error || 'PDF oluşturulamadı');
+      }
+    } catch {
+      toast.error('PDF oluşturma hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
+
+  const handleParasutShare = async () => {
+    if (!proposal?.customer?.email) {
+      toast.error('Müşteri e-posta adresi bulunamadı');
+      return;
+    }
+    setParasutLoading('share');
+    try {
+      const res = await fetch(`/api/v1/proposals/${proposalId}/parasut/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: proposal.customer.email }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast.success(`Teklif ${proposal.customer.email} adresine gönderildi!`);
+      } else {
+        toast.error(result.error || 'E-posta gönderilemedi');
+      }
+    } catch {
+      toast.error('E-posta gönderme hatası');
+    } finally {
+      setParasutLoading(null);
+    }
+  };
 
   const proposalLink = proposal?.publicToken
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}/proposal/${proposal.publicToken}`
@@ -578,6 +668,95 @@ export default function ProposalDetailPage() {
                 </div>
               </Card>
             )}
+
+            {/* Parasut Integration Card */}
+            <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-emerald-500">
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Paraşüt Entegrasyonu</h3>
+                  {proposal.parasutOfferId && (
+                    <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-[10px]">
+                      Bağlı
+                    </Badge>
+                  )}
+                </div>
+
+                {proposal.parasutOfferId ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Paraşüt Teklif ID</p>
+                      <p className="text-sm font-mono font-medium text-gray-900 dark:text-white">{proposal.parasutOfferId}</p>
+                      {proposal.parasutLastSyncAt && (
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          Son sync: {new Date(proposal.parasutLastSyncAt).toLocaleString('tr-TR')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        disabled={!!parasutLoading}
+                        onClick={handleParasutPull}
+                      >
+                        {parasutLoading === 'pull' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                        Durum Çek
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        disabled={!!parasutLoading}
+                        onClick={handleParasutPush}
+                      >
+                        {parasutLoading === 'push' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CloudUpload className="h-3 w-3 mr-1" />}
+                        Güncelle
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        disabled={!!parasutLoading}
+                        onClick={handleParasutPdf}
+                      >
+                        {parasutLoading === 'pdf' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <ExternalLink className="h-3 w-3 mr-1" />}
+                        PDF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        disabled={!!parasutLoading || !proposal.customer?.email}
+                        onClick={handleParasutShare}
+                      >
+                        {parasutLoading === 'share' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                        E-posta
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Bu teklif henüz Paraşüt ile senkronize edilmemiş.
+                    </p>
+                    <Button
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      size="sm"
+                      disabled={!!parasutLoading}
+                      onClick={handleParasutPush}
+                    >
+                      {parasutLoading === 'push' ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <CloudUpload className="h-4 w-4 mr-2" />
+                      )}
+                      Paraşüt&apos;e Gönder
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
 
             {/* Activity Feed */}
             <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">

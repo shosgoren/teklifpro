@@ -17,6 +17,35 @@ jest.mock('@/infrastructure/logger', () => ({
   })),
 }))
 
+jest.mock('@/shared/utils/prisma', () => ({
+  prisma: {
+    tenant: {
+      findUnique: jest.fn().mockImplementation(({ where }: any) =>
+        Promise.resolve({ id: where.id, parasutSyncEnabled: true })
+      ),
+    },
+    customer: {
+      upsert: jest.fn().mockResolvedValue({ id: 'cust-1' }),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
+    product: {
+      upsert: jest.fn().mockResolvedValue({ id: 'prod-1' }),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
+    proposal: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockResolvedValue({}),
+    },
+    proposalActivity: {
+      create: jest.fn().mockResolvedValue({}),
+    },
+    parasutSyncLog: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({ id: 'sync-1' }),
+    },
+  },
+}))
+
 // ============================================================
 // Helper: Mock NextRequest oluştur
 // ============================================================
@@ -438,7 +467,7 @@ describe('Parasut Webhook', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(data.syncLogId).toBeDefined()
+      expect(data.message).toBeDefined()
     })
 
     it('contact.created olayi ile sync islemi basarili olmali', async () => {
@@ -493,7 +522,7 @@ describe('Parasut Webhook', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(data.syncLogId).toBeDefined()
+      expect(data.message).toBeDefined()
     })
 
     it('product.created olayi ile sync islemi basarili olmali', async () => {

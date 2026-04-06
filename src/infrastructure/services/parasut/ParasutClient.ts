@@ -202,12 +202,45 @@ export class ParasutClient {
     throw new Error('PARASUT_TOKEN_EXPIRED')
   }
 
+  // ==================== RATE LIMITING ====================
+  // Parasut limit: 10 requests per 10 seconds
+  private static requestTimestamps: number[] = []
+
+  /** Reset rate limiter — for testing only */
+  static resetRateLimit(): void {
+    ParasutClient.requestTimestamps = []
+  }
+
+  private async waitForRateLimit(): Promise<void> {
+    const now = Date.now()
+    const windowMs = 10_000 // 10 seconds
+    const maxRequests = 9 // Stay under 10 to be safe
+
+    // Remove timestamps older than the window
+    ParasutClient.requestTimestamps = ParasutClient.requestTimestamps.filter(
+      (ts) => now - ts < windowMs
+    )
+
+    if (ParasutClient.requestTimestamps.length >= maxRequests) {
+      // Wait until the oldest request falls outside the window
+      const oldestInWindow = ParasutClient.requestTimestamps[0]
+      const waitMs = windowMs - (now - oldestInWindow) + 100 // +100ms buffer
+      if (waitMs > 0) {
+        logger.info(`Rate limit: waiting ${waitMs}ms before Parasut API call`)
+        await new Promise((resolve) => setTimeout(resolve, waitMs))
+      }
+    }
+
+    ParasutClient.requestTimestamps.push(Date.now())
+  }
+
   // ==================== API HELPERS ====================
 
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    await this.waitForRateLimit()
     const token = await this.getValidToken()
 
     const response = await fetch(
