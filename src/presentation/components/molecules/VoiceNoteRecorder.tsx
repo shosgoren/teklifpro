@@ -66,13 +66,22 @@ export function VoiceNoteRecorder({
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
 
+      // Determine best supported audio format
+      // Safari/iOS: only supports audio/mp4 or audio/aac
+      // Chrome/Firefox: prefer audio/webm;codecs=opus
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/webm')
           ? 'audio/webm'
-          : 'audio/mp4'
+          : MediaRecorder.isTypeSupported('audio/mp4')
+            ? 'audio/mp4'
+            : MediaRecorder.isTypeSupported('audio/aac')
+              ? 'audio/aac'
+              : ''  // let browser pick default
 
-      const recorder = new MediaRecorder(stream, { mimeType })
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream)
       mediaRecorderRef.current = recorder
       chunksRef.current = []
 
@@ -81,7 +90,8 @@ export function VoiceNoteRecorder({
       }
 
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: mimeType })
+        const actualMime = recorder.mimeType || mimeType || 'audio/webm'
+        const blob = new Blob(chunksRef.current, { type: actualMime })
 
         // Client-side security: validate size (max 500KB)
         if (blob.size > 512_000) {
@@ -153,11 +163,25 @@ export function VoiceNoteRecorder({
       setIsPlaying(false)
       return
     }
-    const audio = new Audio(value)
+    // Convert data URL to blob URL for better cross-browser playback
+    let src = value
+    try {
+      const [header, base64] = value.split(';base64,')
+      const mime = header.replace('data:', '')
+      const binary = atob(base64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      src = URL.createObjectURL(new Blob([bytes], { type: mime }))
+    } catch { /* fallback to data URL */ }
+    const audio = new Audio(src)
     audioRef.current = audio
     audio.onended = () => { setIsPlaying(false); audioRef.current = null }
-    audio.play()
-    setIsPlaying(true)
+    audio.onerror = () => { setIsPlaying(false); audioRef.current = null; logger.error('Audio playback failed') }
+    audio.play().then(() => setIsPlaying(true)).catch((err) => {
+      logger.error('Audio play error:', err)
+      setIsPlaying(false)
+      audioRef.current = null
+    })
   }, [value])
 
   const deleteRecording = useCallback(() => {

@@ -26,10 +26,28 @@ export function VoiceNotePlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const animRef = useRef<number | null>(null)
 
-  // Security: validate audio data URL on mount
+  const blobUrlRef = useRef<string | null>(null)
+
+  // Security: validate audio data URL on mount + create blob URL for better compatibility
   useEffect(() => {
     if (!audioData.startsWith('data:audio/') || !audioData.includes(';base64,')) {
       setIsValid(false)
+      return
+    }
+    // Convert data URL to blob URL for better cross-browser audio playback
+    try {
+      const [header, base64] = audioData.split(';base64,')
+      const mimeType = header.replace('data:', '')
+      const binary = atob(base64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const blob = new Blob([bytes], { type: mimeType })
+      blobUrlRef.current = URL.createObjectURL(blob)
+    } catch {
+      setIsValid(false)
+    }
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
     }
   }, [audioData])
 
@@ -68,7 +86,7 @@ export function VoiceNotePlayer({
     }
 
     if (!audioRef.current) {
-      audioRef.current = new Audio(audioData)
+      audioRef.current = new Audio(blobUrlRef.current || audioData)
       audioRef.current.onended = () => {
         setIsPlaying(false)
         setProgress(0)
@@ -78,9 +96,17 @@ export function VoiceNotePlayer({
       }
     }
 
-    audioRef.current.play()
-    setIsPlaying(true)
-    animRef.current = requestAnimationFrame(updateProgress)
+    audioRef.current.onerror = () => {
+      setIsPlaying(false)
+      audioRef.current = null
+    }
+    audioRef.current.play().then(() => {
+      setIsPlaying(true)
+      animRef.current = requestAnimationFrame(updateProgress)
+    }).catch(() => {
+      setIsPlaying(false)
+      audioRef.current = null
+    })
   }, [audioData, isPlaying, updateProgress])
 
   return (
