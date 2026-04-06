@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 });
     }
-    logger.error('Onboarding whatsapp error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Onboarding whatsapp error', { message: errMsg, stack: error instanceof Error ? error.stack : undefined });
+    return NextResponse.json({ success: false, error: `WhatsApp ayarları kaydedilemedi: ${errMsg}` }, { status: 500 });
   }
 }
