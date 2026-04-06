@@ -202,14 +202,14 @@ describe('WhatsAppService', () => {
     });
 
     it('Interactive basarisiz, template fallback basarili olmali', async () => {
-      // Interactive mesaj basarisiz
+      // Interactive mesaj basarisiz (CTA URL)
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
         json: async () => ({ error: { message: 'Template required' } }),
       });
 
-      // Template fallback basarili
+      // hello_world template fallback basarili
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -220,10 +220,22 @@ describe('WhatsAppService', () => {
         }),
       });
 
+      // Follow-up text message with proposal link
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          messaging_product: 'whatsapp',
+          contacts: [{ input: '905321234567', wa_id: '905321234567' }],
+          messages: [{ id: 'wamid.text123' }],
+        }),
+      });
+
       const result = await service.sendProposalLink(proposalParams);
       expect(result.success).toBe(true);
       expect(result.messageId).toBe('wamid.template123');
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // 3 calls: CTA URL (fail) + template (ok) + text follow-up (ok)
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
     it('Her iki yontem de basarisiz ise hata dondurmeli', async () => {

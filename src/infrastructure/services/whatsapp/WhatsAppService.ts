@@ -63,10 +63,12 @@ export class WhatsAppService {
     proposalUrl: string
     companyName: string
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const formattedTo = this.formatPhoneNumber(params.to)
+
+    // 1. Try CTA URL button (requires 24h conversation window)
     try {
-      // CTA URL butonlu interactive mesaj — link açar
       const response = await this.sendCtaUrlMessage({
-        to: this.formatPhoneNumber(params.to),
+        to: formattedTo,
         header: `${params.companyName} - Teklif`,
         body: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek için aşağıdaki butona tıklayınız.`,
         footer: 'TeklifPro ile gönderildi',
@@ -78,31 +80,47 @@ export class WhatsAppService {
         success: true,
         messageId: response?.messages?.[0]?.id,
       }
-    } catch (error) {
-      // Fallback: Template mesaj gonder
-      try {
-        const templateResult = await this.sendTemplate({
-          to: this.formatPhoneNumber(params.to),
-          templateName: 'proposal_notification',
-          language: 'tr',
-          parameters: {
-            '1': params.customerName,
-            '2': params.proposalNumber,
-            '3': params.grandTotal,
-          },
-          buttonParams: [params.proposalUrl],
-        })
+    } catch (ctaError) {
+      logger.warn('CTA URL failed, trying hello_world template', ctaError)
+    }
 
-        return {
-          success: true,
-          messageId: templateResult?.messages?.[0]?.id,
-        }
-      } catch (templateError) {
-        logger.error('Template mesaj hatasi', templateError)
-        return {
-          success: false,
-          error: templateError instanceof Error ? templateError.message : 'Mesaj gonderilemedi',
-        }
+    // 2. Fallback: hello_world template + text message with link
+    //    Template opens conversation window, then we send the actual proposal link
+    try {
+      const templateResult = await this.sendTemplate({
+        to: formattedTo,
+        templateName: 'hello_world',
+        language: 'en_US',
+        parameters: {},
+      })
+
+      // Now send the actual proposal details as a follow-up text
+      const proposalText = `Merhaba ${params.customerName},\n\n` +
+        `*${params.proposalTitle}*\n` +
+        `Teklif No: ${params.proposalNumber}\n` +
+        `Tutar: ${params.grandTotal}\n\n` +
+        `Teklifi görüntülemek için:\n${params.proposalUrl}\n\n` +
+        `${params.companyName}`
+
+      // Small delay to ensure template opens the window
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      try {
+        await this.sendTextMessage(formattedTo, proposalText)
+      } catch {
+        // Text follow-up failed but template was sent — still a success
+        logger.warn('Follow-up text after template failed, template was sent')
+      }
+
+      return {
+        success: true,
+        messageId: templateResult?.messages?.[0]?.id,
+      }
+    } catch (templateError) {
+      logger.error('Template mesaj hatasi', templateError)
+      return {
+        success: false,
+        error: 'WhatsApp mesajı gönderilemedi. Lütfen müşterinin WhatsApp numarasını kontrol edin.',
       }
     }
   }
