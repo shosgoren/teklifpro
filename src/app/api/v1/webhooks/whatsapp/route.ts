@@ -45,6 +45,30 @@ interface WhatsAppWebhookPayload {
 // Store for idempotency - in production, use Redis or database
 const processedMessageIds = new Set<string>();
 
+// IP-based rate limit for webhook: 120 req/min (Meta sends bursts)
+const webhookRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+if (typeof globalThis !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, val] of webhookRateLimit) {
+      if (now > val.resetAt) webhookRateLimit.delete(key);
+    }
+  }, 5 * 60 * 1000);
+}
+
+function checkWebhookRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = webhookRateLimit.get(ip);
+  if (entry && now < entry.resetAt && entry.count >= 120) return false;
+  if (!entry || now > (entry?.resetAt ?? 0)) {
+    webhookRateLimit.set(ip, { count: 1, resetAt: now + 60_000 });
+  } else {
+    entry.count++;
+  }
+  return true;
+}
+
 /**
  * Verifies webhook signature
  */
@@ -297,6 +321,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
+    // Rate limit check
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip') || 'unknown';
+    if (!checkWebhookRateLimit(ip)) {
+      logger.warn('WhatsApp webhook rate limit exceeded', { ip });
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     // Get raw body for signature verification
     const rawBody = await request.text();
     const signature = request.headers.get('x-hub-signature-256');

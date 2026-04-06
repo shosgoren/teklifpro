@@ -11,6 +11,16 @@ const logger = new Logger('VoiceTranscribeAPI')
 // In-memory usage tracking: Map<"tenantId:YYYY-MM-DD", count>
 const dailyUsageMap = new Map<string, number>()
 
+// Periodic cleanup to prevent memory leak — remove old date keys
+if (typeof globalThis !== 'undefined') {
+  setInterval(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    for (const key of dailyUsageMap.keys()) {
+      if (!key.endsWith(today)) dailyUsageMap.delete(key)
+    }
+  }, 60 * 60 * 1000) // every hour
+}
+
 function getDailyUsageKey(tenantId: string): string {
   const today = new Date().toISOString().slice(0, 10)
   return `${tenantId}:${today}`

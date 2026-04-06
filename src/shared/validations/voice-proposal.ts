@@ -1,10 +1,16 @@
 import { z } from 'zod'
 
+// Max 10MB base64 string (~7.5MB raw audio)
+const MAX_AUDIO_BASE64_LENGTH = 10 * 1024 * 1024
+
 export const VoiceTranscribeSchema = z.object({
-  audioData: z.string().min(1, 'Audio data required').refine(
-    (val) => val.startsWith('data:audio/'),
-    'Must be a data:audio/* URL'
-  ),
+  audioData: z.string()
+    .min(1, 'Audio data required')
+    .max(MAX_AUDIO_BASE64_LENGTH, 'Ses dosyasi 10MB sinirini asamaz')
+    .refine(
+      (val) => val.startsWith('data:audio/'),
+      'Must be a data:audio/* URL'
+    ),
   language: z.string().default('tr'),
 })
 
