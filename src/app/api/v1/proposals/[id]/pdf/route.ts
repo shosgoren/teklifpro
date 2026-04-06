@@ -52,28 +52,35 @@ function mapToProposalEntity(
   };
 }
 
-function addSignatureData(
+async function addSignatureData(
   proposal: Proposal,
   dbProposal: DbProposal,
-  tenant: { companySignature: string | null; companySeal: string | null; companySignerName: string | null; companySignerTitle: string | null }
-): Proposal {
-  // Company signature from tenant settings
-  if (tenant.companySignature) {
-    const decrypted = decryptSignature(tenant.companySignature);
-    if (decrypted && decrypted.startsWith('data:image/')) {
-      proposal.companySignature = {
-        data: decrypted,
-        signerName: tenant.companySignerName || undefined,
-        signerTitle: tenant.companySignerTitle || undefined,
-      };
+  tenantId: string
+): Promise<Proposal> {
+  // Try to fetch signature fields from tenant (columns may not exist yet)
+  try {
+    const sigData = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
+    });
+    if (sigData?.companySignature) {
+      const decrypted = decryptSignature(sigData.companySignature);
+      if (decrypted && decrypted.startsWith('data:image/')) {
+        proposal.companySignature = {
+          data: decrypted,
+          signerName: sigData.companySignerName || undefined,
+          signerTitle: sigData.companySignerTitle || undefined,
+        };
+      }
     }
-  }
-  // Company seal from tenant settings
-  if (tenant.companySeal) {
-    const decrypted = decryptSignature(tenant.companySeal);
-    if (decrypted && decrypted.startsWith('data:image/')) {
-      proposal.companySeal = decrypted;
+    if (sigData?.companySeal) {
+      const decrypted = decryptSignature(sigData.companySeal);
+      if (decrypted && decrypted.startsWith('data:image/')) {
+        proposal.companySeal = decrypted;
+      }
     }
+  } catch {
+    // Signature columns may not exist in DB yet — skip gracefully
   }
   // Customer signature from proposal (if accepted)
   if (dbProposal.status === 'ACCEPTED' && dbProposal.signatureData) {
@@ -166,7 +173,7 @@ async function handleGet(
     // Fetch tenant data
     const dbTenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
     });
     if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
@@ -175,7 +182,7 @@ async function handleGet(
     const tenant = mapToTenantEntity(dbTenant);
 
     // Add signature data for signed PDF
-    const proposalWithSigs = addSignatureData(proposal, dbProposal, dbTenant);
+    const proposalWithSigs = await addSignatureData(proposal, dbProposal, tenantId);
 
     // Generate PDF
     const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposalWithSigs, tenant);
@@ -243,7 +250,7 @@ async function handlePost(
 
     const dbTenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
     });
     if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
@@ -252,7 +259,7 @@ async function handlePost(
     const tenant = mapToTenantEntity(dbTenant);
 
     // Add signature data for signed PDF
-    const proposalWithSigs = addSignatureData(proposal, dbProposal, dbTenant);
+    const proposalWithSigs = await addSignatureData(proposal, dbProposal, tenantId);
 
     // Generate PDF
     const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposalWithSigs, tenant);

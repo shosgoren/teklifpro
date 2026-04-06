@@ -26,12 +26,22 @@ async function handleGet(request: NextRequest) {
         whatsappPhoneId: true,
         whatsappAccessToken: true,
         whatsappBusinessId: true,
-        companySignature: true,
-        companySeal: true,
-        companySignerName: true,
-        companySignerTitle: true,
       },
     });
+
+    // Try to fetch signature fields (may not exist in DB yet)
+    let sigFields: { companySignature: string | null; companySeal: string | null; companySignerName: string | null; companySignerTitle: string | null } = {
+      companySignature: null, companySeal: null, companySignerName: null, companySignerTitle: null,
+    };
+    try {
+      const sigData = await prisma.tenant.findUnique({
+        where: { id: session.tenant.id },
+        select: { companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
+      });
+      if (sigData) sigFields = sigData;
+    } catch {
+      // Signature columns may not exist in DB yet — graceful fallback
+    }
 
     // Mask access token for security (only show last 8 chars)
     // Decrypt signature data for display
@@ -40,8 +50,10 @@ async function handleGet(request: NextRequest) {
       whatsappAccessToken: tenant.whatsappAccessToken
         ? '•'.repeat(20) + tenant.whatsappAccessToken.slice(-8)
         : null,
-      companySignature: tenant.companySignature ? decryptSignature(tenant.companySignature) : null,
-      companySeal: tenant.companySeal ? decryptSignature(tenant.companySeal) : null,
+      companySignature: sigFields.companySignature ? decryptSignature(sigFields.companySignature) : null,
+      companySeal: sigFields.companySeal ? decryptSignature(sigFields.companySeal) : null,
+      companySignerName: sigFields.companySignerName,
+      companySignerTitle: sigFields.companySignerTitle,
     } : null;
 
     return NextResponse.json({ success: true, data });
@@ -89,15 +101,17 @@ async function handlePost(request: NextRequest) {
     if (taxOffice !== undefined) updateData.taxOffice = taxOffice || null;
     if (bankAccounts !== undefined) updateData.bankAccounts = bankAccounts;
 
-    // Company signature fields — encrypt image data with AES-256-GCM
+    // Separate signature fields — columns may not exist in DB yet
+    const sigUpdateData: Record<string, unknown> = {};
+    const hasSigFields = companySignature !== undefined || companySeal !== undefined || companySignerName !== undefined || companySignerTitle !== undefined;
     if (companySignature !== undefined) {
       if (companySignature && typeof companySignature === 'string' && companySignature.startsWith('data:image/')) {
         if (companySignature.length > 700000) {
           return NextResponse.json({ success: false, error: 'İmza dosyası çok büyük. Maksimum 500KB.' }, { status: 400 });
         }
-        updateData.companySignature = encryptSignature(companySignature);
+        sigUpdateData.companySignature = encryptSignature(companySignature);
       } else {
-        updateData.companySignature = null;
+        sigUpdateData.companySignature = null;
       }
     }
     if (companySeal !== undefined) {
@@ -105,13 +119,13 @@ async function handlePost(request: NextRequest) {
         if (companySeal.length > 700000) {
           return NextResponse.json({ success: false, error: 'Kaşe dosyası çok büyük. Maksimum 500KB.' }, { status: 400 });
         }
-        updateData.companySeal = encryptSignature(companySeal);
+        sigUpdateData.companySeal = encryptSignature(companySeal);
       } else {
-        updateData.companySeal = null;
+        sigUpdateData.companySeal = null;
       }
     }
-    if (companySignerName !== undefined) updateData.companySignerName = companySignerName || null;
-    if (companySignerTitle !== undefined) updateData.companySignerTitle = companySignerTitle || null;
+    if (companySignerName !== undefined) sigUpdateData.companySignerName = companySignerName || null;
+    if (companySignerTitle !== undefined) sigUpdateData.companySignerTitle = companySignerTitle || null;
 
     const tenant = await prisma.tenant.update({
       where: { id: session.tenant.id },
@@ -126,10 +140,20 @@ async function handlePost(request: NextRequest) {
         taxNumber: true,
         taxOffice: true,
         bankAccounts: true,
-        companySignerName: true,
-        companySignerTitle: true,
       },
     });
+
+    // Try to update signature fields separately (columns may not exist yet)
+    if (hasSigFields) {
+      try {
+        await prisma.tenant.update({
+          where: { id: session.tenant.id },
+          data: sigUpdateData,
+        });
+      } catch {
+        logger.error('Signature columns not yet in DB — run migration');
+      }
+    }
 
     return NextResponse.json({ success: true, data: tenant });
   } catch (error) {

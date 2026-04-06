@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
         tenant: {
           select: {
             id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true,
-            companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true,
           },
         },
         customer: {
@@ -98,22 +97,30 @@ export async function GET(request: NextRequest) {
       notes: dbProposal.notes || undefined,
     };
 
-    // Add company signature
-    if (dbProposal.tenant.companySignature) {
-      const decrypted = decryptSignature(dbProposal.tenant.companySignature);
-      if (decrypted && decrypted.startsWith('data:image/')) {
-        proposal.companySignature = {
-          data: decrypted,
-          signerName: dbProposal.tenant.companySignerName || undefined,
-          signerTitle: dbProposal.tenant.companySignerTitle || undefined,
-        };
+    // Try to fetch company signature fields (columns may not exist yet)
+    try {
+      const sigData = await prisma.tenant.findUnique({
+        where: { id: dbProposal.tenant.id },
+        select: { companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
+      });
+      if (sigData?.companySignature) {
+        const decrypted = decryptSignature(sigData.companySignature);
+        if (decrypted && decrypted.startsWith('data:image/')) {
+          proposal.companySignature = {
+            data: decrypted,
+            signerName: sigData.companySignerName || undefined,
+            signerTitle: sigData.companySignerTitle || undefined,
+          };
+        }
       }
-    }
-    if (dbProposal.tenant.companySeal) {
-      const decrypted = decryptSignature(dbProposal.tenant.companySeal);
-      if (decrypted && decrypted.startsWith('data:image/')) {
-        proposal.companySeal = decrypted;
+      if (sigData?.companySeal) {
+        const decrypted = decryptSignature(sigData.companySeal);
+        if (decrypted && decrypted.startsWith('data:image/')) {
+          proposal.companySeal = decrypted;
+        }
       }
+    } catch {
+      // Signature columns may not exist in DB yet
     }
 
     // Add customer signature
@@ -136,8 +143,6 @@ export async function GET(request: NextRequest) {
       email: dbProposal.tenant.email,
       taxNumber: dbProposal.tenant.taxNumber || undefined,
       logo: dbProposal.tenant.logo || undefined,
-      companySignerName: dbProposal.tenant.companySignerName || undefined,
-      companySignerTitle: dbProposal.tenant.companySignerTitle || undefined,
     };
 
     const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposal, tenant);
