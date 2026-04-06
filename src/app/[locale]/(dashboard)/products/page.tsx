@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
@@ -8,6 +8,7 @@ import useSWR from 'swr';
 import {
   Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, AlertTriangle,
   LayoutGrid, List, Package, TrendingUp, TrendingDown, Percent, ArrowUpDown,
+  Download, Upload,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -168,6 +169,8 @@ export default function ProductsPage() {
   });
   const [isBulkPriceOpen, setIsBulkPriceOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || 'table';
@@ -211,6 +214,53 @@ export default function ProductsPage() {
     localStorage.setItem(VIEW_MODE_KEY, mode);
     setCurrentPage(1);
   }, []);
+
+  const handleExport = useCallback(async () => {
+    try {
+      const response = await fetch('/api/v1/products/export');
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `urunler-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(t('exportSuccess'));
+    } catch {
+      toast.error(t('genericError'));
+    }
+  }, [t]);
+
+  const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/v1/products/import', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        const msg = `${data.data.created} ürün eklendi` +
+          (data.data.skipped > 0 ? `, ${data.data.skipped} atlandı (kod mevcut)` : '');
+        toast.success(msg);
+        mutate();
+      } else {
+        toast.error(data.error || t('genericError'));
+      }
+    } catch {
+      toast.error(t('genericError'));
+    } finally {
+      setIsImporting(false);
+      e.target.value = '';
+    }
+  }, [mutate, t]);
 
   const handleSync = useCallback(async () => {
     setIsSyncing(true);
@@ -423,6 +473,27 @@ export default function ProductsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-white/70 text-sm">Ürün kataloğunu yönet</p>
             <div className="flex gap-2 flex-wrap">
+              <Button onClick={handleExport} size="sm"
+                className="rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20">
+                <Download className="mr-2 h-4 w-4" />
+                {t('export')}
+              </Button>
+              <label className={cn(
+                'inline-flex items-center gap-2 px-3 h-8 rounded-xl text-sm font-medium cursor-pointer transition-colors',
+                'bg-white/10 border border-white/20 text-white hover:bg-white/20',
+                isImporting && 'opacity-50 pointer-events-none'
+              )}>
+                <Upload className="h-4 w-4" />
+                {isImporting ? t('importing') : t('import')}
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleImport}
+                  className="hidden"
+                  disabled={isImporting}
+                />
+              </label>
               <Button onClick={() => setIsBulkPriceOpen(true)} size="sm"
                 className="rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20">
                 <Percent className="mr-2 h-4 w-4" />
