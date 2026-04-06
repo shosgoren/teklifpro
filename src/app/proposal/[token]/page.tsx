@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 import { prisma } from '@/shared/utils/prisma'
+import { decryptSignature } from '@/shared/utils/signatureCrypto'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import ProposalActions from './proposal-actions'
 import ProposalContent from './proposal-content'
@@ -76,7 +77,7 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
     where: { publicToken: params.token, deletedAt: null },
     include: {
       tenant: true,
-      customer: true,
+      customer: { include: { contacts: { orderBy: { isPrimary: 'desc' } } } },
       contact: true,
       user: true,
       items: { orderBy: { sortOrder: 'asc' } },
@@ -130,7 +131,7 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
     },
     include: {
       tenant: true,
-      customer: true,
+      customer: { include: { contacts: { orderBy: { isPrimary: 'desc' } } } },
       contact: true,
       user: true,
       items: { orderBy: { sortOrder: 'asc' } },
@@ -247,16 +248,16 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
             }
           : null
       }
-      signature={
-        updatedProposal.signatureData &&
-        updatedProposal.signatureData.startsWith('data:image/png;base64,')
-          ? {
-              data: updatedProposal.signatureData,
-              signerName: updatedProposal.signerName,
-              signedAt: updatedProposal.signedAt?.toISOString() ?? null,
-            }
-          : null
-      }
+      signature={(() => {
+        if (!updatedProposal.signatureData) return null
+        const decrypted = decryptSignature(updatedProposal.signatureData)
+        if (!decrypted || !decrypted.startsWith('data:image/png;base64,')) return null
+        return {
+          data: decrypted,
+          signerName: updatedProposal.signerName,
+          signedAt: updatedProposal.signedAt?.toISOString() ?? null,
+        }
+      })()}
       items={itemsWithTotals.map((item) => ({
         id: item.id,
         name: item.name,
@@ -277,6 +278,11 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
         totalVat,
         grandTotal,
       }}
+      contacts={updatedProposal.customer.contacts.map(c => ({
+        id: c.id,
+        name: c.name,
+        title: c.title,
+      }))}
       isResponded={isResponded}
     />
     </>

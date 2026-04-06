@@ -5,13 +5,20 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { CheckCircle, RotateCw, XCircle, Loader2, AlertCircle, X, PenTool, Eraser } from 'lucide-react'
 
+interface ContactOption {
+  id: string
+  name: string
+  title: string | null
+}
+
 interface ProposalActionsProps {
   proposalId: string
+  contacts: ContactOption[]
 }
 
 type ModalType = 'accept' | 'reject' | 'revision' | null
 
-export default function ProposalActions({ proposalId }: ProposalActionsProps) {
+export default function ProposalActions({ proposalId, contacts }: ProposalActionsProps) {
   const router = useRouter()
   const [activeModal, setActiveModal] = useState<ModalType>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -20,6 +27,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
   const [rejectionReason, setRejectionReason] = useState('')
   const [customerNote, setCustomerNote] = useState('')
   const [signerName, setSignerName] = useState('')
+  const [selectedContactId, setSelectedContactId] = useState<string>('')
   const [hasSigned, setHasSigned] = useState(false)
   const [success, setSuccess] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +84,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
       customerNote: customerNote.trim() || undefined,
       signatureData,
       signerName: signerName.trim(),
+      ...(selectedContactId && selectedContactId !== 'other' ? { contactId: selectedContactId } : {}),
     })
   }
 
@@ -102,6 +111,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
       setRejectionReason('')
       setCustomerNote('')
       setSignerName('')
+      setSelectedContactId('')
       setHasSigned(false)
       sigCanvasRef.current?.clear()
     }
@@ -198,17 +208,54 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
                     <p className="text-sm text-emerald-800">Teklifi kabul etmek istediğinize emin misiniz?</p>
                   </div>
 
-                  {/* Signer Name */}
+                  {/* Signer Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ad Soyad</label>
-                    <input
-                      type="text"
-                      value={signerName}
-                      onChange={(e) => setSignerName(e.target.value)}
-                      placeholder="İmzalayan kişinin adı soyadı"
-                      disabled={isLoading}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">İmzalayan Kişi</label>
+                    {contacts.length > 0 ? (
+                      <>
+                        <select
+                          value={selectedContactId}
+                          onChange={(e) => {
+                            setSelectedContactId(e.target.value)
+                            if (e.target.value && e.target.value !== 'other') {
+                              const contact = contacts.find(c => c.id === e.target.value)
+                              if (contact) setSignerName(contact.name)
+                            } else if (e.target.value === 'other') {
+                              setSignerName('')
+                            }
+                          }}
+                          disabled={isLoading}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50 appearance-none"
+                        >
+                          <option value="">Kişi seçiniz...</option>
+                          {contacts.map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}{c.title ? ` — ${c.title}` : ''}
+                            </option>
+                          ))}
+                          <option value="other">Diğer (elle giriş)</option>
+                        </select>
+                        {selectedContactId === 'other' && (
+                          <input
+                            type="text"
+                            value={signerName}
+                            onChange={(e) => setSignerName(e.target.value)}
+                            placeholder="Ad Soyad giriniz"
+                            disabled={isLoading}
+                            className="w-full mt-2 px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50"
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <input
+                        type="text"
+                        value={signerName}
+                        onChange={(e) => setSignerName(e.target.value)}
+                        placeholder="İmzalayan kişinin adı soyadı"
+                        disabled={isLoading}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50"
+                      />
+                    )}
                   </div>
 
                   {/* Signature Canvas */}

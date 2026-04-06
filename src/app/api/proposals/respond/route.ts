@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { prisma } from '@/shared/utils/prisma'
+import { encryptSignature } from '@/shared/utils/signatureCrypto'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import { withRateLimit } from '@/infrastructure/middleware/rateLimitMiddleware'
 import { Logger } from '@/infrastructure/logger'
@@ -12,7 +13,7 @@ const logger = new Logger('ProposalRespondAPI')
 async function handlePost(request: NextRequest) {
   try {
     const body = await request.json()
-    const { proposalId, action, customerNote, rejectionReason, revisionNote, signatureData, signerName } = body
+    const { proposalId, action, customerNote, rejectionReason, revisionNote, signatureData, signerName, contactId } = body
 
     if (!proposalId || !action) {
       return NextResponse.json(
@@ -102,6 +103,9 @@ async function handlePost(request: NextRequest) {
       ? crypto.createHash('sha256').update(signatureData).digest('hex')
       : null
 
+    // Encrypt signature data before storage
+    const encryptedSignature = signatureData ? encryptSignature(signatureData) : null
+
     // Update proposal status
     const updatedProposal = await prisma.proposal.update({
       where: { id: proposalId },
@@ -110,9 +114,10 @@ async function handlePost(request: NextRequest) {
         respondedAt: new Date(),
         ...(action === 'ACCEPTED' && {
           customerNote: customerNote || null,
-          signatureData: signatureData || null,
+          signatureData: encryptedSignature,
           signedAt: new Date(),
           signerName: signerName.trim(),
+          ...(contactId && { contactId }),
         }),
         ...(action === 'REJECTED' && { rejectionReason: rejectionReason || null }),
         ...(action === 'REVISION_REQUESTED' && { revisionNote: revisionNote || null }),

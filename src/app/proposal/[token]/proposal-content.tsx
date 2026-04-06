@@ -85,6 +85,7 @@ interface ProposalContentProps {
     totalVat: number
     grandTotal: number
   }
+  contacts: { id: string; name: string; title: string | null }[]
   isResponded: boolean
 }
 
@@ -104,6 +105,7 @@ export default function ProposalContent({
   signature,
   items,
   financials,
+  contacts,
   isResponded,
 }: ProposalContentProps) {
   const [showDetails, setShowDetails] = useState(false)
@@ -548,6 +550,89 @@ export default function ProposalContent({
           </div>
         )}
 
+        {/* ─── Response Info (Rejection/Revision/Acceptance) ─── */}
+        {isResponded && proposal.status === 'REJECTED' && proposal.rejectionReason && (
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-red-100 p-5 mb-4 ${cardClass}`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-gray-900">Teklif Reddedildi</p>
+                <p className="text-xs text-gray-400">Müşteri yanıtı</p>
+              </div>
+            </div>
+            <div className="p-3 bg-red-50 rounded-xl">
+              <p className="text-sm text-red-800 whitespace-pre-wrap">{proposal.rejectionReason}</p>
+            </div>
+          </div>
+        )}
+
+        {isResponded && proposal.status === 'REVISION_REQUESTED' && proposal.revisionNote && (
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-amber-100 p-5 mb-4 ${cardClass}`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+                <RotateCw className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-gray-900">Revize Talep Edildi</p>
+                <p className="text-xs text-gray-400">Müşteri yanıtı</p>
+              </div>
+            </div>
+            <div className="p-3 bg-amber-50 rounded-xl">
+              <p className="text-sm text-amber-800 whitespace-pre-wrap">{proposal.revisionNote}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Signature & Acceptance Info ─── */}
+        {isResponded && proposal.status === 'ACCEPTED' && signature && (
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-emerald-100 p-5 mb-4 ${cardClass}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                <PenTool className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-gray-900">Teklif Kabul Edildi</p>
+                <p className="text-xs text-gray-400">E-imza ile onaylandı</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {/* Signer Info */}
+              <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
+                <User className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{signature.signerName}</p>
+                  {signature.signedAt && (
+                    <p className="text-xs text-gray-500">
+                      {new Date(signature.signedAt).toLocaleDateString('tr-TR', {
+                        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Signature Image */}
+              <div className="border border-gray-200 rounded-xl bg-gray-50 p-4 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={signature.data}
+                  alt="E-İmza"
+                  className="max-h-32 w-auto"
+                />
+              </div>
+
+              {/* Security Badge */}
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Bu imza güvenli şekilde şifrelenmiş olarak saklanmaktadır</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ─── Trust Footer ─── */}
         <div className="flex items-center justify-center gap-6 py-6 text-xs text-gray-400 print:hidden">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
@@ -565,7 +650,7 @@ export default function ProposalContent({
       {!isResponded && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-100 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] z-50 print:hidden">
           <div className="max-w-2xl mx-auto px-4 py-3 sm:px-6">
-            <ProposalActions proposalId={proposal.id} />
+            <ProposalActions proposalId={proposal.id} contacts={contacts} />
           </div>
         </div>
       )}
