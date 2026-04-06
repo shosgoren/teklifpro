@@ -81,6 +81,7 @@ function createMockRequest(
 describe('WhatsApp Webhook', () => {
   const VERIFY_TOKEN = 'test-verify-token'
   const ACCESS_TOKEN = 'test-whatsapp-access-token'
+  const APP_SECRET = 'test-whatsapp-app-secret'
 
   let GET: (request: NextRequest) => Promise<Response>
   let POST: (request: NextRequest) => Promise<Response>
@@ -89,6 +90,7 @@ describe('WhatsApp Webhook', () => {
     process.env.WHATSAPP_VERIFY_TOKEN = VERIFY_TOKEN
     process.env.WHATSAPP_ACCESS_TOKEN = ACCESS_TOKEN
     process.env.WHATSAPP_PHONE_NUMBER_ID = 'test-phone-id'
+    process.env.WHATSAPP_APP_SECRET = APP_SECRET
   })
 
   beforeEach(async () => {
@@ -114,10 +116,10 @@ describe('WhatsApp Webhook', () => {
       })
 
       const response = await GET(request)
-      const data = await response.json()
+      const text = await response.text()
 
       expect(response.status).toBe(200)
-      expect(data.hub.challenge).toBe('test-challenge-123')
+      expect(text).toBe('test-challenge-123')
     })
 
     it('Yanlis verify_token ile 403 donmeli', async () => {
@@ -198,7 +200,7 @@ describe('WhatsApp Webhook', () => {
   describe('POST - Webhook Events', () => {
     function createSignature(body: string): string {
       const hash = crypto
-        .createHmac('sha256', ACCESS_TOKEN)
+        .createHmac('sha256', APP_SECRET)
         .update(body)
         .digest('hex')
       return `sha256=${hash}`

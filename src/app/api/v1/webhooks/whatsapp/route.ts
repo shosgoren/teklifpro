@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { prisma } from '@/shared/utils/prisma';
+import { ActivityType } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('WhatsAppWebhook');
@@ -55,20 +57,30 @@ function verifyWebhookSignature(
     return false;
   }
 
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN || '';
+  const appSecret = process.env.WHATSAPP_APP_SECRET || '';
 
-  if (!phoneNumberId || !accessToken) {
-    logger.error('WhatsApp credentials not configured');
+  if (!appSecret) {
+    // If APP_SECRET not configured, skip signature check in dev
+    if (process.env.NODE_ENV === 'development') {
+      logger.warn('WHATSAPP_APP_SECRET not set, skipping signature check in dev');
+      return true;
+    }
+    logger.error('WHATSAPP_APP_SECRET not configured');
     return false;
   }
 
-  // Note: WhatsApp uses the phone number ID and access token for signature verification
-  // In production, use the actual WhatsApp signature format
-  const hash = crypto.createHmac('sha256', accessToken).update(payload).digest('hex');
+  const hash = crypto.createHmac('sha256', appSecret).update(payload).digest('hex');
   const expectedSignature = `sha256=${hash}`;
 
-  const isValid = signatureHeader === expectedSignature;
+  let isValid = false;
+  try {
+    isValid = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature),
+      Buffer.from(signatureHeader)
+    );
+  } catch {
+    isValid = false;
+  }
 
   if (!isValid) {
     logger.warn('Invalid webhook signature', { received: signatureHeader });
@@ -90,22 +102,41 @@ async function handleMessageStatus(status: WhatsAppStatus): Promise<void> {
       recipientId: recipient_id,
     });
 
-    // Map WhatsApp status to internal status
-    const statusMapping: Record<string, string> = {
-      sent: 'whatsapp_sent',
-      delivered: 'whatsapp_delivered',
-      read: 'whatsapp_read',
-      failed: 'whatsapp_failed',
+    // Map WhatsApp status to activity type
+    const activityTypeMapping: Record<string, ActivityType> = {
+      delivered: 'WHATSAPP_DELIVERED',
+      read: 'WHATSAPP_READ',
     };
 
-    const internalStatus = statusMapping[statusType];
+    const activityType = activityTypeMapping[statusType];
 
-    // Update ProposalActivity in database
-    // In production: await db.proposalActivity.create({ ... })
-    logger.info('Status recorded', {
-      proposalId: id,
-      status: internalStatus,
-    });
+    // Find proposal by whatsappMessageId and create activity
+    if (activityType) {
+      const proposal = await prisma.proposal.findFirst({
+        where: { whatsappMessageId: id },
+        select: { id: true },
+      });
+
+      if (proposal) {
+        await prisma.proposalActivity.create({
+          data: {
+            proposalId: proposal.id,
+            type: activityType,
+            description: statusType === 'delivered'
+              ? 'WhatsApp mesajı iletildi'
+              : 'WhatsApp mesajı okundu',
+            metadata: {
+              whatsappMessageId: id,
+              recipientId: recipient_id,
+              timestamp: status.timestamp,
+            },
+          },
+        });
+        logger.info('Status activity created', { proposalId: proposal.id, status: activityType });
+      }
+    }
+
+    logger.info('Status recorded', { messageId: id, status: statusType });
   } catch (error) {
     logger.error('Error handling message status', error);
   }
@@ -133,46 +164,71 @@ async function handleMessage(message: WhatsAppMessage): Promise<void> {
     });
 
     if (type === 'text' && text) {
-      // Handle text message from customer
       const messageBody = text.body;
+      logger.info('Text message received', { from, message: messageBody });
 
-      logger.info('Text message received', {
-        from,
-        message: messageBody,
+      // Find most recent proposal sent to this phone number
+      const cleanPhone = from.replace(/\D/g, '');
+      const proposal = await prisma.proposal.findFirst({
+        where: {
+          customer: {
+            OR: [
+              { phone: { contains: cleanPhone.slice(-10) } },
+              { contacts: { some: { phone: { contains: cleanPhone.slice(-10) } } } },
+            ],
+          },
+          whatsappMessageId: { not: null },
+          deletedAt: null,
+        },
+        orderBy: { whatsappSentAt: 'desc' },
+        select: { id: true },
       });
 
-      // Store message in database
-      // In production: await db.proposalMessage.create({
-      //   proposalId: extractProposalIdFromPhone(from),
-      //   type: 'customer_message',
-      //   content: messageBody,
-      // })
+      if (proposal) {
+        await prisma.proposalActivity.create({
+          data: {
+            proposalId: proposal.id,
+            type: 'WHATSAPP_READ' as ActivityType,
+            description: `Müşteri yanıtı: ${messageBody.substring(0, 200)}`,
+            metadata: {
+              whatsappMessageId: id,
+              from,
+              messageType: 'text',
+              content: messageBody,
+            },
+          },
+        });
+      }
     }
 
     if (type === 'interactive' && button) {
-      // Handle interactive button response
       const payload = button.payload;
+      logger.info('Interactive button clicked', { from, payload });
 
-      logger.info('Interactive button clicked', {
-        from,
-        payload,
-      });
-
-      // Parse payload - format: "action:proposal_view:proposal_id"
-      if (payload.startsWith('action:proposal_view:')) {
-        const proposalId = payload.replace('action:proposal_view:', '');
-
-        logger.info('Proposal view button clicked', {
-          from,
-          proposalId,
+      // Parse payload - format: "view_proposal_{proposalNumber}"
+      const proposalMatch = payload.match(/view_proposal_(.+)/);
+      if (proposalMatch) {
+        const proposalNumber = proposalMatch[1];
+        const proposal = await prisma.proposal.findFirst({
+          where: { proposalNumber: proposalNumber, deletedAt: null },
+          select: { id: true },
         });
 
-        // Update ProposalActivity
-        // In production: await db.proposalActivity.create({
-        //   proposalId,
-        //   type: 'whatsapp_view_clicked',
-        //   metadata: { phoneNumber: from }
-        // })
+        if (proposal) {
+          await prisma.proposalActivity.create({
+            data: {
+              proposalId: proposal.id,
+              type: 'LINK_CLICKED' as ActivityType,
+              description: 'WhatsApp butonundan teklif görüntülendi',
+              metadata: {
+                whatsappMessageId: id,
+                from,
+                buttonPayload: payload,
+              },
+            },
+          });
+          logger.info('Button click activity created', { proposalId: proposal.id });
+        }
       }
     }
 
@@ -225,7 +281,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     logger.info('Webhook verified successfully');
 
-    return NextResponse.json({ hub: { challenge } }, { status: 200 });
+    // Meta expects the challenge string as plain text response
+    return new NextResponse(challenge, { status: 200 });
   } catch (error) {
     logger.error('Error verifying webhook', error);
     return NextResponse.json(
