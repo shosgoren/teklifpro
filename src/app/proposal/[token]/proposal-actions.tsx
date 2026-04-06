@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { CheckCircle, RotateCw, XCircle, Loader2, AlertCircle, X, PenTool, Eraser } from 'lucide-react'
 
@@ -132,8 +133,8 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
         </button>
       </div>
 
-      {/* Bottom Sheet Modal */}
-      {activeModal && (
+      {/* Bottom Sheet Modal — portal to body to escape stacking context from backdrop-blur parent */}
+      {activeModal && createPortal(
         <div className="fixed inset-0 z-[60]">
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal} />
@@ -324,7 +325,7 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   )
 }
