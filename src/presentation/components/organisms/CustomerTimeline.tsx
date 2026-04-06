@@ -6,7 +6,7 @@ import { useConfirm } from '@/shared/components/confirm-dialog';
 import { Card } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import { Textarea } from '@/presentation/components/ui/textarea';
+import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Select,
   SelectContent,

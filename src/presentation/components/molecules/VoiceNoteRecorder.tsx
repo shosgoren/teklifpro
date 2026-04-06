@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { Mic, Square, Play, Pause, Trash2, RotateCcw } from 'lucide-react'
-import { Button } from '@/presentation/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { Logger } from '@/infrastructure/logger'
 

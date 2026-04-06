@@ -4,16 +4,16 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { ChevronDown, Download, Search, X, Loader2, AlertCircle, FileText } from 'lucide-react';
-import { Button } from '@/presentation/components/ui/button';
-import { Input } from '@/presentation/components/ui/input';
+import { Button } from '@/shared/components/ui/button';
+import { Input } from '@/shared/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/presentation/components/ui/select';
-import { Badge } from '@/presentation/components/ui/badge';
+} from '@/shared/components/ui/select';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -21,8 +21,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/presentation/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/presentation/components/ui/card';
+} from '@/shared/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 
 type ActionType = 'CREATE' | 'UPDATE' | 'DELETE' | 'SEND' | 'LOGIN';
 type EntityType = 'PROPOSAL' | 'CUSTOMER' | 'PRODUCT' | 'USER' | 'SETTING';

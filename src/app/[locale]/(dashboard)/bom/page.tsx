@@ -21,7 +21,7 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
-import { Label } from '@/presentation/components/ui/label';
+import { Label } from '@/shared/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import {
   DropdownMenu,

@@ -133,16 +133,30 @@ export const authOptions: NextAuthOptions = {
           // Fetch full user data for Google OAuth users
           const dbUser = await prisma.user.findFirst({
             where: { email: user.email! },
+            include: { tenant: true },
           })
           if (dbUser) {
             token.id = dbUser.id
             token.tenantId = dbUser.tenantId
             token.role = dbUser.role
+            token.tenantSlug = dbUser.tenant?.slug || ''
+            token.tenantPlan = dbUser.tenant?.plan || 'STARTER'
           }
         } else {
           token.id = user.id
           token.tenantId = user.tenantId
           token.role = user.role
+          // Fetch tenant details for credentials login
+          if (user.tenantId) {
+            const tenant = await prisma.tenant.findUnique({
+              where: { id: user.tenantId },
+              select: { slug: true, plan: true },
+            })
+            if (tenant) {
+              token.tenantSlug = tenant.slug
+              token.tenantPlan = tenant.plan
+            }
+          }
         }
       }
 
@@ -159,6 +173,10 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.tenantId = token.tenantId as string
         session.user.role = token.role as string
+      }
+      session.tenant = {
+        slug: (token.tenantSlug as string) || '',
+        plan: (token.tenantPlan as string) || 'STARTER',
       }
 
       return session

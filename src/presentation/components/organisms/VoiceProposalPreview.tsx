@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@/presentation/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import type { VoiceParseResult } from '@/infrastructure/services/voice/types'
 import {

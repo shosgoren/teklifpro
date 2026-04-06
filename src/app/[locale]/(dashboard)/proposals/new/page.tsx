@@ -33,27 +33,27 @@ import {
   Mic,
 } from 'lucide-react'
 
-import { Button } from '@/presentation/components/ui/button'
-import { Input } from '@/presentation/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/presentation/components/ui/card'
-import { Textarea } from '@/presentation/components/ui/textarea'
-import { Label } from '@/presentation/components/ui/label'
-import { Separator } from '@/presentation/components/ui/separator'
-import { Badge } from '@/presentation/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Textarea } from '@/shared/components/ui/textarea'
+import { Label } from '@/shared/components/ui/label'
+import { Separator } from '@/shared/components/ui/separator'
+import { Badge } from '@/shared/components/ui/badge'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/presentation/components/ui/select'
+} from '@/shared/components/ui/select'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/presentation/components/ui/dialog'
+} from '@/shared/components/ui/dialog'
 import {
   Command,
   CommandEmpty,
@@ -61,8 +61,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/presentation/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/presentation/components/ui/popover'
+} from '@/shared/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
 import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNoteRecorder'

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/presentation/components/atoms/Button';
+import { Button } from '@/shared/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface Props {

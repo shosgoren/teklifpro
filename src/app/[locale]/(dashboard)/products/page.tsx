@@ -22,7 +22,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/shared/components/ui/dialog';
-import { Label } from '@/presentation/components/ui/label';
+import { Label } from '@/shared/components/ui/label';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 

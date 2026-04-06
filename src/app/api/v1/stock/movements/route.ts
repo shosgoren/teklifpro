@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { Prisma, StockMovementType } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { prisma } from '@/shared/lib/prisma';
+import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { stockMovementQuerySchema, createMovementSchema } from '@/shared/validations/stock';
 import { Logger } from '@/infrastructure/logger';

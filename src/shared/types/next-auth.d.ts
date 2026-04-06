@@ -26,5 +26,7 @@ declare module 'next-auth/jwt' {
     id?: string
     tenantId?: string
     role?: string
+    tenantSlug?: string
+    tenantPlan?: string
   }
 }

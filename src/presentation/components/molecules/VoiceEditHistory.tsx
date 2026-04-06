@@ -1,7 +1,7 @@
 'use client'
 
 import { Undo2, Redo2 } from 'lucide-react'
-import { Button } from '@/presentation/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import type { VoiceParseResult, VoiceEditChange } from '@/infrastructure/services/voice/types'
 

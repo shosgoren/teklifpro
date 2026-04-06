@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@/shared/lib/prisma';
+import { prisma } from '@/shared/utils/prisma';
 import {
   successResponse,
   withErrorHandling,

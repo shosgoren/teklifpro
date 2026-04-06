@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { FileText, Plus } from 'lucide-react';
-import { Button } from '@/presentation/components/ui/button';
+import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/presentation/components/ui/dialog';
-import { Input } from '@/presentation/components/ui/input';
-import { Card, CardContent } from '@/presentation/components/ui/card';
-import { Label } from '@/presentation/components/ui/label';
-import { Textarea } from '@/presentation/components/ui/textarea';
+} from '@/shared/components/ui/dialog';
+import { Input } from '@/shared/components/ui/input';
+import { Card, CardContent } from '@/shared/components/ui/card';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
 
 export default function TemplatesPage() {
   const t = useTranslations('templates');

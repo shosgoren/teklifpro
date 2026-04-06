@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, X, Loader2, CheckCircle2, MessageCircle, ExternalLink, Send, Volume2 } from 'lucide-react'
-import { Button } from '@/presentation/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { VoiceActivityIndicator } from '@/presentation/components/molecules/VoiceActivityIndicator'
 import { LiveTranscript } from '@/presentation/components/molecules/LiveTranscript'

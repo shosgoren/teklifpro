@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/shared/lib/prisma';
+import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { supabaseAdmin, PRODUCT_IMAGES_BUCKET } from '@/shared/lib/supabase';
 import { Logger } from '@/infrastructure/logger';

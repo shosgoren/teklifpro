@@ -1,4 +1,4 @@
-import { Skeleton } from '@/presentation/components/ui/skeleton';
+import { Skeleton } from '@/shared/components/ui/skeleton';
 
 export default function ProposalCompareLoading() {
   return (
