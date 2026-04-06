@@ -46,6 +46,8 @@ export const UpdateProposalSchema = z.object({
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
   customerId: z.string().optional(),
+  voiceNoteData: z.string().nullable().optional(),
+  voiceNoteDuration: z.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
 })
 
 export const SendProposalSchema = z.object({

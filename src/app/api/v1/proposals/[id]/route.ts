@@ -175,6 +175,8 @@ async function handlePut(
           notes: validatedData.notes ?? undefined,
           paymentTerms: validatedData.paymentTerms ?? undefined,
           deliveryTerms: validatedData.deliveryTerms ?? undefined,
+          voiceNoteData: validatedData.voiceNoteData !== undefined ? (validatedData.voiceNoteData || null) : undefined,
+          voiceNoteDuration: validatedData.voiceNoteDuration !== undefined ? (validatedData.voiceNoteDuration || null) : undefined,
           subtotal,
           discountAmount,
           vatTotal,
