@@ -121,7 +121,15 @@ export async function GET(request: NextRequest) {
                   .replace('{{companyName}}', tenant.name)
               : defaultMessage;
 
-            const result = await whatsappService.sendTextMessage(customerPhone, message);
+            // Send as CTA URL button so proposal link is clickable
+            const result = await whatsappService.sendCtaUrlMessage({
+              to: customerPhone,
+              header: `${tenant.name} - Hatırlatma`,
+              body: message.replace(proposalUrl, '').trim(),
+              footer: 'TeklifPro',
+              buttonText: 'Teklifi Görüntüle',
+              url: proposalUrl,
+            });
 
             // Update proposal follow-up tracking
             await prisma.proposal.update({

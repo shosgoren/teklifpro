@@ -62,29 +62,26 @@ export async function GET(request: NextRequest) {
         try {
           const { tenant, user } = proposal;
 
-          if (tenant.whatsappPhoneId && tenant.whatsappAccessToken) {
+          const hasWhatsApp = tenant.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+          if (hasWhatsApp) {
             const recipientPhone = user?.phone || tenant.phone;
 
             if (recipientPhone) {
               const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.id}`;
-
-              const message = [
-                `⏰ Teklif Süresi Doldu`,
-                '',
-                `📄 ${proposal.proposalNumber} — ${proposal.title}`,
-                `👤 Müşteri: ${proposal.customer.name}`,
-                '',
-                `Bu teklif geçerlilik tarihini geçtiği için otomatik olarak sona erdirildi.`,
-                '',
-                `🔗 ${proposalUrl}`,
-              ].join('\n');
 
               const whatsappService = WhatsAppService.fromTenantConfig({
                 whatsappPhoneId: tenant.whatsappPhoneId,
                 whatsappAccessToken: tenant.whatsappAccessToken,
               });
 
-              await whatsappService.sendTextMessage(recipientPhone, message);
+              await whatsappService.sendCtaUrlMessage({
+                to: recipientPhone,
+                header: '⏰ Teklif Süresi Doldu',
+                body: `📄 ${proposal.proposalNumber} — ${proposal.title}\n👤 Müşteri: ${proposal.customer.name}\n\nBu teklif geçerlilik tarihini geçtiği için otomatik olarak sona erdirildi.`,
+                footer: tenant.name,
+                buttonText: 'Teklifi Görüntüle',
+                url: proposalUrl,
+              });
             }
           }
         } catch (whatsappError) {
