@@ -330,7 +330,10 @@ export class WhatsAppService {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${WHATSAPP_API_URL}/${endpoint}`, {
+    const url = `${WHATSAPP_API_URL}/${endpoint}`
+    logger.info('WhatsApp API request', { url, method: options.method || 'GET', phoneNumberId: this.phoneNumberId, tokenPrefix: this.accessToken.substring(0, 10) + '...' })
+
+    const response = await fetch(url, {
       ...options,
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
@@ -341,7 +344,9 @@ export class WhatsAppService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      throw new Error(`WhatsApp API Error: ${response.status} - ${JSON.stringify(error)}`)
+      const errorStr = JSON.stringify(error)
+      logger.error('WhatsApp API error response', { status: response.status, error: errorStr, url })
+      throw new Error(`WhatsApp API Error: ${response.status} - ${errorStr}`)
     }
 
     return response.json()

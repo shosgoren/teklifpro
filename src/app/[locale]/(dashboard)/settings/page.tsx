@@ -38,19 +38,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-interface SessionData {
-  status: string;
-  user?: {
-    email: string;
-    name: string;
-    id: string;
-    tenantId: string;
-    role: string;
-  };
-}
 
 type TabKey = 'general' | 'parasut' | 'whatsapp' | 'team' | 'subscription';
 
@@ -89,10 +79,8 @@ const SettingsPage = () => {
     whatsappAccessToken: false,
   });
 
-  const { data: session, isLoading: sessionLoading } = useSWR<SessionData>(
-    '/api/debug/session',
-    fetcher
-  );
+  const { data: authSession } = useSession();
+  const session = authSession ? { user: { email: authSession.user?.email || '' } } : null;
 
   const { data: tenantData, mutate: mutateTenant } = useSWR<{
     success: boolean;
@@ -373,7 +361,7 @@ const SettingsPage = () => {
   const inputClass =
     'h-11 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-sm';
 
-  if (sessionLoading) {
+  if (!session) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pb-8 md:px-8">
