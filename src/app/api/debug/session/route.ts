@@ -4,6 +4,10 @@ import { authOptions } from '@/shared/auth/authOptions';
 import { prisma } from '@/shared/utils/prisma';
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
+  }
+
   try {
     const session = await getServerSession(authOptions);
 
