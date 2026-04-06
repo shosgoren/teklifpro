@@ -795,4 +795,613 @@ describe('ParasutClient', () => {
       })
     })
   })
+
+  // --------------------------------------------------
+  // Sales Offers - getSalesOffers
+  // --------------------------------------------------
+  describe('getSalesOffers', () => {
+    const mockOffersResponse = {
+      data: [
+        {
+          id: '100',
+          type: 'sales_offers',
+          attributes: {
+            description: 'Teklif A',
+            status: 'waiting',
+            net_total: 1000,
+            gross_total: 1200,
+            total_vat: 200,
+            total_discount: 0,
+            issue_date: '2026-04-01',
+            due_date: '2026-04-15',
+            currency: 'TRL',
+            updated_at: '2026-04-01T10:00:00Z',
+          },
+        },
+        {
+          id: '101',
+          type: 'sales_offers',
+          attributes: {
+            description: 'Teklif B',
+            status: 'accepted',
+            net_total: 5000,
+            gross_total: 5900,
+            total_vat: 900,
+            total_discount: 100,
+            issue_date: '2026-03-20',
+            due_date: '2026-04-20',
+            currency: 'TRL',
+            updated_at: '2026-03-25T15:00:00Z',
+          },
+        },
+      ],
+      meta: { total_count: 2, total_pages: 1, current_page: 1, per_page: 25 },
+    }
+
+    it('should return paginated sales offers with default pagination', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockOffersResponse)
+
+      const result = await client.getSalesOffers()
+
+      expect(result.data).toHaveLength(2)
+      expect(result.data[0].attributes.description).toBe('Teklif A')
+      expect(result.meta.total_pages).toBe(1)
+
+      const url = mockFetch.mock.calls[0][0] as string
+      expect(url).toContain('sales_offers')
+      expect(url).toContain('page[number]=1')
+      expect(url).toContain('page[size]=25')
+      expect(url).toContain('include=contact')
+    })
+
+    it('should append status filter when provided', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: [], meta: { total_count: 0, total_pages: 0, current_page: 1, per_page: 25 } })
+
+      await client.getSalesOffers(1, 25, { status: 'accepted' })
+
+      const url = mockFetch.mock.calls[0][0] as string
+      expect(url).toContain('filter[status]=accepted')
+    })
+
+    it('should append archived filter when provided', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: [], meta: { total_count: 0, total_pages: 0, current_page: 1, per_page: 25 } })
+
+      await client.getSalesOffers(1, 25, { archived: false })
+
+      const url = mockFetch.mock.calls[0][0] as string
+      expect(url).toContain('filter[archived]=false')
+    })
+
+    it('should use custom pagination parameters', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: [], meta: { total_count: 0, total_pages: 0, current_page: 2, per_page: 10 } })
+
+      await client.getSalesOffers(2, 10)
+
+      const url = mockFetch.mock.calls[0][0] as string
+      expect(url).toContain('page[number]=2')
+      expect(url).toContain('page[size]=10')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - getSalesOffer (single)
+  // --------------------------------------------------
+  describe('getSalesOffer', () => {
+    it('should return single sales offer with details and contact included', async () => {
+      const mockOfferDetail = {
+        data: {
+          id: '100',
+          type: 'sales_offers',
+          attributes: {
+            description: 'Teklif Detay',
+            status: 'waiting',
+            net_total: 1000,
+            gross_total: 1200,
+            total_vat: 200,
+            total_discount: 0,
+            issue_date: '2026-04-01',
+            due_date: '2026-04-15',
+            currency: 'TRL',
+            updated_at: '2026-04-01T10:00:00Z',
+          },
+        },
+        included: [
+          { id: 'd1', type: 'sales_offer_details', attributes: { quantity: 5, unit_price: 200 } },
+        ],
+      }
+
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockOfferDetail)
+
+      const result = await client.getSalesOffer('100')
+
+      expect(result.data.id).toBe('100')
+      expect(result.data.attributes.description).toBe('Teklif Detay')
+      expect(result.included).toHaveLength(1)
+
+      const url = mockFetch.mock.calls[0][0] as string
+      expect(url).toContain('sales_offers/100')
+      expect(url).toContain('include=details.product,contact')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - createSalesOffer
+  // --------------------------------------------------
+  describe('createSalesOffer', () => {
+    it('should POST to sales_offers with JSONAPI body and return created offer', async () => {
+      const createBody = {
+        data: {
+          type: 'sales_offers' as const,
+          attributes: {
+            issue_date: '2026-04-06',
+            description: 'New Offer',
+            currency: 'TRL',
+          },
+          relationships: {
+            contact: { data: { id: '50', type: 'contacts' } },
+            details: { data: [] },
+          },
+        },
+      }
+
+      const mockResponse = {
+        data: {
+          id: '200',
+          type: 'sales_offers',
+          attributes: {
+            description: 'New Offer',
+            status: 'waiting',
+            net_total: 0,
+            gross_total: 0,
+            total_vat: 0,
+            total_discount: 0,
+            issue_date: '2026-04-06',
+            currency: 'TRL',
+            updated_at: '2026-04-06T12:00:00Z',
+          },
+        },
+      }
+
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockResponse)
+
+      const result = await client.createSalesOffer(createBody as any)
+
+      expect(result.data.id).toBe('200')
+      expect(result.data.attributes.description).toBe('New Offer')
+
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toContain('sales_offers')
+      expect(options.method).toBe('POST')
+      const sentBody = JSON.parse(options.body)
+      expect(sentBody.data.type).toBe('sales_offers')
+      expect(sentBody.data.attributes.description).toBe('New Offer')
+      expect(sentBody.data.relationships.contact.data.id).toBe('50')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - updateSalesOffer
+  // --------------------------------------------------
+  describe('updateSalesOffer', () => {
+    it('should PUT to sales_offers/:id with updated body', async () => {
+      const updateBody = {
+        data: {
+          type: 'sales_offers' as const,
+          attributes: {
+            description: 'Updated Offer',
+            currency: 'USD',
+          },
+          relationships: {
+            contact: { data: { id: '50', type: 'contacts' } },
+            details: { data: [] },
+          },
+        },
+      }
+
+      const mockResponse = {
+        data: {
+          id: '200',
+          type: 'sales_offers',
+          attributes: {
+            description: 'Updated Offer',
+            status: 'waiting',
+            net_total: 0,
+            gross_total: 0,
+            total_vat: 0,
+            total_discount: 0,
+            currency: 'USD',
+            updated_at: '2026-04-06T14:00:00Z',
+          },
+        },
+      }
+
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockResponse)
+
+      const result = await client.updateSalesOffer('200', updateBody as any)
+
+      expect(result.data.attributes.description).toBe('Updated Offer')
+
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toContain('sales_offers/200')
+      expect(options.method).toBe('PUT')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - deleteSalesOffer
+  // --------------------------------------------------
+  describe('deleteSalesOffer', () => {
+    it('should DELETE sales_offers/:id', async () => {
+      const client = createAuthenticatedClient()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 204,
+        json: async () => undefined,
+      })
+
+      await client.deleteSalesOffer('200')
+
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toContain('sales_offers/200')
+      expect(options.method).toBe('DELETE')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - updateSalesOfferStatus
+  // --------------------------------------------------
+  describe('updateSalesOfferStatus', () => {
+    it.each(['accepted', 'rejected', 'waiting'] as const)(
+      'should PATCH status to %s',
+      async (status) => {
+        const mockResponse = {
+          data: {
+            id: '100',
+            type: 'sales_offers',
+            attributes: {
+              status,
+              description: 'Some Offer',
+              net_total: 1000,
+              gross_total: 1200,
+              total_vat: 200,
+              total_discount: 0,
+              updated_at: '2026-04-06T15:00:00Z',
+            },
+          },
+        }
+
+        const client = createAuthenticatedClient()
+        mockFetchOk(mockResponse)
+
+        const result = await client.updateSalesOfferStatus('100', status)
+
+        expect(result.data.attributes.status).toBe(status)
+
+        const [url, options] = mockFetch.mock.calls[0]
+        expect(url).toContain('sales_offers/100/update_status')
+        expect(options.method).toBe('PATCH')
+        const sentBody = JSON.parse(options.body)
+        expect(sentBody.data.id).toBe('100')
+        expect(sentBody.data.type).toBe('sales_offers')
+        expect(sentBody.data.attributes.status).toBe(status)
+      }
+    )
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - generateSalesOfferPdf
+  // --------------------------------------------------
+  describe('generateSalesOfferPdf', () => {
+    it('should POST to sales_offers/:id/pdf and return job data', async () => {
+      const mockResponse = {
+        data: {
+          id: 'job-555',
+          type: 'trackable_jobs',
+          attributes: { url: '', status: 'running' },
+        },
+      }
+
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockResponse)
+
+      const result = await client.generateSalesOfferPdf('100')
+
+      expect(result.data.id).toBe('job-555')
+      expect(result.data.attributes.status).toBe('running')
+
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toContain('sales_offers/100/pdf')
+      expect(options.method).toBe('POST')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - pushProposal
+  // --------------------------------------------------
+  describe('pushProposal', () => {
+    const baseProposal = {
+      id: 'prop-1',
+      title: 'Test Teklif',
+      description: 'Aciklama',
+      currency: 'TRY',
+      subtotal: 1000,
+      discountType: 'PERCENTAGE' as const,
+      discountValue: 10,
+      grandTotal: 900,
+      expiresAt: new Date('2026-05-01'),
+      notes: 'Notlar burada',
+      customer: {
+        parasutId: 'parasut-cust-1',
+        taxNumber: '1234567890',
+        taxOffice: 'Kadikoy VD',
+        address: 'Istanbul',
+        city: 'Istanbul',
+        district: 'Kadikoy',
+        phone: '555-1234',
+      },
+      items: [
+        {
+          name: 'Urun A',
+          description: 'Detay A',
+          quantity: 5,
+          unitPrice: 100,
+          vatRate: 20,
+          discountRate: 10,
+          product: { parasutId: 'parasut-prod-1' },
+        },
+        {
+          name: 'Hizmet B',
+          description: null,
+          quantity: 1,
+          unitPrice: 500,
+          vatRate: 20,
+          discountRate: 0,
+          product: null,
+        },
+      ],
+    }
+
+    it('should throw when customer has no parasutId', async () => {
+      const client = createAuthenticatedClient()
+      const proposal = {
+        ...baseProposal,
+        customer: { ...baseProposal.customer, parasutId: null },
+      }
+
+      await expect(client.pushProposal(proposal)).rejects.toThrow(
+        'Customer does not have a Parasut ID'
+      )
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('should map TRY currency to TRL for Parasut', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-1', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal(baseProposal)
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(sentBody.data.attributes.currency).toBe('TRL')
+    })
+
+    it('should keep USD/EUR/GBP currencies as-is', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-2', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal({ ...baseProposal, currency: 'USD' })
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(sentBody.data.attributes.currency).toBe('USD')
+    })
+
+    it('should map line items with product parasutId as relationships', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-3', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal(baseProposal)
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const details = sentBody.data.relationships.details.data
+
+      expect(details).toHaveLength(2)
+      // First item has product parasutId
+      expect(details[0].relationships.product.data.id).toBe('parasut-prod-1')
+      expect(details[0].relationships.product.data.type).toBe('products')
+      expect(details[0].attributes.quantity).toBe(5)
+      expect(details[0].attributes.unit_price).toBe(100)
+      expect(details[0].attributes.vat_rate).toBe(20)
+      expect(details[0].attributes.discount_type).toBe('percentage')
+      expect(details[0].attributes.discount_value).toBe(10)
+      // Second item has no product
+      expect(details[1].relationships).toBeUndefined()
+      expect(details[1].attributes.discount_type).toBeUndefined()
+      expect(details[1].attributes.discount_value).toBeUndefined()
+    })
+
+    it('should set contact relationship with customer parasutId', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-4', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal(baseProposal)
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(sentBody.data.relationships.contact.data.id).toBe('parasut-cust-1')
+      expect(sentBody.data.relationships.contact.data.type).toBe('contacts')
+    })
+
+    it('should map customer billing fields to Parasut attributes', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-5', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal(baseProposal)
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const attrs = sentBody.data.attributes
+      expect(attrs.billing_address).toBe('Istanbul')
+      expect(attrs.billing_phone).toBe('555-1234')
+      expect(attrs.tax_office).toBe('Kadikoy VD')
+      expect(attrs.tax_number).toBe('1234567890')
+      expect(attrs.city).toBe('Istanbul')
+      expect(attrs.district).toBe('Kadikoy')
+      expect(attrs.content).toBe('Notlar burada')
+    })
+
+    it('should map PERCENTAGE discount type correctly', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-6', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal(baseProposal)
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(sentBody.data.attributes.invoice_discount_type).toBe('percentage')
+      expect(sentBody.data.attributes.invoice_discount).toBe(10)
+    })
+
+    it('should map FIXED discount type to amount', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-7', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal({ ...baseProposal, discountType: 'FIXED', discountValue: 50 })
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(sentBody.data.attributes.invoice_discount_type).toBe('amount')
+      expect(sentBody.data.attributes.invoice_discount).toBe(50)
+    })
+
+    it('should set due_date from expiresAt', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'new-offer-8', type: 'sales_offers', attributes: {} } })
+
+      await client.pushProposal(baseProposal)
+
+      const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(sentBody.data.attributes.due_date).toBe('2026-05-01')
+    })
+
+    it('should return the Parasut offer ID', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchOk({ data: { id: 'returned-id-999', type: 'sales_offers', attributes: {} } })
+
+      const result = await client.pushProposal(baseProposal)
+
+      expect(result).toBe('returned-id-999')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - pullSalesOfferStatus
+  // --------------------------------------------------
+  describe('pullSalesOfferStatus', () => {
+    it('should return mapped status fields from Parasut offer', async () => {
+      const mockResponse = {
+        data: {
+          id: '100',
+          type: 'sales_offers',
+          attributes: {
+            status: 'accepted',
+            net_total: 1000,
+            gross_total: 1200,
+            total_vat: 200,
+            total_discount: 50,
+            updated_at: '2026-04-05T18:00:00Z',
+            description: 'Some offer',
+            issue_date: '2026-04-01',
+            currency: 'TRL',
+          },
+        },
+        included: [],
+      }
+
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockResponse)
+
+      const result = await client.pullSalesOfferStatus('100')
+
+      expect(result).toEqual({
+        status: 'accepted',
+        netTotal: 1000,
+        grossTotal: 1200,
+        totalVat: 200,
+        totalDiscount: 50,
+        updatedAt: '2026-04-05T18:00:00Z',
+      })
+
+      const url = mockFetch.mock.calls[0][0] as string
+      expect(url).toContain('sales_offers/100')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - shareSalesOffer
+  // --------------------------------------------------
+  describe('shareSalesOffer', () => {
+    it('should POST sharing data to sharings endpoint', async () => {
+      const sharingBody = {
+        data: {
+          type: 'sharings',
+          attributes: {
+            email: 'musteri@example.com',
+            sending_type: 'email',
+          },
+          relationships: {
+            sharable: {
+              data: { id: '100', type: 'sales_offers' },
+            },
+          },
+        },
+      }
+
+      const mockResponse = { data: { id: 'sharing-1', type: 'sharings' } }
+
+      const client = createAuthenticatedClient()
+      mockFetchOk(mockResponse)
+
+      const result = await client.shareSalesOffer(sharingBody as any)
+
+      expect(result.data).toBeDefined()
+
+      const [url, options] = mockFetch.mock.calls[0]
+      expect(url).toContain('sharings')
+      expect(options.method).toBe('POST')
+      const sentBody = JSON.parse(options.body)
+      expect(sentBody.data.type).toBe('sharings')
+      expect(sentBody.data.relationships.sharable.data.id).toBe('100')
+      expect(sentBody.data.relationships.sharable.data.type).toBe('sales_offers')
+    })
+  })
+
+  // --------------------------------------------------
+  // Sales Offers - Error cases
+  // --------------------------------------------------
+  describe('Sales Offers Error Handling', () => {
+    it('should throw PARASUT_API_ERROR on 404 for getSalesOffer', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchError(404, { errors: [{ title: 'Not Found' }] })
+
+      await expect(client.getSalesOffer('nonexistent')).rejects.toThrow('PARASUT_API_ERROR')
+    })
+
+    it('should throw PARASUT_API_ERROR on 422 for createSalesOffer', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchError(422, { errors: [{ title: 'Validation Error', detail: 'Contact is required' }] })
+
+      await expect(
+        client.createSalesOffer({ data: { type: 'sales_offers', attributes: {} } } as any)
+      ).rejects.toThrow('PARASUT_API_ERROR')
+    })
+
+    it('should throw PARASUT_API_ERROR on 500 for deleteSalesOffer', async () => {
+      const client = createAuthenticatedClient()
+      mockFetchError(500, { error: 'Internal Server Error' })
+
+      await expect(client.deleteSalesOffer('100')).rejects.toThrow('PARASUT_API_ERROR')
+    })
+  })
 })

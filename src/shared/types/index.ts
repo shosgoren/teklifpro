@@ -102,6 +102,132 @@ export interface ParasutPaginatedResponse<T> {
   }
 }
 
+// Sales Offer from Parasut API
+export interface ParasutSalesOffer {
+  id: string
+  type: string
+  attributes: {
+    content: string | null
+    contact_type: string | null
+    status: string // 'waiting' | 'accepted' | 'rejected'
+    archived: boolean
+    net_total: number // grandTotal
+    gross_total: number // subtotal
+    total_vat: number
+    total_discount: number
+    description: string | null
+    issue_date: string // YYYY-MM-DD
+    due_date: string | null
+    currency: string // TRL, USD, EUR, GBP
+    exchange_rate: number | null
+    invoice_discount_type: string | null // 'percentage' | 'amount'
+    invoice_discount: number | null
+    billing_address: string | null
+    billing_phone: string | null
+    tax_office: string | null
+    tax_number: string | null
+    city: string | null
+    district: string | null
+    order_no: string | null
+    created_at: string
+    updated_at: string
+  }
+  relationships?: {
+    contact?: { data: { id: string; type: string } | null }
+    details?: { data: Array<{ id: string; type: string }> }
+    sales_invoice?: { data: { id: string; type: string } | null }
+  }
+}
+
+export interface ParasutSalesOfferDetail {
+  id: string
+  type: string
+  attributes: {
+    description: string | null
+    net_total: number
+    unit_price: number
+    vat_rate: number
+    quantity: number
+    discount_type: string | null
+    discount_value: number | null
+    discount: number | null
+    detail_no: number | null
+    created_at: string
+    updated_at: string
+  }
+  relationships?: {
+    product?: { data: { id: string; type: string } | null }
+  }
+}
+
+export interface ParasutSalesOfferCreateData {
+  data: {
+    type: 'sales_offers'
+    attributes: {
+      issue_date: string
+      due_date?: string
+      description?: string
+      currency?: string
+      exchange_rate?: number
+      invoice_discount_type?: string
+      invoice_discount?: number
+      billing_address?: string
+      billing_phone?: string
+      tax_office?: string
+      tax_number?: string
+      city?: string
+      district?: string
+      content?: string
+    }
+    relationships: {
+      contact: {
+        data: { id: string; type: 'contacts' }
+      }
+      details: {
+        data: Array<{
+          type: 'sales_offer_details'
+          attributes: {
+            quantity: number
+            unit_price: number
+            vat_rate: number
+            discount_type?: string
+            discount_value?: number
+            description?: string
+          }
+          relationships?: {
+            product?: {
+              data: { id: string; type: 'products' }
+            }
+          }
+        }>
+      }
+    }
+  }
+}
+
+export interface ParasutSharingData {
+  data: {
+    type: 'sharing_forms'
+    attributes: {
+      email: {
+        addresses: string
+        subject: string
+        body: string
+      }
+      portal?: {
+        has_online_collection?: boolean
+        has_online_payment_reminder?: boolean
+        has_referral_link?: boolean
+      }
+    }
+    relationships: {
+      shareable: {
+        data: { id: string; type: 'sales_offers' }
+      }
+    }
+  }
+}
+
 // ==================== Proposal Types ====================
 
 export type ProposalStatusType =

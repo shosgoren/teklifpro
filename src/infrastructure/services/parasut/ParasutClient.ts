@@ -17,6 +17,10 @@ import type {
   ParasutProduct,
   ParasutContactPerson,
   ParasutPaginatedResponse,
+  ParasutSalesOffer,
+  ParasutSalesOfferDetail,
+  ParasutSalesOfferCreateData,
+  ParasutSharingData,
 } from '@/shared/types'
 
 const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/v4'
@@ -567,5 +571,268 @@ export class ParasutClient {
     }
 
     return { synced: accounts.length }
+  }
+
+  // ==================== SALES OFFERS (Teklifler) ====================
+
+  /**
+   * Tum teklifleri listele (pagination ile)
+   */
+  async getSalesOffers(
+    page = 1,
+    perPage = 25,
+    options?: { status?: string; archived?: boolean }
+  ): Promise<ParasutPaginatedResponse<ParasutSalesOffer>> {
+    let url = `sales_offers?page[number]=${page}&page[size]=${perPage}&include=contact`
+    if (options?.status) url += `&filter[status]=${options.status}`
+    if (options?.archived !== undefined) url += `&filter[archived]=${options.archived}`
+    return this.request<ParasutPaginatedResponse<ParasutSalesOffer>>(url)
+  }
+
+  /**
+   * Tek teklif detayi (line items dahil)
+   */
+  async getSalesOffer(id: string): Promise<{
+    data: ParasutSalesOffer
+    included?: Array<ParasutSalesOfferDetail | Record<string, unknown>>
+  }> {
+    return this.request(`sales_offers/${id}?include=details.product,contact`)
+  }
+
+  /**
+   * Yeni teklif olustur
+   */
+  async createSalesOffer(
+    body: ParasutSalesOfferCreateData
+  ): Promise<{ data: ParasutSalesOffer }> {
+    return this.request<{ data: ParasutSalesOffer }>('sales_offers', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Teklif guncelle
+   */
+  async updateSalesOffer(
+    id: string,
+    body: ParasutSalesOfferCreateData
+  ): Promise<{ data: ParasutSalesOffer }> {
+    return this.request<{ data: ParasutSalesOffer }>(`sales_offers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Teklif sil
+   */
+  async deleteSalesOffer(id: string): Promise<void> {
+    await this.request<void>(`sales_offers/${id}`, { method: 'DELETE' })
+  }
+
+  /**
+   * Teklif durumunu guncelle (accepted/rejected/waiting)
+   */
+  async updateSalesOfferStatus(
+    id: string,
+    status: 'accepted' | 'rejected' | 'waiting'
+  ): Promise<{ data: ParasutSalesOffer }> {
+    return this.request<{ data: ParasutSalesOffer }>(
+      `sales_offers/${id}/update_status`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          data: {
+            id,
+            type: 'sales_offers',
+            attributes: { status },
+          },
+        }),
+      }
+    )
+  }
+
+  /**
+   * Teklif PDF olustur (async job dondurur)
+   */
+  async generateSalesOfferPdf(
+    id: string
+  ): Promise<{ data: { id: string; type: string; attributes: { url: string; status: string } } }> {
+    return this.request(`sales_offers/${id}/pdf`, { method: 'POST' })
+  }
+
+  /**
+   * Teklif arsivle
+   */
+  async archiveSalesOffer(id: string): Promise<{ data: ParasutSalesOffer }> {
+    return this.request<{ data: ParasutSalesOffer }>(
+      `sales_offers/${id}/archive`,
+      { method: 'PATCH' }
+    )
+  }
+
+  /**
+   * Teklif arsivden cikar
+   */
+  async unarchiveSalesOffer(id: string): Promise<{ data: ParasutSalesOffer }> {
+    return this.request<{ data: ParasutSalesOffer }>(
+      `sales_offers/${id}/unarchive`,
+      { method: 'PATCH' }
+    )
+  }
+
+  /**
+   * Teklif detay satirlarini getir
+   */
+  async getSalesOfferDetails(
+    id: string
+  ): Promise<{ data: ParasutSalesOfferDetail[] }> {
+    return this.request<{ data: ParasutSalesOfferDetail[] }>(
+      `sales_offers/${id}/details`
+    )
+  }
+
+  /**
+   * Teklifi e-posta ile gonder (Parasut uzerinden)
+   */
+  async shareSalesOffer(body: ParasutSharingData): Promise<{ data: Record<string, unknown> }> {
+    return this.request<{ data: Record<string, unknown> }>('sharings', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  /**
+   * Async job durumunu kontrol et (PDF gibi)
+   */
+  async getTrackableJob(
+    id: string
+  ): Promise<{ data: { id: string; type: string; attributes: { url: string; status: string; result: string | null } } }> {
+    return this.request(`trackable_jobs/${id}`)
+  }
+
+  // ==================== PROPOSAL SYNC ====================
+
+  /**
+   * TeklifPro proposal'ini Parasut sales_offer'a donustur ve push et
+   * Returns the Parasut offer ID
+   */
+  async pushProposal(proposal: {
+    id: string
+    title: string
+    description: string | null
+    currency: string
+    subtotal: number
+    discountType: string | null
+    discountValue: number | null
+    grandTotal: number
+    expiresAt: Date | null
+    notes: string | null
+    customer: {
+      parasutId: string | null
+      taxNumber: string | null
+      taxOffice: string | null
+      address: string | null
+      city: string | null
+      district: string | null
+      phone: string | null
+    }
+    items: Array<{
+      name: string
+      description: string | null
+      quantity: number
+      unitPrice: number
+      vatRate: number
+      discountRate: number
+      product: { parasutId: string | null } | null
+    }>
+  }): Promise<string> {
+    if (!proposal.customer.parasutId) {
+      throw new Error('Customer does not have a Parasut ID. Sync the customer first.')
+    }
+
+    // Map TeklifPro currency to Parasut currency
+    const currencyMap: Record<string, string> = {
+      TRY: 'TRL', USD: 'USD', EUR: 'EUR', GBP: 'GBP',
+    }
+
+    const issueDate = new Date().toISOString().split('T')[0]
+    const dueDate = proposal.expiresAt
+      ? proposal.expiresAt.toISOString().split('T')[0]
+      : undefined
+
+    const details = proposal.items.map((item) => {
+      const detail: any = {
+        type: 'sales_offer_details' as const,
+        attributes: {
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          vat_rate: item.vatRate,
+          description: item.name + (item.description ? ` - ${item.description}` : ''),
+          discount_type: item.discountRate > 0 ? 'percentage' : undefined,
+          discount_value: item.discountRate > 0 ? item.discountRate : undefined,
+        },
+      }
+      if (item.product?.parasutId) {
+        detail.relationships = {
+          product: { data: { id: item.product.parasutId, type: 'products' } },
+        }
+      }
+      return detail
+    })
+
+    const body: ParasutSalesOfferCreateData = {
+      data: {
+        type: 'sales_offers',
+        attributes: {
+          issue_date: issueDate,
+          due_date: dueDate,
+          description: proposal.title,
+          currency: currencyMap[proposal.currency] || 'TRL',
+          content: proposal.notes || undefined,
+          billing_address: proposal.customer.address || undefined,
+          billing_phone: proposal.customer.phone || undefined,
+          tax_office: proposal.customer.taxOffice || undefined,
+          tax_number: proposal.customer.taxNumber || undefined,
+          city: proposal.customer.city || undefined,
+          district: proposal.customer.district || undefined,
+          invoice_discount_type: proposal.discountType === 'PERCENTAGE' ? 'percentage' : proposal.discountType === 'FIXED' ? 'amount' : undefined,
+          invoice_discount: proposal.discountValue ? Number(proposal.discountValue) : undefined,
+        },
+        relationships: {
+          contact: {
+            data: { id: proposal.customer.parasutId, type: 'contacts' },
+          },
+          details: { data: details },
+        },
+      },
+    }
+
+    const result = await this.createSalesOffer(body)
+    return result.data.id
+  }
+
+  /**
+   * Parasut'taki teklif durumunu TeklifPro'ya cek
+   */
+  async pullSalesOfferStatus(parasutOfferId: string): Promise<{
+    status: 'waiting' | 'accepted' | 'rejected'
+    netTotal: number
+    grossTotal: number
+    totalVat: number
+    totalDiscount: number
+    updatedAt: string
+  }> {
+    const result = await this.getSalesOffer(parasutOfferId)
+    const attrs = result.data.attributes
+    return {
+      status: attrs.status as 'waiting' | 'accepted' | 'rejected',
+      netTotal: attrs.net_total,
+      grossTotal: attrs.gross_total,
+      totalVat: attrs.total_vat,
+      totalDiscount: attrs.total_discount,
+      updatedAt: attrs.updated_at,
+    }
   }
 }

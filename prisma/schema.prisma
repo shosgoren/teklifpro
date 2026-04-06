@@ -476,6 +476,10 @@ model Proposal {
   whatsappSentAt    DateTime?       @map("whatsapp_sent_at")
   whatsappMessageId String?         @map("whatsapp_message_id")
 
+  // Parasut Integration
+  parasutOfferId    String?         @unique @map("parasut_offer_id")
+  parasutLastSyncAt DateTime?       @map("parasut_last_sync_at")
+
   // Voice Note
   voiceNoteData     String?         @map("voice_note_data")     // base64 audio data
   voiceNoteDuration Int?            @map("voice_note_duration")  // seconds
@@ -501,6 +505,7 @@ model Proposal {
   @@unique([tenantId, proposalNumber])
   @@index([tenantId, status])
   @@index([publicToken])
+  @@index([parasutOfferId])
   @@map("proposals")
 }
 
