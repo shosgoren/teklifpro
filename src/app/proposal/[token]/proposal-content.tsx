@@ -20,6 +20,7 @@ import {
   Landmark,
   Copy,
   CreditCard,
+  Download,
 } from 'lucide-react'
 import { useState } from 'react'
 import ProposalActions from './proposal-actions'
@@ -87,6 +88,7 @@ interface ProposalContentProps {
   }
   contacts: { id: string; name: string; title: string | null }[]
   isResponded: boolean
+  token: string
 }
 
 const statusDisplay: Record<string, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
@@ -107,6 +109,7 @@ export default function ProposalContent({
   financials,
   contacts,
   isResponded,
+  token,
 }: ProposalContentProps) {
   const [showDetails, setShowDetails] = useState(false)
   const [showBankInfo, setShowBankInfo] = useState(false)
@@ -629,6 +632,15 @@ export default function ProposalContent({
                 <Shield className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Bu imza güvenli şekilde şifrelenmiş olarak saklanmaktadır</span>
               </div>
+
+              {/* Signed PDF Download */}
+              <a
+                href={`/api/proposals/signed-pdf?token=${token}`}
+                className="flex items-center justify-center gap-2 w-full py-3 mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-emerald-500/25 transition-all text-sm"
+              >
+                <Download className="w-4 h-4" />
+                İmzalı PDF İndir
+              </a>
             </div>
           </div>
         )}

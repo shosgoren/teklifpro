@@ -284,6 +284,7 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
         title: c.title,
       }))}
       isResponded={isResponded}
+      token={params.token}
     />
     </>
   )

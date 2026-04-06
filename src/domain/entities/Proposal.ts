@@ -20,6 +20,13 @@ export interface ProposalCustomer {
   logo?: string;
 }
 
+export interface ProposalSignature {
+  data: string;           // base64 image data
+  signerName?: string;
+  signerTitle?: string;
+  signedAt?: string;      // ISO date
+}
+
 export interface Proposal {
   id: string;
   number: string;
@@ -35,4 +42,8 @@ export interface Proposal {
   paymentTerms?: string;
   deliveryTerms?: string;
   notes?: string;
+  companySignature?: ProposalSignature;
+  companySeal?: string;       // base64 image
+  customerSignature?: ProposalSignature;
+  verificationHash?: string;
 }

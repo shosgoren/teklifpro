@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ProposalPdfService } from '@/infrastructure/services/pdf/ProposalPdfService';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { prisma } from '@/shared/utils/prisma';
+import { decryptSignature } from '@/shared/utils/signatureCrypto';
 import type { Proposal } from '@/domain/entities/Proposal';
 import type { Tenant } from '@/domain/entities/Tenant';
 import { Logger } from '@/infrastructure/logger';
@@ -51,8 +52,45 @@ function mapToProposalEntity(
   };
 }
 
+function addSignatureData(
+  proposal: Proposal,
+  dbProposal: DbProposal,
+  tenant: { companySignature: string | null; companySeal: string | null; companySignerName: string | null; companySignerTitle: string | null }
+): Proposal {
+  // Company signature from tenant settings
+  if (tenant.companySignature) {
+    const decrypted = decryptSignature(tenant.companySignature);
+    if (decrypted && decrypted.startsWith('data:image/')) {
+      proposal.companySignature = {
+        data: decrypted,
+        signerName: tenant.companySignerName || undefined,
+        signerTitle: tenant.companySignerTitle || undefined,
+      };
+    }
+  }
+  // Company seal from tenant settings
+  if (tenant.companySeal) {
+    const decrypted = decryptSignature(tenant.companySeal);
+    if (decrypted && decrypted.startsWith('data:image/')) {
+      proposal.companySeal = decrypted;
+    }
+  }
+  // Customer signature from proposal (if accepted)
+  if (dbProposal.status === 'ACCEPTED' && dbProposal.signatureData) {
+    const decrypted = decryptSignature(dbProposal.signatureData);
+    if (decrypted && decrypted.startsWith('data:image/')) {
+      proposal.customerSignature = {
+        data: decrypted,
+        signerName: dbProposal.signerName || undefined,
+        signedAt: dbProposal.signedAt?.toISOString() || undefined,
+      };
+    }
+  }
+  return proposal;
+}
+
 function mapToTenantEntity(
-  dbTenant: { id: string; name: string; address: string | null; phone: string | null; email: string; taxNumber: string | null; logo: string | null }
+  dbTenant: { id: string; name: string; address: string | null; phone: string | null; email: string; taxNumber: string | null; logo: string | null; companySignerName?: string | null; companySignerTitle?: string | null }
 ): Tenant {
   return {
     id: dbTenant.id,
@@ -62,6 +100,8 @@ function mapToTenantEntity(
     email: dbTenant.email,
     taxNumber: dbTenant.taxNumber || undefined,
     logo: dbTenant.logo || undefined,
+    companySignerName: dbTenant.companySignerName || undefined,
+    companySignerTitle: dbTenant.companySignerTitle || undefined,
   };
 }
 
@@ -87,9 +127,12 @@ async function fetchProposal(id: string, tenantId: string) {
       items: {
         orderBy: { sortOrder: 'asc' },
       },
+      contact: { select: { name: true, title: true } },
     },
   });
 }
+
+type DbProposal = NonNullable<Awaited<ReturnType<typeof fetchProposal>>>;
 
 /**
  * GET /api/v1/proposals/[id]/pdf
@@ -123,7 +166,7 @@ async function handleGet(
     // Fetch tenant data
     const dbTenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
     });
     if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
@@ -131,8 +174,11 @@ async function handleGet(
 
     const tenant = mapToTenantEntity(dbTenant);
 
+    // Add signature data for signed PDF
+    const proposalWithSigs = addSignatureData(proposal, dbProposal, dbTenant);
+
     // Generate PDF
-    const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposal, tenant);
+    const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposalWithSigs, tenant);
 
     // Create filename
     const filename = `TKL-${proposal.number}.pdf`;
@@ -197,7 +243,7 @@ async function handlePost(
 
     const dbTenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, companySignature: true, companySeal: true, companySignerName: true, companySignerTitle: true },
     });
     if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
@@ -205,8 +251,11 @@ async function handlePost(
 
     const tenant = mapToTenantEntity(dbTenant);
 
+    // Add signature data for signed PDF
+    const proposalWithSigs = addSignatureData(proposal, dbProposal, dbTenant);
+
     // Generate PDF
-    const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposal, tenant);
+    const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposalWithSigs, tenant);
 
     // Return as base64 for preview
     const base64 = pdfBuffer.toString('base64');

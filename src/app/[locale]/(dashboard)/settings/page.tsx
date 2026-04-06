@@ -35,6 +35,8 @@ import {
   MapPin,
   Hash,
   Landmark,
+  PenTool,
+  Stamp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -96,6 +98,10 @@ const SettingsPage = () => {
       whatsappPhoneId: string | null;
       whatsappAccessToken: string | null;
       whatsappBusinessId: string | null;
+      companySignature: string | null;
+      companySeal: string | null;
+      companySignerName: string | null;
+      companySignerTitle: string | null;
     };
   }>('/api/v1/settings/logo', fetcher);
 
@@ -120,6 +126,13 @@ const SettingsPage = () => {
   }
 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+
+  const [companySignature, setCompanySignature] = useState<string | null>(null);
+  const [companySeal, setCompanySeal] = useState<string | null>(null);
+  const [companySignerName, setCompanySignerName] = useState('');
+  const [companySignerTitle, setCompanySignerTitle] = useState('');
+  const signatureInputRef = useRef<HTMLInputElement>(null);
+  const sealInputRef = useRef<HTMLInputElement>(null);
 
   const addBankAccount = () => {
     setBankAccounts([...bankAccounts, { bankName: '', branchName: '', accountHolder: '', iban: '', currency: 'TRY' }]);
@@ -215,6 +228,10 @@ const SettingsPage = () => {
         taxOffice: t.taxOffice || prev.taxOffice,
       }));
       setLogo(t.logo || null);
+      setCompanySignature(t.companySignature || null);
+      setCompanySeal(t.companySeal || null);
+      setCompanySignerName(t.companySignerName || '');
+      setCompanySignerTitle(t.companySignerTitle || '');
       const tenantWithBank = t as typeof t & { bankAccounts?: BankAccount[] };
       if (Array.isArray(tenantWithBank.bankAccounts)) {
         setBankAccounts(tenantWithBank.bankAccounts);
@@ -256,6 +273,43 @@ const SettingsPage = () => {
     };
     reader.readAsDataURL(file);
     e.target.value = '';
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string | null) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      toast.error('Dosya en fazla 500KB olabilir.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setter(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSignatureSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/v1/settings/logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companySignature,
+          companySeal,
+          companySignerName,
+          companySignerTitle,
+        }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      await mutateTenant();
+      markClean();
+      toast.success('E-imza ayarları kaydedildi');
+    } catch {
+      toast.error('E-imza ayarları kaydedilemedi.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleGeneralSave = async () => {
@@ -705,6 +759,138 @@ const SettingsPage = () => {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* E-İmza & Kaşe Card */}
+            <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600" />
+              <div className="p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
+                    <PenTool className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">E-İmza & Kaşe</h3>
+                    <p className="text-xs text-gray-400">PDF tekliflerinizde kullanılacak firma imzası ve kaşesi</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-l-4 border-emerald-400 mb-6">
+                  <Shield className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                    İmza ve kaşe verileri AES-256-GCM ile şifrelenerek güvenli bir şekilde saklanır. Müşteri teklifi kabul ettiğinde PDF&apos;te her iki imza birlikte görünür.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                  {/* Company Signature Upload */}
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <PenTool className="w-3.5 h-3.5" /> Firma İmzası
+                    </Label>
+                    <div className="relative group">
+                      <div className="w-full h-32 rounded-xl border-2 border-dashed border-emerald-300 dark:border-emerald-700 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden transition-all group-hover:border-emerald-400 group-hover:shadow-lg">
+                        {companySignature ? (
+                          <img src={companySignature} alt="Firma İmzası" className="w-full h-full object-contain p-3" />
+                        ) : (
+                          <div className="text-center">
+                            <PenTool className="w-8 h-8 text-emerald-200 dark:text-emerald-800 mx-auto mb-1" />
+                            <span className="text-[10px] text-gray-400">İmza yüklenmedi</span>
+                          </div>
+                        )}
+                      </div>
+                      {companySignature && (
+                        <button
+                          onClick={() => setCompanySignature(null)}
+                          className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <input ref={signatureInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, setCompanySignature)} />
+                    <button
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-medium rounded-xl hover:opacity-90 shadow-md text-xs"
+                      onClick={() => signatureInputRef.current?.click()}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      İmza Yükle
+                    </button>
+                    <p className="text-[10px] text-gray-400">PNG (saydam arka plan önerilir) - Maks 500KB</p>
+                  </div>
+
+                  {/* Company Seal Upload */}
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Stamp className="w-3.5 h-3.5" /> Firma Kaşesi
+                    </Label>
+                    <div className="relative group">
+                      <div className="w-full h-32 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden transition-all group-hover:border-teal-400 group-hover:shadow-lg">
+                        {companySeal ? (
+                          <img src={companySeal} alt="Firma Kaşesi" className="w-full h-full object-contain p-3" />
+                        ) : (
+                          <div className="text-center">
+                            <Stamp className="w-8 h-8 text-teal-200 dark:text-teal-800 mx-auto mb-1" />
+                            <span className="text-[10px] text-gray-400">Kaşe yüklenmedi</span>
+                          </div>
+                        )}
+                      </div>
+                      {companySeal && (
+                        <button
+                          onClick={() => setCompanySeal(null)}
+                          className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <input ref={sealInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, setCompanySeal)} />
+                    <button
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-medium rounded-xl hover:opacity-90 shadow-md text-xs"
+                      onClick={() => sealInputRef.current?.click()}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      Kaşe Yükle
+                    </button>
+                    <p className="text-[10px] text-gray-400">PNG (saydam arka plan önerilir) - Maks 500KB</p>
+                  </div>
+                </div>
+
+                {/* Signer Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="signer-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">İmza Sahibi Adı</Label>
+                    <Input
+                      id="signer-name"
+                      className={inputClass}
+                      value={companySignerName}
+                      onChange={e => setCompanySignerName(e.target.value)}
+                      placeholder="Ahmet Yılmaz"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signer-title" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">İmza Sahibi Ünvanı</Label>
+                    <Input
+                      id="signer-title"
+                      className={inputClass}
+                      value={companySignerTitle}
+                      onChange={e => setCompanySignerTitle(e.target.value)}
+                      placeholder="Genel Müdür"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={handleSignatureSave}
+                    disabled={saving}
+                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    E-İmza Kaydet
+                  </button>
+                </div>
               </div>
             </div>
           </div>

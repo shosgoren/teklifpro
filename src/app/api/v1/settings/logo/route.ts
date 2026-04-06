@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
+import { encryptSignature, decryptSignature } from '@/shared/utils/signatureCrypto';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('LogoSettingsAPI');
@@ -25,15 +26,22 @@ async function handleGet(request: NextRequest) {
         whatsappPhoneId: true,
         whatsappAccessToken: true,
         whatsappBusinessId: true,
+        companySignature: true,
+        companySeal: true,
+        companySignerName: true,
+        companySignerTitle: true,
       },
     });
 
     // Mask access token for security (only show last 8 chars)
+    // Decrypt signature data for display
     const data = tenant ? {
       ...tenant,
       whatsappAccessToken: tenant.whatsappAccessToken
         ? '•'.repeat(20) + tenant.whatsappAccessToken.slice(-8)
         : null,
+      companySignature: tenant.companySignature ? decryptSignature(tenant.companySignature) : null,
+      companySeal: tenant.companySeal ? decryptSignature(tenant.companySeal) : null,
     } : null;
 
     return NextResponse.json({ success: true, data });
@@ -51,7 +59,7 @@ async function handlePost(request: NextRequest) {
     const session = getSessionFromRequest(request)!;
 
     const body = await request.json();
-    const { logo, name, phone, address, taxNumber, taxOffice, bankAccounts } = body;
+    const { logo, name, phone, address, taxNumber, taxOffice, bankAccounts, companySignature, companySeal, companySignerName, companySignerTitle } = body;
 
     // Validate logo if provided (must be a data URL, max 500KB base64)
     if (logo !== undefined && logo !== null) {
@@ -81,6 +89,30 @@ async function handlePost(request: NextRequest) {
     if (taxOffice !== undefined) updateData.taxOffice = taxOffice || null;
     if (bankAccounts !== undefined) updateData.bankAccounts = bankAccounts;
 
+    // Company signature fields — encrypt image data with AES-256-GCM
+    if (companySignature !== undefined) {
+      if (companySignature && typeof companySignature === 'string' && companySignature.startsWith('data:image/')) {
+        if (companySignature.length > 700000) {
+          return NextResponse.json({ success: false, error: 'İmza dosyası çok büyük. Maksimum 500KB.' }, { status: 400 });
+        }
+        updateData.companySignature = encryptSignature(companySignature);
+      } else {
+        updateData.companySignature = null;
+      }
+    }
+    if (companySeal !== undefined) {
+      if (companySeal && typeof companySeal === 'string' && companySeal.startsWith('data:image/')) {
+        if (companySeal.length > 700000) {
+          return NextResponse.json({ success: false, error: 'Kaşe dosyası çok büyük. Maksimum 500KB.' }, { status: 400 });
+        }
+        updateData.companySeal = encryptSignature(companySeal);
+      } else {
+        updateData.companySeal = null;
+      }
+    }
+    if (companySignerName !== undefined) updateData.companySignerName = companySignerName || null;
+    if (companySignerTitle !== undefined) updateData.companySignerTitle = companySignerTitle || null;
+
     const tenant = await prisma.tenant.update({
       where: { id: session.tenant.id },
       data: updateData,
@@ -94,6 +126,8 @@ async function handlePost(request: NextRequest) {
         taxNumber: true,
         taxOffice: true,
         bankAccounts: true,
+        companySignerName: true,
+        companySignerTitle: true,
       },
     });
 

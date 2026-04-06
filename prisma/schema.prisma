@@ -49,6 +49,12 @@ model Tenant {
   whatsappAccessToken String?  @map("whatsapp_access_token")
   whatsappBusinessId  String?  @map("whatsapp_business_id")
 
+  // Company Signature & Seal (encrypted base64)
+  companySignature   String?  @map("company_signature")
+  companySeal        String?  @map("company_seal")
+  companySignerName  String?  @map("company_signer_name")
+  companySignerTitle String?  @map("company_signer_title")
+
   // Bank Accounts (JSON array: [{bankName, branchName, accountHolder, iban, currency}])
   bankAccounts    Json?    @map("bank_accounts")
 

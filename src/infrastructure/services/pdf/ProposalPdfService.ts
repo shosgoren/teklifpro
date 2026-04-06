@@ -97,13 +97,16 @@ export class ProposalPdfService {
         this.buildItemsTable(proposal.items),
         this.buildTotalsSection(proposal),
         ...this.buildTermsSection(proposal),
-        this.buildSignatureSection(tenant, hash),
+        this.buildSignatureSection(tenant, hash, proposal),
       ],
       info: {
         title: `Teklif - ${proposal.number}`,
         author: tenant.name,
         subject: `Teklif ${proposal.number}`,
         creator: 'TeklifPro',
+        keywords: proposal.status === 'ACCEPTED'
+          ? `imzali,hash:${hash.substring(0, 16)},tarih:${new Date().toISOString().slice(0, 10)}`
+          : `teklif,hash:${hash.substring(0, 16)}`,
       },
     };
   }
@@ -209,7 +212,7 @@ export class ProposalPdfService {
               width: '*',
               stack: [
                 { text: `${tenant.name}  |  TeklifPro ile oluşturuldu`, fontSize: 7, color: TEXT_LIGHT },
-                { text: `Doğrulama: ${hash.substring(0, 16)}`, fontSize: 6, color: TEXT_LIGHT, margin: [0, 1, 0, 0] as [number, number, number, number] },
+                { text: `Doğrulama: ${hash.substring(0, 16)}  |  teklifpro.com/verify/${hash}`, fontSize: 6, color: TEXT_LIGHT, margin: [0, 1, 0, 0] as [number, number, number, number] },
               ],
             },
             { width: 'auto', text: `Sayfa ${currentPage} / ${pageCount}`, fontSize: 7, color: TEXT_LIGHT, alignment: 'right' },
@@ -439,10 +442,72 @@ export class ProposalPdfService {
   }
 
   // ══════════════════════════════════════════════════
-  //  DIGITAL SIGNATURE / AUTHENTICITY SEAL
+  //  SIGNATURE SECTION (Company + Customer)
   // ══════════════════════════════════════════════════
-  private static buildSignatureSection(tenant: Tenant, hash: string): PdfContent {
-    return {
+  private static buildSignatureSection(tenant: Tenant, hash: string, proposal?: Proposal): PdfContent {
+    const hasCompanySig = proposal?.companySignature?.data;
+    const hasCustomerSig = proposal?.customerSignature?.data;
+    const hasSeal = proposal?.companySeal;
+    const isAccepted = proposal?.status === 'ACCEPTED';
+
+    // Build company signature column
+    const companyCol: PdfContent[] = [
+      { text: 'FİRMA İMZASI', fontSize: 8, bold: true, color: PRIMARY, margin: [0, 0, 0, 6] as [number, number, number, number] },
+    ];
+    if (hasCompanySig) {
+      companyCol.push({ image: proposal!.companySignature!.data, fit: [120, 60] as [number, number], margin: [0, 0, 0, 4] as [number, number, number, number] });
+    }
+    if (hasSeal) {
+      companyCol.push({ image: proposal!.companySeal!, fit: [50, 50] as [number, number], margin: [0, 2, 0, 4] as [number, number, number, number] });
+    }
+    if (!hasCompanySig && !hasSeal) {
+      companyCol.push({ text: '________________________', fontSize: 9, color: TEXT_LIGHT, margin: [0, 20, 0, 4] as [number, number, number, number] });
+    }
+    const signerName = proposal?.companySignature?.signerName || tenant.companySignerName;
+    const signerTitle = proposal?.companySignature?.signerTitle || tenant.companySignerTitle;
+    if (signerName) companyCol.push({ text: signerName, fontSize: 8, bold: true, color: TEXT_DARK });
+    if (signerTitle) companyCol.push({ text: signerTitle, fontSize: 7, color: TEXT_MED });
+    companyCol.push({ text: tenant.name, fontSize: 7, color: TEXT_LIGHT, margin: [0, 2, 0, 0] as [number, number, number, number] });
+
+    // Build customer signature column
+    const customerCol: PdfContent[] = [
+      { text: 'MÜŞTERİ İMZASI', fontSize: 8, bold: true, color: PRIMARY, margin: [0, 0, 0, 6] as [number, number, number, number] },
+    ];
+    if (hasCustomerSig && isAccepted) {
+      customerCol.push({ image: proposal!.customerSignature!.data, fit: [120, 60] as [number, number], margin: [0, 0, 0, 4] as [number, number, number, number] });
+      if (proposal!.customerSignature!.signerName) {
+        customerCol.push({ text: proposal!.customerSignature!.signerName, fontSize: 8, bold: true, color: TEXT_DARK });
+      }
+      if (proposal!.customerSignature!.signedAt) {
+        const signedDate = new Date(proposal!.customerSignature!.signedAt).toLocaleDateString('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        customerCol.push({ text: `İmza Tarihi: ${signedDate}`, fontSize: 7, color: TEXT_MED, margin: [0, 2, 0, 0] as [number, number, number, number] });
+      }
+      customerCol.push({ text: '✓ Dijital olarak imzalanmıştır', fontSize: 7, bold: true, color: GREEN, margin: [0, 4, 0, 0] as [number, number, number, number] });
+    } else {
+      customerCol.push({ text: '________________________', fontSize: 9, color: TEXT_LIGHT, margin: [0, 20, 0, 4] as [number, number, number, number] });
+      customerCol.push({ text: proposal?.customer?.name || '', fontSize: 8, bold: true, color: TEXT_DARK });
+    }
+
+    // Signature block
+    const signatureBlock: PdfContent = {
+      table: {
+        widths: ['*', '*'],
+        body: [[
+          { stack: companyCol, margin: [12, 10, 12, 10] as [number, number, number, number] },
+          { stack: customerCol, margin: [12, 10, 12, 10] as [number, number, number, number] },
+        ]],
+      },
+      layout: {
+        hLineWidth: () => 1, vLineWidth: (i: number) => (i === 1 ? 0.5 : 1),
+        hLineColor: () => BORDER, vLineColor: () => BORDER,
+        paddingLeft: () => 0, paddingRight: () => 0,
+        paddingTop: () => 0, paddingBottom: () => 0,
+      },
+      margin: [0, 0, 0, 8] as [number, number, number, number],
+    };
+
+    // Verification block
+    const verificationBlock: PdfContent = {
       table: {
         widths: ['*'],
         body: [[{
@@ -460,7 +525,7 @@ export class ProposalPdfService {
                 {
                   width: 'auto',
                   stack: [
-                    { text: '✓ DOĞRULANMIŞ', fontSize: 9, bold: true, color: GREEN, alignment: 'right' as const },
+                    { text: isAccepted ? '✓ İMZALANMIŞ' : '✓ DOĞRULANMIŞ', fontSize: 9, bold: true, color: GREEN, alignment: 'right' as const },
                     { text: tenant.name, fontSize: 7, color: TEXT_MED, alignment: 'right' as const, margin: [0, 2, 0, 0] as [number, number, number, number] },
                   ],
                 },
@@ -499,12 +564,14 @@ export class ProposalPdfService {
         paddingTop: () => 0, paddingBottom: () => 0,
       },
     };
+
+    return { stack: [signatureBlock, verificationBlock] };
   }
 
   // ══════════════════════════════════════════════════
   //  HELPERS
   // ══════════════════════════════════════════════════
-  private static generateHash(proposal: Proposal, tenant: Tenant): string {
+  static generateHash(proposal: Proposal, tenant: Tenant): string {
     const data = `${tenant.id}:${proposal.number}:${proposal.total}:${proposal.customer.name}:${proposal.items.length}`;
     return crypto.createHash('sha256').update(data).digest('hex');
   }
