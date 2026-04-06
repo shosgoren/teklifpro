@@ -1,9 +1,12 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
+import crypto from 'crypto'
 import { prisma } from '@/shared/utils/prisma'
 import { notifyProposalEvent } from '@/infrastructure/services/whatsapp/notifyProposalEvent'
 import ProposalActions from './proposal-actions'
 import ProposalContent from './proposal-content'
 import ProposalUnavailable from './proposal-unavailable'
+import PhoneGate from './phone-gate'
 import { ViewTracker } from './view-tracker'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -28,6 +31,44 @@ export async function generateMetadata({ params }: ProposalPageProps) {
     title: `${proposal.proposalNumber} - ${proposal.title}`,
     description: `${proposal.customer.name} için teklif belgesi`,
   }
+}
+
+function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length < 4) return '** ** ****'
+  const last2 = digits.slice(-2)
+  if (digits.length >= 10) {
+    // Turkish format: 05XX XXX XX90
+    const first2 = digits.slice(-10, -8)
+    return `0${first2}** *** **${last2}`
+  }
+  return `${'*'.repeat(digits.length - 4)} ${digits.slice(-4, -2)}${last2}`
+}
+
+function verifyPhoneCookie(token: string): boolean {
+  const cookieStore = cookies()
+  const cookieName = `pv_${token.substring(0, 8)}`
+  const cookieValue = cookieStore.get(cookieName)?.value
+  if (!cookieValue) return false
+
+  const parts = cookieValue.split(':')
+  if (parts.length !== 3) return false
+
+  const [cookieToken, expiryStr, hmac] = parts
+  const expiry = parseInt(expiryStr, 10)
+
+  // Check expiry
+  if (isNaN(expiry) || Date.now() > expiry) return false
+
+  // Check token matches
+  if (cookieToken !== token) return false
+
+  // Verify HMAC
+  const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret'
+  const payload = `${cookieToken}:${expiryStr}`
+  const expectedHmac = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+
+  return crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expectedHmac, 'hex'))
 }
 
 export default async function ProposalPage({ params }: ProposalPageProps) {
@@ -62,6 +103,21 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
 
   if (proposal.status === 'CANCELLED') {
     return <ProposalUnavailable reason="cancelled" />
+  }
+
+  // Phone verification gate
+  if (proposal.customer.phone) {
+    const isVerified = verifyPhoneCookie(params.token)
+    if (!isVerified) {
+      return (
+        <PhoneGate
+          token={params.token}
+          maskedPhone={maskPhone(proposal.customer.phone)}
+          tenantName={proposal.tenant.name}
+          tenantLogo={proposal.tenant.logo}
+        />
+      )
+    }
   }
 
   // Track view
