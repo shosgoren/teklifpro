@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Tests for GET/POST /api/v1/settings/dashboard
  */
 

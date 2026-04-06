@@ -1,6 +1,14 @@
 import { PayTRService } from '@/infrastructure/services/payment/PayTRService';
 import crypto from 'crypto';
 
+jest.mock('@/infrastructure/logger', () => ({
+  Logger: jest.fn().mockImplementation(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  })),
+}));
+
 // Test icin mock fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch as jest.Mock;

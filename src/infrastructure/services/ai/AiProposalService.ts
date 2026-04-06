@@ -573,7 +573,32 @@ JSON formatında AcceptancePrediction döndür.
         return defaultValue;
       }
 
-      return JSON.parse(jsonMatch[0]) as T;
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // If defaultValue is a non-array object and parsed is a non-array object, merge with defaults
+      if (
+        defaultValue !== null &&
+        typeof defaultValue === 'object' &&
+        !Array.isArray(defaultValue) &&
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed)
+      ) {
+        return { ...defaultValue, ...parsed } as T;
+      }
+
+      // If defaultValue is an array and parsed is an empty non-array object, return defaultValue
+      if (
+        Array.isArray(defaultValue) &&
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        !Array.isArray(parsed) &&
+        Object.keys(parsed).length === 0
+      ) {
+        return defaultValue;
+      }
+
+      return parsed as T;
     } catch (error) {
       logger.warn('JSON parse error', error);
       return defaultValue;

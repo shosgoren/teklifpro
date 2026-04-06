@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Tests for rate limiting on public endpoints:
  * - /api/v1/proposals/track (30 req/min)
  * - /api/proposals/respond (10 req/min)
@@ -43,6 +47,18 @@ jest.mock('@upstash/ratelimit', () => ({
 
 jest.mock('@upstash/redis', () => ({
   Redis: jest.fn(),
+}));
+
+jest.mock('@/infrastructure/services/email/EmailService', () => ({
+  EmailService: jest.fn().mockImplementation(() => ({
+    sendProposalAccepted: jest.fn().mockResolvedValue(undefined),
+    sendProposalRejected: jest.fn().mockResolvedValue(undefined),
+    sendProposalRevisionRequested: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+jest.mock('@/infrastructure/middleware/rateLimitMiddleware', () => ({
+  withRateLimit: (handler: Function) => handler,
 }));
 
 import { NextRequest } from 'next/server';

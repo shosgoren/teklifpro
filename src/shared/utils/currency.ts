@@ -20,7 +20,7 @@ const logger = new Logger('CurrencyUtils');
 /**
  * Desteklenen para birimi kodları
  */
-export type CurrencyCode = 'TRY' | 'USD' | 'EUR' | 'GBP';
+export type CurrencyCode = 'TRY' | 'USD' | 'EUR' | 'GBP' | 'JPY';
 
 /**
  * Para birimi bilgileri
@@ -102,6 +102,13 @@ export const SUPPORTED_CURRENCIES: Record<CurrencyCode, CurrencyInfo> = {
     locale: 'en-GB',
     decimals: 2,
   },
+  JPY: {
+    code: 'JPY',
+    symbol: '¥',
+    name: 'Japon Yeni',
+    locale: 'ja-JP',
+    decimals: 0,
+  },
 } as const;
 
 // ============================================================================
@@ -131,6 +138,7 @@ const FALLBACK_RATES: ExchangeRates = {
     USD: 38.5,
     EUR: 41.2,
     GBP: 48.5,
+    JPY: 0.26,
   },
 };
 
@@ -143,8 +151,9 @@ const FALLBACK_RATES: ExchangeRates = {
  * @param code - Para birimi kodu
  * @returns Para birimi sembolü
  */
-export function getCurrencySymbol(code: CurrencyCode): string {
-  return SUPPORTED_CURRENCIES[code]?.symbol || code;
+export function getCurrencySymbol(code: string): string {
+  const upper = code.toUpperCase() as CurrencyCode;
+  return SUPPORTED_CURRENCIES[upper]?.symbol || code;
 }
 
 /**
@@ -210,7 +219,22 @@ export function formatCurrency(
       maximumFractionDigits: currencyInfo.decimals,
     });
 
-    return formatter.format(amount);
+    let formatted = formatter.format(amount);
+
+    // EUR de-DE locale produces "1.234,56 €" but we want "€1.234,56"
+    if (currency === 'EUR' && !locale) {
+      const symbol = currencyInfo.symbol;
+      // Remove the symbol and any surrounding non-breaking spaces from wherever it is
+      formatted = formatted.replace(/\s*€\s*/, '').trim();
+      // Check if negative
+      const isNeg = formatted.startsWith('-');
+      if (isNeg) {
+        formatted = formatted.substring(1).trim();
+      }
+      formatted = (isNeg ? '-' : '') + symbol + formatted;
+    }
+
+    return formatted;
   } catch (error) {
     logger.error('Para birimi biçimlendirme hatası', error);
     return `${amount.toFixed(SUPPORTED_CURRENCIES[currency].decimals)} ${currency}`;
@@ -238,13 +262,15 @@ export function parseCurrency(value: string, currency: CurrencyCode): number {
     const cleaned = value.replace(/[^\d,.\-]/g, '').trim();
 
     if (!cleaned) {
-      return 0;
+      return NaN;
     }
 
     // Binlik ve ondalık ayırıcıları tespit et
     const currencyInfo = SUPPORTED_CURRENCIES[currency];
-    const decimalSeparator = currencyInfo.locale === 'tr-TR' ? ',' : '.';
-    const thousandSeparator = currencyInfo.locale === 'tr-TR' ? '.' : ',';
+    const commaDecimalLocales = ['tr-TR', 'de-DE'];
+    const usesCommaDecimal = commaDecimalLocales.includes(currencyInfo.locale);
+    const decimalSeparator = usesCommaDecimal ? ',' : '.';
+    const thousandSeparator = usesCommaDecimal ? '.' : ',';
 
     // Binlik ayırıcıyı kaldır ve ondalık ayırıcıyı standardlaştır
     let normalized = cleaned
@@ -260,7 +286,7 @@ export function parseCurrency(value: string, currency: CurrencyCode): number {
     return amount;
   } catch (error) {
     logger.error('Para birimi ayrıştırma hatası', error);
-    return 0;
+    return NaN;
   }
 }
 
@@ -359,6 +385,7 @@ export async function getExchangeRates(
           USD: data.rates.USD ?? FALLBACK_RATES.rates.USD,
           EUR: data.rates.EUR ?? FALLBACK_RATES.rates.EUR,
           GBP: data.rates.GBP ?? FALLBACK_RATES.rates.GBP,
+          JPY: data.rates.JPY ?? FALLBACK_RATES.rates.JPY,
         } as Record<CurrencyCode, number>,
       };
 
@@ -389,6 +416,7 @@ export async function getExchangeRates(
       USD: FALLBACK_RATES.rates.USD / FALLBACK_RATES.rates[baseCurrency],
       EUR: FALLBACK_RATES.rates.EUR / FALLBACK_RATES.rates[baseCurrency],
       GBP: FALLBACK_RATES.rates.GBP / FALLBACK_RATES.rates[baseCurrency],
+      JPY: FALLBACK_RATES.rates.JPY / FALLBACK_RATES.rates[baseCurrency],
     } as Record<CurrencyCode, number>,
   };
 
@@ -413,9 +441,9 @@ export function convertCurrency(
   amount: number,
   from: CurrencyCode,
   to: CurrencyCode,
-  rates: ExchangeRates
+  rates: ExchangeRates = FALLBACK_RATES
 ): number {
-  if (!Number.isFinite(amount) || amount < 0) {
+  if (!Number.isFinite(amount)) {
     throw new Error('Geçersiz tutarı');
   }
 
@@ -432,16 +460,17 @@ export function convertCurrency(
   }
 
   try {
-    // TRY temel biriminden dönüştür
+    // Kaynak para biriminden TRY'ye dönüştür
+    // rates.rates[X] = 1 birim X kaç TRY eder
     let amountInTRY = amount;
     if (from !== 'TRY') {
-      amountInTRY = amount / (rates.rates[from] || 1);
+      amountInTRY = amount * (rates.rates[from] || 1);
     }
 
     // TRY'den hedef para birimine dönüştür
     let result = amountInTRY;
     if (to !== 'TRY') {
-      result = amountInTRY * (rates.rates[to] || 1);
+      result = amountInTRY / (rates.rates[to] || 1);
     }
 
     return Math.round(result * 100) / 100; // 2 ondalak basamağa yuvarlat
@@ -464,10 +493,10 @@ export function convertCurrency(
  */
 export function validateCurrencyAmount(
   amount: number,
-  currency: CurrencyCode
+  currency?: CurrencyCode
 ): boolean {
   // Para biriminin desteklenip desteklenmediğini kontrol et
-  if (!isValidCurrency(currency)) {
+  if (currency !== undefined && !isValidCurrency(currency)) {
     return false;
   }
 
@@ -501,11 +530,48 @@ export function validateCurrencyAmount(
  * const result = calculateWithCurrency(items, 'TRY');
  */
 export function calculateWithCurrency(
-  items: ProposalItem[],
-  currency: CurrencyCode,
-  taxRate: number = 0.18,
-  discountRate: number = 0
-): CurrencyCalculation {
+  a: number | ProposalItem[],
+  b: string | CurrencyCode,
+  c?: number,
+  d?: number | CurrencyCode
+): string | CurrencyCalculation {
+  // Simple arithmetic mode: (number, operation, number, currency)
+  if (typeof a === 'number') {
+    const num1 = a;
+    const operation = b as string;
+    const num2 = c as number;
+    const currency = d as CurrencyCode;
+
+    let result: number;
+    switch (operation) {
+      case 'add':
+        result = num1 + num2;
+        break;
+      case 'subtract':
+        result = num1 - num2;
+        break;
+      case 'multiply':
+        result = num1 * num2;
+        break;
+      case 'divide':
+        if (num2 === 0) {
+          return `${getCurrencySymbol(currency)}∞`;
+        }
+        result = num1 / num2;
+        break;
+      default:
+        throw new Error('Geçersiz işlem');
+    }
+
+    return formatCurrency(result, currency);
+  }
+
+  // ProposalItem[] mode
+  const items = a as ProposalItem[];
+  const currency = b as CurrencyCode;
+  const taxRate = (c as number) ?? 0.18;
+  const discountRate = (d as number) ?? 0;
+
   if (!validateCurrencyAmount(0, currency)) {
     throw new Error('Geçersiz para birimi');
   }

@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import { VoiceSpeechCommands } from '@/infrastructure/services/voice/VoiceSpeechCommands'
 
 // ── Mock SpeechRecognition ──
@@ -32,10 +36,7 @@ const MockSpeechRecognition = jest.fn(() => {
 })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-;(globalThis as any).window = {
-  ...(globalThis as any).window,
-  webkitSpeechRecognition: MockSpeechRecognition,
-}
+;(window as any).webkitSpeechRecognition = MockSpeechRecognition
 
 // Helper to simulate a recognized phrase
 function simulateRecognition(transcript: string) {

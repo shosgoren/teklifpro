@@ -143,8 +143,12 @@ describe('AiProposalService', () => {
 
     it('should return cached data within TTL (no re-computation)', async () => {
       const svc = new AiProposalService();
-      mockProposalFindMany.mockResolvedValue([]);
-      mockProductFindMany.mockResolvedValue([]);
+      mockProposalFindMany.mockResolvedValue([
+        { id: 'p1', items: [{ productId: 'prod-1', quantity: 1 }], grandTotal: 100, status: 'ACCEPTED', createdAt: new Date() },
+      ]);
+      mockProductFindMany.mockResolvedValue([
+        { id: 'prod-1', name: 'Test Product', category: 'Cat', listPrice: 100 },
+      ]);
 
       await svc.suggestProducts('cust-cache-hit', 'tenant-cache-hit');
       await svc.suggestProducts('cust-cache-hit', 'tenant-cache-hit');
@@ -417,6 +421,7 @@ describe('AiProposalService', () => {
     });
 
     it('should return fallback pricing suggestion on error', async () => {
+      jest.useRealTimers();
       const svc = new AiProposalService();
 
       // Create a service where the internal client throws
@@ -440,7 +445,8 @@ describe('AiProposalService', () => {
       expect(result.reasoning).toBe('Hata oluştu');
       expect(result.competitiveAnalysis).toBe('');
       expect(result.items).toEqual([]);
-    });
+      jest.useFakeTimers();
+    }, 15000);
   });
 
   // ========================================================================
@@ -485,6 +491,7 @@ describe('AiProposalService', () => {
     });
 
     it('should return fallback string on error', async () => {
+      jest.useRealTimers();
       const svc = new AiProposalService();
       (svc as any).client.messages.create = jest
         .fn()
@@ -501,7 +508,8 @@ describe('AiProposalService', () => {
       );
 
       expect(result).toBe('Teklif başarıyla hazırlanmıştır.');
-    });
+      jest.useFakeTimers();
+    }, 15000);
 
     it('should serve cached note on second call', async () => {
       const svc = new AiProposalService();
@@ -545,6 +553,7 @@ describe('AiProposalService', () => {
     });
 
     it('should return default 50% probability on error', async () => {
+      jest.useRealTimers();
       const svc = new AiProposalService();
       (svc as any).client.messages.create = jest
         .fn()
@@ -555,7 +564,8 @@ describe('AiProposalService', () => {
       expect(result.probability).toBe(50);
       expect(result.factors).toEqual([]);
       expect(result.suggestions).toEqual([]);
-    });
+      jest.useFakeTimers();
+    }, 15000);
 
     it('should return default 50% for empty proposal data', async () => {
       const svc = new AiProposalService();
@@ -602,6 +612,7 @@ describe('AiProposalService', () => {
     });
 
     it('should return original text on error', async () => {
+      jest.useRealTimers();
       const svc = new AiProposalService();
       (svc as any).client.messages.create = jest
         .fn()
@@ -611,7 +622,8 @@ describe('AiProposalService', () => {
       const result = await svc.improveProposalText(originalText, 'tr');
 
       expect(result).toBe(originalText);
-    });
+      jest.useFakeTimers();
+    }, 15000);
 
     it('should cache improved text on second call', async () => {
       const svc = new AiProposalService();

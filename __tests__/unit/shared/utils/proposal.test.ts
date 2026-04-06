@@ -122,7 +122,7 @@ describe('Proposal Utilities', () => {
     it('Ondalık sayılarla çalışmalı', () => {
       // Miktar: 2.5, Birim Fiyat: 50.5, İndirim: 5%
       const result = calculateLineTotal(2.5, 50.5, 5);
-      expect(result).toBeCloseTo(120.4375);
+      expect(result).toBeCloseTo(119.9375);
     });
 
     it('Miktar sıfır iken sıfır döndürmeli', () => {

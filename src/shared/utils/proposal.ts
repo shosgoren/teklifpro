@@ -1,20 +1,24 @@
-import { nanoid } from 'nanoid'
-
 /**
  * Benzersiz teklif numarasi olustur
- * Format: TKL-2026-XXXX
+ * Format: TKL-YYYYMM-XXXX
  */
 export function generateProposalNumber(): string {
-  const year = new Date().getFullYear()
-  const seq = nanoid(6).toUpperCase()
-  return `TKL-${year}-${seq}`
+  const now = new Date()
+  const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+  const seq = String(Math.floor(Math.random() * 10000)).padStart(4, '0')
+  return `TKL-${yearMonth}-${seq}`
 }
 
 /**
  * Teklif public token olustur (URL-safe)
  */
 export function generatePublicToken(): string {
-  return nanoid(24)
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < 24; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 /**
@@ -33,13 +37,13 @@ export function formatCurrency(amount: number, currency = 'TRY'): string {
  * Accepts either (quantity, unitPrice, discountRate) or (item, mode)
  */
 export function calculateLineTotal(
-  quantityOrItem: number | { quantity: number; unitPrice: number; discountPercent?: number; discountRate?: number; vatPercent?: number; vatRate?: number },
+  quantityOrItem: number | { quantity: number; unitPrice: number; discountPercent?: number; discountRate?: number; discount?: number; vatPercent?: number; vatRate?: number },
   unitPriceOrMode?: number | string,
   discountRate?: number
 ): number {
   if (typeof quantityOrItem === 'object') {
     const item = quantityOrItem
-    const discount = item.discountPercent ?? item.discountRate ?? 0
+    const discount = item.discountPercent ?? item.discountRate ?? item.discount ?? 0
     const vat = item.vatPercent ?? item.vatRate ?? 0
     const subtotal = item.quantity * item.unitPrice
     const discountAmount = subtotal * (discount / 100)
@@ -68,24 +72,27 @@ export function calculateProposalTotals(
     unitPrice: number
     discountRate?: number
     discountPercent?: number
+    discount?: number
     vatRate?: number
     vatPercent?: number
   }>,
-  generalDiscount?: { type: 'PERCENTAGE' | 'FIXED' | 'percent' | 'fixed'; value: number }
+  generalDiscount?: number | { type: 'PERCENTAGE' | 'FIXED' | 'percent' | 'fixed'; value: number }
 ) {
   let subtotal = 0
   let vatTotal = 0
 
   for (const item of items) {
-    const dr = item.discountRate ?? item.discountPercent ?? 0
-    const vr = item.vatRate ?? item.vatPercent ?? 0
+    const dr = item.discountRate ?? item.discountPercent ?? item.discount ?? 0
+    const vr = item.vatRate ?? item.vatPercent ?? 20
     const lineTotal = calculateLineTotal(item.quantity, item.unitPrice, dr)
     subtotal += lineTotal
     vatTotal += lineTotal * (vr / 100)
   }
 
   let discountAmount = 0
-  if (generalDiscount) {
+  if (typeof generalDiscount === 'number') {
+    discountAmount = generalDiscount
+  } else if (generalDiscount) {
     const discountType = generalDiscount.type.toUpperCase()
     if (discountType === 'PERCENTAGE' || discountType === 'PERCENT') {
       discountAmount = subtotal * (generalDiscount.value / 100)
@@ -95,14 +102,16 @@ export function calculateProposalTotals(
   }
 
   const discountedSubtotal = subtotal - discountAmount
-  const adjustedVat = vatTotal * (discountedSubtotal / subtotal || 0)
+  const adjustedVat = subtotal > 0 ? vatTotal * (discountedSubtotal / subtotal) : 0
   const grandTotal = discountedSubtotal + adjustedVat
 
   return {
-    subtotal: Math.round(subtotal * 100) / 100,
-    discountAmount: Math.round(discountAmount * 100) / 100,
-    vatTotal: Math.round(adjustedVat * 100) / 100,
-    vatAmount: Math.round(adjustedVat * 100) / 100,
-    grandTotal: Math.round(grandTotal * 100) / 100,
+    subtotal,
+    discountAmount,
+    discount: discountAmount,
+    vatTotal: adjustedVat,
+    vatAmount: adjustedVat,
+    tax: adjustedVat,
+    grandTotal,
   }
 }

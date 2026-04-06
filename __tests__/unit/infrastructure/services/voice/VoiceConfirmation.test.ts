@@ -1,28 +1,30 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import { VoiceConfirmation } from '@/infrastructure/services/voice/VoiceConfirmation'
 
 // ── Mocks ──
 
-function createMockUtterance() {
-  return {
-    text: '',
-    lang: '',
-    rate: 1,
-    pitch: 1,
-    voice: null as SpeechSynthesisVoice | null,
-    onend: null as (() => void) | null,
-    onerror: null as ((e: { error: string }) => void) | null,
-  }
+interface MockUtterance {
+  text: string
+  lang: string
+  rate: number
+  pitch: number
+  voice: any
+  onend: (() => void) | null
+  onerror: ((e: { error: string }) => void) | null
 }
 
-let lastUtterance: ReturnType<typeof createMockUtterance>
+let lastUtterance: MockUtterance
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-;(globalThis as any).SpeechSynthesisUtterance = class {
+;(window as any).SpeechSynthesisUtterance = class {
   text: string
   lang = ''
   rate = 1
   pitch = 1
-  voice: SpeechSynthesisVoice | null = null
+  voice: any = null
   onend: (() => void) | null = null
   onerror: ((e: { error: string }) => void) | null = null
 
@@ -33,20 +35,21 @@ let lastUtterance: ReturnType<typeof createMockUtterance>
 }
 
 const mockSpeechSynthesis = {
-  speak: jest.fn((utterance: ReturnType<typeof createMockUtterance>) => {
+  speak: jest.fn((utterance: MockUtterance) => {
     // Auto-resolve by calling onend
     setTimeout(() => utterance.onend?.(), 0)
   }),
   cancel: jest.fn(),
   getVoices: jest.fn(() => [
-    { lang: 'tr-TR', name: 'Turkish' } as unknown as SpeechSynthesisVoice,
-    { lang: 'en-US', name: 'English' } as unknown as SpeechSynthesisVoice,
+    { lang: 'tr-TR', name: 'Turkish' },
+    { lang: 'en-US', name: 'English' },
   ]),
 }
 
-Object.defineProperty(globalThis, 'window', {
-  value: { speechSynthesis: mockSpeechSynthesis },
+Object.defineProperty(window, 'speechSynthesis', {
+  value: mockSpeechSynthesis,
   writable: true,
+  configurable: true,
 })
 
 // ── Tests ──

@@ -15,15 +15,28 @@ export function sanitizeHtml(input: string): string {
     return '';
   }
 
-  return input
+  const SAFE_TAGS = ['p', 'strong', 'em', 'b', 'i', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+
+  let result = input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove style tags
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // Remove iframe tags
     .replace(/<embed\b[^<]*>/gi, '') // Remove embed tags
     .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '') // Remove object tags
     .replace(/on\w+\s*=\s*"[^"]*"/gi, '') // Remove event handlers with double quotes
     .replace(/on\w+\s*=\s*'[^']*'/gi, '') // Remove event handlers with single quotes
     .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/<[^>]+>/g, ''); // Remove remaining HTML tags
+    .replace(/style\s*=\s*"[^"]*"/gi, '') // Remove style attributes with double quotes
+    .replace(/style\s*=\s*'[^']*'/gi, ''); // Remove style attributes with single quotes
+
+  // Build whitelist regex: remove tags that are NOT in the safe list
+  const safeTagPattern = SAFE_TAGS.join('|');
+  // Remove closing tags that are not safe
+  result = result.replace(new RegExp(`<\\/(?!(?:${safeTagPattern})\\s*>)[^>]+>`, 'gi'), '');
+  // Remove opening/self-closing tags that are not safe
+  result = result.replace(new RegExp(`<(?!(?:${safeTagPattern})(?:\\s|>|\\/))(?!\\/)[^>]+>`, 'gi'), '');
+
+  return result;
 }
 
 /**
@@ -38,8 +51,14 @@ export function sanitizeInput(input: string): string {
   }
 
   return input
-    .trim() // Remove leading/trailing whitespace
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove control characters
+    .trim()
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/on\w+\s*=\s*"[^"]*"/gi, '') // Remove event handlers (double quotes)
+    .replace(/on\w+\s*=\s*'[^']*'/gi, '') // Remove event handlers (single quotes)
+    .replace(/on\w+\s*=\s*[^\s>]*/gi, '') // Remove event handlers (unquoted)
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/<[^>]+>/g, ''); // Remove all HTML tags
 }
 
 /**
@@ -79,22 +98,33 @@ export function sanitizeEmail(email: string): string {
  * @param phone The phone number to sanitize
  * @returns Sanitized phone number or empty string if invalid format
  */
-export function sanitizePhone(phone: string): string {
+export function sanitizePhone(phone: any): any {
+  if (phone === null) return null;
+  if (phone === undefined) return undefined;
   if (typeof phone !== 'string') {
     return '';
   }
+
+  if (phone.trim() === '') return '';
 
   // Remove whitespace and dashes, keep only digits and +
   const sanitized = phone
     .trim()
     .replace(/[\s\-().]/g, '');
 
-  // Validate format
-  if (!isValidTurkishPhone(sanitized)) {
-    return '';
+  // Normalize: if starts with +90, convert to 0 prefix
+  let normalized = sanitized;
+  if (normalized.startsWith('+90')) {
+    normalized = '0' + normalized.slice(3);
   }
 
-  return sanitized;
+  // Validate format
+  if (/^05\d{9}$/.test(normalized)) {
+    return normalized;
+  }
+
+  // Return cleaned digits even if not perfectly valid
+  return sanitized.replace(/[^\d]/g, '');
 }
 
 /**
@@ -219,8 +249,8 @@ export function isValidTurkishPhone(phone: string): boolean {
   // Mobile: starts with 5 (after country code)
   // Landline: starts with 2-4 (after country code)
 
-  // Format: +905XXXXXXXXX (with country code)
-  if (/^\+905\d{8}$/.test(sanitized)) {
+  // Format: +905XXXXXXXXX (with country code, 12 chars)
+  if (/^\+905\d{9}$/.test(sanitized)) {
     return true;
   }
 
@@ -229,8 +259,8 @@ export function isValidTurkishPhone(phone: string): boolean {
     return true;
   }
 
-  // Format: 05XXXXXXXXX (without country code, mobile)
-  if (/^05\d{8}$/.test(sanitized)) {
+  // Format: 05XXXXXXXXX (without country code, mobile, 11 digits)
+  if (/^05\d{9}$/.test(sanitized)) {
     return true;
   }
 
@@ -355,4 +385,94 @@ export function sanitizeFilename(filename: string): string {
     .replace(/[<>:"|?*\x00-\x1f]/g, '') // Remove invalid filename characters
     .replace(/^\.+/, '') // Remove leading dots
     .trim() || 'file'; // Fallback to 'file' if empty
+}
+
+/**
+ * Sanitize Turkish tax number (Vergi Kimlik Numarası)
+ * Must be exactly 10 digits after cleaning
+ * @param taxNumber The tax number to sanitize
+ * @returns Sanitized 10-digit tax number or empty string if invalid
+ */
+export function sanitizeTaxNumber(taxNumber: string): string {
+  if (typeof taxNumber !== 'string') {
+    return '';
+  }
+
+  if (taxNumber.trim() === '') return '';
+
+  // Remove whitespace and common separators
+  const cleaned = taxNumber.trim().replace(/[\s\-().\/]/g, '');
+
+  // Must be exactly 10 digits
+  if (!/^\d{10}$/.test(cleaned)) {
+    return '';
+  }
+
+  return cleaned;
+}
+
+/**
+ * Mask email for display: shows first char, masks middle with ***, preserves domain
+ * e.g., "selman@gmail.com" -> "s***n@gmail.com"
+ * @param email The email to mask
+ * @returns Masked email string
+ */
+export function maskEmail(email: string): string {
+  if (typeof email !== 'string' || email === '') {
+    return '';
+  }
+
+  const atIndex = email.indexOf('@');
+  if (atIndex < 0) {
+    return email;
+  }
+
+  const localPart = email.substring(0, atIndex);
+  const domain = email.substring(atIndex); // includes @
+
+  if (localPart.length <= 1) {
+    return localPart + '***' + domain;
+  }
+
+  const first = localPart[0];
+  const last = localPart[localPart.length - 1];
+  return first + '***' + last + domain;
+}
+
+/**
+ * Mask phone number for display in Turkish format
+ * e.g., "905551234567" -> "+90 5** *** **67"
+ * @param phone The phone number to mask
+ * @returns Masked phone string
+ */
+export function maskPhone(phone: string): string {
+  if (typeof phone !== 'string' || phone === '') {
+    return '';
+  }
+
+  // Extract only digits
+  let digits = phone.replace(/[^\d]/g, '');
+
+  // Too short to mask meaningfully
+  if (digits.length < 4) {
+    return phone;
+  }
+
+  // Normalize to 10-digit core (without leading 0 or 90)
+  let core = digits;
+  if (core.startsWith('90') && core.length === 12) {
+    core = core.slice(2); // remove country code -> 5551234567
+  } else if (core.startsWith('0') && core.length === 11) {
+    core = core.slice(1); // remove leading 0 -> 5551234567
+  }
+
+  if (core.length === 10) {
+    const first = core[0]; // '5'
+    const last2 = core.slice(-2);
+    return `+90 ${first}** *** **${last2}`;
+  }
+
+  // Fallback: mask middle, show first and last 2
+  const last2 = digits.slice(-2);
+  return `+90 ${digits[0]}** *** **${last2}`;
 }

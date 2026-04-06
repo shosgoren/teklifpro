@@ -125,7 +125,7 @@ export class PayTRService {
     iframeUrl: string;
   }> {
     try {
-      const amount = this.getPlanAmount(plan);
+      const amount = this.getPlanAmount(plan, period);
       const merchantOid = `SUB_${tenantId}_${Date.now()}`;
 
       this.logger.info('Creating subscription', {

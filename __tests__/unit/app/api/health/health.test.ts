@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { NextResponse } from 'next/server';
 
 // Mock prisma

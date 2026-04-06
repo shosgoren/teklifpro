@@ -102,6 +102,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
       USD: '🇺🇸',
       EUR: '🇪🇺',
       GBP: '🇬🇧',
+      JPY: '🇯🇵',
     };
 
     const info = getCurrencyInfo(code);
