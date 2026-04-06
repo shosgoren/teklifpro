@@ -56,31 +56,14 @@ export class WhatsAppService {
     companyName: string
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      // Interactive mesaj — CTA butonlu
-      const response = await this.sendInteractiveMessage({
+      // CTA URL butonlu interactive mesaj — link açar
+      const response = await this.sendCtaUrlMessage({
         to: this.formatPhoneNumber(params.to),
-        type: 'button',
-        header: {
-          type: 'text',
-          text: `${params.companyName} - Teklif`,
-        },
-        body: {
-          text: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek icin asagidaki butona tiklayiniz.`,
-        },
-        footer: {
-          text: 'TeklifPro ile gonderildi',
-        },
-        action: {
-          buttons: [
-            {
-              type: 'reply',
-              reply: {
-                id: `view_proposal_${params.proposalNumber}`,
-                title: 'Teklifi Goruntule',
-              },
-            },
-          ],
-        },
+        header: `${params.companyName} - Teklif`,
+        body: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek için aşağıdaki butona tıklayınız.`,
+        footer: 'TeklifPro ile gönderildi',
+        buttonText: 'Teklifi Görüntüle',
+        url: params.proposalUrl,
       })
 
       return {
@@ -188,7 +171,47 @@ export class WhatsAppService {
   }
 
   /**
-   * Interaktif mesaj gonder (butonlu)
+   * CTA URL butonlu mesaj gonder — tiklaninca link acar
+   */
+  async sendCtaUrlMessage(params: {
+    to: string
+    header: string
+    body: string
+    footer?: string
+    buttonText: string
+    url: string
+  }): Promise<WhatsAppMessageResponse> {
+    return this.request<WhatsAppMessageResponse>(
+      `${this.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: params.to,
+          type: 'interactive',
+          interactive: {
+            type: 'cta_url',
+            header: {
+              type: 'text',
+              text: params.header,
+            },
+            body: { text: params.body },
+            ...(params.footer && { footer: { text: params.footer } }),
+            action: {
+              name: 'cta_url',
+              parameters: {
+                display_text: params.buttonText,
+                url: params.url,
+              },
+            },
+          },
+        }),
+      }
+    )
+  }
+
+  /**
+   * Reply butonlu mesaj gonder (yanitlama icin)
    */
   private async sendInteractiveMessage(params: {
     to: string
