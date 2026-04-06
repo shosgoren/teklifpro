@@ -131,6 +131,34 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   const labels = navLabels[locale] || navLabels.tr
 
+  // Dynamic favicon: use tenant's uploaded logo if available
+  useEffect(() => {
+    let cancelled = false
+    async function loadTenantFavicon() {
+      try {
+        const res = await fetch('/api/v1/settings/logo')
+        if (!res.ok) return
+        const json = await res.json()
+        const logo = json?.data?.logo
+        if (cancelled || !logo) return
+        // Update all favicon link elements
+        const links = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]')
+        links.forEach(link => { link.href = logo })
+        // If no existing icon link, create one
+        if (links.length === 0) {
+          const link = document.createElement('link')
+          link.rel = 'icon'
+          link.href = logo
+          document.head.appendChild(link)
+        }
+      } catch {
+        // Keep default favicon on error
+      }
+    }
+    loadTenantFavicon()
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     setMounted(true)
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
