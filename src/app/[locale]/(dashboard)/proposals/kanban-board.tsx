@@ -22,7 +22,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
+type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 interface Proposal {
   id: string;
@@ -43,6 +43,7 @@ interface KanbanBoardProps {
 
 const KANBAN_COLUMNS: { status: ProposalStatus; label: string; color: string; dotColor: string; bgColor: string; borderColor: string }[] = [
   { status: 'DRAFT', label: 'Taslak', color: 'text-slate-600 dark:text-slate-300', dotColor: 'bg-slate-400', bgColor: 'bg-slate-50 dark:bg-slate-900/50', borderColor: 'border-slate-200 dark:border-slate-700' },
+  { status: 'READY', label: 'Hazır', color: 'text-cyan-600 dark:text-cyan-400', dotColor: 'bg-cyan-500', bgColor: 'bg-cyan-50/50 dark:bg-cyan-950/30', borderColor: 'border-cyan-200 dark:border-cyan-800' },
   { status: 'SENT', label: 'Gönderildi', color: 'text-blue-600 dark:text-blue-400', dotColor: 'bg-blue-500', bgColor: 'bg-blue-50/50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
   { status: 'VIEWED', label: 'Görüntülendi', color: 'text-amber-600 dark:text-amber-400', dotColor: 'bg-amber-500', bgColor: 'bg-amber-50/50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
   { status: 'REVISION_REQUESTED', label: 'Revize', color: 'text-orange-600 dark:text-orange-400', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50/50 dark:bg-orange-950/30', borderColor: 'border-orange-200 dark:border-orange-800' },

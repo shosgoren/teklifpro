@@ -63,6 +63,24 @@ async function handlePost(
       );
     }
 
+    // Only READY proposals can be sent
+    if (proposal.status !== 'READY') {
+      const statusMessages: Record<string, string> = {
+        DRAFT: 'Teklif taslak durumunda. Göndermeden önce "Hazırla" ile hazır durumuna getirin.',
+        SENT: 'Bu teklif zaten gönderilmiş.',
+        VIEWED: 'Bu teklif zaten görüntülenmiş.',
+        ACCEPTED: 'Bu teklif zaten kabul edilmiş.',
+        REJECTED: 'Bu teklif reddedilmiş.',
+        INVOICED: 'Bu teklif faturalandırılmış.',
+        EXPIRED: 'Bu teklifin süresi dolmuş.',
+        CANCELLED: 'Bu teklif iptal edilmiş.',
+      };
+      return NextResponse.json(
+        { success: false, error: statusMessages[proposal.status] || 'Bu teklif gönderilebilir durumda değil.' },
+        { status: 400 }
+      );
+    }
+
     let sentTo = '';
     let messageId: string | undefined;
 
@@ -91,7 +109,7 @@ async function handlePost(
         whatsappAccessToken: tenant.whatsappAccessToken,
       });
 
-      const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.publicToken}`;
+      const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposal/${proposal.publicToken}`;
 
       const messageText =
         payload.message ||

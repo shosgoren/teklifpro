@@ -614,6 +614,7 @@ model Proposal {
 
 enum ProposalStatus {
   DRAFT
+  READY
   SENT
   VIEWED
   ACCEPTED

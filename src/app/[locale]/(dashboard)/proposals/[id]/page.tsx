@@ -44,7 +44,7 @@ import { toast } from 'sonner';
 
 const logger = new Logger('ProposalDetailPage');
 
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
+type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 const fetcher = (url: string) =>
   fetch(url).then(res => {
@@ -57,6 +57,7 @@ const fetcher = (url: string) =>
 
 const STATUS_COLORS: Record<ProposalStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-800',
+  READY: 'bg-cyan-100 text-cyan-800',
   SENT: 'bg-blue-100 text-blue-800',
   VIEWED: 'bg-yellow-100 text-yellow-800',
   ACCEPTED: 'bg-green-100 text-green-800',
@@ -87,6 +88,7 @@ interface ProposalActivity {
 
 const ACTIVITY_ICON_COLORS: Record<string, string> = {
   CREATED: 'from-blue-500 to-blue-600',
+  READY: 'from-cyan-500 to-cyan-600',
   SENT: 'from-indigo-500 to-indigo-600',
   VIEWED: 'from-amber-500 to-amber-600',
   ACCEPTED: 'from-emerald-500 to-emerald-600',
@@ -318,6 +320,26 @@ export default function ProposalDetailPage() {
     }
   };
 
+  const handleMakeReady = async () => {
+    try {
+      toast.loading('Teklif hazırlanıyor...', { id: 'make-ready' });
+      const res = await fetch(`/api/v1/proposals/${proposalId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'READY' }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Durum değiştirilemedi');
+      }
+      toast.success('Teklif hazır durumuna getirildi!', { id: 'make-ready' });
+      router.refresh();
+      window.location.reload();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Hata oluştu', { id: 'make-ready' });
+    }
+  };
+
   const handleSendWhatsApp = async () => {
     if (!proposal?.customer?.phone) {
       toast.error('Müşteri telefon numarası bulunamadı');
@@ -492,6 +514,16 @@ export default function ProposalDetailPage() {
 
           {/* Desktop Action Buttons */}
           <div className="relative z-10 hidden md:flex flex-wrap gap-2">
+            {status === 'DRAFT' && (
+              <button
+                onClick={handleMakeReady}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl backdrop-blur-sm transition-colors text-sm font-medium"
+                title="Hazırla"
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span>Hazırla</span>
+              </button>
+            )}
             <button
               onClick={handleEdit}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors text-sm font-medium"
@@ -1028,6 +1060,15 @@ export default function ProposalDetailPage() {
 
       {/* ===== Mobile Sticky Bottom Bar ===== */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        {status === 'DRAFT' && (
+          <button
+            onClick={handleMakeReady}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl transition-colors text-sm font-medium"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Hazırla
+          </button>
+        )}
         <button
           onClick={handleEdit}
           className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-sm font-medium"

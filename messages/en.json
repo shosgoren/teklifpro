@@ -356,6 +356,7 @@
     },
     "status": {
       "DRAFT": "Draft",
+      "READY": "Ready",
       "SENT": "Sent",
       "VIEWED": "Viewed",
       "ACCEPTED": "Accepted",

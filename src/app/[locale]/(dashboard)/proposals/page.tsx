@@ -19,7 +19,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
-type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
+type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
 interface Proposal {
   id: string;
@@ -47,6 +47,7 @@ const fetcher = (url: string) =>
 
 const STATUS_CONFIG: Record<ProposalStatus, { label: string; color: string; dot: string; border: string }> = {
   DRAFT: { label: 'Taslak', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400', border: 'border-l-slate-400' },
+  READY: { label: 'Hazır', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', dot: 'bg-cyan-500', border: 'border-l-cyan-500' },
   SENT: { label: 'Gönderildi', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500', border: 'border-l-blue-500' },
   VIEWED: { label: 'Görüntülendi', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500', border: 'border-l-amber-500' },
   ACCEPTED: { label: 'Kabul Edildi', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500', border: 'border-l-emerald-500' },

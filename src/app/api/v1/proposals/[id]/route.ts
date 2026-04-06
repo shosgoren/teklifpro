@@ -100,6 +100,27 @@ async function handlePut(
       );
     }
 
+    // Validate status transitions
+    if (validatedData.status) {
+      const VALID_TRANSITIONS: Record<string, string[]> = {
+        DRAFT: ['READY', 'CANCELLED'],
+        READY: ['DRAFT', 'SENT', 'CANCELLED'],
+        SENT: ['VIEWED', 'EXPIRED', 'CANCELLED'],
+        VIEWED: ['ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED'],
+        ACCEPTED: ['INVOICED'],
+        REJECTED: ['DRAFT'],
+        REVISION_REQUESTED: ['DRAFT'],
+        EXPIRED: ['DRAFT'],
+      };
+      const allowed = VALID_TRANSITIONS[existingProposal.status] || [];
+      if (!allowed.includes(validatedData.status)) {
+        return NextResponse.json(
+          { success: false, error: `"${existingProposal.status}" durumundan "${validatedData.status}" durumuna geçiş yapılamaz.` },
+          { status: 400 }
+        );
+      }
+    }
+
     // Calculate totals if items are provided
     let subtotal = Number(existingProposal.subtotal);
     let discountAmount = Number(existingProposal.discountAmount);

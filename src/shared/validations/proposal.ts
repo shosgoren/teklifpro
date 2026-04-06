@@ -30,7 +30,7 @@ export const CreateProposalSchema = z.object({
 export const UpdateProposalSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED']).optional(),
+  status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED', 'INVOICED']).optional(),
   items: z.array(z.object({
     id: z.string().optional(),
     productId: z.string().optional(),
@@ -74,7 +74,7 @@ export const GetProposalsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
-  status: z.enum(['DRAFT', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED']).optional(),
+  status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED', 'INVOICED']).optional(),
 })
 
 export type CreateProposalInput = z.infer<typeof CreateProposalSchema>

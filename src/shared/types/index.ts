@@ -525,6 +525,7 @@ export interface ParasutProductCategory {
 
 export type ProposalStatusType =
   | 'DRAFT'
+  | 'READY'
   | 'SENT'
   | 'VIEWED'
   | 'ACCEPTED'
