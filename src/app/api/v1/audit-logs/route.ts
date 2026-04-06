@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import {
   successResponse,
@@ -386,7 +386,7 @@ async function handleDelete(
 // GET uses withAuth for permission check, then withErrorHandling for error boundaries
 const wrappedHandleGet = withErrorHandling(handleGet);
 export const GET = withAuth(
-  async (req: NextRequest) => (await wrappedHandleGet(req)) as any,
+  async (req: NextRequest) => (await wrappedHandleGet(req)) as NextResponse,
   ['audit.read']
 );
 export const POST = withErrorHandling(handlePost);

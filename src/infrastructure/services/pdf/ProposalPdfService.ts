@@ -1,7 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Proposal, ProposalItem } from '@/domain/entities/Proposal';
 import { Tenant } from '@/domain/entities/Tenant';
 import * as crypto from 'crypto';
+
+/** pdfmake content node – covers text, columns, stack, table, canvas etc. */
+type PdfContent = Record<string, unknown>;
+
+/** pdfmake table layout node with table metadata */
+interface PdfTableNode {
+  table: { body: PdfContent[][] };
+}
 
 export interface ProposalPdfOptions {
   fontSize?: number;
@@ -35,13 +42,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 /** Singleton pdfmake instance */
-let _pdfmake: any = null;
+let _pdfmake: unknown = null;
 
-function getPdfMake(): any {
+function getPdfMake(): unknown {
   if (_pdfmake) return _pdfmake;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
   const pdfmake = require('pdfmake/js/index') as any;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
   const vfsModule = require('pdfmake/build/vfs_fonts') as any;
   const vfs: Record<string, string> = vfsModule.pdfMake ? vfsModule.pdfMake.vfs : vfsModule.vfs ?? vfsModule;
   for (const [filename, base64Data] of Object.entries(vfs)) {
@@ -65,9 +72,10 @@ export class ProposalPdfService {
     tenant: Tenant,
     _options: ProposalPdfOptions = {}
   ): Promise<Buffer> {
-    const pdfmake = getPdfMake();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdfmake = getPdfMake() as any;
     const docDefinition = this.buildDocument(proposal, tenant);
-    const doc = pdfmake.createPdf(docDefinition);
+    const doc = pdfmake.createPdf(docDefinition) as { getBuffer(): Promise<Buffer> };
     const buffer: Buffer = await doc.getBuffer();
     return buffer;
   }
@@ -75,7 +83,7 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  DOCUMENT
   // ══════════════════════════════════════════════════
-  private static buildDocument(proposal: Proposal, tenant: Tenant): any {
+  private static buildDocument(proposal: Proposal, tenant: Tenant): PdfContent {
     const hash = this.generateHash(proposal, tenant);
 
     return {
@@ -103,12 +111,12 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  HEADER
   // ══════════════════════════════════════════════════
-  private static buildHeader(tenant: Tenant, proposal: Proposal, _currentPage: number): any {
+  private static buildHeader(tenant: Tenant, proposal: Proposal, _currentPage: number): PdfContent {
     const statusText = STATUS_LABELS[proposal.status] ?? proposal.status;
     const statusColor = STATUS_COLORS[proposal.status] ?? '#64748B';
 
     // Left side: logo + company name (side by side)
-    const companyInfoStack: any[] = [
+    const companyInfoStack: PdfContent[] = [
       { text: tenant.name, fontSize: 16, bold: true, color: PRIMARY },
     ];
 
@@ -123,7 +131,7 @@ export class ProposalPdfService {
       companyInfoStack.push({ text: tenant.address, fontSize: 7.5, color: TEXT_LIGHT, margin: [0, 1, 0, 0] as [number, number, number, number] });
     }
 
-    const leftContent: any = tenant.logo
+    const leftContent: PdfContent = tenant.logo
       ? {
           columns: [
             { width: 40, image: tenant.logo, fit: [36, 36] as [number, number] },
@@ -132,10 +140,10 @@ export class ProposalPdfService {
         }
       : { stack: companyInfoStack };
 
-    const leftStack: any[] = [leftContent];
+    const leftStack: PdfContent[] = [leftContent];
 
     // Right side: proposal info
-    const rightStack: any[] = [
+    const rightStack: PdfContent[] = [
       { text: 'TEKLİF', fontSize: 24, bold: true, color: PRIMARY, alignment: 'right' },
       { text: proposal.number, fontSize: 10, color: PRIMARY_LIGHT, alignment: 'right', margin: [0, 2, 0, 0] as [number, number, number, number] },
       {
@@ -189,7 +197,7 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  FOOTER
   // ══════════════════════════════════════════════════
-  private static buildFooter(tenant: Tenant, hash: string, currentPage: number, pageCount: number): any {
+  private static buildFooter(tenant: Tenant, hash: string, currentPage: number, pageCount: number): PdfContent {
     return {
       margin: [40, 10, 40, 0] as [number, number, number, number],
       stack: [
@@ -214,7 +222,7 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  CUSTOMER CARD
   // ══════════════════════════════════════════════════
-  private static buildCustomerCard(proposal: Proposal): any {
+  private static buildCustomerCard(proposal: Proposal): PdfContent {
     const c = proposal.customer;
 
     const infoRow = (label: string, value: string) => ({
@@ -225,7 +233,7 @@ export class ProposalPdfService {
       margin: [0, 1.5, 0, 1.5] as [number, number, number, number],
     });
 
-    const rows: any[] = [];
+    const rows: PdfContent[] = [];
 
     // Company name with optional logo inline
     if (c.logo) {
@@ -272,7 +280,7 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  ITEMS TABLE
   // ══════════════════════════════════════════════════
-  private static buildItemsTable(items: ProposalItem[]): any {
+  private static buildItemsTable(items: ProposalItem[]): PdfContent {
     const headerRow = [
       { text: '#', bold: true, color: WHITE, alignment: 'center' as const, fontSize: 8 },
       { text: 'Ürün / Hizmet', bold: true, color: WHITE, fontSize: 8 },
@@ -314,7 +322,7 @@ export class ProposalPdfService {
               if (rowIndex === 0) return PRIMARY;
               return rowIndex % 2 === 0 ? BG_LIGHT : WHITE;
             },
-            hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length ? 0 : 0.5),
+            hLineWidth: (i: number, node: PdfTableNode) => (i === 0 || i === 1 || i === node.table.body.length ? 0 : 0.5),
             vLineWidth: () => 0,
             hLineColor: () => BORDER,
             paddingLeft: () => 6, paddingRight: () => 6,
@@ -329,8 +337,8 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  TOTALS
   // ══════════════════════════════════════════════════
-  private static buildTotalsSection(proposal: Proposal): any {
-    const rows: any[][] = [];
+  private static buildTotalsSection(proposal: Proposal): PdfContent {
+    const rows: PdfContent[][] = [];
 
     rows.push([
       { text: 'Ara Toplam', fontSize: 9, color: TEXT_MED, alignment: 'right' as const },
@@ -380,11 +388,11 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  TERMS & CONDITIONS
   // ══════════════════════════════════════════════════
-  private static buildTermsSection(proposal: Proposal): any[] {
+  private static buildTermsSection(proposal: Proposal): PdfContent[] {
     const hasTerms = proposal.paymentTerms || proposal.deliveryTerms || proposal.notes;
     if (!hasTerms) return [];
 
-    const items: any[] = [];
+    const items: PdfContent[] = [];
 
     if (proposal.paymentTerms) {
       items.push(
@@ -433,7 +441,7 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   //  DIGITAL SIGNATURE / AUTHENTICITY SEAL
   // ══════════════════════════════════════════════════
-  private static buildSignatureSection(tenant: Tenant, hash: string): any {
+  private static buildSignatureSection(tenant: Tenant, hash: string): PdfContent {
     return {
       table: {
         widths: ['*'],

@@ -11,6 +11,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { ProposalStatus } from '@prisma/client'
 import { prisma } from '@/shared/utils/prisma'
 import { Logger } from '@/infrastructure/logger'
 
@@ -255,7 +256,7 @@ async function handleSalesOfferEvent(
     await prisma.proposal.update({
       where: { id: proposal.id },
       data: {
-        status: newStatus as any,
+        status: newStatus as ProposalStatus,
         respondedAt: new Date(),
         parasutLastSyncAt: new Date(),
       },

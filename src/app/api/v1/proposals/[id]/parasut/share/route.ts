@@ -5,17 +5,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/shared/utils/prisma'
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware'
+import { shareProposalSchema } from '@/shared/validations'
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient'
 import { Logger } from '@/infrastructure/logger'
 import type { ParasutSharingData } from '@/shared/types'
 
 const logger = new Logger('ProposalParasutShareAPI')
-
-const shareSchema = z.object({
-  email: z.string().email(),
-  subject: z.string().min(1).max(500).optional(),
-  body: z.string().max(5000).optional(),
-})
 
 async function handlePost(
   request: NextRequest,
@@ -33,7 +28,7 @@ async function handlePost(
     }
 
     const reqBody = await request.json()
-    const data = shareSchema.parse(reqBody)
+    const data = shareProposalSchema.parse(reqBody)
 
     const proposal = await prisma.proposal.findFirst({
       where: {

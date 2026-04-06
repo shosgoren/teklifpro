@@ -224,8 +224,9 @@ const SettingsPage = () => {
         taxOffice: t.taxOffice || prev.taxOffice,
       }));
       setLogo(t.logo || null);
-      if (Array.isArray((t as any).bankAccounts)) {
-        setBankAccounts((t as any).bankAccounts);
+      const tenantWithBank = t as typeof t & { bankAccounts?: BankAccount[] };
+      if (Array.isArray(tenantWithBank.bankAccounts)) {
+        setBankAccounts(tenantWithBank.bankAccounts);
       }
     }
   }, [tenantData]);
@@ -406,7 +407,7 @@ const SettingsPage = () => {
                   {tab.icon}
                 </span>
                 <div className="text-left">
-                  <span className="block font-semibold text-[11px] md:text-sm">{t(TAB_TRANSLATION_KEYS[tab.key] as any)}</span>
+                  <span className="block font-semibold text-[11px] md:text-sm">{t(TAB_TRANSLATION_KEYS[tab.key] as Parameters<typeof t>[0])}</span>
                   <span className={`block text-[10px] leading-tight hidden md:block ${isActive ? 'text-gray-400' : 'text-gray-400/70'}`}>
                     {tab.desc}
                   </span>

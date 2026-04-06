@@ -4,6 +4,7 @@
  * DELETE /api/v1/proposals/[id]/parasut — Remove Parasut link
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { ProposalStatus } from '@prisma/client'
 import { prisma } from '@/shared/utils/prisma'
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware'
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient'
@@ -241,7 +242,7 @@ async function handleGet(
       await prisma.proposal.update({
         where: { id: proposalId },
         data: {
-          status: newStatus as any,
+          status: newStatus as ProposalStatus,
           respondedAt: new Date(),
           parasutLastSyncAt: new Date(),
         },

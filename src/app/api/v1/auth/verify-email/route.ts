@@ -91,7 +91,7 @@ async function handleSendVerificationEmail(
 
     // Send email
     const emailService = require('@/infrastructure/services/email/EmailService')
-      .emailService as any
+      .emailService as import('@/infrastructure/services/email/EmailService').EmailService
     await emailService.sendVerificationEmail(data.email, html)
 
     logger.info('EMAIL_VERIFICATION_SENT', {

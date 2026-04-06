@@ -123,7 +123,7 @@ class RateLimiter {
 
 class AiProposalService {
   private client: AnthropicStub;
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
   private rateLimiter = new RateLimiter();
   private model = 'claude-sonnet-4-20250514';
 
@@ -280,7 +280,7 @@ Notu kısa, çekici ve profesyonel tut. Sadece notu ver, başka birşey yazma.
   /**
    * Teklif kabul olasılığını tahmin et
    */
-  async predictAcceptance(proposalData: any): Promise<AcceptancePrediction> {
+  async predictAcceptance(proposalData: Record<string, unknown>): Promise<AcceptancePrediction> {
     try {
       const cacheKey = `acceptance:${JSON.stringify(proposalData).substring(0, 100)}`;
       const cached = this.getFromCache<AcceptancePrediction>(cacheKey);

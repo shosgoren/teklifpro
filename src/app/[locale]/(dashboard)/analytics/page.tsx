@@ -133,9 +133,29 @@ export default function AnalyticsDashboard() {
     error: productsError,
   } = useSWR('/api/v1/products?limit=100', fetcher);
 
-  const proposals: any[] = proposalsData?.data?.proposals ?? [];
-  const customers: any[] = customersData?.data?.customers ?? [];
-  const products: any[] = productsData?.data?.products ?? [];
+  interface AnalyticsProposal {
+    id: string;
+    status: string;
+    grandTotal: string | number;
+    createdAt: string;
+    proposalNumber: string;
+    customer?: { name: string };
+  }
+
+  interface AnalyticsCustomer {
+    id: string;
+    name: string;
+  }
+
+  interface AnalyticsProduct {
+    id: string;
+    name: string;
+    listPrice: string | number;
+  }
+
+  const proposals: AnalyticsProposal[] = proposalsData?.data?.proposals ?? [];
+  const customers: AnalyticsCustomer[] = customersData?.data?.customers ?? [];
+  const products: AnalyticsProduct[] = productsData?.data?.products ?? [];
 
   const isLoading = proposalsLoading || customersLoading || productsLoading;
   const hasError = proposalsError || customersError || productsError;
@@ -177,7 +197,7 @@ export default function AnalyticsDashboard() {
       counts[p.status] = (counts[p.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, value]) => ({
-      name: tStatus(`status.${status}` as any),
+      name: tStatus(`status.${status}` as Parameters<typeof tStatus>[0]),
       value,
       status,
     }));
@@ -678,7 +698,7 @@ export default function AnalyticsDashboard() {
               {recentProposals.length > 0 ? (
                 <div className="space-y-3">
                   {recentProposals.map((proposal) => {
-                    const statusLabel = tStatus(`status.${proposal.status}` as any);
+                    const statusLabel = tStatus(`status.${proposal.status}` as Parameters<typeof tStatus>[0]);
                     const statusColor = STATUS_COLORS[proposal.status] || '#6b7280';
                     const isAccepted = proposal.status === 'ACCEPTED';
                     const isRejected = proposal.status === 'REJECTED';

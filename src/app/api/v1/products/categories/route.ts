@@ -3,20 +3,13 @@
  * POST /api/v1/products/categories — Create or sync categories from Parasut
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/shared/utils/prisma'
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware'
+import { createCategorySchema } from '@/shared/validations'
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient'
 import { Logger } from '@/infrastructure/logger'
 
 const logger = new Logger('ProductCategoriesAPI')
-
-const createCategorySchema = z.object({
-  name: z.string().min(1).max(100),
-  parentId: z.string().optional(),
-  bgColor: z.string().optional(),
-  textColor: z.string().optional(),
-})
 
 async function handleGet(
   request: NextRequest,

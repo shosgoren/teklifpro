@@ -128,7 +128,7 @@ async function handleRequestPasswordReset(
     // Send email
     try {
       const emailService = require('@/infrastructure/services/email/EmailService')
-        .emailService as any
+        .emailService as import('@/infrastructure/services/email/EmailService').EmailService
       await emailService.sendPasswordResetEmail(data.email, html)
     } catch (emailError) {
       logger.error('Failed to send password reset email', emailError)

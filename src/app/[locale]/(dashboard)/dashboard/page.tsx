@@ -56,6 +56,27 @@ import { CSS } from '@dnd-kit/utilities';
 import { useCountUp } from '@/shared/hooks/useCountUp';
 import { VoiceProposalModal } from '@/presentation/components/organisms/VoiceProposalModal';
 
+interface DashboardProposal {
+  id: string;
+  title?: string;
+  proposalNumber: string;
+  status: string;
+  grandTotal: number | string;
+  createdAt: string;
+  customer?: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
+interface StockAlert {
+  productId: string;
+  productName: string;
+  currentStock: number;
+  minLevel: number;
+}
+
 const logger = new Logger('DashboardPage');
 
 const fetcher = (url: string) =>
@@ -274,13 +295,13 @@ export default function DashboardPage() {
 
   const isLoading = proposalsLoading || customersLoading;
 
-  const acceptedCount = proposals.filter((p: any) => p.status === 'ACCEPTED').length;
+  const acceptedCount = proposals.filter((p: DashboardProposal) => p.status === 'ACCEPTED').length;
   const acceptRate = proposals.length > 0 ? Math.round((acceptedCount / proposals.length) * 100) : 0;
   const totalRevenue = proposals
-    .filter((p: any) => p.status === 'ACCEPTED')
-    .reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0);
-  const pendingCount = proposals.filter((p: any) => ['SENT', 'VIEWED'].includes(p.status)).length;
-  const revisionCount = proposals.filter((p: any) => p.status === 'REVISION_REQUESTED').length;
+    .filter((p: DashboardProposal) => p.status === 'ACCEPTED')
+    .reduce((sum: number, p: DashboardProposal) => sum + (Number(p.grandTotal) || 0), 0);
+  const pendingCount = proposals.filter((p: DashboardProposal) => ['SENT', 'VIEWED'].includes(p.status)).length;
+  const revisionCount = proposals.filter((p: DashboardProposal) => p.status === 'REVISION_REQUESTED').length;
   const lastProposalId = proposals[0]?.id;
 
   // Load widget order from localStorage
@@ -350,7 +371,7 @@ export default function DashboardPage() {
   };
 
   const chartData = proposals
-    .map((p: any) => ({
+    .map((p: DashboardProposal) => ({
       date: new Date(p.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
       total: Number(p.grandTotal) || 0,
     }))
@@ -488,8 +509,8 @@ export default function DashboardPage() {
             </div>
             <div className="flex flex-col gap-2">
               {proposals
-                .filter((p: any) => p.status === 'REVISION_REQUESTED')
-                .map((proposal: any, i: number) => (
+                .filter((p: DashboardProposal) => p.status === 'REVISION_REQUESTED')
+                .map((proposal: DashboardProposal, i: number) => (
                   <motion.button
                     key={proposal.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -535,7 +556,7 @@ export default function DashboardPage() {
               </Badge>
             </div>
             <div className="flex flex-wrap gap-2">
-              {alerts.slice(0, 5).map((alert: any) => (
+              {alerts.slice(0, 5).map((alert: StockAlert) => (
                 <div
                   key={alert.productId}
                   className="flex items-center gap-2 rounded-xl bg-white dark:bg-gray-900 border border-orange-200 dark:border-orange-800 px-3 py-2 text-sm"
@@ -688,7 +709,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="divide-y">
-            {proposals.map((proposal: any, i: number) => {
+            {proposals.map((proposal: DashboardProposal, i: number) => {
               const status = statusConfig[proposal.status] ?? statusConfig.DRAFT;
               const amount = Number(proposal.grandTotal) || 0;
               return (
@@ -714,7 +735,7 @@ export default function DashboardPage() {
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold">{formatAmount(amount)}</p>
                     <Badge className={cn('text-[10px] mt-1 font-medium', status.color)}>
-                      {tStatus(`status.${proposal.status}` as any)}
+                      {tStatus(`status.${proposal.status}` as Parameters<typeof tStatus>[0])}
                     </Badge>
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0 hidden sm:block w-16 text-right">

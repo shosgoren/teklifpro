@@ -22,7 +22,7 @@ interface PayTRWebhookData {
   status: string;
   total_amount: number;
   hash: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface SubscriptionData {

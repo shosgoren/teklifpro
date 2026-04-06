@@ -67,6 +67,24 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
 };
 
 
+interface ProposalItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number | string;
+  discountRate: number | string;
+  vatRate: number | string;
+  lineTotal: number | string;
+}
+
+interface ProposalActivity {
+  id: string;
+  type: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
 const ACTIVITY_ICON_COLORS: Record<string, string> = {
   CREATED: 'from-blue-500 to-blue-600',
   SENT: 'from-indigo-500 to-indigo-600',
@@ -122,7 +140,8 @@ export default function ProposalDetailPage() {
   const params = useParams();
   const proposalId = params.id as string;
 
-  const statusLabel = (s: string) => t(`status.${s}` as any) || s;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- next-intl dynamic translation key
+  const statusLabel = (s: string) => t(`status.${s}` as Parameters<typeof t>[0]) || s;
 
   const { data, error, isLoading } = useSWR(
     proposalId ? `/api/v1/proposals/${proposalId}` : null,
@@ -576,7 +595,7 @@ export default function ProposalDetailPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {items.map((item: any, idx: number) => (
+                        {items.map((item: ProposalItem, idx: number) => (
                           <tr
                             key={item.id}
                             className={`border-t border-gray-100 dark:border-gray-800 ${
@@ -599,7 +618,7 @@ export default function ProposalDetailPage() {
 
                   {/* Mobile cards */}
                   <div className="md:hidden space-y-3">
-                    {items.map((item: any) => (
+                    {items.map((item: ProposalItem) => (
                       <div
                         key={item.id}
                         className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-4"
@@ -888,7 +907,7 @@ export default function ProposalDetailPage() {
                   {activities.length === 0 ? (
                     <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Henuz faaliyet yok.</p>
                   ) : (
-                    activities.map((activity: any, idx: number) => (
+                    activities.map((activity: ProposalActivity, idx: number) => (
                       <div key={activity.id} className="flex gap-3">
                         {/* Timeline column */}
                         <div className="flex flex-col items-center">

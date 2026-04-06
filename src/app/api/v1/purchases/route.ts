@@ -3,30 +3,13 @@
  * POST /api/v1/purchases — Create purchase bill
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/shared/utils/prisma'
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware'
+import { createPurchaseSchema } from '@/shared/validations'
 import { Logger } from '@/infrastructure/logger'
 
 const logger = new Logger('PurchasesAPI')
-
-const createPurchaseSchema = z.object({
-  supplierId: z.string().optional(),
-  billNumber: z.string().optional(),
-  description: z.string().optional(),
-  issueDate: z.string(),
-  dueDate: z.string().optional(),
-  currency: z.string().default('TRY'),
-  items: z.array(z.object({
-    productId: z.string().optional(),
-    name: z.string().min(1),
-    description: z.string().optional(),
-    unit: z.string().default('Adet'),
-    quantity: z.number().positive(),
-    unitPrice: z.number().min(0),
-    vatRate: z.number().min(0).max(100).default(20),
-  })).min(1),
-})
 
 async function handleGet(
   request: NextRequest,
@@ -39,12 +22,12 @@ async function handleGet(
     const status = url.searchParams.get('status')
     const search = url.searchParams.get('search')
 
-    const where: any = {
+    const where: Prisma.PurchaseBillWhereInput = {
       tenantId: session.tenant.id,
       deletedAt: null,
     }
 
-    if (status) where.status = status
+    if (status) where.status = status as Prisma.EnumPurchaseBillStatusFilter
     if (search) {
       where.OR = [
         { billNumber: { contains: search, mode: 'insensitive' } },

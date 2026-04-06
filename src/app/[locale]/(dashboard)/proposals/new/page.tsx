@@ -69,6 +69,42 @@ import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNote
 
 const logger = new Logger('ProposalNewPage')
 
+// ── Interfaces ───────────────────────────────────────────
+
+interface Customer {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  address: string | null
+  city: string | null
+  district: string | null
+  taxNumber: string | null
+  taxOffice: string | null
+  parasutId: string | null
+  contacts: CustomerContact[]
+}
+
+interface CustomerContact {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  title: string | null
+}
+
+interface Product {
+  id: string
+  name: string
+  code: string | null
+  listPrice: number
+  vatRate: number
+  unit: string | null
+  description: string | null
+}
+
+type ProposalFormField = keyof ProposalFormData
+
 // ── Validation ────────────────────────────────────────────
 
 const customerSchema = z.object({
@@ -124,26 +160,26 @@ const apiFetcher = (url: string) =>
 
 function CustomerSelectionStep({ selectedCustomer, onSelect }: {
   selectedCustomer: ProposalFormData['customer'] | null
-  onSelect: (customer: any, contact: any) => void
+  onSelect: (customer: ProposalFormData['customer'], contact: Pick<CustomerContact, 'id' | 'name'>) => void
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
 
   const { data: customersData } = useSWR('/api/v1/customers?limit=100', apiFetcher)
-  const customers: any[] = customersData?.data?.customers ?? []
+  const customers: Customer[] = customersData?.data?.customers ?? []
 
   const filteredCustomers = useMemo(() => {
     if (!search) return customers
     const q = search.toLowerCase()
-    return customers.filter((c: any) =>
+    return customers.filter((c: Customer) =>
       c.name.toLowerCase().includes(q) ||
       (c.email && c.email.toLowerCase().includes(q)) ||
       (c.phone && c.phone.includes(search))
     )
   }, [search, customers])
 
-  const handleSelectCustomer = (customer: any) => {
+  const handleSelectCustomer = (customer: Customer) => {
     onSelect(
       {
         id: customer.id,
@@ -182,7 +218,7 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
               <CommandList>
                 <CommandEmpty>{t('proposals.noCustomer')}</CommandEmpty>
                 <CommandGroup>
-                  {filteredCustomers.map((customer: any) => (
+                  {filteredCustomers.map((customer: Customer) => (
                     <CommandItem key={customer.id} onSelect={() => handleSelectCustomer(customer)}>
                       <div className="flex items-center gap-3 w-full">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
@@ -254,18 +290,18 @@ function ProductSelectionStep({
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
 
   const { data: productsData } = useSWR('/api/v1/products?limit=100', apiFetcher)
-  const allProducts: any[] = productsData?.data?.products ?? []
+  const allProducts: Product[] = productsData?.data?.products ?? []
 
   const filteredProducts = useMemo(() => {
     if (!search) return allProducts
     const q = search.toLowerCase()
-    return allProducts.filter((p: any) =>
+    return allProducts.filter((p: Product) =>
       p.name.toLowerCase().includes(q) ||
       (p.code && p.code.toLowerCase().includes(q))
     )
   }, [search, allProducts])
 
-  const handleAddProduct = (product: any) => {
+  const handleAddProduct = (product: Product) => {
     if (replacingIndex !== null) {
       // Replace: keep quantity and discount settings, swap product
       const existing = items[replacingIndex]
@@ -368,7 +404,7 @@ function ProductSelectionStep({
             <CommandList>
               <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
               <CommandGroup>
-                {filteredProducts.map((product: any) => (
+                {filteredProducts.map((product: Product) => (
                   <CommandItem key={product.id} onSelect={() => handleAddProduct(product)}>
                     <div className="flex items-center gap-3 w-full py-1">
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
@@ -758,7 +794,7 @@ function DetailsStep({
   onChange,
 }: {
   data: Partial<ProposalFormData>
-  onChange: (field: string, value: any) => void
+  onChange: (field: string, value: string | number | boolean | null) => void
 }) {
   const t = useTranslations()
 
@@ -1097,7 +1133,7 @@ export default function CreateProposalPage() {
   const router = useRouter()
   const locale = useLocale()
   const [currentStep, setCurrentStep] = useState(0)
-  const [selectedContact, setSelectedContact] = useState<any>(null)
+  const [selectedContact, setSelectedContact] = useState<Pick<CustomerContact, 'id' | 'name'> | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -1131,7 +1167,7 @@ export default function CreateProposalPage() {
   }, [isDirty, markDirty])
 
   const formData = watch()
-  const itemsForCalcMain = useMemo(() => formData.items.map((item: any) => {
+  const itemsForCalcMain = useMemo(() => formData.items.map((item: ProposalFormData['items'][0]) => {
     if (item.discountType === 'fixed' && item.discountFixed > 0) {
       const lineSubtotal = item.quantity * item.unitPrice
       const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
@@ -1159,7 +1195,7 @@ export default function CreateProposalPage() {
     itemFields.forEach((_, index) => { if (items[index]) update(index, items[index]) })
   }
 
-  const handleSelectCustomer = (customer: any, contact: any) => {
+  const handleSelectCustomer = (customer: ProposalFormData['customer'], contact: Pick<CustomerContact, 'id' | 'name'>) => {
     setValue('customer', customer)
     setSelectedContact(contact)
   }
@@ -1349,7 +1385,7 @@ export default function CreateProposalPage() {
                 />
               )}
               {currentStep === 2 && (
-                <DetailsStep data={formData} onChange={(field, value) => setValue(field as any, value)} />
+                <DetailsStep data={formData} onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }} />
               )}
               {currentStep === 3 && (
                 <PreviewStep

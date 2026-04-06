@@ -3,24 +3,14 @@
  * GET  /api/v1/proposals/[id]/parasut/efatura — Check e-document status
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { prisma } from '@/shared/utils/prisma'
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware'
+import { efaturaSchema } from '@/shared/validations'
 import { ParasutClient } from '@/infrastructure/services/parasut/ParasutClient'
 import { Logger } from '@/infrastructure/logger'
 import type { ParasutEInvoiceCreateData, ParasutEArchiveCreateData } from '@/shared/types'
 
 const logger = new Logger('ProposalEFaturaAPI')
-
-const efaturaSchema = z.object({
-  type: z.enum(['e_invoice', 'e_archive']),
-  scenario: z.enum(['basic', 'commercial']).optional().default('basic'),
-  receiverAlias: z.string().optional(), // PK for e-invoice
-  note: z.string().optional(),
-  vatWithholdingCode: z.string().optional(),
-  vatExemptionReasonCode: z.string().optional(),
-  vatExemptionReason: z.string().optional(),
-})
 
 /**
  * POST — Send e-fatura or e-arsiv through Parasut → GIB

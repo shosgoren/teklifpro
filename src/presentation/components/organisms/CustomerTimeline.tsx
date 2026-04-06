@@ -123,7 +123,7 @@ const getBadgeVariant = (type: TimelineEventType) => {
 };
 
 // Yazı stil tanımlaması
-const FileText = (props: any) => (
+const FileText = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"
@@ -141,7 +141,7 @@ const FileText = (props: any) => (
   </svg>
 );
 
-const TrendingUp = (props: any) => (
+const TrendingUp = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"

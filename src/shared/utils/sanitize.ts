@@ -98,7 +98,7 @@ export function sanitizeEmail(email: string): string {
  * @param phone The phone number to sanitize
  * @returns Sanitized phone number or empty string if invalid format
  */
-export function sanitizePhone(phone: any): any {
+export function sanitizePhone(phone: string | null | undefined): string | null | undefined {
   if (phone === null) return null;
   if (phone === undefined) return undefined;
   if (typeof phone !== 'string') {

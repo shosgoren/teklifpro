@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { CreateProposalSchema, GetProposalsSchema } from '@/shared/validations/proposal';
@@ -76,7 +77,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
 
     const skip = (queryParams.page - 1) * queryParams.limit;
 
-    const whereClause: any = {
+    const whereClause: Prisma.ProposalWhereInput = {
       tenantId: session.tenant.id,
       deletedAt: null,
     };

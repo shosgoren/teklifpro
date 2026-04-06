@@ -2,22 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
+import { saveDashboardSchema } from '@/shared/validations';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('DashboardSettingsAPI');
-
-const widgetConfigSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  title: z.string(),
-  size: z.enum(['small', 'medium', 'large']),
-  position: z.number().int().min(0),
-  visible: z.boolean(),
-});
-
-const saveDashboardSchema = z.object({
-  widgets: z.array(widgetConfigSchema).max(20),
-});
 
 /**
  * GET /api/v1/settings/dashboard

@@ -804,7 +804,20 @@ export class ParasutClient {
       : undefined
 
     const details = proposal.items.map((item) => {
-      const detail: any = {
+      const detail: {
+        type: 'sales_offer_details'
+        attributes: {
+          quantity: number
+          unit_price: number
+          vat_rate: number
+          description: string
+          discount_type?: string
+          discount_value?: number
+        }
+        relationships?: {
+          product: { data: { id: string; type: 'products' } }
+        }
+      } = {
         type: 'sales_offer_details' as const,
         attributes: {
           quantity: item.quantity,
@@ -904,8 +917,8 @@ export class ParasutClient {
   /**
    * Tek fatura detay getir
    */
-  async getSalesInvoice(id: string): Promise<{ data: ParasutSalesInvoice; included?: any[] }> {
-    return this.request<{ data: ParasutSalesInvoice; included?: any[] }>(
+  async getSalesInvoice(id: string): Promise<{ data: ParasutSalesInvoice; included?: unknown[] }> {
+    return this.request<{ data: ParasutSalesInvoice; included?: unknown[] }>(
       `sales_invoices/${id}?include=details,contact,active_e_document`
     )
   }
@@ -953,8 +966,8 @@ export class ParasutClient {
       amount: number
       exchange_rate?: number
     }
-  ): Promise<{ data: any }> {
-    return this.request<{ data: any }>(`sales_invoices/${id}/payments`, {
+  ): Promise<{ data: { id: string; type: string; attributes: Record<string, unknown> } }> {
+    return this.request<{ data: { id: string; type: string; attributes: Record<string, unknown> } }>(`sales_invoices/${id}/payments`, {
       method: 'POST',
       body: JSON.stringify({
         data: {
@@ -1075,7 +1088,20 @@ export class ParasutClient {
     const issueDate = new Date().toISOString().split('T')[0]
 
     const details = proposal.items.map((item) => {
-      const detail: any = {
+      const detail: {
+        type: 'sales_invoice_details'
+        attributes: {
+          quantity: number
+          unit_price: number
+          vat_rate: number
+          description: string
+          discount_type?: string
+          discount_value?: number
+        }
+        relationships?: {
+          product: { data: { id: string; type: 'products' } }
+        }
+      } = {
         type: 'sales_invoice_details' as const,
         attributes: {
           quantity: item.quantity,
@@ -1195,8 +1221,8 @@ export class ParasutClient {
   /**
    * Tek alis faturasi detay
    */
-  async getPurchaseBill(id: string): Promise<{ data: ParasutPurchaseBill; included?: any[] }> {
-    return this.request<{ data: ParasutPurchaseBill; included?: any[] }>(
+  async getPurchaseBill(id: string): Promise<{ data: ParasutPurchaseBill; included?: unknown[] }> {
+    return this.request<{ data: ParasutPurchaseBill; included?: unknown[] }>(
       `purchase_bills/${id}?include=details,supplier`
     )
   }
@@ -1226,8 +1252,8 @@ export class ParasutClient {
   async payPurchaseBill(
     id: string,
     paymentData: { account_id: string; date: string; amount: number }
-  ): Promise<{ data: any }> {
-    return this.request<{ data: any }>(`purchase_bills/${id}/payments`, {
+  ): Promise<{ data: { id: string; type: string; attributes: Record<string, unknown> } }> {
+    return this.request<{ data: { id: string; type: string; attributes: Record<string, unknown> } }>(`purchase_bills/${id}/payments`, {
       method: 'POST',
       body: JSON.stringify({ data: { type: 'payments', attributes: paymentData } }),
     })

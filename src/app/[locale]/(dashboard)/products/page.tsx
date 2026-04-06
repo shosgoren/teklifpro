@@ -177,7 +177,7 @@ export default function ProductsPage() {
     }
     return 'table';
   });
-  const [bulkPrice, setBulkPrice] = useState({ percentage: 10, field: 'listPrice' as const, category: '', productType: '' });
+  const [bulkPrice, setBulkPrice] = useState<{ percentage: number; field: 'listPrice' | 'costPrice'; category: string; productType: string }>({ percentage: 10, field: 'listPrice', category: '', productType: '' });
   const [newProduct, setNewProduct] = useState({
     code: '', name: '', category: '', productType: 'COMMERCIAL', unit: 'Adet',
     listPrice: 0, costPrice: 0, minStockLevel: 0, vatRate: 18, description: '',
@@ -394,7 +394,12 @@ export default function ProductsPage() {
 
     setIsSubmitting(true);
     try {
-      const body: any = { percentage: bulkPrice.percentage, field: bulkPrice.field };
+      const body: {
+        percentage: number;
+        field: 'listPrice' | 'costPrice';
+        category?: string;
+        productType?: string;
+      } = { percentage: bulkPrice.percentage, field: bulkPrice.field };
       if (bulkPrice.category) body.category = bulkPrice.category;
       if (bulkPrice.productType) body.productType = bulkPrice.productType;
 
@@ -1067,7 +1072,7 @@ export default function ProductsPage() {
             <div className="grid gap-2">
               <Label>{t('bulkPriceField')}</Label>
               <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={bulkPrice.field} onChange={(e) => setBulkPrice((p) => ({ ...p, field: e.target.value as any }))}>
+                value={bulkPrice.field} onChange={(e) => setBulkPrice((p) => ({ ...p, field: e.target.value as 'listPrice' | 'costPrice' }))}>
                 <option value="listPrice">{t('listPrice')}</option>
                 <option value="costPrice">{t('cost')}</option>
               </select>

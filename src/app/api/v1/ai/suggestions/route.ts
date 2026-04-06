@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import aiProposalService from '@/infrastructure/services/ai/AiProposalService';
+import aiProposalService, { type ProposalItem } from '@/infrastructure/services/ai/AiProposalService';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 import { aiRequestSchema } from '@/shared/validations/ai';
@@ -32,7 +32,7 @@ async function handlePost(request: NextRequest) {
 
     const tenantId = session.tenant.id;
 
-    let result: any;
+    let result: unknown;
 
     switch (data.action) {
       case 'suggest-products': {
@@ -62,7 +62,7 @@ async function handlePost(request: NextRequest) {
 
       case 'generate-note': {
         result = await aiProposalService.generateProposalNote(
-          data.items as any,
+          data.items as ProposalItem[],
           data.customerName,
           data.locale
         );
@@ -79,11 +79,12 @@ async function handlePost(request: NextRequest) {
         model: 'claude-sonnet-4-20250514',
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : null;
     logger.error('AI Suggestions API error', error);
 
     // Rate limit aşımı
-    if (error.message?.includes('rate limit') || error.message?.includes('Rate limit')) {
+    if (err?.message?.includes('rate limit') || err?.message?.includes('Rate limit')) {
       return NextResponse.json(
         { success: false, error: 'AI istek limiti aşıldı. Lütfen biraz bekleyin.' },
         { status: 429, headers: { 'Retry-After': '60' } }

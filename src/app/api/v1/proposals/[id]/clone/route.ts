@@ -103,7 +103,7 @@ async function handlePost(
             error: {
               code: 'VALIDATION_ERROR',
               message: 'Istek verisi dogrulama hatasi',
-              details: error.flatten().fieldErrors as any,
+              details: error.flatten().fieldErrors as Record<string, string[]>,
             },
           },
           { status: 400 }

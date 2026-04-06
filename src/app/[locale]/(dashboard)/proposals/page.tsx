@@ -21,6 +21,21 @@ import { cn } from '@/shared/utils/cn';
 
 type ProposalStatus = 'DRAFT' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
 
+interface Proposal {
+  id: string;
+  title?: string;
+  proposalNumber: string;
+  status: ProposalStatus;
+  grandTotal: number | string;
+  createdAt: string;
+  publicToken: string;
+  customer?: {
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+}
+
 const fetcher = (url: string) =>
   fetch(url).then(res => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -187,10 +202,10 @@ export default function ProposalsPage() {
   }
 
   // Compute stats
-  const acceptedCount = proposals.filter((p: any) => p.status === 'ACCEPTED').length;
-  const pendingCount = proposals.filter((p: any) => ['SENT', 'VIEWED'].includes(p.status)).length;
-  const revisionCount = proposals.filter((p: any) => p.status === 'REVISION_REQUESTED').length;
-  const totalValue = proposals.reduce((sum: number, p: any) => sum + (Number(p.grandTotal) || 0), 0);
+  const acceptedCount = proposals.filter((p: Proposal) => p.status === 'ACCEPTED').length;
+  const pendingCount = proposals.filter((p: Proposal) => ['SENT', 'VIEWED'].includes(p.status)).length;
+  const revisionCount = proposals.filter((p: Proposal) => p.status === 'REVISION_REQUESTED').length;
+  const totalValue = proposals.reduce((sum: number, p: Proposal) => sum + (Number(p.grandTotal) || 0), 0);
 
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
@@ -245,7 +260,7 @@ export default function ProposalsPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20 h-11">
-                  {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as any)}
+                  {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as Parameters<typeof t>[0])}
                   <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -256,7 +271,7 @@ export default function ProposalsPage() {
                 {(Object.keys(STATUS_CONFIG) as ProposalStatus[]).map((status) => (
                   <DropdownMenuItem key={status} onClick={() => { setStatusFilter(status); setCurrentPage(1); }}>
                     <div className={cn('h-2 w-2 rounded-full mr-2', STATUS_CONFIG[status].dot)} />
-                    {t(`status.${status}` as any)}
+                    {t(`status.${status}` as Parameters<typeof t>[0])}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -341,7 +356,7 @@ export default function ProposalsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {proposals.map((proposal: any) => {
+              {proposals.map((proposal: Proposal) => {
                 const status = STATUS_CONFIG[proposal.status as ProposalStatus] ?? STATUS_CONFIG.DRAFT;
                 return (
                   <tr
@@ -359,7 +374,7 @@ export default function ProposalsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <Badge className={cn('text-xs font-medium rounded-lg px-2.5 py-0.5', status.color)}>
-                        {t(`status.${proposal.status}` as any) || proposal.status}
+                        {t(`status.${proposal.status}` as Parameters<typeof t>[0]) || proposal.status}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-sm text-muted-foreground text-right">
@@ -393,7 +408,7 @@ export default function ProposalsPage() {
 
           {/* Mobile Cards */}
           <div className="divide-y divide-gray-100 dark:divide-gray-800 md:hidden">
-            {proposals.map((proposal: any) => {
+            {proposals.map((proposal: Proposal) => {
               const status = STATUS_CONFIG[proposal.status as ProposalStatus] ?? STATUS_CONFIG.DRAFT;
               return (
                 <button
@@ -415,7 +430,7 @@ export default function ProposalsPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums">{formatAmount(Number(proposal.grandTotal) || 0)}</p>
-                    <Badge className={cn('text-[10px] mt-1 rounded-md', status.color)}>{t(`status.${proposal.status}` as any) || proposal.status}</Badge>
+                    <Badge className={cn('text-[10px] mt-1 rounded-md', status.color)}>{t(`status.${proposal.status}` as Parameters<typeof t>[0]) || proposal.status}</Badge>
                   </div>
                 </button>
               );

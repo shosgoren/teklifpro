@@ -50,7 +50,15 @@ export const unlinkSupplierSchema = z.object({
   supplierId: z.string().min(1, 'Tedarikci ID gerekli'),
 })
 
+export const createCategorySchema = z.object({
+  name: z.string().min(1).max(100),
+  parentId: z.string().optional(),
+  bgColor: z.string().optional(),
+  textColor: z.string().optional(),
+})
+
 export type CreateProductInput = z.infer<typeof createProductSchema>
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>
 export type ProductQueryInput = z.infer<typeof productQuerySchema>
 export type BulkPriceInput = z.infer<typeof bulkPriceSchema>
 export type LinkSupplierInput = z.infer<typeof linkSupplierSchema>

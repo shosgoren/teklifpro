@@ -186,7 +186,17 @@ const Confetti = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const particles: any[] = [];
+    interface ConfettiParticle {
+      x: number;
+      y: number;
+      size: number;
+      speedX: number;
+      speedY: number;
+      color: string;
+      opacity: number;
+    }
+
+    const particles: ConfettiParticle[] = [];
     const colors = ['#3B82F6', '#A855F7', '#EC4899', '#F59E0B', '#10B981'];
 
     for (let i = 0; i < 50; i++) {

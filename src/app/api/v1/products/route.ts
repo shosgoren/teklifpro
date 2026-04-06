@@ -18,6 +18,16 @@ interface ApiResponse<T> {
 const querySchema = productQuerySchema;
 
 type CreateProductInput = z.infer<typeof createProductSchema>;
+
+const productListSelect = {
+  id: true, code: true, name: true, category: true, unit: true,
+  listPrice: true, vatRate: true, isActive: true, description: true,
+  productType: true, costPrice: true, laborCost: true, overheadRate: true,
+  minStockLevel: true, parasutId: true, lastSyncAt: true, createdAt: true,
+  imageUrl: true, trackStock: true, stockQuantity: true,
+} as const;
+
+type ProductListItem = Prisma.ProductGetPayload<{ select: typeof productListSelect }>;
 type QueryInput = z.infer<typeof querySchema>;
 
 interface ProductResponse {
@@ -118,7 +128,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
     // For low stock, we need post-filter since Prisma can't compare two columns directly
     // So we handle it differently: fetch all tracked products and filter
     let total: number;
-    let products: any[];
+    let products: ProductListItem[];
 
     const orderBy = { [queryData.sortBy]: queryData.sortOrder };
 
@@ -131,13 +141,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
 
       const allTracked = await prisma.product.findMany({
         where,
-        select: {
-          id: true, code: true, name: true, category: true, unit: true,
-          listPrice: true, vatRate: true, isActive: true, description: true,
-          productType: true, costPrice: true, laborCost: true, overheadRate: true,
-          minStockLevel: true, parasutId: true, lastSyncAt: true, createdAt: true,
-          imageUrl: true, trackStock: true, stockQuantity: true,
-        },
+        select: productListSelect,
         orderBy,
       });
 
@@ -157,28 +161,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
         skip,
         take: limit,
         orderBy,
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          category: true,
-          unit: true,
-          listPrice: true,
-          vatRate: true,
-          isActive: true,
-          description: true,
-          productType: true,
-          costPrice: true,
-          laborCost: true,
-          overheadRate: true,
-          minStockLevel: true,
-          parasutId: true,
-          lastSyncAt: true,
-          createdAt: true,
-          imageUrl: true,
-          trackStock: true,
-          stockQuantity: true,
-        },
+        select: productListSelect,
       });
     }
 

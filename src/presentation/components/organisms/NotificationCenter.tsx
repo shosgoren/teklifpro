@@ -49,7 +49,7 @@ export function NotificationCenter({
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) {
-          setNotifications(data.data.map((n: any) => ({
+          setNotifications(data.data.map((n: Omit<Notification, 'timestamp'> & { timestamp: string }) => ({
             ...n,
             timestamp: new Date(n.timestamp),
           })));

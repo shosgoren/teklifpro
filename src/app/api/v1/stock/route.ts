@@ -10,6 +10,13 @@ const logger = new Logger('StockAPI');
 
 const querySchema = stockQuerySchema;
 
+const stockListSelect = {
+  id: true, code: true, name: true, productType: true, unit: true,
+  stockQuantity: true, minStockLevel: true, costPrice: true, listPrice: true,
+} as const;
+
+type StockListItem = Prisma.ProductGetPayload<{ select: typeof stockListSelect }>;
+
 async function handleGet(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request)!;
@@ -49,7 +56,7 @@ async function handleGet(request: NextRequest) {
     }
 
     // For lowStock filter we need raw query approach since Prisma can't compare two columns directly
-    let products: any[];
+    let products: StockListItem[];
     let total: number;
 
     if (queryData.lowStock === 'true') {
@@ -62,17 +69,7 @@ async function handleGet(request: NextRequest) {
           ...where,
           minStockLevel: { gt: 0 },
         },
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          productType: true,
-          unit: true,
-          stockQuantity: true,
-          minStockLevel: true,
-          costPrice: true,
-          listPrice: true,
-        },
+        select: stockListSelect,
       });
 
       const filtered = allProducts.filter(
@@ -89,17 +86,7 @@ async function handleGet(request: NextRequest) {
         skip,
         take: limit,
         orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          productType: true,
-          unit: true,
-          stockQuantity: true,
-          minStockLevel: true,
-          costPrice: true,
-          listPrice: true,
-        },
+        select: stockListSelect,
       });
     }
 
