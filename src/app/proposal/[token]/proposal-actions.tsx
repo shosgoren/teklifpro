@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import SignatureCanvas from 'react-signature-canvas'
 import { CheckCircle, RotateCw, XCircle, Loader2, AlertCircle, X, PenTool, Eraser } from 'lucide-react'
 
 interface ProposalActionsProps {
@@ -22,7 +21,18 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
   const [signerName, setSignerName] = useState('')
   const [hasSigned, setHasSigned] = useState(false)
   const [success, setSuccess] = useState(false)
-  const sigCanvasRef = useRef<SignatureCanvas>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sigCanvasRef = useRef<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [SignatureCanvasComp, setSignatureCanvasComp] = useState<any>(null)
+
+  useEffect(() => {
+    import('react-signature-canvas').then((mod) => {
+      setSignatureCanvasComp(() => mod.default)
+    }).catch(() => {
+      // Signature canvas not available — accept will work without signature
+    })
+  }, [])
 
   const handleSubmit = async (action: string, body: Record<string, string | undefined>) => {
     setIsLoading(true)
@@ -209,16 +219,22 @@ export default function ProposalActions({ proposalId }: ProposalActionsProps) {
                       )}
                     </div>
                     <div className="border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 overflow-hidden relative">
-                      <SignatureCanvas
-                        ref={sigCanvasRef}
-                        penColor="#1a1a2e"
-                        canvasProps={{
-                          className: 'w-full',
-                          style: { width: '100%', height: '160px' },
-                        }}
-                        onEnd={() => setHasSigned(true)}
-                      />
-                      {!hasSigned && (
+                      {SignatureCanvasComp ? (
+                        <SignatureCanvasComp
+                          ref={sigCanvasRef}
+                          penColor="#1a1a2e"
+                          canvasProps={{
+                            className: 'w-full',
+                            style: { width: '100%', height: '160px' },
+                          }}
+                          onEnd={() => setHasSigned(true)}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '160px' }} className="flex items-center justify-center">
+                          <p className="text-sm text-gray-400">İmza yükleniyor...</p>
+                        </div>
+                      )}
+                      {!hasSigned && SignatureCanvasComp && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                           <p className="text-sm text-gray-400">Parmağınız veya kaleminizle imzalayın</p>
                         </div>
