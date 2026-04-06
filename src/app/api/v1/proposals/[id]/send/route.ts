@@ -77,7 +77,9 @@ async function handlePost(
         );
       }
 
-      if (!tenant.whatsappPhoneId || !tenant.whatsappAccessToken) {
+      // fromTenantConfig falls back to env vars if tenant DB fields are empty
+      const hasWhatsAppConfig = tenant.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+      if (!hasWhatsAppConfig) {
         return NextResponse.json(
           { success: false, error: 'WhatsApp integration not configured' },
           { status: 400 }

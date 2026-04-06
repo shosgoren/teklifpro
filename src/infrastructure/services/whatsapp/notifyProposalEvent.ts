@@ -63,8 +63,9 @@ export async function notifyProposalEvent(params: NotifyParams): Promise<void> {
 
     const { tenant, customer, user } = proposal;
 
-    // Need WhatsApp configured on tenant
-    if (!tenant.whatsappPhoneId || !tenant.whatsappAccessToken) return;
+    // Need WhatsApp configured on tenant or env
+    const hasConfig = tenant.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    if (!hasConfig) return;
 
     // Notify user phone, or fall back to tenant phone
     const recipientPhone = user?.phone || tenant.phone;

@@ -28,14 +28,22 @@ export class WhatsAppService {
 
   /**
    * Tenant'in WhatsApp bilgileriyle service olustur
+   * Tenant config yoksa env degiskenlerinden olusturur
    */
   static fromTenantConfig(config: {
-    whatsappPhoneId: string
-    whatsappAccessToken: string
+    whatsappPhoneId?: string | null
+    whatsappAccessToken?: string | null
   }): WhatsAppService {
+    const phoneId = config.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID || ''
+    const accessToken = config.whatsappAccessToken || process.env.WHATSAPP_ACCESS_TOKEN || ''
+
+    if (!phoneId || !accessToken) {
+      throw new Error('WhatsApp credentials not configured')
+    }
+
     return new WhatsAppService(
-      config.whatsappPhoneId,
-      config.whatsappAccessToken,
+      phoneId,
+      accessToken,
       process.env.WHATSAPP_APP_SECRET || ''
     )
   }
