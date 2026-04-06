@@ -1323,10 +1323,10 @@ export default function EditProposalPage() {
         name: item.name,
         description: '',
         unit: 'Adet',
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
         discountRate: Math.round(discountRate * 100) / 100,
-        vatRate: item.vatPercent || 18,
+        vatRate: Number(item.vatPercent) || 18,
       }
     })
 

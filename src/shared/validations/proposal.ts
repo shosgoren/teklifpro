@@ -13,10 +13,10 @@ export const CreateProposalSchema = z.object({
       name: z.string(),
       description: z.string().optional(),
       unit: z.string().default('Adet'),
-      quantity: z.number().positive(),
-      unitPrice: z.number().nonnegative(),
-      discountRate: z.number().min(0).max(100).default(0),
-      vatRate: z.number().min(0).max(100).default(18),
+      quantity: z.coerce.number().positive(),
+      unitPrice: z.coerce.number().nonnegative(),
+      discountRate: z.coerce.number().min(0).max(100).default(0),
+      vatRate: z.coerce.number().min(0).max(100).default(18),
     })
   ),
   expiresAt: z.string().optional(),
@@ -24,7 +24,7 @@ export const CreateProposalSchema = z.object({
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
   voiceNoteData: z.string().nullable().optional(),
-  voiceNoteDuration: z.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
+  voiceNoteDuration: z.coerce.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
 })
 
 export const UpdateProposalSchema = z.object({
@@ -37,17 +37,17 @@ export const UpdateProposalSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
     unit: z.string().default('Adet'),
-    quantity: z.number().positive(),
-    unitPrice: z.number().nonnegative(),
-    discountRate: z.number().min(0).max(100).default(0),
-    vatRate: z.number().min(0).max(100).default(18),
+    quantity: z.coerce.number().positive(),
+    unitPrice: z.coerce.number().nonnegative(),
+    discountRate: z.coerce.number().min(0).max(100).default(0),
+    vatRate: z.coerce.number().min(0).max(100).default(18),
   })).optional(),
   notes: z.string().optional(),
   paymentTerms: z.string().optional(),
   deliveryTerms: z.string().optional(),
   customerId: z.string().optional(),
   voiceNoteData: z.string().nullable().optional(),
-  voiceNoteDuration: z.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
+  voiceNoteDuration: z.coerce.number().min(0).max(VOICE_NOTE_MAX_DURATION).nullable().optional(),
 })
 
 export const SendProposalSchema = z.object({
