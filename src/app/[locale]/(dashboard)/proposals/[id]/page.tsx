@@ -480,7 +480,7 @@ export default function ProposalDetailPage() {
   const activities = proposal.activities || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24 md:pb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-36 md:pb-6">
       {/* ===== Gradient Header ===== */}
       <div className="relative overflow-hidden rounded-b-3xl md:rounded-b-none">
         <div className="relative rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">
@@ -1060,7 +1060,7 @@ export default function ProposalDetailPage() {
       </Dialog>
 
       {/* ===== Mobile Sticky Bottom Bar ===== */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      <div className="md:hidden fixed bottom-[60px] left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center gap-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         {status === 'DRAFT' && (
           <button
             onClick={handleMakeReady}
