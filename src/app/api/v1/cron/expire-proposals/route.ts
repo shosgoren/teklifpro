@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         expiresAt: { lt: now },
         deletedAt: null,
       },
+      take: 100,
       include: {
         customer: true,
         user: true,

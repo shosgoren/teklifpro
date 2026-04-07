@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
+import { createCustomerSchema } from '@/shared/validations/customer';
 import { Logger } from '@/infrastructure/logger';
+
+const updateCustomerSchema = createCustomerSchema.partial();
 
 const logger = new Logger('CustomerDetailAPI');
 
@@ -48,6 +51,14 @@ async function handlePut(
     const params = context!.params;
 
     const body = await request.json();
+    const validation = updateCustomerSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: 'Gecersiz veriler', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
 
     const existing = await prisma.customer.findFirst({
       where: { id: params.id, tenantId: session.tenant.id, deletedAt: null },
@@ -59,16 +70,7 @@ async function handlePut(
 
     const updated = await prisma.customer.update({
       where: { id: params.id },
-      data: {
-        name: body.name ?? existing.name,
-        email: body.email ?? existing.email,
-        phone: body.phone ?? existing.phone,
-        address: body.address ?? existing.address,
-        city: body.city ?? existing.city,
-        taxNumber: body.taxNumber ?? existing.taxNumber,
-        taxOffice: body.taxOffice ?? existing.taxOffice,
-        notes: body.notes ?? existing.notes,
-      },
+      data: validation.data,
     });
 
     return NextResponse.json({ success: true, data: updated });

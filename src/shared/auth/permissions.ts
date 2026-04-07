@@ -52,6 +52,12 @@ export const PERMISSIONS = {
   SUPPLIER_UPDATE: 'supplier.update',
   SUPPLIER_DELETE: 'supplier.delete',
 
+  // Purchases
+  PURCHASE_CREATE: 'purchase.create',
+  PURCHASE_READ: 'purchase.read',
+  PURCHASE_UPDATE: 'purchase.update',
+  PURCHASE_DELETE: 'purchase.delete',
+
   // Stock
   STOCK_READ: 'stock.read',
   STOCK_CREATE: 'stock.create',
@@ -94,6 +100,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'bom.*',
     // Suppliers - full
     'supplier.*',
+    // Purchases - full
+    'purchase.*',
     // Stock - full
     'stock.*',
     // Settings
@@ -124,6 +132,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'bom.read',
     // Suppliers - read
     'supplier.read',
+    // Purchases - read
+    'purchase.read',
     // Stock - read
     'stock.read',
     // AI
@@ -138,6 +148,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'product.read',
     'bom.read',
     'supplier.read',
+    'purchase.read',
     'stock.read',
   ],
 }

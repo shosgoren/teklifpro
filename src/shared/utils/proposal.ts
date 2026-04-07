@@ -1,25 +1,5 @@
-/**
- * Benzersiz teklif numarasi olustur
- * Format: TKL-YYYYMM-XXXX
- */
-export function generateProposalNumber(): string {
-  const now = new Date()
-  const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
-  const seq = String(Math.floor(Math.random() * 10000)).padStart(4, '0')
-  return `TKL-${yearMonth}-${seq}`
-}
-
-/**
- * Teklif public token olustur (URL-safe)
- */
-export function generatePublicToken(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let result = ''
-  for (let i = 0; i < 24; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
+// Re-export crypto-secure generators from the canonical source
+export { generateProposalNumber, generatePublicToken } from './generators'
 
 /**
  * Para formatla (Turkce)

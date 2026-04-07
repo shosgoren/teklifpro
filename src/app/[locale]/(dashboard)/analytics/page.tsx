@@ -29,6 +29,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 // ---------- fetcher ----------
 const fetcher = (url: string) =>
@@ -63,15 +64,6 @@ const CHART_COLORS = {
 };
 
 // MONTH_NAMES moved to useTranslations
-
-// ---------- helpers ----------
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
 
 // ---------- sub-components ----------
 const KPICard = ({
@@ -113,6 +105,7 @@ const KPICard = ({
 export default function AnalyticsDashboard() {
   const t = useTranslations('analytics');
   const tStatus = useTranslations('proposals');
+  const { formatCurrency } = useCurrency();
   const MONTH_NAMES = t.raw('months') as string[];
 
   // ---- data fetching ----
