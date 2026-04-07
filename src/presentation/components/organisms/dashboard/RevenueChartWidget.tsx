@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLocale } from 'next-intl';
 import {
   AreaChart,
   Area,
@@ -13,6 +14,9 @@ import {
 import { MOCK_REVENUE_DATA } from './mock-data';
 
 export const RevenueChartWidget: React.FC = () => {
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
+
   return (
     <ResponsiveContainer width="100%" height={250}>
       <AreaChart data={MOCK_REVENUE_DATA}>
@@ -35,7 +39,7 @@ export const RevenueChartWidget: React.FC = () => {
             borderRadius: '8px',
           }}
           formatter={(value) =>
-            `₺${(value as number).toLocaleString('tr-TR')}`
+            `₺${(value as number).toLocaleString(dateLocale)}`
           }
           labelStyle={{ color: '#f1f5f9' }}
         />

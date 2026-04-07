@@ -168,6 +168,7 @@ export default function NotificationsPage() {
             <button
               key={opt.value}
               onClick={() => setFilter(opt.value)}
+              aria-pressed={filter === opt.value}
               className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                 filter === opt.value
                   ? 'bg-blue-600 text-white'
@@ -211,6 +212,14 @@ export default function NotificationsPage() {
             {paginated.map((notification) => (
               <li
                 key={notification.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleNotificationClick(notification)
+                  }
+                }}
                 className={`flex items-start gap-4 px-4 md:px-6 py-4 transition-colors cursor-pointer ${
                   notification.isRead
                     ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50'

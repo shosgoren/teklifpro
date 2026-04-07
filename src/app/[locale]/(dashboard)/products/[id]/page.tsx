@@ -206,8 +206,8 @@ const fetcher = (url: string) =>
       return data;
     });
 
-const formatDate = (dateStr: string) =>
-  new Intl.DateTimeFormat('tr-TR', {
+const formatDate = (dateStr: string, dateLocale = 'tr-TR') =>
+  new Intl.DateTimeFormat(dateLocale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -224,6 +224,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const { formatCurrency } = useCurrency();
   const productId = params.id as string;
 
@@ -997,6 +998,8 @@ function GeneralTab({
   onImageDelete: () => void;
 }) {
   const { formatCurrency } = useCurrency();
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Product Image */}
@@ -1149,12 +1152,12 @@ function GeneralTab({
           </span>
           {product.lastSyncAt && (
             <span className="text-xs text-muted-foreground ml-2">
-              Son: {formatDate(product.lastSyncAt)}
+              Son: {formatDate(product.lastSyncAt, dateLocale)}
             </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Oluşturulma: {formatDate(product.createdAt)}
+          Oluşturulma: {formatDate(product.createdAt, dateLocale)}
         </p>
       </div>
 
@@ -1196,7 +1199,7 @@ function GeneralTab({
                     )}>
                       {increased ? '+' : ''}{pctChange}%
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{formatDate(entry.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">{formatDate(entry.createdAt, dateLocale)}</span>
                   </div>
                 </div>
               );
@@ -1219,6 +1222,8 @@ function StockTab({
   movements: StockMovement[];
   onMovement: (type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'PRODUCTION_IN' | 'PRODUCTION_OUT') => void;
 }) {
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const low = isLowStock(product);
 
   return (
@@ -1354,7 +1359,7 @@ function StockTab({
                     >
                       {config.positive ? '+' : '-'}{mov.quantity}
                     </p>
-                    <p className="text-xs text-muted-foreground">{formatDate(mov.createdAt)}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(mov.createdAt, dateLocale)}</p>
                   </div>
                 </div>
               );

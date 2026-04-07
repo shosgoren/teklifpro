@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import {
@@ -118,6 +118,8 @@ const isOutOfStock = (p: StockProduct) =>
 
 export default function StockPage() {
   const t = useTranslations('stockPage');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
 
   const PRODUCT_TYPE_LABELS: Record<string, string> = {
     COMMERCIAL: t('commercial'),
@@ -286,10 +288,10 @@ export default function StockPage() {
   );
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
+    new Intl.NumberFormat(dateLocale, { style: 'currency', currency: 'TRY' }).format(value);
 
   const formatDate = (dateStr: string) =>
-    new Intl.DateTimeFormat('tr-TR', {
+    new Intl.DateTimeFormat(dateLocale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

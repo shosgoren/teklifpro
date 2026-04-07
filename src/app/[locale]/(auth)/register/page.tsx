@@ -22,6 +22,8 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { cn } from '@/shared/utils/cn';
 
+// TODO: Zod validation messages are hardcoded in English. Consider using zod-i18n or
+// passing translated messages from useTranslations() for full i18n support.
 const registerSchema = z
   .object({
     companyName: z.string().min(2, 'Company name is required'),

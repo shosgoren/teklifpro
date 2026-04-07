@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { useConfirm } from '@/shared/components/confirm-dialog';
@@ -69,6 +69,8 @@ const fetcher = (url: string) =>
 export default function CustomersPage() {
   const t = useTranslations('customersPage');
   const tc = useTranslations('common');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const confirm = useConfirm();
   const { formatCurrency } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
@@ -707,7 +709,7 @@ export default function CustomersPage() {
                   {selectedCustomer.createdAt && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>{new Date(selectedCustomer.createdAt).toLocaleDateString('tr-TR')}</span>
+                      <span>{new Date(selectedCustomer.createdAt).toLocaleDateString(dateLocale)}</span>
                     </div>
                   )}
                 </div>

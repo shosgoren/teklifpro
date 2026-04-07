@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Eye, Clock, FileText, User, Mail, Phone } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 
@@ -23,6 +23,8 @@ interface ProposalSidebarProps {
 
 export function ProposalSidebar({ proposal }: ProposalSidebarProps) {
   const t = useTranslations('proposals');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
 
   return (
     <>
@@ -50,7 +52,7 @@ export function ProposalSidebar({ proposal }: ProposalSidebarProps) {
             <div className="text-center p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl">
               <FileText className="h-4 w-4 text-amber-500 mx-auto mb-1" />
               <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {proposal.viewedAt ? new Date(proposal.viewedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }) : '\u2014'}
+                {proposal.viewedAt ? new Date(proposal.viewedAt).toLocaleDateString(dateLocale, { day: '2-digit', month: '2-digit' }) : '\u2014'}
               </p>
               <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t('analytics.lastView')}</p>
             </div>
@@ -69,7 +71,7 @@ export function ProposalSidebar({ proposal }: ProposalSidebarProps) {
             </div>
             <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
               {proposal.signerName && <span className="font-medium text-gray-700 dark:text-gray-300">{proposal.signerName}</span>}
-              {proposal.signedAt && <span>{new Date(proposal.signedAt).toLocaleString('tr-TR')}</span>}
+              {proposal.signedAt && <span>{new Date(proposal.signedAt).toLocaleString(dateLocale)}</span>}
             </div>
           </div>
         </Card>

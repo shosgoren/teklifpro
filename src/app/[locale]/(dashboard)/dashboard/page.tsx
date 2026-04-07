@@ -106,9 +106,9 @@ const WIDGET_ORDER_KEY = 'teklifpro-dashboard-order';
 const DEFAULT_WIDGETS = ['alerts', 'chart', 'recent'];
 
 // ─── Animated Number ───
-const AnimatedNumber = memo(function AnimatedNumber({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
+const AnimatedNumber = memo(function AnimatedNumber({ value, prefix = '', suffix = '', dateLocale = 'tr-TR' }: { value: number; prefix?: string; suffix?: string; dateLocale?: string }) {
   const animated = useCountUp(value, 1400);
-  return <>{prefix}{animated.toLocaleString('tr-TR')}{suffix}</>;
+  return <>{prefix}{animated.toLocaleString(dateLocale)}{suffix}</>;
 });
 
 // ─── Animated Currency ───
@@ -276,6 +276,7 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
 export default function DashboardPage() {
   const router = useRouter();
   const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const t = useTranslations('dashboardPage');
   const tStatus = useTranslations('proposals');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -359,12 +360,12 @@ export default function DashboardPage() {
     if (diffDays === 0) return t('today');
     if (diffDays === 1) return t('yesterday');
     if (diffDays < 7) return t('daysAgo', { count: diffDays });
-    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' });
   };
 
   const chartData = proposals
     .map((p: DashboardProposal) => ({
-      date: new Date(p.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+      date: new Date(p.createdAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' }),
       total: Number(p.grandTotal) || 0,
     }))
     .reverse();
@@ -415,7 +416,7 @@ export default function DashboardPage() {
             <AnimatedCurrency value={totalRevenue} />
           </p>
           <p className="text-xs text-white/70 mt-1">
-            <AnimatedNumber value={acceptedCount} /> {t('acceptedProposals')}
+            <AnimatedNumber value={acceptedCount} dateLocale={dateLocale} /> {t('acceptedProposals')}
           </p>
         </motion.div>
 
@@ -431,10 +432,10 @@ export default function DashboardPage() {
             {t('proposals')}
           </div>
           <p className="text-xl md:text-2xl font-bold mt-2">
-            <AnimatedNumber value={proposalTotal} />
+            <AnimatedNumber value={proposalTotal} dateLocale={dateLocale} />
           </p>
           <p className="text-xs text-white/70 mt-1">
-            <AnimatedNumber value={pendingCount} /> {t('pending')}{revisionCount > 0 ? ` · ${revisionCount} ${t('revision')}` : ''}
+            <AnimatedNumber value={pendingCount} dateLocale={dateLocale} /> {t('pending')}{revisionCount > 0 ? ` · ${revisionCount} ${t('revision')}` : ''}
           </p>
         </motion.div>
 
@@ -450,7 +451,7 @@ export default function DashboardPage() {
             {t('acceptanceRate')}
           </div>
           <p className="text-xl md:text-2xl font-bold mt-2">
-            <AnimatedNumber value={acceptRate} suffix="%" />
+            <AnimatedNumber value={acceptRate} suffix="%" dateLocale={dateLocale} />
           </p>
           <div className="mt-1 h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
             <motion.div
@@ -474,7 +475,7 @@ export default function DashboardPage() {
             {t('customers')}
           </div>
           <p className="text-xl md:text-2xl font-bold mt-2">
-            <AnimatedNumber value={customerTotal} />
+            <AnimatedNumber value={customerTotal} dateLocale={dateLocale} />
           </p>
           <p className="text-xs text-white/70 mt-1">{t('totalCustomers')}</p>
         </motion.div>

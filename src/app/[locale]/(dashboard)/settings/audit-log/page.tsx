@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { ChevronDown, Download, Search, X, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
@@ -83,6 +83,8 @@ const fetcher = (url: string) =>
 
 export default function AuditLogPage() {
   const t = useTranslations('auditLog');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
 
   const ACTION_LABELS: Record<ActionType, string> = {
     CREATE: t('actions.CREATE'),
@@ -159,7 +161,7 @@ export default function AuditLogPage() {
   const handleExportCSV = () => {
     const headers = [t('date'), t('userLabel'), t('action'), t('entity'), t('detail'), t('ipAddress')];
     const rows = logs.map((log) => [
-      new Date(log.createdAt).toLocaleString('tr-TR'),
+      new Date(log.createdAt).toLocaleString(dateLocale),
       log.user?.name || log.user?.email || '-',
       ACTION_LABELS[log.action] || log.action,
       ENTITY_LABELS[log.entity] || log.entity,
@@ -421,7 +423,7 @@ export default function AuditLogPage() {
                         onClick={() => toggleRowExpansion(log.id)}
                       >
                         <TableCell className="text-sm text-gray-600 dark:text-gray-300">
-                          {new Date(log.createdAt).toLocaleString('tr-TR')}
+                          {new Date(log.createdAt).toLocaleString(dateLocale)}
                         </TableCell>
                         <TableCell className="text-sm font-medium">
                           {getUserDisplayName(log)}

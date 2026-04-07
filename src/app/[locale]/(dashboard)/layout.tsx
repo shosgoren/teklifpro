@@ -84,26 +84,7 @@ const navigationItems: NavItem[] = [
 // First 4 items shown in bottom tab bar, rest in "more" menu
 const MOBILE_PRIMARY_COUNT = 5
 
-const navLabels: Record<string, Record<string, string>> = {
-  tr: {
-    dashboard: 'Dashboard',
-    proposals: 'Teklifler',
-    customers: 'Müşteriler',
-    products: 'Ürünler',
-    analytics: 'Analitik',
-    settings: 'Ayarlar',
-    more: 'Diğer',
-  },
-  en: {
-    dashboard: 'Dashboard',
-    proposals: 'Proposals',
-    customers: 'Customers',
-    products: 'Products',
-    analytics: 'Analytics',
-    settings: 'Settings',
-    more: 'More',
-  },
-}
+// navLabels removed — now using t() calls from useTranslations('layout')
 
 const SIDEBAR_COLLAPSED_KEY = 'teklifpro-sidebar-collapsed'
 
@@ -130,7 +111,15 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme()
   const t = useTranslations('layout')
 
-  const labels = navLabels[locale] || navLabels.tr
+  const labels: Record<string, string> = {
+    dashboard: t('navDashboard'),
+    proposals: t('navProposals'),
+    customers: t('navCustomers'),
+    products: t('navProducts'),
+    analytics: t('navAnalytics'),
+    settings: t('navSettings'),
+    more: t('navMore'),
+  }
 
   // Dynamic favicon: use tenant's uploaded logo if available
   useEffect(() => {

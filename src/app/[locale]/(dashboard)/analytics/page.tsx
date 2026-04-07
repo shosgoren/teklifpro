@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import {
@@ -105,6 +105,8 @@ const KPICard = ({
 export default function AnalyticsDashboard() {
   const t = useTranslations('analytics');
   const tStatus = useTranslations('proposals');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const { formatCurrency } = useCurrency();
   const MONTH_NAMES = t.raw('months') as string[];
 
@@ -265,7 +267,7 @@ export default function AnalyticsDashboard() {
       .map(([dateStr]) => {
         const d = new Date(dateStr);
         return {
-          date: d.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
+          date: d.toLocaleDateString(dateLocale, { month: 'short', day: 'numeric' }),
           sent: buckets[dateStr].sent,
           accepted: buckets[dateStr].accepted,
           rejected: buckets[dateStr].rejected,
@@ -715,7 +717,7 @@ export default function AnalyticsDashboard() {
                           </p>
                           <p className="text-sm text-gray-500">{proposal.proposalNumber}</p>
                           <p className="text-xs text-gray-400 mt-0.5">
-                            {new Date(proposal.createdAt).toLocaleDateString('tr-TR')}
+                            {new Date(proposal.createdAt).toLocaleDateString(dateLocale)}
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -746,7 +748,7 @@ export default function AnalyticsDashboard() {
         {/* Footer Info */}
         <div className="text-center text-xs text-gray-400 py-4">
           {t('lastUpdate')}{' '}
-          {new Date().toLocaleDateString('tr-TR', {
+          {new Date().toLocaleDateString(dateLocale, {
             year: 'numeric',
             month: 'long',
             day: 'numeric',

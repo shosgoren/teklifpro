@@ -1416,7 +1416,14 @@
     "logoutConfirm": "Sign Out",
     "logoutCancel": "Cancel",
     "mainNavigation": "Main navigation",
-    "mobileNavigation": "Mobile navigation"
+    "mobileNavigation": "Mobile navigation",
+    "navDashboard": "Dashboard",
+    "navProposals": "Proposals",
+    "navCustomers": "Customers",
+    "navProducts": "Products",
+    "navAnalytics": "Analytics",
+    "navSettings": "Settings",
+    "navMore": "More"
   },
   "notificationsPage": {
     "title": "Notifications",
@@ -1558,7 +1565,9 @@
     "subtitle": "Sign in to your account to continue",
     "featureSync": "Automatic sync with Parasut",
     "featureSecure": "Secure and fast infrastructure",
-    "featureAnalytics": "Detailed analytics and reports"
+    "featureAnalytics": "Detailed analytics and reports",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "registerPage": {
     "heroTitle": "Start Growing Your Business",

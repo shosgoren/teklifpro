@@ -29,6 +29,8 @@ import { cn } from '@/shared/utils/cn';
 // Animated counter component
 function AnimatedCounter({ value, suffix = '', prefix = '' }: { value: number; suffix?: string; prefix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const isInView = useInView(ref, { once: true, margin: '-50px' });
   const motionVal = useMotionValue(0);
   const rounded = useTransform(motionVal, (v) => Math.round(v));
@@ -42,10 +44,10 @@ function AnimatedCounter({ value, suffix = '', prefix = '' }: { value: number; s
 
   useEffect(() => {
     const unsubscribe = rounded.on('change', (v) => {
-      if (ref.current) ref.current.textContent = `${prefix}${v.toLocaleString('tr-TR')}${suffix}`;
+      if (ref.current) ref.current.textContent = `${prefix}${v.toLocaleString(dateLocale)}${suffix}`;
     });
     return unsubscribe;
-  }, [rounded, prefix, suffix]);
+  }, [rounded, prefix, suffix, dateLocale]);
 
   return <span ref={ref}>{prefix}0{suffix}</span>;
 }

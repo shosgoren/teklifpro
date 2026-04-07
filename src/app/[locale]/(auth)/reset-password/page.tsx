@@ -22,6 +22,8 @@ import { Input } from '@/shared/components/ui/input';
 import { Card } from '@/shared/components/ui/card';
 import { cn } from '@/shared/utils/cn';
 
+// TODO: Zod validation messages are hardcoded in English. Consider using zod-i18n or
+// passing translated messages from useTranslations() for full i18n support.
 const requestResetSchema = z.object({
   email: z.string().email('Invalid email address'),
 });

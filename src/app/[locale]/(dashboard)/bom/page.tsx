@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig';
 import { useConfirm } from '@/shared/components/confirm-dialog';
@@ -163,18 +163,20 @@ const fetcher = (url: string) =>
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const formatPrice = (price: number) =>
-  (price || 0).toLocaleString('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    minimumFractionDigits: 2,
-  });
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function BomPage() {
   const t = useTranslations('bomPage');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const confirm = useConfirm();
+
+  const formatPrice = (price: number) =>
+    (price || 0).toLocaleString(dateLocale, {
+      style: 'currency',
+      currency: 'TRY',
+      minimumFractionDigits: 2,
+    });
   // List state
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -648,7 +650,7 @@ export default function BomPage() {
                     <span>{bom.itemCount} {t('kpi.materials')}</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(bom.createdAt).toLocaleDateString('tr-TR')}
+                    {new Date(bom.createdAt).toLocaleDateString(dateLocale)}
                   </span>
                 </div>
               </div>
@@ -715,7 +717,7 @@ export default function BomPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(bom.createdAt).toLocaleDateString('tr-TR')}
+                        {new Date(bom.createdAt).toLocaleDateString(dateLocale)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

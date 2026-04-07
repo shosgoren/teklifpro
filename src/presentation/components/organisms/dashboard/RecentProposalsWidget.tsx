@@ -1,10 +1,14 @@
 'use client';
 
 import React from 'react';
+import { useLocale } from 'next-intl';
 import { Badge } from '@/shared/components/ui/badge';
 import { MOCK_RECENT_PROPOSALS } from './mock-data';
 
 export const RecentProposalsWidget: React.FC = () => {
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Kabul Edilen':
@@ -37,7 +41,7 @@ export const RecentProposalsWidget: React.FC = () => {
           </div>
           <div className="mr-3 text-right">
             <p className="font-semibold text-slate-900 dark:text-white">
-              ₺{proposal.amount.toLocaleString('tr-TR')}
+              ₺{proposal.amount.toLocaleString(dateLocale)}
             </p>
           </div>
           <Badge className={getStatusColor(proposal.status)}>

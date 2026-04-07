@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -48,17 +48,17 @@ const fetcher = (url: string) =>
     return data;
   });
 
-// Turkish locale formatter
-const formatCurrency = (value: number, currency = 'TRY'): string => {
-  return new Intl.NumberFormat('tr-TR', {
+// Locale-aware formatters
+const formatCurrency = (value: number, currency = 'TRY', dateLocale = 'tr-TR'): string => {
+  return new Intl.NumberFormat(dateLocale, {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
   }).format(value);
 };
 
-const formatDate = (dateStr: string): string => {
-  return new Intl.DateTimeFormat('tr-TR', {
+const formatDate = (dateStr: string, dateLocale = 'tr-TR'): string => {
+  return new Intl.DateTimeFormat(dateLocale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -122,6 +122,8 @@ function SelectProposalsDialog({
   onToggle: (id: string) => void;
 }) {
   const t = useTranslations('comparePage');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = useMemo(() => {
@@ -182,7 +184,7 @@ function SelectProposalsDialog({
                       {proposal.title && ` - ${proposal.title}`}
                     </div>
                     <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
-                      {formatCurrency(Number(proposal.grandTotal), proposal.currency)}
+                      {formatCurrency(Number(proposal.grandTotal), proposal.currency, dateLocale)}
                     </div>
                   </div>
                 </button>
@@ -211,6 +213,8 @@ function ProposalColumn({
   allTotals: { grandTotal: number; id: string }[];
 }) {
   const t = useTranslations('comparePage');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const { data, error, isLoading } = useSWR(
     `/api/v1/proposals/${proposalId}`,
     fetcher,
@@ -294,7 +298,7 @@ function ProposalColumn({
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">{t('date')}</span>
-              <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.createdAt)}</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.createdAt, dateLocale)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">{t('customer')}</span>
@@ -303,7 +307,7 @@ function ProposalColumn({
             {proposal.expiresAt && (
               <div className="flex justify-between">
                 <span className="text-gray-500 dark:text-gray-400">{t('expiryDate')}</span>
-                <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.expiresAt)}</span>
+                <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.expiresAt, dateLocale)}</span>
               </div>
             )}
           </div>
@@ -320,9 +324,9 @@ function ProposalColumn({
                 <div className="font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span>
-                    {item.quantity} x {formatCurrency(Number(item.unitPrice), proposal.currency)}
+                    {item.quantity} x {formatCurrency(Number(item.unitPrice), proposal.currency, dateLocale)}
                   </span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.lineTotal), proposal.currency)}</span>
+                  <span className="font-medium text-gray-700 dark:text-gray-300">{formatCurrency(Number(item.lineTotal), proposal.currency, dateLocale)}</span>
                 </div>
               </div>
             ))}
@@ -338,16 +342,16 @@ function ProposalColumn({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">{t('subtotal')}</span>
-              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.subtotal), proposal.currency)}</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.subtotal), proposal.currency, dateLocale)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">{t('vat')}</span>
-              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.vatTotal), proposal.currency)}</span>
+              <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.vatTotal), proposal.currency, dateLocale)}</span>
             </div>
             <div className="flex justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
               <span className="text-gray-900 dark:text-gray-100">{t('total')}</span>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {formatCurrency(Number(proposal.grandTotal), proposal.currency)}
+                {formatCurrency(Number(proposal.grandTotal), proposal.currency, dateLocale)}
               </span>
             </div>
           </div>
@@ -387,6 +391,8 @@ function SummaryCard({
 // Main comparison page
 export default function ProposalComparePage() {
   const t = useTranslations('comparePage');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -579,13 +585,13 @@ export default function ProposalComparePage() {
             <SummaryCard
               icon={TrendingDown}
               label={t('summaryLowest')}
-              value={formatCurrency(lowestTotal, summaryCurrency)}
+              value={formatCurrency(lowestTotal, summaryCurrency, dateLocale)}
               gradient="bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-800"
             />
             <SummaryCard
               icon={BarChart3}
               label={t('summaryAverage')}
-              value={formatCurrency(avgTotal, summaryCurrency)}
+              value={formatCurrency(avgTotal, summaryCurrency, dateLocale)}
               gradient="bg-gradient-to-br from-purple-500 to-indigo-700 dark:from-purple-600 dark:to-indigo-800"
             />
             <SummaryCard
@@ -629,7 +635,7 @@ export default function ProposalComparePage() {
                           selectedProposals.filter((o) => o.id !== p.id).map((o) => Number(o.subtotal))
                         )}`}
                       >
-                        {formatCurrency(Number(p.subtotal), p.currency)}
+                        {formatCurrency(Number(p.subtotal), p.currency, dateLocale)}
                       </td>
                     ))}
                   </tr>
@@ -643,7 +649,7 @@ export default function ProposalComparePage() {
                           selectedProposals.filter((o) => o.id !== p.id).map((o) => Number(o.vatTotal))
                         )}`}
                       >
-                        {formatCurrency(Number(p.vatTotal), p.currency)}
+                        {formatCurrency(Number(p.vatTotal), p.currency, dateLocale)}
                       </td>
                     ))}
                   </tr>
@@ -665,7 +671,7 @@ export default function ProposalComparePage() {
                               : 'text-gray-900 dark:text-gray-100'
                           }`}
                         >
-                          {formatCurrency(total, p.currency)}
+                          {formatCurrency(total, p.currency, dateLocale)}
                         </td>
                       );
                     })}

@@ -66,6 +66,7 @@ const ITEMS_PER_PAGE = 10;
 export default function ProposalsPage() {
   const router = useRouter();
   const locale = useLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const t = useTranslations('proposals');
   const tc = useTranslations('common');
   const confirm = useConfirm();
@@ -635,7 +636,7 @@ export default function ProposalsPage() {
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('totalAmount')}</span>
                     </div>
                     <p className="text-2xl font-bold">
-                      {Number(selectedProposal.grandTotal || 0).toLocaleString('tr-TR', {
+                      {Number(selectedProposal.grandTotal || 0).toLocaleString(dateLocale, {
                         style: 'currency',
                         currency: (selectedProposal as Proposal & { currency?: string }).currency || 'TRY',
                       })}
@@ -650,7 +651,7 @@ export default function ProposalsPage() {
                         <span className="text-xs text-muted-foreground">{t('createdAt')}</span>
                       </div>
                       <p className="text-sm font-semibold">
-                        {new Date(selectedProposal.createdAt).toLocaleDateString('tr-TR')}
+                        {new Date(selectedProposal.createdAt).toLocaleDateString(dateLocale)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
