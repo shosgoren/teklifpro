@@ -7,6 +7,8 @@ import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3, Calendar, User, ExternalLink, DollarSign, X } from 'lucide-react';
+import { FilterEmptyState } from '@/shared/components/FilterEmptyState';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
 import KanbanBoard from './kanban-board';
 import { Button } from '@/shared/components/ui/button';
@@ -67,6 +69,7 @@ export default function ProposalsPage() {
   const t = useTranslations('proposals');
   const tc = useTranslations('common');
   const confirm = useConfirm();
+  const { formatCurrency: formatCurrencyFn } = useCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,7 +101,7 @@ export default function ProposalsPage() {
 
   // Kanban: fetch all proposals (no pagination, no filter)
   const kanbanParams = new URLSearchParams({ page: '1', limit: '100', ...(searchTerm && { search: searchTerm }) });
-  const { data: kanbanData, mutate: kanbanMutate } = useSWR(
+  const { data: kanbanData, isLoading: isKanbanLoading, mutate: kanbanMutate } = useSWR(
     viewMode === 'kanban' ? `/api/v1/proposals?${kanbanParams.toString()}` : null,
     fetcher,
     swrDefaultOptions
@@ -152,11 +155,7 @@ export default function ProposalsPage() {
     return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   };
 
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat('tr-TR', {
-      style: 'currency', currency: 'TRY',
-      minimumFractionDigits: 0, maximumFractionDigits: 0,
-    }).format(amount);
+  const formatAmount = (amount: number) => formatCurrencyFn(amount);
 
   if (isLoading) {
     return (
@@ -328,30 +327,57 @@ export default function ProposalsPage() {
 
       {/* ─── Content (scrollable on desktop) ─── */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6" aria-live="polite">
 
         {/* ─── Kanban or List View ─── */}
         {viewMode === 'kanban' ? (
-          <KanbanBoard
-            proposals={kanbanProposals}
-            onStatusChange={handleStatusChange}
-            mutate={() => { kanbanMutate(); mutate(); }}
-          />
+          isKanbanLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" aria-label={tc('loading')} role="status">
+              {Array.from({ length: 4 }).map((_, colIdx) => (
+                <div key={colIdx} className="space-y-3">
+                  <div className="h-10 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-xl" />
+                  {Array.from({ length: colIdx < 2 ? 3 : 2 }).map((_, cardIdx) => (
+                    <div key={cardIdx} className="space-y-2 p-4 rounded-xl bg-white dark:bg-gray-900 shadow-sm border border-gray-100 dark:border-gray-800">
+                      <div className="h-4 w-3/4 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" />
+                      <div className="h-3 w-1/2 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" />
+                      <div className="h-3 w-1/3 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <KanbanBoard
+              proposals={kanbanProposals}
+              onStatusChange={handleStatusChange}
+              mutate={() => { kanbanMutate(); mutate(); }}
+            />
+          )
         ) : proposals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
-            <FileText className="h-10 w-10 text-white" />
+        (searchTerm || statusFilter !== 'ALL') ? (
+          <FilterEmptyState
+            onClearFilters={() => {
+              setSearchTerm('');
+              setStatusFilter('ALL');
+              setCurrentPage(1);
+            }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
+              <FileText className="h-10 w-10 text-white" />
+            </div>
+            <p className="text-base font-semibold">{t('noProposals')}</p>
+            <p className="text-sm text-muted-foreground mt-1">{t('noProposalsHint')}</p>
+            <Button
+              onClick={() => router.push(`/${locale}/proposals/new`)}
+              className="mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t('createFirst')}
+            </Button>
           </div>
-          <p className="text-base font-semibold">{t('noProposals')}</p>
-          <p className="text-sm text-muted-foreground mt-1">{t('noProposalsHint')}</p>
-          <Button
-            onClick={() => router.push(`/${locale}/proposals/new`)}
-            className="mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t('createFirst')}
-          </Button>
-        </div>
+        )
       ) : (
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-card overflow-clip shadow-sm">
           {/* Desktop Table */}

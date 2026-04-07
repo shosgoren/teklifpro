@@ -25,7 +25,10 @@
     "unsavedChangesTitle": "Kaydedilmemiş Değişiklikler",
     "unsavedChangesMessage": "Bu sayfada kaydedilmemiş değişiklikleriniz var. Sayfadan ayrılırsanız bu değişiklikler kaybolacaktır.",
     "unsavedChangesLeave": "Sayfadan Ayrıl",
-    "unsavedChangesStay": "Sayfada Kal"
+    "unsavedChangesStay": "Sayfada Kal",
+    "noFilterResults": "Sonuç bulunamadı",
+    "noFilterResultsDesc": "Filtreleri değiştirmeyi veya temizlemeyi deneyin",
+    "clearFilters": "Filtreleri Temizle"
   },
   "site": {
     "nav": {
@@ -555,6 +558,10 @@
     "saveChanges": "Değişiklikleri Kaydet",
     "saved": "Ayarlar kaydedildi",
     "saveError": "Ayarlar kaydedilemedi.",
+    "validation": {
+      "companyNameRequired": "Şirket adı zorunludur",
+      "emailInvalid": "Geçerli bir e-posta adresi girin"
+    },
     "followupSaved": "Akıllı takip ayarları kaydedildi",
     "followupError": "Akıllı takip ayarları kaydedilemedi",
     "brand": {
@@ -990,7 +997,9 @@
     "editSuccess": "{name} başarıyla güncellendi",
     "editError": "Ürün güncellenirken bir hata oluştu",
     "saving": "Kaydediliyor...",
-    "saveChanges": "Değişiklikleri Kaydet"
+    "saveChanges": "Değişiklikleri Kaydet",
+    "remove": "Kaldır",
+    "clearAll": "Tümünü Temizle"
   },
   "stockPage": {
     "title": "Stok Yönetimi",

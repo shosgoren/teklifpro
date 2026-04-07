@@ -25,7 +25,10 @@
     "unsavedChangesTitle": "Unsaved Changes",
     "unsavedChangesMessage": "You have unsaved changes on this page. If you leave, your changes will be lost.",
     "unsavedChangesLeave": "Leave Page",
-    "unsavedChangesStay": "Stay on Page"
+    "unsavedChangesStay": "Stay on Page",
+    "noFilterResults": "No results found",
+    "noFilterResultsDesc": "Try changing or clearing your filters",
+    "clearFilters": "Clear Filters"
   },
   "site": {
     "nav": {
@@ -555,6 +558,10 @@
     "saveChanges": "Save Changes",
     "saved": "Settings saved",
     "saveError": "Failed to save settings.",
+    "validation": {
+      "companyNameRequired": "Company name is required",
+      "emailInvalid": "Please enter a valid email address"
+    },
     "followupSaved": "Smart follow-up settings saved",
     "followupError": "Failed to save smart follow-up settings",
     "brand": {
@@ -990,7 +997,9 @@
     "editSuccess": "{name} updated successfully",
     "editError": "Error occurred while updating product",
     "saving": "Saving...",
-    "saveChanges": "Save Changes"
+    "saveChanges": "Save Changes",
+    "remove": "Remove",
+    "clearAll": "Clear All"
   },
   "stockPage": {
     "title": "Stock Management",

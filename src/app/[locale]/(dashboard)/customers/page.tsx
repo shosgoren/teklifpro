@@ -6,6 +6,8 @@ import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import { Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, Users, Phone, Mail, MapPin, AlertCircle, ExternalLink, Calendar, X } from 'lucide-react';
+import { FilterEmptyState } from '@/shared/components/FilterEmptyState';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import {
@@ -66,7 +68,9 @@ const fetcher = (url: string) =>
 
 export default function CustomersPage() {
   const t = useTranslations('customersPage');
+  const tc = useTranslations('common');
   const confirm = useConfirm();
+  const { formatCurrency } = useCurrency();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -215,8 +219,7 @@ export default function CustomersPage() {
     }
   }, [editingCustomer, editForm, mutate, t]);
 
-  const formatBalance = (balance: number) =>
-    (balance || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 0 });
+  const formatBalance = (balance: number) => formatCurrency(balance || 0);
 
   if (isLoading) {
     return (
@@ -325,15 +328,25 @@ export default function CustomersPage() {
 
       {/* Content */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6" aria-live="polite">
       {/* Customers List */}
       {customers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
-          <div className="p-4 rounded-full bg-muted mb-4">
-            <Users className="h-8 w-8 text-muted-foreground" />
+        (searchQuery || filterStatus !== 'all') ? (
+          <FilterEmptyState
+            onClearFilters={() => {
+              setSearchQuery('');
+              setFilterStatus('all');
+              setCurrentPage(1);
+            }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
+            <div className="p-4 rounded-full bg-muted mb-4">
+              <Users className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">{t('noCustomers')}</p>
           </div>
-          <p className="text-sm font-medium text-muted-foreground">{t('noCustomers')}</p>
-        </div>
+        )
       ) : (
         <div className="rounded-2xl border bg-card overflow-clip">
           {/* Mobile Cards */}

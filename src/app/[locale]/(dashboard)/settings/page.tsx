@@ -117,6 +117,8 @@ const SettingsPage = () => {
     taxOffice: '',
   });
 
+  const [generalErrors, setGeneralErrors] = useState<{ companyName?: string; email?: string }>({});
+
   interface BankAccount {
     bankName: string;
     branchName: string;
@@ -312,7 +314,20 @@ const SettingsPage = () => {
     }
   };
 
+  const validateGeneral = useCallback(() => {
+    const errors: { companyName?: string; email?: string } = {};
+    if (!general.companyName.trim()) {
+      errors.companyName = t('validation.companyNameRequired');
+    }
+    if (general.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(general.email.trim())) {
+      errors.email = t('validation.emailInvalid');
+    }
+    setGeneralErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [general.companyName, general.email, t]);
+
   const handleGeneralSave = async () => {
+    if (!validateGeneral()) return;
     setSaving(true);
     try {
       const res = await fetch('/api/v1/settings/logo', {
@@ -574,9 +589,11 @@ const SettingsPage = () => {
                         id="company-name"
                         className={inputClass}
                         value={general.companyName}
-                        onChange={e => setGeneral({ ...general, companyName: e.target.value })}
+                        onChange={e => { setGeneral({ ...general, companyName: e.target.value }); if (generalErrors.companyName) setGeneralErrors(prev => ({ ...prev, companyName: undefined })); }}
                         placeholder={t('placeholders.companyName')}
+                        aria-invalid={!!generalErrors.companyName}
                       />
+                      {generalErrors.companyName && <p className="text-xs text-red-500 mt-1">{generalErrors.companyName}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -587,9 +604,11 @@ const SettingsPage = () => {
                         type="email"
                         className={inputClass}
                         value={general.email}
-                        onChange={e => setGeneral({ ...general, email: e.target.value })}
+                        onChange={e => { setGeneral({ ...general, email: e.target.value }); if (generalErrors.email) setGeneralErrors(prev => ({ ...prev, email: undefined })); }}
                         placeholder={t('placeholders.email')}
+                        aria-invalid={!!generalErrors.email}
                       />
+                      {generalErrors.email && <p className="text-xs text-red-500 mt-1">{generalErrors.email}</p>}
                     </div>
                   </div>
 

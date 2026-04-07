@@ -10,10 +10,12 @@ import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig';
 import {
   Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, AlertTriangle,
   LayoutGrid, List, Package, TrendingUp, TrendingDown, Percent, ArrowUpDown,
-  Download, Upload, ExternalLink, Tag, Layers, Box,
+  Download, Upload, ExternalLink, Tag, Layers, Box, X,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { FilterEmptyState } from '@/shared/components/FilterEmptyState';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem,
 } from '@/shared/components/ui/dropdown-menu';
@@ -146,6 +148,7 @@ export default function ProductsPage() {
   const locale = useLocale();
   const t = useTranslations('productsPage');
   const confirm = useConfirm();
+  const { formatCurrency: formatCurrencyFn } = useCurrency();
 
   const PRODUCT_TYPE_LABELS: Record<string, string> = {
     COMMERCIAL: t('commercial'),
@@ -435,8 +438,7 @@ export default function ProductsPage() {
     }
   }, [bulkPrice, mutate, confirm, t]);
 
-  const formatPrice = (price: number) =>
-    (price || 0).toLocaleString('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 2 });
+  const formatPrice = (price: number) => formatCurrencyFn(price || 0);
 
   if (isLoading) {
     return (
@@ -655,16 +657,58 @@ export default function ProductsPage() {
 
       {/* Content */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6" aria-live="polite">
+
+      {/* Active Filter Badges */}
+      {(() => {
+        const activeFilters: { key: string; label: string; value: string; onClear: () => void }[] = [];
+        if (searchQuery) activeFilters.push({ key: 'search', label: t('searchPlaceholder'), value: searchQuery, onClear: () => setSearchQuery('') });
+        if (filterProductType !== 'all') activeFilters.push({ key: 'productType', label: t('type'), value: PRODUCT_TYPE_LABELS[filterProductType] || filterProductType, onClear: () => setFilterProductType('all') });
+        if (filterStatus !== 'all') activeFilters.push({ key: 'status', label: t('status'), value: filterStatus === 'active' ? t('active') : t('inactive'), onClear: () => setFilterStatus('all') });
+        if (filterStockStatus !== 'all') activeFilters.push({ key: 'stockStatus', label: t('stockHeader'), value: filterStockStatus === 'low' ? t('lowStock') : filterStockStatus === 'inStock' ? t('inStock') : t('outOfStock'), onClear: () => setFilterStockStatus('all') });
+        if (activeFilters.length === 0) return null;
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            {activeFilters.map((f) => (
+              <span key={f.key} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                {f.label}: {f.value}
+                <button onClick={() => { f.onClear(); setCurrentPage(1); }} className="ml-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors" aria-label={`${t('remove')} ${f.label}`}>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            {activeFilters.length > 1 && (
+              <button
+                onClick={() => { setSearchQuery(''); setFilterProductType('all'); setFilterStatus('all'); setFilterStockStatus('all'); setCurrentPage(1); }}
+                className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline underline-offset-2 transition-colors"
+              >
+                {t('clearAll')}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
-          <div className="p-4 rounded-full bg-muted mb-4">
-            <Package className="h-8 w-8 text-muted-foreground" />
+        (searchQuery || filterProductType !== 'all' || filterStatus !== 'all' || filterStockStatus !== 'all') ? (
+          <FilterEmptyState
+            onClearFilters={() => {
+              setSearchQuery('');
+              setFilterProductType('all');
+              setFilterStatus('all');
+              setFilterStockStatus('all');
+              setCurrentPage(1);
+            }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
+            <div className="p-4 rounded-full bg-muted mb-4">
+              <Package className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">{t('noProducts')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('noProductsHint')}</p>
           </div>
-          <p className="text-sm font-medium text-muted-foreground">{t('noProducts')}</p>
-          <p className="text-xs text-muted-foreground mt-1">{t('noProductsHint')}</p>
-        </div>
+        )
       ) : (
         <>
           {/* ─── GRID VIEW ─── */}

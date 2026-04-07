@@ -54,6 +54,7 @@ import {
 } from '@/shared/components/ui/dialog';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -205,9 +206,6 @@ const fetcher = (url: string) =>
       return data;
     });
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(value);
-
 const formatDate = (dateStr: string) =>
   new Intl.DateTimeFormat('tr-TR', {
     day: '2-digit',
@@ -226,6 +224,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const locale = useLocale();
+  const { formatCurrency } = useCurrency();
   const productId = params.id as string;
 
   const [activeTab, setActiveTab] = useState<TabKey>('general');
@@ -997,6 +996,7 @@ function GeneralTab({
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageDelete: () => void;
 }) {
+  const { formatCurrency } = useCurrency();
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Product Image */}
@@ -1377,6 +1377,7 @@ function BomTab({
   bom: Bom | null;
   costBreakdown: CostBreakdown | null;
 }) {
+  const { formatCurrency } = useCurrency();
   if (!bom) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
@@ -1562,6 +1563,7 @@ function SuppliersTab({
   onAdd: () => void;
   onRemove: (supplierId: string, supplierName: string) => void;
 }) {
+  const { formatCurrency } = useCurrency();
   if (suppliers.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">

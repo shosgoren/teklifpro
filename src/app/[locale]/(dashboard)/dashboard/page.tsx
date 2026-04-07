@@ -55,6 +55,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useCountUp } from '@/shared/hooks/useCountUp';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { VoiceProposalModal } from '@/presentation/components/organisms/VoiceProposalModal';
 
 interface DashboardProposal {
@@ -113,13 +114,8 @@ const AnimatedNumber = memo(function AnimatedNumber({ value, prefix = '', suffix
 // ─── Animated Currency ───
 const AnimatedCurrency = memo(function AnimatedCurrency({ value }: { value: number }) {
   const animated = useCountUp(value, 1600);
-  const formatted = new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(animated);
-  return <>{formatted}</>;
+  const { formatCurrency } = useCurrency();
+  return <>{formatCurrency(animated)}</>;
 });
 
 // ─── Sortable Widget Wrapper ───
@@ -353,13 +349,8 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat('tr-TR', {
-      style: 'currency',
-      currency: 'TRY',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const { formatCurrency: formatCurrencyFn } = useCurrency();
+  const formatAmount = (amount: number) => formatCurrencyFn(amount);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
