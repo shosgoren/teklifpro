@@ -1,7 +1,8 @@
 import crypto from 'crypto'
 
 function getEncryptionKey(): Buffer {
-  const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret'
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) throw new Error('NEXTAUTH_SECRET environment variable is required for signature encryption')
   return crypto.createHash('sha256').update(secret).digest()
 }
 

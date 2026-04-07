@@ -37,6 +37,7 @@ async function handleGet(request: NextRequest) {
     const where: Prisma.ProductWhereInput = {
       tenantId: session.tenant.id,
       trackStock: true,
+      deletedAt: null,
     };
 
     if (queryData.search) {

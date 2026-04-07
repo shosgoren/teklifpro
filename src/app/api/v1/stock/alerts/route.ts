@@ -15,6 +15,7 @@ async function handleGet(request: NextRequest) {
         tenantId: session.tenant.id,
         trackStock: true,
         minStockLevel: { gt: 0 },
+        deletedAt: null,
       },
       select: {
         id: true,

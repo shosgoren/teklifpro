@@ -23,7 +23,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "https://app.teklifpro.com"
         },
         {
           "key": "X-Content-Type-Options",

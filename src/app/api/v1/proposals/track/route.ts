@@ -20,8 +20,8 @@ async function handlePost(request: NextRequest) {
     // Cap at 30 minutes per single tracking call
     const cappedDuration = Math.min(duration, 1800);
 
-    const proposal = await prisma.proposal.findUnique({
-      where: { publicToken: token },
+    const proposal = await prisma.proposal.findFirst({
+      where: { publicToken: token, deletedAt: null },
       select: { id: true, totalViewDuration: true },
     });
 

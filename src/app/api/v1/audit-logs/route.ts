@@ -249,17 +249,14 @@ async function handleGet(
 async function handlePost(
   req: NextRequest
 ): Promise<Response> {
-  // Extract user info from request
-  const userId = req.headers.get('x-user-id');
-  const tenantId = req.headers.get('x-tenant-id');
+  // Extract user info from authenticated session
+  const session = getSessionFromRequest(req)!;
+  const userId = session.user.id;
+  const tenantId = session.tenant.id;
   const ipAddress = req.headers.get('x-forwarded-for') ||
     req.headers.get('x-real-ip') || 'unknown';
 
   assertAuthenticated(userId);
-
-  if (!tenantId) {
-    throw badRequest('Tenant ID is required');
-  }
 
   // Parse request body
   const body = await req.json();
@@ -340,16 +337,13 @@ async function handlePost(
 async function handleDelete(
   req: NextRequest
 ): Promise<Response> {
-  const userId = req.headers.get('x-user-id');
-  const userRole = req.headers.get('x-user-role');
-  const tenantId = req.headers.get('x-tenant-id');
+  const session = getSessionFromRequest(req)!;
+  const userId = session.user.id;
+  const userRole = session.user.role || 'OWNER';
+  const tenantId = session.tenant.id;
 
   assertAuthenticated(userId);
   assertAuthorized(userRole, ['OWNER']);
-
-  if (!tenantId) {
-    throw badRequest('Tenant ID is required');
-  }
 
   // Extract ID from URL path
   const pathname = new URL(req.url).pathname;

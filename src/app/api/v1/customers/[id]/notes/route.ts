@@ -141,6 +141,21 @@ async function handleDelete(
       return NextResponse.json({ error: 'Musteri bulunamadi' }, { status: 404 });
     }
 
+    // Verify note exists and check ownership
+    const note = await prisma.customerNote.findFirst({
+      where: { id: noteId, customerId, deletedAt: null },
+    });
+
+    if (!note) {
+      return NextResponse.json({ error: 'Not bulunamadi' }, { status: 404 });
+    }
+
+    // Only the note owner or an admin/owner can delete
+    const userRole = session.user.role || 'USER';
+    if (note.userId !== session.user.id && !['ADMIN', 'OWNER'].includes(userRole)) {
+      return NextResponse.json({ error: 'Bu notu silme yetkiniz yok' }, { status: 403 });
+    }
+
     // Soft delete
     await prisma.customerNote.update({
       where: { id: noteId },

@@ -182,7 +182,11 @@ export class PayTRService {
         .update(hashString)
         .digest('base64');
 
-      const isValid = verifyHash === hash;
+      const verifyBuf = Buffer.from(verifyHash);
+      const hashBuf = Buffer.from(hash);
+      const isValid =
+        verifyBuf.length === hashBuf.length &&
+        crypto.timingSafeEqual(verifyBuf, hashBuf);
 
       this.logger.info('Webhook hash verification', {
         merchant_oid: params.merchant_oid,
