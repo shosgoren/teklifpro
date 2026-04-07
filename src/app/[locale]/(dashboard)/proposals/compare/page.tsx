@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -76,22 +77,22 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   INVOICED: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
 
-const STATUS_LABELS: Record<ProposalStatus, string> = {
-  DRAFT: 'Taslak',
-  READY: 'Hazir',
-  SENT: 'Gonderildi',
-  VIEWED: 'Goruntulendi',
-  ACCEPTED: 'Kabul',
-  REJECTED: 'Red',
-  REVISION_REQUESTED: 'Revize',
-  EXPIRED: 'Suresi Doldu',
-  INVOICED: 'Faturalandi',
+const STATUS_LABEL_KEYS: Record<ProposalStatus, string> = {
+  DRAFT: 'statusDraft',
+  READY: 'statusReady',
+  SENT: 'statusSent',
+  VIEWED: 'statusViewed',
+  ACCEPTED: 'statusAccepted',
+  REJECTED: 'statusRejected',
+  REVISION_REQUESTED: 'statusRevisionRequested',
+  EXPIRED: 'statusExpired',
+  INVOICED: 'statusInvoiced',
 };
 
-const getStatusBadge = (status: ProposalStatus) => {
+const getStatusBadge = (status: ProposalStatus, t: (key: string) => string) => {
   return (
     <Badge className={`rounded-lg ${STATUS_COLORS[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}`}>
-      {STATUS_LABELS[status] || status}
+      {t(STATUS_LABEL_KEYS[status]) || status}
     </Badge>
   );
 };
@@ -120,6 +121,7 @@ function SelectProposalsDialog({
   selectedIds: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const t = useTranslations('comparePage');
   const [searchTerm, setSearchTerm] = useState('');
 
   const filtered = useMemo(() => {
@@ -138,21 +140,21 @@ function SelectProposalsDialog({
       <DialogContent className="sm:max-w-lg rounded-2xl bg-white dark:bg-gray-900 border-0 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Karsilastirilacak Teklifleri Secin
+            {t('dialogTitle')}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
             <Input
-              placeholder="Teklif numarasi, musteri adi veya baslik..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
             />
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            {selectedIds.size} teklif secildi (en az 2 gerekli)
+            {t('selectedCount', { count: selectedIds.size })}
           </div>
           <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
             {filtered.length > 0 ? (
@@ -173,7 +175,7 @@ function SelectProposalsDialog({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-gray-900 dark:text-gray-100">{proposal.proposalNumber}</span>
-                      {getStatusBadge(proposal.status)}
+                      {getStatusBadge(proposal.status, t)}
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400 truncate">
                       {proposal.customer.name}
@@ -188,7 +190,7 @@ function SelectProposalsDialog({
             ) : (
               <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                 <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                Sonuc bulunamadi
+                {t('noResults')}
               </div>
             )}
           </div>
@@ -208,6 +210,7 @@ function ProposalColumn({
   onRemove: (id: string) => void;
   allTotals: { grandTotal: number; id: string }[];
 }) {
+  const t = useTranslations('comparePage');
   const { data, error, isLoading } = useSWR(
     `/api/v1/proposals/${proposalId}`,
     fetcher,
@@ -238,10 +241,10 @@ function ProposalColumn({
         <CardHeader>
           <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
             <AlertCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">Teklif yuklenemedi</span>
+            <span className="text-sm font-medium">{t('loadError')}</span>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onRemove(proposalId)} className="mt-2 dark:text-gray-300 dark:hover:bg-gray-800">
-            Kaldir
+            {t('remove')}
           </Button>
         </CardHeader>
       </Card>
@@ -256,7 +259,7 @@ function ProposalColumn({
       {isBest && (
         <div className="absolute top-3 right-3">
           <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg shadow-md border-0">
-            En uygun fiyat
+            {t('bestPrice')}
           </Badge>
         </div>
       )}
@@ -264,7 +267,7 @@ function ProposalColumn({
       <button
         onClick={() => onRemove(proposal.id)}
         className="absolute top-3 left-3 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-        title="Kaldir"
+        title={t('remove')}
       >
         <X className="w-4 h-4" />
       </button>
@@ -276,30 +279,30 @@ function ProposalColumn({
           {proposal.title && (
             <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{proposal.title}</div>
           )}
-          <div className="mt-2">{getStatusBadge(proposal.status)}</div>
+          <div className="mt-2">{getStatusBadge(proposal.status, t)}</div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         {/* General info */}
         <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">Genel Bilgiler</h4>
+          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">{t('generalInfo')}</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Teklif No:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('proposalNo')}</span>
               <span className="font-medium text-gray-900 dark:text-gray-100">{proposal.proposalNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Tarih:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('date')}</span>
               <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.createdAt)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Musteri:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('customer')}</span>
               <span className="font-medium text-gray-900 dark:text-gray-100">{proposal.customer.name}</span>
             </div>
             {proposal.expiresAt && (
               <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Son Tarih:</span>
+                <span className="text-gray-500 dark:text-gray-400">{t('expiryDate')}</span>
                 <span className="text-gray-700 dark:text-gray-300">{formatDate(proposal.expiresAt)}</span>
               </div>
             )}
@@ -309,7 +312,7 @@ function ProposalColumn({
         {/* Products */}
         <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
           <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">
-            Urunler ({proposal.items?.length || 0})
+            {t('products')} ({proposal.items?.length || 0})
           </h4>
           <div className="space-y-2">
             {proposal.items?.map((item, idx) => (
@@ -324,25 +327,25 @@ function ProposalColumn({
               </div>
             ))}
             {(!proposal.items || proposal.items.length === 0) && (
-              <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Urun bulunmuyor</div>
+              <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('noProducts')}</div>
             )}
           </div>
         </div>
 
         {/* Totals */}
         <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
-          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">Fiyat Ozeti</h4>
+          <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-gray-100">{t('priceSummary')}</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Ara Toplam:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('subtotal')}</span>
               <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.subtotal), proposal.currency)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">KDV:</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('vat')}</span>
               <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.vatTotal), proposal.currency)}</span>
             </div>
             <div className="flex justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-              <span className="text-gray-900 dark:text-gray-100">Toplam:</span>
+              <span className="text-gray-900 dark:text-gray-100">{t('total')}</span>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 {formatCurrency(Number(proposal.grandTotal), proposal.currency)}
               </span>
@@ -383,6 +386,7 @@ function SummaryCard({
 
 // Main comparison page
 export default function ProposalComparePage() {
+  const t = useTranslations('comparePage');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -431,7 +435,7 @@ export default function ProposalComparePage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Teklif Karsilastirma
+            {t('title')}
           </h1>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -442,7 +446,7 @@ export default function ProposalComparePage() {
         <div className="flex items-center justify-center py-20">
           <div className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-6 py-4 shadow-lg">
             <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Teklifler yukleniyor...</span>
+            <span className="text-gray-600 dark:text-gray-400 font-medium">{t('loading')}</span>
           </div>
         </div>
       </div>
@@ -455,7 +459,7 @@ export default function ProposalComparePage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Teklif Karsilastirma
+            {t('title')}
           </h1>
         </div>
         <Card className="text-center py-12 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
@@ -463,7 +467,7 @@ export default function ProposalComparePage() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 flex items-center justify-center">
               <AlertCircle className="w-8 h-8 text-red-500 dark:text-red-400" />
             </div>
-            <p className="text-red-600 dark:text-red-400 font-semibold mb-2 text-lg">Teklifler yuklenirken hata olustu</p>
+            <p className="text-red-600 dark:text-red-400 font-semibold mb-2 text-lg">{t('errorTitle')}</p>
             <p className="text-gray-500 dark:text-gray-400 text-sm">{error.message}</p>
           </CardContent>
         </Card>
@@ -477,7 +481,7 @@ export default function ProposalComparePage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Teklif Karsilastirma
+            {t('title')}
           </h1>
         </div>
         <Card className="text-center py-16 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
@@ -486,7 +490,7 @@ export default function ProposalComparePage() {
               <BarChart3 className="w-10 h-10 text-blue-500 dark:text-blue-400" />
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-lg">
-              Karsilastirmak icin en az 2 teklif gerekli. Henuz teklif bulunmuyor.
+              {t('minTwoRequired')}
             </p>
           </CardContent>
         </Card>
@@ -513,10 +517,10 @@ export default function ProposalComparePage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Teklif Karsilastirma
+            {t('title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            Teklifleri yan yana karsilastirin ve en uygun secimi yapin
+            {t('subtitle')}
           </p>
         </div>
         <div className="flex gap-3">
@@ -527,7 +531,7 @@ export default function ProposalComparePage() {
             className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
           >
             <Plus className="w-4 h-4" />
-            Teklif Sec ({selectedIds.size})
+            {t('selectProposalsCount', { count: selectedIds.size })}
           </Button>
           <Button
             onClick={handlePrint}
@@ -537,7 +541,7 @@ export default function ProposalComparePage() {
             disabled={selectedIds.size < 2}
           >
             <Printer className="w-4 h-4" />
-            Yazdir
+            {t('print')}
           </Button>
         </div>
       </div>
@@ -550,15 +554,15 @@ export default function ProposalComparePage() {
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">
               {selectedIds.size === 0
-                ? 'Karsilastirmak icin en az 2 teklif secin'
-                : '1 teklif secildi. Karsilastirma icin en az 2 teklif gerekli.'}
+                ? t('selectAtLeastTwo')
+                : t('oneSelected')}
             </p>
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Teklif Sec
+              {t('selectProposals')}
             </Button>
           </CardContent>
         </Card>
@@ -568,26 +572,26 @@ export default function ProposalComparePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <SummaryCard
               icon={FileText}
-              label="Karsilastirilan Teklif"
-              value={`${selectedProposals.length} teklif`}
+              label={t('summaryCompared')}
+              value={t('summaryComparedValue', { count: selectedProposals.length })}
               gradient="bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800"
             />
             <SummaryCard
               icon={TrendingDown}
-              label="En Dusuk Fiyat"
+              label={t('summaryLowest')}
               value={formatCurrency(lowestTotal, summaryCurrency)}
               gradient="bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-800"
             />
             <SummaryCard
               icon={BarChart3}
-              label="Ortalama Fiyat"
+              label={t('summaryAverage')}
               value={formatCurrency(avgTotal, summaryCurrency)}
               gradient="bg-gradient-to-br from-purple-500 to-indigo-700 dark:from-purple-600 dark:to-indigo-800"
             />
             <SummaryCard
               icon={Users}
-              label="Musteri / Urun"
-              value={`${uniqueCustomers} musteri, ${totalItems} urun`}
+              label={t('summaryCustomerProduct')}
+              value={t('summaryCustomerProductValue', { customers: uniqueCustomers, products: totalItems })}
               gradient="bg-gradient-to-br from-orange-500 to-rose-600 dark:from-orange-600 dark:to-rose-700"
             />
           </div>
@@ -598,7 +602,7 @@ export default function ProposalComparePage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-800/80 border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300 w-32">Detay</th>
+                    <th className="text-left p-4 font-semibold text-gray-700 dark:text-gray-300 w-32">{t('tableDetail')}</th>
                     {selectedProposals.map((p) => (
                       <th key={p.id} className="text-right p-4 font-semibold min-w-[160px] text-gray-700 dark:text-gray-300">
                         {p.proposalNumber}
@@ -608,7 +612,7 @@ export default function ProposalComparePage() {
                 </thead>
                 <tbody>
                   <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Musteri</td>
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{t('tableCustomer')}</td>
                     {selectedProposals.map((p) => (
                       <td key={p.id} className="p-4 text-right text-gray-600 dark:text-gray-400">
                         {p.customer.name}
@@ -616,7 +620,7 @@ export default function ProposalComparePage() {
                     ))}
                   </tr>
                   <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Ara Toplam</td>
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{t('tableSubtotal')}</td>
                     {selectedProposals.map((p) => (
                       <td
                         key={p.id}
@@ -630,7 +634,7 @@ export default function ProposalComparePage() {
                     ))}
                   </tr>
                   <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">KDV</td>
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{t('tableVat')}</td>
                     {selectedProposals.map((p) => (
                       <td
                         key={p.id}
@@ -644,7 +648,7 @@ export default function ProposalComparePage() {
                     ))}
                   </tr>
                   <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-                    <td className="p-4 text-gray-900 dark:text-gray-100 font-bold">TOPLAM</td>
+                    <td className="p-4 text-gray-900 dark:text-gray-100 font-bold">{t('tableTotal')}</td>
                     {selectedProposals.map((p) => {
                       const total = Number(p.grandTotal);
                       const totals = selectedProposals.map((o) => Number(o.grandTotal));
@@ -667,7 +671,7 @@ export default function ProposalComparePage() {
                     })}
                   </tr>
                   <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Urun Sayisi</td>
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{t('tableProductCount')}</td>
                     {selectedProposals.map((p) => (
                       <td key={p.id} className="p-4 text-right text-gray-600 dark:text-gray-400">
                         {p.items?.length ?? 0}
@@ -675,10 +679,10 @@ export default function ProposalComparePage() {
                     ))}
                   </tr>
                   <tr className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">Durum</td>
+                    <td className="p-4 text-gray-700 dark:text-gray-300 font-medium">{t('tableStatus')}</td>
                     {selectedProposals.map((p) => (
                       <td key={p.id} className="p-4 text-right">
-                        {getStatusBadge(p.status)}
+                        {getStatusBadge(p.status, t)}
                       </td>
                     ))}
                   </tr>

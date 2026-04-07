@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import {
   Bell,
   Check,
@@ -33,18 +33,19 @@ type FilterType = 'all' | 'unread' | 'accepted' | 'rejected' | 'revised' | 'view
 
 const ITEMS_PER_PAGE = 20
 
-const FILTER_OPTIONS: { value: FilterType; label: string; icon?: typeof Bell }[] = [
-  { value: 'all', label: 'Tümü' },
-  { value: 'unread', label: 'Okunmamış' },
-  { value: 'viewed', label: 'Görüntülenen', icon: Eye },
-  { value: 'accepted', label: 'Kabul Edilen', icon: ThumbsUp },
-  { value: 'rejected', label: 'Reddedilen', icon: ThumbsDown },
-  { value: 'revised', label: 'Revizyon', icon: RotateCcw },
-]
-
 export default function NotificationsPage() {
   const router = useRouter()
   const locale = useLocale()
+  const t = useTranslations('notificationsPage')
+
+  const FILTER_OPTIONS: { value: FilterType; label: string; icon?: typeof Bell }[] = [
+    { value: 'all', label: t('filterAll') },
+    { value: 'unread', label: t('filterUnread') },
+    { value: 'viewed', label: t('filterViewed'), icon: Eye },
+    { value: 'accepted', label: t('filterAccepted'), icon: ThumbsUp },
+    { value: 'rejected', label: t('filterRejected'), icon: ThumbsDown },
+    { value: 'revised', label: t('filterRevised'), icon: RotateCcw },
+  ]
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('all')
@@ -127,12 +128,12 @@ export default function NotificationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Bildirimler
+            {t('title')}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {unreadCount > 0
-              ? `${unreadCount} okunmamış bildirim`
-              : 'Tüm bildirimler okundu'}
+              ? t('unreadCount', { count: unreadCount })
+              : t('allRead')}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -141,7 +142,7 @@ export default function NotificationsPage() {
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
           >
             <CheckCheck className="w-4 h-4" />
-            Tümünü Okundu İşaretle
+            {t('markAllRead')}
           </button>
         )}
       </div>
@@ -153,7 +154,7 @@ export default function NotificationsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Bildirimlerde ara..."
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -189,7 +190,7 @@ export default function NotificationsPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-            <span className="ml-2 text-sm text-gray-500">Yükleniyor...</span>
+            <span className="ml-2 text-sm text-gray-500">{t('loading')}</span>
           </div>
         ) : paginated.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
@@ -197,12 +198,12 @@ export default function NotificationsPage() {
               <Bell className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-600 dark:text-gray-300 font-medium">
-              {filter !== 'all' || search ? 'Eşleşen bildirim bulunamadı' : 'Bildirim yok'}
+              {filter !== 'all' || search ? t('noMatchingNotifications') : t('noNotifications')}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {filter !== 'all' || search
-                ? 'Farklı filtre veya arama deneyin'
-                : 'Yeni bildirimler burada görünecek'}
+                ? t('tryDifferentFilter')
+                : t('newNotificationsWillAppear')}
             </p>
           </div>
         ) : (
@@ -243,7 +244,7 @@ export default function NotificationsPage() {
                         {notification.description}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-500 mt-1.5">
-                        {formatDate(notification.timestamp)}
+                        {formatDate(notification.timestamp, locale, t)}
                       </p>
                     </div>
 
@@ -258,7 +259,7 @@ export default function NotificationsPage() {
                           handleMarkAsRead(notification.id)
                         }}
                         className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        title={notification.isRead ? 'Okundu' : 'Okundu işaretle'}
+                        title={notification.isRead ? t('read') : t('markAsRead')}
                       >
                         {notification.isRead ? (
                           <CheckCheck className="w-4 h-4 text-gray-400" />
@@ -278,8 +279,7 @@ export default function NotificationsPage() {
         {totalPages > 1 && (
           <div className="border-t border-gray-100 dark:border-gray-800 px-4 md:px-6 py-3 flex items-center justify-between">
             <p className="text-sm text-gray-500">
-              {filtered.length} bildirimden {(page - 1) * ITEMS_PER_PAGE + 1}-
-              {Math.min(page * ITEMS_PER_PAGE, filtered.length)} arası
+              {t('paginationInfo', { total: filtered.length, from: (page - 1) * ITEMS_PER_PAGE + 1, to: Math.min(page * ITEMS_PER_PAGE, filtered.length) })}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -347,7 +347,7 @@ function getIconBg(type: Notification['type']): string {
   }
 }
 
-function formatDate(timestamp: string): string {
+function formatDate(timestamp: string, locale: string, t: (key: string, values?: Record<string, string | number>) => string): string {
   const date = new Date(timestamp)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -355,12 +355,12 @@ function formatDate(timestamp: string): string {
   const diffHours = Math.floor(diffMin / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffMin < 1) return 'Az önce'
-  if (diffMin < 60) return `${diffMin} dakika önce`
-  if (diffHours < 24) return `${diffHours} saat önce`
-  if (diffDays < 7) return `${diffDays} gün önce`
+  if (diffMin < 1) return t('justNow')
+  if (diffMin < 60) return t('minutesAgo', { count: diffMin })
+  if (diffHours < 24) return t('hoursAgo', { count: diffHours })
+  if (diffDays < 7) return t('daysAgo', { count: diffDays })
 
-  return date.toLocaleDateString('tr-TR', {
+  return date.toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', {
     day: 'numeric',
     month: 'long',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,

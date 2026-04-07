@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Phone, Loader2, AlertCircle } from 'lucide-react'
 
@@ -11,12 +11,45 @@ interface PhoneGateProps {
   tenantLogo: string | null
 }
 
+const translations: Record<string, Record<string, string>> = {
+  tr: {
+    title: 'Kimlik Do\u011frulama',
+    description: 'Bu teklif size \u00f6zel g\u00f6nderilmi\u015ftir. Eri\u015fim i\u00e7in telefon numaran\u0131z\u0131n son 4 hanesini giriniz.',
+    verifying: 'Do\u011frulan\u0131yor...',
+    errorDefault: 'Do\u011frulama ba\u015far\u0131s\u0131z',
+    errorGeneric: 'Bir hata olu\u015ftu',
+    formLabel: 'Do\u011frulama kodu',
+    digitLabel: 'Do\u011frulama kodu rakam',
+    footer: 'TeklifPro ile g\u00fcvenli teklif y\u00f6netimi',
+  },
+  en: {
+    title: 'Identity Verification',
+    description: 'This proposal was sent exclusively to you. Please enter the last 4 digits of your phone number to access it.',
+    verifying: 'Verifying...',
+    errorDefault: 'Verification failed',
+    errorGeneric: 'An error occurred',
+    formLabel: 'Verification code',
+    digitLabel: 'Verification code digit',
+    footer: 'Secure proposal management with TeklifPro',
+  },
+}
+
+function detectLocale(): string {
+  if (typeof window === 'undefined') return 'tr'
+  const path = window.location.pathname
+  if (path.startsWith('/en')) return 'en'
+  return 'tr'
+}
+
 export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }: PhoneGateProps) {
   const router = useRouter()
   const [digits, setDigits] = useState(['', '', '', ''])
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const locale = useMemo(detectLocale, [])
+  const t = (key: string) => translations[locale]?.[key] ?? translations.tr[key] ?? key
 
   useEffect(() => {
     inputRefs.current[0]?.focus()
@@ -68,11 +101,11 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Doğrulama başarısız')
+        throw new Error(data.error || t('errorDefault'))
       }
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Bir hata oluştu')
+      setError(err instanceof Error ? err.message : t('errorGeneric'))
       setDigits(['', '', '', ''])
       setTimeout(() => inputRefs.current[0]?.focus(), 100)
     } finally {
@@ -101,9 +134,9 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
             <Shield className="w-7 h-7 text-blue-500" />
           </div>
 
-          <h1 className="text-lg font-bold text-gray-900 mb-1">Kimlik Dogrulama</h1>
+          <h1 className="text-lg font-bold text-gray-900 mb-1">{t('title')}</h1>
           <p className="text-sm text-gray-500 mb-6">
-            Bu teklif size ozel gonderilmistir. Erisim icin telefon numaranizin son 4 hanesini giriniz.
+            {t('description')}
           </p>
 
           {/* Masked Phone */}
@@ -113,7 +146,7 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
           </div>
 
           {/* 4 Digit Input */}
-          <div className="flex justify-center gap-3 mb-6" role="form" aria-label="Doğrulama kodu" onPaste={handlePaste}>
+          <div className="flex justify-center gap-3 mb-6" role="form" aria-label={t('formLabel')} onPaste={handlePaste}>
             {digits.map((digit, i) => (
               <input
                 key={i}
@@ -125,7 +158,7 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
                 onChange={(e) => handleChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(i, e)}
                 disabled={isLoading}
-                aria-label={`Doğrulama kodu rakam ${i + 1}`}
+                aria-label={`${t('digitLabel')} ${i + 1}`}
                 className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all disabled:opacity-50 bg-white"
               />
             ))}
@@ -145,12 +178,12 @@ export default function PhoneGate({ token, maskedPhone, tenantName, tenantLogo }
           {isLoading && (
             <div className="flex items-center justify-center gap-2 text-blue-600">
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Dogrulanıyor...</span>
+              <span className="text-sm">{t('verifying')}</span>
             </div>
           )}
         </div>
 
-        <p className="text-center text-xs text-gray-300 mt-6">TeklifPro ile guvenli teklif yonetimi</p>
+        <p className="text-center text-xs text-gray-300 mt-6">{t('footer')}</p>
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocale } from 'next-intl';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -27,53 +27,53 @@ import {
   Home,
 } from 'lucide-react';
 
-// Demo steps data
-const DEMO_STEPS = [
+// Demo steps data - translation keys resolved in component
+const DEMO_STEPS_CONFIG = [
   {
     id: 'dashboard',
-    title: 'Kontrol Paneli',
-    subtitle: 'Tüm işletmenizi tek bakışta görün',
-    description: 'Gelir, teklif sayısı, kabul oranı ve müşteri istatistikleriniz anlık olarak karşınızda. Stok uyarıları ve son teklifler hep göz önünde.',
+    titleKey: 'stepDashboardTitle',
+    subtitleKey: 'stepDashboardSubtitle',
+    descriptionKey: 'stepDashboardDescription',
     color: 'from-blue-500 to-indigo-600',
     icon: Home,
   },
   {
     id: 'products',
-    title: 'Ürün Yönetimi',
-    subtitle: 'Ürünlerinizi kolayca yönetin',
-    description: 'Paraşüt\'ten otomatik senkronize edilen ürünleriniz. Stok takibi, maliyet hesaplama, reçete yönetimi ve tedarikçi bilgileri tek kartta.',
+    titleKey: 'stepProductsTitle',
+    subtitleKey: 'stepProductsSubtitle',
+    descriptionKey: 'stepProductsDescription',
     color: 'from-emerald-500 to-teal-600',
     icon: Package,
   },
   {
     id: 'customers',
-    title: 'Müşteri Portföyü',
-    subtitle: 'Müşterilerinizi yakından tanıyın',
-    description: 'Paraşüt entegrasyonuyla müşteri bilgileri otomatik güncellenir. Bakiye takibi, iletişim bilgileri ve teklif geçmişi bir arada.',
+    titleKey: 'stepCustomersTitle',
+    subtitleKey: 'stepCustomersSubtitle',
+    descriptionKey: 'stepCustomersDescription',
     color: 'from-violet-500 to-purple-600',
     icon: Users,
   },
   {
     id: 'create-proposal',
-    title: 'Teklif Oluşturma',
-    subtitle: 'Saniyeler içinde profesyonel teklif',
-    description: 'Müşteri seçin, ürün ekleyin, fiyat ve iskonto belirleyin. Otomatik KDV hesaplama ve para birimi desteğiyle hatasız teklifler.',
+    titleKey: 'stepCreateProposalTitle',
+    subtitleKey: 'stepCreateProposalSubtitle',
+    descriptionKey: 'stepCreateProposalDescription',
     color: 'from-amber-500 to-orange-600',
     icon: FileText,
   },
   {
     id: 'send-whatsapp',
-    title: 'WhatsApp Gönderim',
-    subtitle: 'Tek tuşla müşterinize ulaşın',
-    description: 'Hazırladığınız teklifi tek tıkla WhatsApp\'tan gönderin. Müşteriniz mobilde anında görsün, tek tıkla onaylasın.',
+    titleKey: 'stepWhatsappTitle',
+    subtitleKey: 'stepWhatsappSubtitle',
+    descriptionKey: 'stepWhatsappDescription',
     color: 'from-green-500 to-emerald-600',
     icon: MessageCircle,
   },
   {
     id: 'analytics',
-    title: 'Akıllı Analitik',
-    subtitle: 'Veriye dayalı kararlar alın',
-    description: 'Aylık gelir trendi, en çok satan ürünler, müşteri bazlı analizler. İşletmenizin büyümesini grafiklerle takip edin.',
+    titleKey: 'stepAnalyticsTitle',
+    subtitleKey: 'stepAnalyticsSubtitle',
+    descriptionKey: 'stepAnalyticsDescription',
     color: 'from-pink-500 to-rose-600',
     icon: BarChart3,
   },
@@ -105,11 +105,12 @@ function PhoneScreen({ stepId, isActive }: { stepId: string; isActive: boolean }
 }
 
 function DashboardScreen() {
+  const t = useTranslations('demoPage');
   return (
     <div className="flex flex-col h-full bg-gray-50 p-3">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-[10px] text-gray-500">Hoş geldin</p>
+          <p className="text-[10px] text-gray-500">{t('welcomeLabel')}</p>
           <p className="text-xs font-bold text-gray-900">Sercan H.</p>
         </div>
         <Bell className="w-4 h-4 text-gray-400" />
@@ -117,10 +118,10 @@ function DashboardScreen() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         {[
-          { label: 'Gelir', value: '₺284K', color: 'from-blue-500 to-indigo-500', icon: TrendingUp },
-          { label: 'Teklifler', value: '47', color: 'from-violet-500 to-purple-500', icon: FileText },
-          { label: 'Kabul', value: '%72', color: 'from-emerald-500 to-teal-500', icon: CheckCircle },
-          { label: 'Müşteri', value: '128', color: 'from-amber-500 to-orange-500', icon: Users },
+          { label: t('revenue'), value: '₺284K', color: 'from-blue-500 to-indigo-500', icon: TrendingUp },
+          { label: t('proposals'), value: '47', color: 'from-violet-500 to-purple-500', icon: FileText },
+          { label: t('acceptance'), value: '%72', color: 'from-emerald-500 to-teal-500', icon: CheckCircle },
+          { label: t('customerLabel'), value: '128', color: 'from-amber-500 to-orange-500', icon: Users },
         ].map((kpi, i) => (
           <motion.div
             key={i}
@@ -142,7 +143,7 @@ function DashboardScreen() {
         transition={{ delay: 0.6 }}
         className="bg-white rounded-xl p-3 flex-1"
       >
-        <p className="text-[10px] font-semibold text-gray-700 mb-2">Aylık Gelir</p>
+        <p className="text-[10px] font-semibold text-gray-700 mb-2">{t('monthlyRevenue')}</p>
         <div className="flex items-end gap-1.5 h-16">
           {[40, 55, 35, 70, 60, 85, 75, 90, 65, 80, 95, 88].map((h, i) => (
             <motion.div
@@ -160,6 +161,7 @@ function DashboardScreen() {
 }
 
 function ProductsScreen() {
+  const t = useTranslations('demoPage');
   const products = [
     { name: 'Paslanmaz Çelik Boru', code: 'PCB-001', price: '₺245', stock: 128, color: 'bg-blue-500' },
     { name: 'Alüminyum Profil', code: 'ALP-003', price: '₺180', stock: 64, color: 'bg-emerald-500' },
@@ -169,7 +171,7 @@ function ProductsScreen() {
   return (
     <div className="flex flex-col h-full bg-gray-50 p-3">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-bold text-gray-900">Ürünler</p>
+        <p className="text-xs font-bold text-gray-900">{t('productsLabel')}</p>
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -181,7 +183,7 @@ function ProductsScreen() {
       </div>
       <div className="bg-white rounded-xl px-2.5 py-2 mb-3 flex items-center gap-2">
         <Search className="w-3.5 h-3.5 text-gray-400" />
-        <p className="text-[10px] text-gray-400">Ürün ara...</p>
+        <p className="text-[10px] text-gray-400">{t('searchProduct')}</p>
       </div>
       <div className="space-y-2 flex-1">
         {products.map((p, i) => (
@@ -201,7 +203,7 @@ function ProductsScreen() {
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold text-gray-900">{p.price}</p>
-              <p className="text-[9px] text-gray-400">Stok: {p.stock}</p>
+              <p className="text-[9px] text-gray-400">{t('stock', { count: p.stock })}</p>
             </div>
           </motion.div>
         ))}
@@ -211,6 +213,7 @@ function ProductsScreen() {
 }
 
 function CustomersScreen() {
+  const t = useTranslations('demoPage');
   const customers = [
     { name: 'Yılmaz Mühendislik', contact: 'Ahmet Yılmaz', balance: '+₺45.200', synced: true },
     { name: 'Demir İnşaat', contact: 'Mehmet Demir', balance: '-₺12.800', synced: true },
@@ -220,10 +223,10 @@ function CustomersScreen() {
   return (
     <div className="flex flex-col h-full bg-gray-50 p-3">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-bold text-gray-900">Müşteriler</p>
+        <p className="text-xs font-bold text-gray-900">{t('customersLabel')}</p>
         <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100">
           <Zap className="w-2.5 h-2.5 text-emerald-600" />
-          <p className="text-[8px] font-semibold text-emerald-700">Paraşüt Bağlı</p>
+          <p className="text-[8px] font-semibold text-emerald-700">{t('parasutConnected')}</p>
         </div>
       </div>
       <div className="space-y-2 flex-1">
@@ -253,9 +256,10 @@ function CustomersScreen() {
 }
 
 function CreateProposalScreen() {
+  const t = useTranslations('demoPage');
   return (
     <div className="flex flex-col h-full bg-gray-50 p-3">
-      <p className="text-xs font-bold text-gray-900 mb-3">Yeni Teklif</p>
+      <p className="text-xs font-bold text-gray-900 mb-3">{t('newProposal')}</p>
       {/* Customer */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -263,7 +267,7 @@ function CreateProposalScreen() {
         transition={{ delay: 0.2 }}
         className="bg-white rounded-xl p-2.5 mb-2"
       >
-        <p className="text-[9px] text-gray-400 mb-1">Müşteri</p>
+        <p className="text-[9px] text-gray-400 mb-1">{t('customerField')}</p>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-[8px] font-bold">Y</div>
           <p className="text-[10px] font-semibold text-gray-900">Yılmaz Mühendislik</p>
@@ -276,7 +280,7 @@ function CreateProposalScreen() {
         transition={{ delay: 0.4 }}
         className="bg-white rounded-xl p-2.5 mb-2 flex-1"
       >
-        <p className="text-[9px] text-gray-400 mb-2">Kalemler</p>
+        <p className="text-[9px] text-gray-400 mb-2">{t('items')}</p>
         {[
           { name: 'Paslanmaz Çelik Boru', qty: 50, price: '₺12.250' },
           { name: 'Alüminyum Profil', qty: 100, price: '₺18.000' },
@@ -291,7 +295,7 @@ function CreateProposalScreen() {
           >
             <div>
               <p className="text-[10px] font-medium text-gray-900">{item.name}</p>
-              <p className="text-[8px] text-gray-400">{item.qty} adet</p>
+              <p className="text-[8px] text-gray-400">{t('unitAdet', { count: item.qty })}</p>
             </div>
             <p className="text-[10px] font-bold text-gray-900">{item.price}</p>
           </motion.div>
@@ -304,7 +308,7 @@ function CreateProposalScreen() {
         transition={{ delay: 1 }}
         className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl p-3 text-white text-center"
       >
-        <p className="text-[9px] opacity-80">Toplam (KDV Dahil)</p>
+        <p className="text-[9px] opacity-80">{t('totalWithVat')}</p>
         <p className="text-sm font-extrabold">₺51.035,00</p>
       </motion.div>
     </div>
@@ -312,6 +316,7 @@ function CreateProposalScreen() {
 }
 
 function WhatsAppScreen() {
+  const t = useTranslations('demoPage');
   return (
     <div className="flex flex-col h-full bg-[#ece5dd]">
       {/* WhatsApp header */}
@@ -319,7 +324,7 @@ function WhatsAppScreen() {
         <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white text-[9px] font-bold">Y</div>
         <div>
           <p className="text-[10px] font-semibold text-white">Yılmaz Mühendislik</p>
-          <p className="text-[8px] text-green-200">çevrimiçi</p>
+          <p className="text-[8px] text-green-200">{t('online')}</p>
         </div>
       </div>
       <div className="flex-1 p-3 flex flex-col justify-end gap-2">
@@ -329,11 +334,11 @@ function WhatsAppScreen() {
           transition={{ delay: 0.3 }}
           className="self-end bg-[#dcf8c6] rounded-xl rounded-tr-sm px-3 py-2 max-w-[85%] shadow-sm"
         >
-          <p className="text-[10px] text-gray-800 font-medium mb-1">📋 Teklif #TKL-2024-047</p>
-          <p className="text-[9px] text-gray-600">Yılmaz Mühendislik için hazırlanan teklifiniz:</p>
+          <p className="text-[10px] text-gray-800 font-medium mb-1">📋 {t('proposalMessage')}</p>
+          <p className="text-[9px] text-gray-600">{t('proposalFor')}</p>
           <div className="mt-1.5 p-2 bg-white/60 rounded-lg">
-            <p className="text-[9px] text-gray-700">3 kalem · Toplam: ₺51.035,00</p>
-            <p className="text-[9px] text-gray-500">Geçerlilik: 30 gün</p>
+            <p className="text-[9px] text-gray-700">{t('proposalSummary')}</p>
+            <p className="text-[9px] text-gray-500">{t('validity')}</p>
           </div>
           <p className="text-[8px] text-gray-400 text-right mt-1">21:42 ✓✓</p>
         </motion.div>
@@ -343,7 +348,7 @@ function WhatsAppScreen() {
           transition={{ delay: 0.8 }}
           className="self-end bg-[#dcf8c6] rounded-xl rounded-tr-sm px-3 py-2 max-w-[85%] shadow-sm"
         >
-          <p className="text-[9px] text-blue-600 font-medium">🔗 Teklifi Görüntüle ve Onayla →</p>
+          <p className="text-[9px] text-blue-600 font-medium">🔗 {t('viewAndApprove')}</p>
           <p className="text-[8px] text-gray-400 text-right mt-1">21:42 ✓✓</p>
         </motion.div>
         <motion.div
@@ -352,7 +357,7 @@ function WhatsAppScreen() {
           transition={{ delay: 1.4 }}
           className="self-start bg-white rounded-xl rounded-tl-sm px-3 py-2 max-w-[75%] shadow-sm"
         >
-          <p className="text-[10px] text-gray-800">Teklifi inceledik, onaylıyoruz ✅</p>
+          <p className="text-[10px] text-gray-800">{t('reviewedApproved')}</p>
           <p className="text-[8px] text-gray-400 text-right mt-1">21:45</p>
         </motion.div>
         <motion.div
@@ -363,7 +368,7 @@ function WhatsAppScreen() {
         >
           <div className="bg-emerald-500 text-white px-4 py-1.5 rounded-full text-[9px] font-bold flex items-center gap-1">
             <CheckCircle className="w-3 h-3" />
-            Teklif Onaylandı!
+            {t('proposalApproved')}
           </div>
         </motion.div>
       </div>
@@ -372,9 +377,10 @@ function WhatsAppScreen() {
 }
 
 function AnalyticsScreen() {
+  const t = useTranslations('demoPage');
   return (
     <div className="flex flex-col h-full bg-gray-50 p-3">
-      <p className="text-xs font-bold text-gray-900 mb-3">Analitik</p>
+      <p className="text-xs font-bold text-gray-900 mb-3">{t('analyticsLabel')}</p>
       {/* Revenue chart */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -383,7 +389,7 @@ function AnalyticsScreen() {
         className="bg-white rounded-xl p-3 mb-2"
       >
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] font-semibold text-gray-700">Gelir Trendi</p>
+          <p className="text-[10px] font-semibold text-gray-700">{t('revenueTrend')}</p>
           <p className="text-[10px] font-bold text-emerald-600">+24%↑</p>
         </div>
         <div className="flex items-end gap-1 h-12">
@@ -405,7 +411,7 @@ function AnalyticsScreen() {
         transition={{ delay: 0.6 }}
         className="bg-white rounded-xl p-3 mb-2"
       >
-        <p className="text-[10px] font-semibold text-gray-700 mb-2">En Çok Satan</p>
+        <p className="text-[10px] font-semibold text-gray-700 mb-2">{t('bestSelling')}</p>
         {[
           { name: 'Çelik Boru', pct: 85, color: 'bg-blue-500' },
           { name: 'Alüminyum Profil', pct: 65, color: 'bg-violet-500' },
@@ -437,12 +443,12 @@ function AnalyticsScreen() {
         <div className="bg-white rounded-xl p-2.5 flex flex-col items-center justify-center">
           <Clock className="w-4 h-4 text-blue-500 mb-1" />
           <p className="text-sm font-extrabold text-gray-900">2.4dk</p>
-          <p className="text-[8px] text-gray-400">Ort. Teklif Süresi</p>
+          <p className="text-[8px] text-gray-400">{t('avgProposalTime')}</p>
         </div>
         <div className="bg-white rounded-xl p-2.5 flex flex-col items-center justify-center">
           <TrendingUp className="w-4 h-4 text-emerald-500 mb-1" />
           <p className="text-sm font-extrabold text-gray-900">%72</p>
-          <p className="text-[8px] text-gray-400">Dönüşüm Oranı</p>
+          <p className="text-[8px] text-gray-400">{t('conversionRate')}</p>
         </div>
       </motion.div>
     </div>
@@ -451,9 +457,17 @@ function AnalyticsScreen() {
 
 export default function DemoPage() {
   const locale = useLocale();
+  const t = useTranslations('demoPage');
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [animationKey, setAnimationKey] = useState(0);
+
+  const DEMO_STEPS = useMemo(() => DEMO_STEPS_CONFIG.map(s => ({
+    ...s,
+    title: t(s.titleKey),
+    subtitle: t(s.subtitleKey),
+    description: t(s.descriptionKey),
+  })), [t]);
 
   const goToStep = useCallback((step: number) => {
     setCurrentStep(step);
@@ -488,7 +502,7 @@ export default function DemoPage() {
             href={`/${locale}/register`}
             className="inline-flex items-center px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/25 transition-all"
           >
-            Ücretsiz Başla
+            {t('startFree')}
             <ArrowRight className="ml-1.5 w-4 h-4" />
           </Link>
         </div>
@@ -504,16 +518,16 @@ export default function DemoPage() {
         >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
             <Play className="w-4 h-4" />
-            İnteraktif Demo
+            {t('interactiveDemo')}
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3">
-            TeklifPro Nasıl{' '}
+            {t('heroTitle')}{' '}
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Çalışır?
+              {t('heroTitleHighlight')}
             </span>
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-            Adım adım keşfedin. Her ekranı tıklayarak inceleyin.
+            {t('heroDescription')}
           </p>
         </motion.div>
 
@@ -609,7 +623,7 @@ export default function DemoPage() {
               >
                 <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r ${step.color} text-white text-xs font-semibold mb-4`}>
                   <step.icon className="w-3.5 h-3.5" />
-                  Adım {currentStep + 1}
+                  {t('step', { number: currentStep + 1 })}
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
                   {step.title}
@@ -629,14 +643,14 @@ export default function DemoPage() {
                 href={`/${locale}/register`}
                 className="group inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5"
               >
-                14 Gün Ücretsiz Deneyin
+                {t('tryFree14')}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
                 href={`/${locale}#pricing`}
                 className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
               >
-                Fiyatları Gör
+                {t('seePricing')}
               </Link>
             </div>
           </div>
