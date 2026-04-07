@@ -226,16 +226,20 @@ export default function ProposalsPage() {
             <p className="text-white/70 text-sm">{t('heroSubtitle')}</p>
             <div className="flex gap-2 items-center">
               {/* View Toggle */}
-              <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden">
+              <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden" role="group" aria-label={t('viewMode')}>
                 <button
                   onClick={() => toggleViewMode('list')}
                   className={cn('p-2.5 transition-colors', viewMode === 'list' ? 'bg-white/30 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white')}
+                  aria-label={t('listView')}
+                  aria-pressed={viewMode === 'list'}
                 >
                   <List className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => toggleViewMode('kanban')}
                   className={cn('p-2.5 transition-colors', viewMode === 'kanban' ? 'bg-white/30 text-white' : 'text-white/60 hover:bg-white/10 hover:text-white')}
+                  aria-label={t('kanbanView')}
+                  aria-pressed={viewMode === 'kanban'}
                 >
                   <Columns3 className="h-4 w-4" />
                 </button>
@@ -263,7 +267,7 @@ export default function ProposalsPage() {
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20 h-11">
+                <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20 h-11" aria-label={t('filterByStatus')}>
                   {statusFilter === 'ALL' ? t('allStatuses') : t(`status.${statusFilter}` as Parameters<typeof t>[0])}
                   <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
@@ -321,7 +325,7 @@ export default function ProposalsPage() {
 
       {/* ─── Content (scrollable on desktop) ─── */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
 
         {/* ─── Kanban or List View ─── */}
         {viewMode === 'kanban' ? (
@@ -443,7 +447,7 @@ export default function ProposalsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="border-t border-gray-100 dark:border-gray-800 px-5 py-3.5 flex items-center justify-between">
+            <nav className="border-t border-gray-100 dark:border-gray-800 px-5 py-3.5 flex items-center justify-between" role="navigation" aria-label={t('pagination')}>
               <p className="text-xs text-muted-foreground">
                 {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, pagination.total)} / {pagination.total}
               </p>
@@ -452,6 +456,8 @@ export default function ProposalsPage() {
                   variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  aria-label={t('previousPage')}
+                  aria-disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -460,6 +466,8 @@ export default function ProposalsPage() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
+                      aria-label={t('goToPage', { page })}
+                      aria-current={currentPage === page ? 'page' : undefined}
                       className={cn(
                         'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
                         currentPage === page
@@ -476,6 +484,8 @@ export default function ProposalsPage() {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
+                        aria-label={t('goToPage', { page })}
+                        aria-current={currentPage === page ? 'page' : undefined}
                         className={cn(
                           'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
                           currentPage === page
@@ -486,20 +496,24 @@ export default function ProposalsPage() {
                         {page}
                       </button>
                     ))}
-                    {currentPage > 3 && <span className="text-xs text-muted-foreground px-1">...</span>}
+                    {currentPage > 3 && <span className="text-xs text-muted-foreground px-1" aria-hidden="true">...</span>}
                     {currentPage > 2 && currentPage < totalPages - 1 && (
                       <button
                         onClick={() => setCurrentPage(currentPage)}
+                        aria-label={t('goToPage', { page: currentPage })}
+                        aria-current="page"
                         className="h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
                       >
                         {currentPage}
                       </button>
                     )}
-                    {currentPage < totalPages - 2 && <span className="text-xs text-muted-foreground px-1">...</span>}
+                    {currentPage < totalPages - 2 && <span className="text-xs text-muted-foreground px-1" aria-hidden="true">...</span>}
                     {[totalPages - 1, totalPages].filter(p => p > 2).map((page) => (
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
+                        aria-label={t('goToPage', { page })}
+                        aria-current={currentPage === page ? 'page' : undefined}
                         className={cn(
                           'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
                           currentPage === page
@@ -516,11 +530,13 @@ export default function ProposalsPage() {
                   variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
+                  aria-label={t('nextPage')}
+                  aria-disabled={currentPage === totalPages}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </nav>
           )}
         </div>
       )}

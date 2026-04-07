@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
@@ -112,8 +113,15 @@ function ProductThumbnail({ product, size = 'sm' }: { product: Product; size?: '
 
   if (product.imageUrl) {
     return (
-      <div className={cn(dim, 'rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0')}>
-        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+      <div className={cn(dim, 'rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative')}>
+        <Image
+          src={product.imageUrl}
+          alt={product.name}
+          width={size === 'sm' ? 36 : 56}
+          height={size === 'sm' ? 36 : 56}
+          className="w-full h-full object-cover"
+          unoptimized={product.imageUrl.startsWith('data:')}
+        />
       </div>
     );
   }
@@ -439,7 +447,7 @@ export default function ProductsPage() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-4">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
             ))}
@@ -459,7 +467,7 @@ export default function ProductsPage() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
             <div className="text-center py-12 text-red-600 bg-white dark:bg-gray-900 rounded-xl shadow-sm">{t('errorLoad')}</div>
           </div>
         </div>
@@ -645,7 +653,7 @@ export default function ProductsPage() {
 
       {/* Content */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
 
       {products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">
@@ -1153,8 +1161,15 @@ export default function ProductsPage() {
                     </Badge>
                   </div>
                   {selectedProduct.imageUrl && (
-                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/20 shrink-0">
-                      <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/20 shrink-0 relative">
+                      <Image
+                        src={selectedProduct.imageUrl}
+                        alt={selectedProduct.name}
+                        width={56}
+                        height={56}
+                        className="w-full h-full object-cover"
+                        unoptimized={selectedProduct.imageUrl.startsWith('data:')}
+                      />
                     </div>
                   )}
                 </div>

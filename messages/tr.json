@@ -394,6 +394,14 @@
     "today": "Bugün",
     "yesterday": "Dün",
     "daysAgo": "{count} gün önce",
+    "pagination": "Sayfalama",
+    "previousPage": "Önceki sayfa",
+    "nextPage": "Sonraki sayfa",
+    "goToPage": "Sayfa {page}",
+    "filterByStatus": "Duruma göre filtrele",
+    "viewMode": "Görünüm modu",
+    "listView": "Liste görünümü",
+    "kanbanView": "Kanban görünümü",
     "makeReady": "Hazırla",
     "preparing": "Teklif hazırlanıyor...",
     "readySuccess": "Teklif hazır durumuna getirildi!",
@@ -529,6 +537,7 @@
   "settings": {
     "title": "Ayarlar",
     "subtitle": "İşletmenizi yapılandırın, entegrasyonları yönetin",
+    "settingsTabs": "Ayar sekmeleri",
     "tabs": {
       "general": "Genel",
       "parasut": "Paraşüt",
@@ -1319,6 +1328,7 @@
     "loading": "Bildirimler yükleniyor...",
     "empty": "Bildirim yok",
     "emptyDesc": "Şimdilik görüntülenecek bildiriminiz bulunmuyor",
+    "bellWithCount": "Bildirimler, {count} okunmamış",
     "markAllRead": "Tümünü Okundu İşaretle",
     "viewAll": "Tüm Bildirimleri Gör",
     "timeAgo": {
@@ -1368,6 +1378,8 @@
     "logoutTitle": "Çıkış Yap",
     "logoutMessage": "Çıkış yapmak istediğinize emin misiniz? Kaydedilmemiş değişiklikleriniz kaybolabilir.",
     "logoutConfirm": "Çıkış Yap",
-    "logoutCancel": "Vazgeç"
+    "logoutCancel": "Vazgeç",
+    "mainNavigation": "Ana menü",
+    "mobileNavigation": "Mobil menü"
   }
 }

@@ -396,7 +396,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
             <div className="h-64 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
           </div>
         </div>
@@ -798,7 +798,7 @@ export default function DashboardPage() {
 
       {/* Content */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
           {/* ─── Draggable Widgets ─── */}
           <DndContext
             sensors={sensors}

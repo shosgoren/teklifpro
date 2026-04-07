@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useLocale } from 'next-intl';
 import useSWR from 'swr';
 import {
@@ -998,10 +999,13 @@ function GeneralTab({
         <div className="flex items-center gap-4">
           {product.imageUrl ? (
             <div className="relative group">
-              <img
+              <Image
                 src={product.imageUrl}
                 alt={product.name}
+                width={96}
+                height={96}
                 className="w-24 h-24 rounded-xl object-cover border shadow-sm"
+                unoptimized={product.imageUrl.startsWith('data:')}
               />
               <button
                 onClick={onImageDelete}

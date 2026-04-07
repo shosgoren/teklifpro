@@ -128,8 +128,9 @@ export function NotificationCenter({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-        aria-label="Notifications"
+        aria-label={unreadCount > 0 ? t('bellWithCount', { count: unreadCount }) : t('title')}
         aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <Bell className="w-6 h-6" strokeWidth={1.5} />
 

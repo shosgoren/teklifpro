@@ -1116,7 +1116,7 @@ function PreviewStep({
 
 function EditProposalSkeleton() {
   return (
-    <div className="min-h-screen py-4 md:py-8 pb-24 md:pb-8">
+    <div className="min-h-screen py-4 md:py-8">
       <div className="max-w-4xl mx-auto px-4 md:px-0">
         <div className="mb-6 md:mb-8">
           <Skeleton className="h-8 w-64 mb-2" />
@@ -1442,7 +1442,7 @@ export default function EditProposalPage() {
   }
 
   return (
-    <div className="min-h-screen py-4 md:py-8 pb-24 md:pb-8">
+    <div className="min-h-screen py-4 md:py-8">
       <div className="max-w-4xl mx-auto px-4 md:px-0">
         {/* Header */}
         <div className="mb-6 md:mb-8">

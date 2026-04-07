@@ -227,7 +227,7 @@ export default function CustomersPage() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-4">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-16 bg-white dark:bg-gray-900 animate-pulse rounded-xl shadow-sm" />
             ))}
@@ -246,7 +246,7 @@ export default function CustomersPage() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
             <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-2xl shadow-sm">
               <div className="w-16 h-16 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-950/40 dark:to-rose-950/40 rounded-2xl flex items-center justify-center mb-4">
                 <AlertCircle className="w-8 h-8 text-red-500" />
@@ -323,7 +323,7 @@ export default function CustomersPage() {
 
       {/* Content */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
       {/* Customers List */}
       {customers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 rounded-2xl border border-dashed">

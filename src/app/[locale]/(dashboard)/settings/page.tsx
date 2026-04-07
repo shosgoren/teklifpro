@@ -451,13 +451,17 @@ const SettingsPage = () => {
       <div className="bg-gray-50/50 dark:bg-gray-950">
       {/* ========== Tab Navigation ========== */}
       <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-6 md:-mt-12">
-        <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-1.5 md:gap-2 overflow-x-auto pb-2 scrollbar-hide" role="tablist" aria-label={t('settingsTabs')}>
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             const tabColor = TAB_COLORS[tab.key];
             return (
               <button
                 key={tab.key}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.key}`}
+                id={`tab-${tab.key}`}
                 onClick={() => setActiveTab(tab.key)}
                 className={`relative flex items-center gap-1.5 md:gap-2.5 px-3 py-2.5 md:px-5 md:py-3.5 transition-all duration-300 shrink-0 rounded-xl md:rounded-2xl font-medium text-xs md:text-sm
                   ${isActive
@@ -481,11 +485,11 @@ const SettingsPage = () => {
       </div>
 
       {/* ========== Tab Content ========== */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 py-6">
 
         {/* ===== General Tab ===== */}
         {activeTab === 'general' && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" id="tabpanel-general" aria-labelledby="tab-general">
             {/* Logo & Brand Card */}
             <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
               <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
@@ -898,7 +902,7 @@ const SettingsPage = () => {
 
         {/* ===== Parasut Tab ===== */}
         {activeTab === 'parasut' && (
-          <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden" role="tabpanel" id="tabpanel-parasut" aria-labelledby="tab-parasut">
             <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
             <div className="p-6 md:p-8">
               <div className="flex items-center justify-between mb-6">
@@ -1001,7 +1005,7 @@ const SettingsPage = () => {
 
         {/* ===== WhatsApp Tab ===== */}
         {activeTab === 'whatsapp' && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" id="tabpanel-whatsapp" aria-labelledby="tab-whatsapp">
           <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
             <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
             <div className="p-6 md:p-8">
@@ -1162,7 +1166,7 @@ const SettingsPage = () => {
 
         {/* ===== Team Tab ===== */}
         {activeTab === 'team' && (
-          <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden" role="tabpanel" id="tabpanel-team" aria-labelledby="tab-team">
             <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
             <div className="p-6 md:p-8">
               <div className="flex items-center gap-3 mb-6">
@@ -1199,7 +1203,7 @@ const SettingsPage = () => {
 
         {/* ===== Subscription Tab ===== */}
         {activeTab === 'subscription' && (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" id="tabpanel-subscription" aria-labelledby="tab-subscription">
             {/* Current Plan */}
             <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
               <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />

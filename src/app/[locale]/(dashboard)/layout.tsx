@@ -284,7 +284,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden ${collapsed ? 'px-2' : 'px-4'}`}>
+        <nav className={`flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden ${collapsed ? 'px-2' : 'px-4'}`} role="navigation" aria-label={t('mainNavigation')}>
           {navigationItems.map((item) => {
             const active = isActive(item.href)
             const Icon = item.icon
@@ -293,6 +293,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               <div key={item.href} className="relative group">
                 <Link
                   href={getLocalizedHref(item.href)}
+                  aria-current={active ? 'page' : undefined}
                   className={`flex items-center rounded-lg transition-all duration-200 group/link ${
                     collapsed ? 'justify-center w-11 h-11 mx-auto' : 'gap-3 px-4 py-3'
                   } ${
@@ -447,13 +448,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto pb-20 md:pb-0">
           {children}
         </div>
       </div>
 
       {/* Mobile Bottom Tab Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]" aria-label={t('mobileNavigation')}>
         <div className="flex items-center justify-around px-1 py-1 safe-bottom">
           {mobilePrimaryItems.map((item) => {
             const active = isActive(item.href)
@@ -463,6 +464,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={getLocalizedHref(item.href)}
+                aria-current={active ? 'page' : undefined}
                 className={`flex flex-col items-center gap-0.5 py-2 px-3 rounded-lg min-w-0 flex-1 transition-colors ${
                   active
                     ? 'text-blue-600 dark:text-blue-400'

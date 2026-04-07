@@ -394,6 +394,14 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "daysAgo": "{count} days ago",
+    "pagination": "Pagination",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "goToPage": "Go to page {page}",
+    "filterByStatus": "Filter by status",
+    "viewMode": "View mode",
+    "listView": "List view",
+    "kanbanView": "Kanban view",
     "makeReady": "Make Ready",
     "preparing": "Preparing proposal...",
     "readySuccess": "Proposal is now ready!",
@@ -529,6 +537,7 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Configure your business and manage integrations",
+    "settingsTabs": "Settings tabs",
     "tabs": {
       "general": "General",
       "parasut": "Parasut",
@@ -1319,6 +1328,7 @@
     "loading": "Loading notifications...",
     "empty": "No notifications",
     "emptyDesc": "You have no notifications to display at this time",
+    "bellWithCount": "Notifications, {count} unread",
     "markAllRead": "Mark All as Read",
     "viewAll": "View All Notifications",
     "timeAgo": {
@@ -1368,6 +1378,8 @@
     "logoutTitle": "Sign Out",
     "logoutMessage": "Are you sure you want to sign out? Any unsaved changes may be lost.",
     "logoutConfirm": "Sign Out",
-    "logoutCancel": "Cancel"
+    "logoutCancel": "Cancel",
+    "mainNavigation": "Main navigation",
+    "mobileNavigation": "Mobile navigation"
   }
 }

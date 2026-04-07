@@ -482,7 +482,7 @@ export default function ProposalDetailPage() {
   const activities = proposal.activities || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-36 md:pb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* ===== Gradient Header ===== */}
       <div className="relative overflow-hidden rounded-b-3xl md:rounded-b-none">
         <div className="relative rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">

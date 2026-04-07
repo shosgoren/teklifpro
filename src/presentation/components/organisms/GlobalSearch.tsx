@@ -216,6 +216,8 @@ function ResultGroup({
         {results.map((result, index) => (
           <button
             key={result.id}
+            role="option"
+            aria-selected={highlighted === index + 1}
             onClick={() => onSelect(result)}
             className={cn(
               'w-full flex items-start gap-3 px-4 py-2 text-left text-sm rounded-md transition-colors',
@@ -476,7 +478,7 @@ export function GlobalSearch() {
           </DialogHeader>
 
           {/* Arama input'u */}
-          <div className="relative">
+          <div className="relative" role="search">
             <Input
               ref={inputRef}
               placeholder={t('placeholder')}
@@ -484,14 +486,25 @@ export function GlobalSearch() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               className="text-base"
+              aria-label={t('searchTitle')}
+              aria-autocomplete="list"
             />
             {loading && (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 animate-spin" />
             )}
           </div>
 
+          {/* Result count announcement for screen readers */}
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {!loading && query.trim().length >= 2 && (
+              totalResultCount > 0
+                ? t('resultsShowing', { count: totalResultCount })
+                : t('noResults')
+            )}
+          </div>
+
           {/* Sonuçlar ve durumlar */}
-          <div className="mt-4 max-h-[400px] overflow-y-auto">
+          <div className="mt-4 max-h-[400px] overflow-y-auto" role="listbox" aria-label={t('searchTitle')}>
             {loading && !results.length ? (
               <LoadingSkeleton />
             ) : totalResultCount === 0 && query.trim().length >= 2 ? (

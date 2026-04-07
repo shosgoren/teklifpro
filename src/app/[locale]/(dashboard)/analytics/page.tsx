@@ -312,7 +312,7 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-6">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="h-28 bg-white dark:bg-gray-900 animate-pulse rounded-2xl shadow-sm" />
@@ -342,7 +342,7 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 pb-24 md:pb-16 flex items-center justify-center">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-16 md:pb-16 flex items-center justify-center">
             <div className="max-w-md w-full rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
               <div className="h-1.5 bg-gradient-to-r from-red-500 to-rose-500" />
               <div className="flex flex-col items-center gap-4 p-8">
@@ -385,7 +385,7 @@ export default function AnalyticsDashboard() {
 
       {/* Content */}
       <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-8">
         {isEmpty && (
           <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
