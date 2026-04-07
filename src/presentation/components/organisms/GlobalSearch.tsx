@@ -19,6 +19,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
+import { useTranslations } from 'next-intl';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('GlobalSearch');
@@ -94,7 +95,10 @@ function getTypeBadgeVariant(type: 'proposal' | 'customer' | 'product') {
 /**
  * Tür etiket metnini döndür (Türkçe)
  */
-function getTypeLabel(type: 'proposal' | 'customer' | 'product') {
+function getTypeLabel(type: 'proposal' | 'customer' | 'product', labels?: { proposal: string; customer: string; product: string }) {
+  if (labels) {
+    return labels[type] || '';
+  }
   switch (type) {
     case 'proposal':
       return 'Teklif';
@@ -126,16 +130,16 @@ function LoadingSkeleton() {
 /**
  * Boş durum bileşeni
  */
-function EmptyState({ query }: { query?: string }) {
+function EmptyState({ query, noResults, noResultsFor, startSearching }: { query?: string; noResults: string; noResultsFor: string; startSearching: string }) {
   if (query) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <AlertCircle className="w-12 h-12 text-slate-400 mb-3" />
         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-          Sonuç bulunamadı
+          {noResults}
         </p>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          "{query}" için eşleşen öğe yok
+          {noResultsFor}
         </p>
       </div>
     );
@@ -144,7 +148,7 @@ function EmptyState({ query }: { query?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <p className="text-sm text-slate-500 dark:text-slate-400">
-        Arama yapmaya başlayın...
+        {startSearching}
       </p>
     </div>
   );
@@ -156,16 +160,18 @@ function EmptyState({ query }: { query?: string }) {
 function RecentSearches({
   searches,
   onSelect,
+  label,
 }: {
   searches: string[];
   onSelect: (query: string) => void;
+  label: string;
 }) {
   if (searches.length === 0) return null;
 
   return (
     <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
       <p className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-        Son Aramalar
+        {label}
       </p>
       <div className="space-y-1">
         {searches.map((search, index) => (
@@ -191,11 +197,13 @@ function ResultGroup({
   results,
   highlighted,
   onSelect,
+  typeLabels,
 }: {
   title: string;
   results: SearchResult[];
   highlighted: number;
   onSelect: (result: SearchResult) => void;
+  typeLabels: { proposal: string; customer: string; product: string };
 }) {
   if (results.length === 0) return null;
 
@@ -225,7 +233,7 @@ function ResultGroup({
                   {result.title}
                 </span>
                 <Badge variant={getTypeBadgeVariant(result.type)} className="text-xs flex-shrink-0">
-                  {getTypeLabel(result.type)}
+                  {getTypeLabel(result.type, typeLabels)}
                 </Badge>
               </div>
               {result.subtitle && (
@@ -260,6 +268,7 @@ function ResultGroup({
  */
 export function GlobalSearch() {
   const router = useRouter();
+  const t = useTranslations('globalSearch');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -442,6 +451,7 @@ export function GlobalSearch() {
 
   const totalResultCount =
     proposalResults.length + customerResults.length + productResults.length;
+  const typeLabels = { proposal: t('proposal'), customer: t('customer'), product: t('product') };
   let currentIndex = 0;
 
   return (
@@ -450,9 +460,9 @@ export function GlobalSearch() {
       <button
         onClick={() => setOpen(true)}
         className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-        title="Cmd+K veya Ctrl+K ile aç"
+        title={t('searchTooltip')}
       >
-        <span className="hidden sm:inline">Ara...</span>
+        <span className="hidden sm:inline">{t('searchButton')}</span>
         <kbd className="hidden sm:inline px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded">
           ⌘K
         </kbd>
@@ -462,14 +472,14 @@ export function GlobalSearch() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="top-[20%] sm:w-full sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="sr-only">Genel Arama</DialogTitle>
+            <DialogTitle className="sr-only">{t('searchTitle')}</DialogTitle>
           </DialogHeader>
 
           {/* Arama input'u */}
           <div className="relative">
             <Input
               ref={inputRef}
-              placeholder="Teklif, müşteri veya ürün ara..."
+              placeholder={t('placeholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -485,14 +495,14 @@ export function GlobalSearch() {
             {loading && !results.length ? (
               <LoadingSkeleton />
             ) : totalResultCount === 0 && query.trim().length >= 2 ? (
-              <EmptyState query={query} />
+              <EmptyState query={query} noResults={t('noResults')} noResultsFor={t('noResultsFor', { query })} startSearching={t('startSearching')} />
             ) : totalResultCount === 0 && query.trim().length === 0 ? (
-              <EmptyState />
+              <EmptyState noResults={t('noResults')} noResultsFor="" startSearching={t('startSearching')} />
             ) : (
               <>
                 {proposalResults.length > 0 && (
                   <ResultGroup
-                    title="Teklifler"
+                    title={t('proposals')}
                     results={proposalResults}
                     highlighted={
                       highlightedIndex >= 0 && highlightedIndex < proposalResults.length
@@ -500,12 +510,13 @@ export function GlobalSearch() {
                         : -1
                     }
                     onSelect={selectResult}
+                    typeLabels={typeLabels}
                   />
                 )}
 
                 {customerResults.length > 0 && (
                   <ResultGroup
-                    title="Müşteriler"
+                    title={t('customers')}
                     results={customerResults}
                     highlighted={
                       highlightedIndex >= proposalResults.length &&
@@ -515,12 +526,13 @@ export function GlobalSearch() {
                         : -1
                     }
                     onSelect={selectResult}
+                    typeLabels={typeLabels}
                   />
                 )}
 
                 {productResults.length > 0 && (
                   <ResultGroup
-                    title="Ürünler"
+                    title={t('products')}
                     results={productResults}
                     highlighted={
                       highlightedIndex >=
@@ -532,12 +544,14 @@ export function GlobalSearch() {
                         : -1
                     }
                     onSelect={selectResult}
+                    typeLabels={typeLabels}
                   />
                 )}
 
                 <RecentSearches
                   searches={recentSearches}
                   onSelect={selectRecentSearch}
+                  label={t('recentSearches')}
                 />
               </>
             )}
@@ -550,21 +564,21 @@ export function GlobalSearch() {
                 ↑↓
               </kbd>
               {' '}
-              Gezin{' '}
+              {t('navigate')}{' '}
               <kbd className="ml-2 px-1.5 py-0.5 border border-slate-300 dark:border-slate-600 rounded text-xs">
                 ⏎
               </kbd>
               {' '}
-              Seç{' '}
+              {t('select')}{' '}
               <kbd className="ml-2 px-1.5 py-0.5 border border-slate-300 dark:border-slate-600 rounded text-xs">
                 esc
               </kbd>
               {' '}
-              Kapat
+              {t('closeAction')}
             </span>
             {totalResultCount > 0 && (
               <span>
-                {results.length} sonuç gösteriliyor
+                {t('resultsShowing', { count: results.length })}
               </span>
             )}
           </div>

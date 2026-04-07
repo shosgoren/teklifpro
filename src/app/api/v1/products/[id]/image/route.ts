@@ -6,7 +6,8 @@ import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProductImageAPI');
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_REQUEST_SIZE = 2_097_152; // 2MB request body limit
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /**
@@ -20,6 +21,18 @@ async function handlePost(
   try {
     const session = getSessionFromRequest(request)!;
     const productId = context!.params.id;
+
+    // Quick-reject oversized requests via Content-Length header
+    const contentLength = request.headers.get('content-length');
+    if (contentLength) {
+      const declaredSize = parseInt(contentLength, 10);
+      if (!isNaN(declaredSize) && declaredSize > MAX_REQUEST_SIZE) {
+        return NextResponse.json(
+          { success: false, error: `Payload too large: ${Math.round(declaredSize / 1024)}KB exceeds the ${Math.round(MAX_REQUEST_SIZE / 1024)}KB limit` },
+          { status: 413 }
+        );
+      }
+    }
 
     // Verify product belongs to tenant
     const product = await prisma.product.findFirst({
@@ -53,7 +66,7 @@ async function handlePost(
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, error: 'File size must be under 5MB' },
+        { success: false, error: 'File size must be under 2MB' },
         { status: 400 }
       );
     }

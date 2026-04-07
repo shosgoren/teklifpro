@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { UpdateProposalSchema, type UpdateProposalInput } from '@/shared/validations/proposal';
+import { parseJsonBody, PayloadTooLargeError } from '@/shared/utils/requestSize';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProposalDetailAPI');
@@ -85,7 +86,7 @@ async function handlePut(
     const params = context!.params;
 
     const proposalId = params.id;
-    const body = await request.json();
+    const body = await parseJsonBody(request, 2_097_152); // 2MB limit (voice notes with base64)
 
     const validatedData = UpdateProposalSchema.parse(body);
 
@@ -248,6 +249,13 @@ async function handlePut(
       message: 'Proposal updated successfully',
     });
   } catch (error) {
+    if (error instanceof PayloadTooLargeError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 413 }
+      );
+    }
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },

@@ -86,10 +86,8 @@ async function resolveTenantId(request: NextRequest): Promise<string | null> {
 // ==================== IDEMPOTENCY CHECK (DB-based) ====================
 
 async function isEventProcessed(eventId: string): Promise<boolean> {
-  const existing = await prisma.parasutSyncLog.findFirst({
-    where: {
-      errors: { path: ['eventId'], equals: eventId },
-    },
+  const existing = await prisma.parasutSyncLog.findUnique({
+    where: { eventId },
     select: { id: true },
   })
   return !!existing
@@ -395,7 +393,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         status,
         recordCount: status === 'COMPLETED' ? 1 : 0,
         errorCount: status === 'FAILED' ? 1 : 0,
-        errors: eventId ? { eventId, error: errorMsg } : undefined,
+        eventId: eventId || undefined,
+        errors: errorMsg ? { error: errorMsg } : undefined,
         completedAt: new Date(),
       },
     })

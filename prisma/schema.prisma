@@ -743,6 +743,7 @@ model ParasutSyncLog {
   recordCount Int             @default(0) @map("record_count")
   errorCount  Int             @default(0) @map("error_count")
   errors      Json?
+  eventId     String?         @unique @map("event_id")
   startedAt   DateTime        @default(now()) @map("started_at")
   completedAt DateTime?       @map("completed_at")
 

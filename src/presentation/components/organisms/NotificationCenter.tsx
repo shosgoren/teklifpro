@@ -2,7 +2,7 @@
 
 import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 
 export interface Notification {
@@ -40,6 +40,7 @@ export function NotificationCenter({
 }: NotificationCenterProps): JSX.Element {
   const locale = useLocale();
   const router = useRouter();
+  const t = useTranslations('notifications');
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(
     externalNotifications || []
@@ -149,10 +150,10 @@ export function NotificationCenter({
           {/* Header */}
           <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-gray-900">Bildirimler</h3>
+              <h3 className="font-semibold text-gray-900">{t('title')}</h3>
               {unreadCount > 0 && (
                 <p className="text-xs text-gray-500">
-                  {unreadCount} okunmamış bildirim
+                  {t('unreadCount', { count: unreadCount })}
                 </p>
               )}
             </div>
@@ -173,7 +174,7 @@ export function NotificationCenter({
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3 animate-pulse">
                   <Bell className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-gray-500 text-sm">Bildirimler yükleniyor...</p>
+                <p className="text-gray-500 text-sm">{t('loading')}</p>
               </div>
             ) : notifications.length === 0 ? (
               // Empty State
@@ -181,9 +182,9 @@ export function NotificationCenter({
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
                   <Bell className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-gray-600 font-medium">Bildirim yok</p>
+                <p className="text-gray-600 font-medium">{t('empty')}</p>
                 <p className="text-sm text-gray-500">
-                  Şimdilik görüntülenecek bildiriminiz bulunmuyor
+                  {t('emptyDesc')}
                 </p>
               </div>
             ) : (
@@ -265,13 +266,13 @@ export function NotificationCenter({
                 disabled={unreadCount === 0}
                 className="flex-1 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
               >
-                Tümünü Okundu İşaretle
+                {t('markAllRead')}
               </button>
               <a
                 href={`/${locale}/notifications`}
                 className="flex-1 text-sm font-medium text-blue-600 hover:text-blue-700 text-right transition-colors duration-200"
               >
-                Tüm Bildirimleri Gör
+                {t('viewAll')}
               </a>
             </div>
           )}

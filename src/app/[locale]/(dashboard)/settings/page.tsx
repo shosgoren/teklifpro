@@ -54,12 +54,12 @@ const TAB_COLORS: Record<TabKey, { from: string; to: string; shadow: string; lig
   subscription: { from: 'from-amber-500', to: 'to-orange-600', shadow: 'shadow-amber-500/25', light: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-500' },
 };
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode; desc: string }[] = [
-  { key: 'general', label: 'Genel', icon: <Building2 className="w-5 h-5" />, desc: 'Şirket bilgileri ve logo' },
-  { key: 'parasut', label: 'Parasut', icon: <Settings2 className="w-5 h-5" />, desc: 'Muhasebe entegrasyonu' },
-  { key: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle className="w-5 h-5" />, desc: 'Mesajlaşma entegrasyonu' },
-  { key: 'team', label: 'Ekip', icon: <Users className="w-5 h-5" />, desc: 'Ekip üyeleri yönetimi' },
-  { key: 'subscription', label: 'Abonelik', icon: <CreditCard className="w-5 h-5" />, desc: 'Plan ve faturalar' },
+const TABS: { key: TabKey; icon: React.ReactNode; descKey: string }[] = [
+  { key: 'general', icon: <Building2 className="w-5 h-5" />, descKey: 'tabDescriptions.general' },
+  { key: 'parasut', icon: <Settings2 className="w-5 h-5" />, descKey: 'tabDescriptions.parasut' },
+  { key: 'whatsapp', icon: <MessageCircle className="w-5 h-5" />, descKey: 'tabDescriptions.whatsapp' },
+  { key: 'team', icon: <Users className="w-5 h-5" />, descKey: 'tabDescriptions.team' },
+  { key: 'subscription', icon: <CreditCard className="w-5 h-5" />, descKey: 'tabDescriptions.subscription' },
 ];
 
 const TAB_TRANSLATION_KEYS: Record<TabKey, string> = {
@@ -158,7 +158,7 @@ const SettingsPage = () => {
         body: JSON.stringify({ entities: ['bank_accounts'] }),
       });
       const result = await res.json();
-      if (!res.ok || !result.success) throw new Error(result.error?.message || 'Senkronizasyon hatası');
+      if (!res.ok || !result.success) throw new Error(result.error?.message || 'Sync error');
       // Reload tenant data to get updated bank accounts
       await mutateTenant();
       // Re-fetch bank accounts from updated data
@@ -167,9 +167,9 @@ const SettingsPage = () => {
       if (tenantResult.success && Array.isArray(tenantResult.data?.bankAccounts)) {
         setBankAccounts(tenantResult.data.bankAccounts);
       }
-      toast.success(`${result.data?.bankAccounts?.synced || 0} banka hesabı Paraşüt'ten aktarıldı`);
+      toast.success(t('bank.syncSuccess', { count: result.data?.bankAccounts?.synced || 0 }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Paraşüt banka senkronizasyonu başarısız');
+      toast.error(error instanceof Error ? error.message : t('bank.syncError'));
     } finally {
       setSyncingBank(false);
     }
@@ -263,7 +263,7 @@ const SettingsPage = () => {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-      toast.error('Logo dosyasi en fazla 500KB olabilir.');
+      toast.error(t('brand.fileTooLarge'));
       return;
     }
 
@@ -279,7 +279,7 @@ const SettingsPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 500 * 1024) {
-      toast.error('Dosya en fazla 500KB olabilir.');
+      toast.error(t('esignature.fileTooLarge'));
       return;
     }
     const reader = new FileReader();
@@ -304,9 +304,9 @@ const SettingsPage = () => {
       if (!res.ok) throw new Error('Save failed');
       await mutateTenant();
       markClean();
-      toast.success('E-imza ayarları kaydedildi');
+      toast.success(t('esignature.saved'));
     } catch {
-      toast.error('E-imza ayarları kaydedilemedi.');
+      toast.error(t('esignature.saveError'));
     } finally {
       setSaving(false);
     }
@@ -333,9 +333,9 @@ const SettingsPage = () => {
 
       await mutateTenant();
       markClean();
-      toast.success('Ayarlar kaydedildi');
+      toast.success(t('saved'));
     } catch {
-      toast.error('Ayarlar kaydedilemedi.');
+      toast.error(t('saveError'));
     } finally {
       setSaving(false);
     }
@@ -346,7 +346,7 @@ const SettingsPage = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       markClean();
-      toast.success('Ayarlar kaydedildi');
+      toast.success(t('saved'));
     } finally {
       setSaving(false);
     }
@@ -371,12 +371,12 @@ const SettingsPage = () => {
         body: JSON.stringify(payload),
       });
       const result = await res.json();
-      if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');
+      if (!res.ok || !result.success) throw new Error(result.error || 'Save error');
       setWhatsapp({ ...whatsapp, connected: true });
       markClean();
-      toast.success('WhatsApp ayarları kaydedildi');
+      toast.success(t('whatsapp.saved'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'WhatsApp ayarları kaydedilemedi');
+      toast.error(error instanceof Error ? error.message : t('whatsapp.saveError'));
     } finally {
       setSaving(false);
     }
@@ -396,7 +396,7 @@ const SettingsPage = () => {
         }),
       });
       const result = await res.json();
-      if (!res.ok || !result.success) throw new Error(result.error || 'Kaydetme hatası');
+      if (!res.ok || !result.success) throw new Error(result.error || t('followupError'));
       markClean();
       toast.success(t('followupSaved'));
     } catch (error) {
@@ -471,7 +471,7 @@ const SettingsPage = () => {
                 <div className="text-left">
                   <span className="block font-semibold text-[11px] md:text-sm">{t(TAB_TRANSLATION_KEYS[tab.key] as Parameters<typeof t>[0])}</span>
                   <span className={`block text-[10px] leading-tight hidden md:block ${isActive ? 'text-gray-400' : 'text-gray-400/70'}`}>
-                    {tab.desc}
+                    {t(tab.descKey as Parameters<typeof t>[0])}
                   </span>
                 </div>
               </button>
@@ -495,8 +495,8 @@ const SettingsPage = () => {
                     <ImageIcon className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Marka & Logo</h3>
-                    <p className="text-xs text-gray-400">Tekliflerinizde görünecek logo</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('brand.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('brand.desc')}</p>
                   </div>
                 </div>
 
@@ -509,7 +509,7 @@ const SettingsPage = () => {
                       ) : (
                         <div className="text-center">
                           <ImageIcon className="w-10 h-10 text-blue-200 dark:text-blue-800 mx-auto mb-1" />
-                          <span className="text-[10px] text-gray-400">Logo yok</span>
+                          <span className="text-[10px] text-gray-400">{t('brand.noLogo')}</span>
                         </div>
                       )}
                     </div>
@@ -537,10 +537,10 @@ const SettingsPage = () => {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-4 h-4" />
-                      Logo Yükle
+                      {t('brand.upload')}
                     </button>
-                    <p className="text-xs text-gray-400 mt-3">PNG, JPG veya SVG - Maksimum 500KB</p>
-                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">Önerilen boyut: 200x200px veya daha büyük</p>
+                    <p className="text-xs text-gray-400 mt-3">{t('brand.fileHint')}</p>
+                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">{t('brand.sizeHint')}</p>
                   </div>
                 </div>
               </div>
@@ -555,8 +555,8 @@ const SettingsPage = () => {
                     <Building2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Şirket Bilgileri</h3>
-                    <p className="text-xs text-gray-400">Temel şirket bilgilerinizi güncelleyin</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('company.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('company.desc')}</p>
                   </div>
                 </div>
 
@@ -564,19 +564,19 @@ const SettingsPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="company-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5" /> Şirket Adı
+                        <Building2 className="w-3.5 h-3.5" /> {t('company.name')}
                       </Label>
                       <Input
                         id="company-name"
                         className={inputClass}
                         value={general.companyName}
                         onChange={e => setGeneral({ ...general, companyName: e.target.value })}
-                        placeholder="Şirket adınızı girin"
+                        placeholder={t('placeholders.companyName')}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5" /> E-posta
+                        <Mail className="w-3.5 h-3.5" /> {t('company.email')}
                       </Label>
                       <Input
                         id="email"
@@ -584,7 +584,7 @@ const SettingsPage = () => {
                         className={inputClass}
                         value={general.email}
                         onChange={e => setGeneral({ ...general, email: e.target.value })}
-                        placeholder="contact@example.com"
+                        placeholder={t('placeholders.email')}
                       />
                     </div>
                   </div>
@@ -592,53 +592,53 @@ const SettingsPage = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="phone" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5" /> Telefon
+                        <Phone className="w-3.5 h-3.5" /> {t('company.phone')}
                       </Label>
                       <Input
                         id="phone"
                         className={inputClass}
                         value={general.phone}
                         onChange={e => setGeneral({ ...general, phone: e.target.value })}
-                        placeholder="+90 XXX XXX XXXX"
+                        placeholder={t('placeholders.phone')}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="tax-number" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Hash className="w-3.5 h-3.5" /> Vergi Numarası
+                        <Hash className="w-3.5 h-3.5" /> {t('company.taxNumber')}
                       </Label>
                       <Input
                         id="tax-number"
                         className={inputClass}
                         value={general.taxNumber}
                         onChange={e => setGeneral({ ...general, taxNumber: e.target.value })}
-                        placeholder="0123456789"
+                        placeholder={t('placeholders.taxNumber')}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="tax-office" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <Landmark className="w-3.5 h-3.5" /> Vergi Dairesi
+                      <Landmark className="w-3.5 h-3.5" /> {t('company.taxOffice')}
                     </Label>
                     <Input
                       id="tax-office"
                       className={inputClass}
                       value={general.taxOffice}
                       onChange={e => setGeneral({ ...general, taxOffice: e.target.value })}
-                      placeholder="Vergi daireniz"
+                      placeholder={t('placeholders.taxOffice')}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5" /> Adres
+                      <MapPin className="w-3.5 h-3.5" /> {t('company.address')}
                     </Label>
                     <Input
                       id="address"
                       className={inputClass}
                       value={general.address}
                       onChange={e => setGeneral({ ...general, address: e.target.value })}
-                      placeholder="Şirket adresiniz"
+                      placeholder={t('placeholders.address')}
                     />
                   </div>
 
@@ -714,20 +714,20 @@ const SettingsPage = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.bankName')}</Label>
-                            <Input className={inputClass} value={bank.bankName} onChange={e => updateBankAccount(idx, 'bankName', e.target.value)} placeholder="Ziraat Bankası" />
+                            <Input className={inputClass} value={bank.bankName} onChange={e => updateBankAccount(idx, 'bankName', e.target.value)} placeholder={t('placeholders.bankName')} />
                           </div>
                           <div className="space-y-1">
                             <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.branchName')}</Label>
-                            <Input className={inputClass} value={bank.branchName} onChange={e => updateBankAccount(idx, 'branchName', e.target.value)} placeholder="Merkez Şube" />
+                            <Input className={inputClass} value={bank.branchName} onChange={e => updateBankAccount(idx, 'branchName', e.target.value)} placeholder={t('placeholders.branchName')} />
                           </div>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.accountHolder')}</Label>
-                          <Input className={inputClass} value={bank.accountHolder} onChange={e => updateBankAccount(idx, 'accountHolder', e.target.value)} placeholder="Firma Ünvanı" />
+                          <Input className={inputClass} value={bank.accountHolder} onChange={e => updateBankAccount(idx, 'accountHolder', e.target.value)} placeholder={t('placeholders.accountHolder')} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">IBAN</Label>
-                          <Input className={inputClass} value={bank.iban} onChange={e => updateBankAccount(idx, 'iban', e.target.value.toUpperCase())} placeholder="TR00 0000 0000 0000 0000 0000 00" maxLength={34} />
+                          <Input className={inputClass} value={bank.iban} onChange={e => updateBankAccount(idx, 'iban', e.target.value.toUpperCase())} placeholder={t('placeholders.iban')} maxLength={34} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('bank.currency')}</Label>
@@ -736,10 +736,10 @@ const SettingsPage = () => {
                             value={bank.currency}
                             onChange={e => updateBankAccount(idx, 'currency', e.target.value)}
                           >
-                            <option value="TRY">TRY - Türk Lirası</option>
-                            <option value="USD">USD - Amerikan Doları</option>
-                            <option value="EUR">EUR - Euro</option>
-                            <option value="GBP">GBP - İngiliz Sterlini</option>
+                            <option value="TRY">{t('currency.TRY')}</option>
+                            <option value="USD">{t('currency.USD')}</option>
+                            <option value="EUR">{t('currency.EUR')}</option>
+                            <option value="GBP">{t('currency.GBP')}</option>
                           </select>
                         </div>
                       </div>
@@ -771,15 +771,15 @@ const SettingsPage = () => {
                     <PenTool className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">E-İmza & Kaşe</h3>
-                    <p className="text-xs text-gray-400">PDF tekliflerinizde kullanılacak firma imzası ve kaşesi</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('esignature.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('esignature.desc')}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 border-l-4 border-emerald-400 mb-6">
                   <Shield className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
                   <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                    İmza ve kaşe verileri AES-256-GCM ile şifrelenerek güvenli bir şekilde saklanır. Müşteri teklifi kabul ettiğinde PDF&apos;te her iki imza birlikte görünür.
+                    {t('esignature.securityNote')}
                   </p>
                 </div>
 
@@ -787,16 +787,16 @@ const SettingsPage = () => {
                   {/* Company Signature Upload */}
                   <div className="space-y-3">
                     <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <PenTool className="w-3.5 h-3.5" /> Firma İmzası
+                      <PenTool className="w-3.5 h-3.5" /> {t('esignature.companySignature')}
                     </Label>
                     <div className="relative group">
                       <div className="w-full h-32 rounded-xl border-2 border-dashed border-emerald-300 dark:border-emerald-700 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden transition-all group-hover:border-emerald-400 group-hover:shadow-lg">
                         {companySignature ? (
-                          <img src={companySignature} alt="Firma İmzası" className="w-full h-full object-contain p-3" />
+                          <img src={companySignature} alt={t('esignature.companySignature')} className="w-full h-full object-contain p-3" />
                         ) : (
                           <div className="text-center">
                             <PenTool className="w-8 h-8 text-emerald-200 dark:text-emerald-800 mx-auto mb-1" />
-                            <span className="text-[10px] text-gray-400">İmza yüklenmedi</span>
+                            <span className="text-[10px] text-gray-400">{t('esignature.noSignature')}</span>
                           </div>
                         )}
                       </div>
@@ -815,24 +815,24 @@ const SettingsPage = () => {
                       onClick={() => signatureInputRef.current?.click()}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      İmza Yükle
+                      {t('esignature.uploadSignature')}
                     </button>
-                    <p className="text-[10px] text-gray-400">PNG (saydam arka plan önerilir) - Maks 500KB</p>
+                    <p className="text-[10px] text-gray-400">{t('esignature.imageHint')}</p>
                   </div>
 
                   {/* Company Seal Upload */}
                   <div className="space-y-3">
                     <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <Stamp className="w-3.5 h-3.5" /> Firma Kaşesi
+                      <Stamp className="w-3.5 h-3.5" /> {t('esignature.companySeal')}
                     </Label>
                     <div className="relative group">
                       <div className="w-full h-32 rounded-xl border-2 border-dashed border-teal-300 dark:border-teal-700 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden transition-all group-hover:border-teal-400 group-hover:shadow-lg">
                         {companySeal ? (
-                          <img src={companySeal} alt="Firma Kaşesi" className="w-full h-full object-contain p-3" />
+                          <img src={companySeal} alt={t('esignature.companySeal')} className="w-full h-full object-contain p-3" />
                         ) : (
                           <div className="text-center">
                             <Stamp className="w-8 h-8 text-teal-200 dark:text-teal-800 mx-auto mb-1" />
-                            <span className="text-[10px] text-gray-400">Kaşe yüklenmedi</span>
+                            <span className="text-[10px] text-gray-400">{t('esignature.noSeal')}</span>
                           </div>
                         )}
                       </div>
@@ -851,32 +851,32 @@ const SettingsPage = () => {
                       onClick={() => sealInputRef.current?.click()}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      Kaşe Yükle
+                      {t('esignature.uploadSeal')}
                     </button>
-                    <p className="text-[10px] text-gray-400">PNG (saydam arka plan önerilir) - Maks 500KB</p>
+                    <p className="text-[10px] text-gray-400">{t('esignature.imageHint')}</p>
                   </div>
                 </div>
 
                 {/* Signer Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
                   <div className="space-y-2">
-                    <Label htmlFor="signer-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">İmza Sahibi Adı</Label>
+                    <Label htmlFor="signer-name" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('esignature.signerName')}</Label>
                     <Input
                       id="signer-name"
                       className={inputClass}
                       value={companySignerName}
                       onChange={e => setCompanySignerName(e.target.value)}
-                      placeholder="Ahmet Yılmaz"
+                      placeholder={t('placeholders.signerName')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signer-title" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">İmza Sahibi Ünvanı</Label>
+                    <Label htmlFor="signer-title" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('esignature.signerTitle')}</Label>
                     <Input
                       id="signer-title"
                       className={inputClass}
                       value={companySignerTitle}
                       onChange={e => setCompanySignerTitle(e.target.value)}
-                      placeholder="Genel Müdür"
+                      placeholder={t('placeholders.signerTitle')}
                     />
                   </div>
                 </div>
@@ -888,7 +888,7 @@ const SettingsPage = () => {
                     className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
                   >
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    E-İmza Kaydet
+                    {t('esignature.save')}
                   </button>
                 </div>
               </div>
@@ -907,8 +907,8 @@ const SettingsPage = () => {
                     <Settings2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Parasut Entegrasyonu</h3>
-                    <p className="text-xs text-gray-400">Muhasebe sisteminizi TeklifPro ile entegre edin</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('parasut.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('parasut.desc')}</p>
                   </div>
                 </div>
                 <span
@@ -919,7 +919,7 @@ const SettingsPage = () => {
                     }`}
                 >
                   {parasut.connected ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                  {parasut.connected ? 'Bagli' : 'Bagli Degil'}
+                  {parasut.connected ? t('parasut.connected') : t('parasut.disconnected')}
                 </span>
               </div>
 
@@ -928,7 +928,7 @@ const SettingsPage = () => {
                   <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-l-4 border-amber-400">
                     <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                     <p className="text-sm text-amber-700 dark:text-amber-300">
-                      Paraşüt hesabınız henüz bağlı değil. Aşağıdaki bilgileri doldurup kaydedin.
+                      {t('parasut.notConnectedWarning')}
                     </p>
                   </div>
                 )}
@@ -936,25 +936,25 @@ const SettingsPage = () => {
                 {parasut.connected && (
                   <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-l-4 border-green-400">
                     <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                    <p className="text-sm text-green-700 dark:text-green-300">Paraşüt bağlantınız aktif.</p>
+                    <p className="text-sm text-green-700 dark:text-green-300">{t('parasut.connectedInfo')}</p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
-                    <Label htmlFor="company-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Şirket ID</Label>
-                    <Input id="company-id" className={inputClass} value={parasut.companyId} onChange={e => setParasut({ ...parasut, companyId: e.target.value })} placeholder="Paraşüt şirket ID" />
+                    <Label htmlFor="company-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('parasut.companyId')}</Label>
+                    <Input id="company-id" className={inputClass} value={parasut.companyId} onChange={e => setParasut({ ...parasut, companyId: e.target.value })} placeholder={t('placeholders.parasutCompanyId')} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="client-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Client ID</Label>
-                    <Input id="client-id" className={inputClass} value={parasut.clientId} onChange={e => setParasut({ ...parasut, clientId: e.target.value })} placeholder="OAuth Client ID" />
+                    <Label htmlFor="client-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('parasut.clientId')}</Label>
+                    <Input id="client-id" className={inputClass} value={parasut.clientId} onChange={e => setParasut({ ...parasut, clientId: e.target.value })} placeholder={t('placeholders.parasutClientId')} />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="client-secret" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Client Secret</Label>
+                  <Label htmlFor="client-secret" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('parasut.clientSecret')}</Label>
                   <div className="flex items-center gap-2">
-                    <Input id="client-secret" className={inputClass + ' flex-1'} type={showPasswords.parasutClientSecret ? 'text' : 'password'} value={parasut.clientSecret} onChange={e => setParasut({ ...parasut, clientSecret: e.target.value })} placeholder="OAuth Client Secret" />
+                    <Input id="client-secret" className={inputClass + ' flex-1'} type={showPasswords.parasutClientSecret ? 'text' : 'password'} value={parasut.clientSecret} onChange={e => setParasut({ ...parasut, clientSecret: e.target.value })} placeholder={t('placeholders.parasutClientSecret')} />
                     <button className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => togglePasswordVisibility('parasutClientSecret')}>
                       {showPasswords.parasutClientSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -963,13 +963,13 @@ const SettingsPage = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-2">
-                    <Label htmlFor="username" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Kullanıcı Adı</Label>
-                    <Input id="username" className={inputClass} value={parasut.username} onChange={e => setParasut({ ...parasut, username: e.target.value })} placeholder="Paraşüt kullanıcı adı" />
+                    <Label htmlFor="username" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('parasut.username')}</Label>
+                    <Input id="username" className={inputClass} value={parasut.username} onChange={e => setParasut({ ...parasut, username: e.target.value })} placeholder={t('placeholders.parasutUsername')} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Şifre</Label>
+                    <Label htmlFor="password" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('parasut.password')}</Label>
                     <div className="flex items-center gap-2">
-                      <Input id="password" className={inputClass + ' flex-1'} type={showPasswords.parasutPassword ? 'text' : 'password'} value={parasut.password} onChange={e => setParasut({ ...parasut, password: e.target.value })} placeholder="Paraşüt şifresi" />
+                      <Input id="password" className={inputClass + ' flex-1'} type={showPasswords.parasutPassword ? 'text' : 'password'} value={parasut.password} onChange={e => setParasut({ ...parasut, password: e.target.value })} placeholder={t('placeholders.parasutPassword')} />
                       <button className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => togglePasswordVisibility('parasutPassword')}>
                         {showPasswords.parasutPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -980,10 +980,10 @@ const SettingsPage = () => {
                 <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-l-4 border-blue-400">
                   <Globe className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">Paraşüt kimlik bilgilerinizi nerede bulacağınızı öğrenin:</p>
+                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">{t('parasut.credentialsHint')}</p>
                     <ul className="text-sm space-y-1">
-                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-blue-600">API Bilgileri</a></li>
-                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-blue-600">OAuth Ayarlari</a></li>
+                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-blue-600">{t('parasut.apiInfo')}</a></li>
+                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-blue-600">{t('parasut.oauthSettings')}</a></li>
                     </ul>
                   </div>
                 </div>
@@ -991,7 +991,7 @@ const SettingsPage = () => {
                 <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
                   <button onClick={handleParasutSave} disabled={saving} className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm`}>
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    Değişiklikleri Kaydet
+                    {t('saveChanges')}
                   </button>
                 </div>
               </div>
@@ -1011,8 +1011,8 @@ const SettingsPage = () => {
                     <MessageCircle className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">WhatsApp Entegrasyonu</h3>
-                    <p className="text-xs text-gray-400">WhatsApp Business API&apos;yi entegre edin</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('whatsapp.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('whatsapp.desc')}</p>
                   </div>
                 </div>
                 <span
@@ -1023,7 +1023,7 @@ const SettingsPage = () => {
                     }`}
                 >
                   {whatsapp.connected ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                  {whatsapp.connected ? 'Bagli' : 'Bagli Degil'}
+                  {whatsapp.connected ? t('whatsapp.connected') : t('whatsapp.disconnected')}
                 </span>
               </div>
 
@@ -1031,19 +1031,19 @@ const SettingsPage = () => {
                 {!whatsapp.connected && (
                   <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-l-4 border-amber-400">
                     <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-sm text-amber-700 dark:text-amber-300">WhatsApp Business hesabınız henüz bağlı değil.</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">{t('whatsapp.notConnectedWarning')}</p>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone-number-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Telefon Numarası ID</Label>
-                  <Input id="phone-number-id" className={inputClass} value={whatsapp.phoneNumberId} onChange={e => setWhatsapp({ ...whatsapp, phoneNumberId: e.target.value })} placeholder="1234567890123" />
+                  <Label htmlFor="phone-number-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('whatsapp.phoneNumberId')}</Label>
+                  <Input id="phone-number-id" className={inputClass} value={whatsapp.phoneNumberId} onChange={e => setWhatsapp({ ...whatsapp, phoneNumberId: e.target.value })} placeholder={t('placeholders.whatsappPhoneId')} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="access-token" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Access Token</Label>
+                  <Label htmlFor="access-token" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('whatsapp.accessToken')}</Label>
                   <div className="flex items-center gap-2">
-                    <Input id="access-token" className={inputClass + ' flex-1'} type={showPasswords.whatsappAccessToken ? 'text' : 'password'} value={whatsapp.accessToken} onChange={e => setWhatsapp({ ...whatsapp, accessToken: e.target.value })} placeholder="EAABsxxxxxxxxxxxxxxxxxx" />
+                    <Input id="access-token" className={inputClass + ' flex-1'} type={showPasswords.whatsappAccessToken ? 'text' : 'password'} value={whatsapp.accessToken} onChange={e => setWhatsapp({ ...whatsapp, accessToken: e.target.value })} placeholder={t('placeholders.whatsappAccessToken')} />
                     <button className="p-2.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onClick={() => togglePasswordVisibility('whatsappAccessToken')}>
                       {showPasswords.whatsappAccessToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -1051,8 +1051,8 @@ const SettingsPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="business-account-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Business Account ID</Label>
-                  <Input id="business-account-id" className={inputClass} value={whatsapp.businessAccountId} onChange={e => setWhatsapp({ ...whatsapp, businessAccountId: e.target.value })} placeholder="9876543210123" />
+                  <Label htmlFor="business-account-id" className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('whatsapp.businessAccountId')}</Label>
+                  <Input id="business-account-id" className={inputClass} value={whatsapp.businessAccountId} onChange={e => setWhatsapp({ ...whatsapp, businessAccountId: e.target.value })} placeholder={t('placeholders.whatsappBusinessId')} />
                 </div>
 
                 <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -1170,8 +1170,8 @@ const SettingsPage = () => {
                   <Users className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Ekip Üyeleri</h3>
-                  <p className="text-xs text-gray-400">Ekibinizi yönetin ve yeni üyeler ekleyin</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('team.title')}</h3>
+                  <p className="text-xs text-gray-400">{t('team.desc')}</p>
                 </div>
               </div>
 
@@ -1184,13 +1184,13 @@ const SettingsPage = () => {
                     <Plus className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Henüz ekip üyesi eklenmemiş</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('team.emptyTitle')}</p>
                 <p className="text-sm text-gray-400 mb-8 max-w-sm">
-                  Ekibinize üye ekleyerek teklifleri birlikte yönetebilirsiniz. Her üye kendi tekliflerini oluşturabilir.
+                  {t('team.emptyDesc')}
                 </p>
                 <button className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} transition-all text-sm`}>
                   <UserPlus className="w-4 h-4" />
-                  Ekip Üyesi Ekle
+                  {t('team.addMember')}
                 </button>
               </div>
             </div>
@@ -1209,8 +1209,8 @@ const SettingsPage = () => {
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Abonelik</h3>
-                    <p className="text-xs text-gray-400">Mevcut planınız ve abonelik bilgileriniz</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('subscription.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('subscription.desc')}</p>
                   </div>
                 </div>
 
@@ -1221,13 +1221,13 @@ const SettingsPage = () => {
                       <Zap className="w-7 h-7 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Mevcut Plan</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">Ücretsiz</p>
+                      <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{t('subscription.currentPlan')}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('subscription.free')}</p>
                     </div>
                   </div>
                   <button className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-amber-500/25 transition-all text-sm flex items-center gap-2">
                     <Crown className="w-4 h-4" />
-                    Planı Yükselt
+                    {t('subscription.upgradePlan')}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1235,7 +1235,7 @@ const SettingsPage = () => {
                 {/* Plan Comparison */}
                 <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-5 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  Plan Karşılaştırması
+                  {t('subscription.planComparison')}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Starter */}
@@ -1245,20 +1245,20 @@ const SettingsPage = () => {
                         <Zap className="w-5 h-5 text-gray-600" />
                       </div>
                       <div>
-                        <h5 className="text-lg font-bold text-gray-900 dark:text-gray-100">Starter</h5>
-                        <p className="text-xs text-gray-400">Küçük işletmeler için</p>
+                        <h5 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('subscription.starter')}</h5>
+                        <p className="text-xs text-gray-400">{t('subscription.starterDesc')}</p>
                       </div>
                     </div>
                     <ul className="space-y-3">
-                      {['50 teklif / ay', '1 ekip üyesi', 'Paraşüt entegrasyonu'].map(f => (
-                        <li key={f} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                      {['subscription.features.proposals50', 'subscription.features.teamMember1', 'subscription.features.parasutIntegration'].map(key => (
+                        <li key={key} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                          {f}
+                          {t(key as Parameters<typeof t>[0])}
                         </li>
                       ))}
                       <li className="flex items-center gap-3 text-sm text-gray-300 dark:text-gray-600">
                         <X className="w-5 h-5 text-gray-300 dark:text-gray-600 shrink-0" />
-                        WhatsApp entegrasyonu
+                        {t('subscription.features.whatsappIntegration')}
                       </li>
                     </ul>
                   </div>
@@ -1267,27 +1267,27 @@ const SettingsPage = () => {
                   <div className="relative rounded-2xl border-2 border-blue-500 p-6 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 shadow-xl shadow-blue-500/10">
                     <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg">
                       <Star className="w-3 h-3 inline mr-1 -mt-0.5" />
-                      Önerilen
+                      {t('subscription.recommended')}
                     </span>
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
                         <Crown className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h5 className="text-lg font-bold text-gray-900 dark:text-gray-100">Professional</h5>
-                        <p className="text-xs text-gray-400">Büyüyen ekipler için</p>
+                        <h5 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('subscription.professional')}</h5>
+                        <p className="text-xs text-gray-400">{t('subscription.professionalDesc')}</p>
                       </div>
                     </div>
                     <ul className="space-y-3">
-                      {['Sınırsız teklif', '5 ekip üyesi', 'Paraşüt entegrasyonu', 'WhatsApp entegrasyonu'].map(f => (
-                        <li key={f} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                      {['subscription.features.unlimitedProposals', 'subscription.features.teamMembers5', 'subscription.features.parasutIntegration', 'subscription.features.whatsappIntegration'].map(key => (
+                        <li key={key} className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                           <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                          {f}
+                          {t(key as Parameters<typeof t>[0])}
                         </li>
                       ))}
                     </ul>
                     <button className="w-full mt-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-blue-500/25 transition-all text-sm flex items-center justify-center gap-2">
-                      Professional&apos;a Gec
+                      {t('subscription.upgradeToPro')}
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -1303,15 +1303,15 @@ const SettingsPage = () => {
                   <div className="p-2 rounded-xl bg-gradient-to-br from-gray-400 to-gray-600">
                     <FileText className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Ödeme Geçmişi</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('subscription.paymentHistory')}</h3>
                 </div>
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-2xl flex items-center justify-center mb-5">
                     <FileText className="w-10 h-10 text-gray-300 dark:text-gray-600" />
                   </div>
-                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Henuz fatura bulunmuyor</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('subscription.noInvoices')}</p>
                   <p className="text-sm text-gray-400 max-w-sm">
-                    Ücretli bir plana geçtiğinizde faturalarınız burada görünecek.
+                    {t('subscription.noInvoicesDesc')}
                   </p>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Square, X, Loader2, CheckCircle2, MessageCircle, ExternalLink, Send, Volume2 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
@@ -29,6 +30,7 @@ interface VoiceProposalModalProps {
 }
 
 export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalModalProps) {
+  const t = useTranslations('voiceProposal')
   const [step, setStep] = useState<Step>('RECORDING')
   const [isEditMode, setIsEditMode] = useState(false)
   const [volume, setVolume] = useState(0)
@@ -157,7 +159,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
         const count = await queue.getPendingCount()
         setPendingCount(count)
       }).catch(() => {
-        setError('Çevrimdışı kayıt yapılamadı. Tarayıcı depolama alanı kullanılamıyor.')
+        setError(t('errorOfflineStorage'))
       })
     } else {
       cleanup()
@@ -208,7 +210,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
         const blob = new Blob(chunksRef.current, { type: mimeType })
         if (blob.size < 100) {
-          setError('Ses kaydedilemedi. Lutfen tekrar deneyin.')
+          setError(t('errorNoAudio'))
           setStep('RECORDING')
           setIsRecording(false)
           return
@@ -249,7 +251,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       }, 1000)
     } catch (err) {
       logger.error('Mic access failed', err)
-      setError('Mikrofon erisimi reddedildi. Tarayici ayarlarindan mikrofon iznini acin.')
+      setError(t('errorMicPermission'))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -294,7 +296,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       // Validate transcript has enough content
       const wordCount = transcribeData.data.text.trim().split(/\s+/).length
       if (wordCount < 3) {
-        setError('Yeterli bilgi algılanamadı. Lütfen müşteri ve ürün bilgilerini belirterek tekrar söyleyin.')
+        setError(t('errorNotEnoughInfo'))
         setStep('RECORDING')
         return
       }
@@ -346,7 +348,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       } else {
         const result = parseData.data as VoiceParseResult
         if (result.items.length === 0) {
-          setError('Ürün bilgisi algılanamadı. Lütfen ürün adı ve miktarı belirterek tekrar söyleyin.')
+          setError(t('errorNoProduct'))
           setStep('RECORDING')
           return
         }
@@ -365,7 +367,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
           await offlineQueueRef.current.enqueue(audioBase64, 'tr')
           const count = await offlineQueueRef.current.getPendingCount()
           setPendingCount(count)
-          setError('Cevrimdisisiniz. Kayit kuyruga eklendi.')
+          setError(t('errorOfflineQueued'))
           setStep('DONE')
           return
         } catch (queueErr) {
@@ -375,11 +377,11 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
       logger.error('Process audio failed', err)
       if (isEditMode && parseResult) {
-        setError('Düzenleme başarısız oldu. Mevcut teklif korunuyor. Tekrar deneyin.')
+        setError(t('errorEditFailed'))
         setStep('PREVIEW')
         return
       }
-      setError(err instanceof Error ? err.message : 'Bir hata olustu. Lutfen tekrar deneyin.')
+      setError(err instanceof Error ? err.message : t('errorGeneric'))
       setStep('RECORDING')
     }
   }, [isEditMode, parseResult, historyIndex])
@@ -592,13 +594,13 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {step === 'DONE' ? 'Teklif Olusturuldu!' : isEditMode ? 'Sesle Duzenle' : 'Sesli Teklif'}
+                {step === 'DONE' ? t('titleDone') : isEditMode ? t('titleEdit') : t('title')}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                {step === 'RECORDING' && (isEditMode ? 'Degisikliginizi soyleyiniz' : 'Teklifinizi soyleyiniz')}
-                {step === 'PROCESSING' && 'Isleniyor...'}
-                {step === 'PREVIEW' && 'Teklif onizlemesi'}
-                {step === 'DONE' && 'Taslak teklif basariyla olusturuldu'}
+                {step === 'RECORDING' && (isEditMode ? t('subtitleRecordingEdit') : t('subtitleRecording'))}
+                {step === 'PROCESSING' && t('subtitleProcessing')}
+                {step === 'PREVIEW' && t('subtitlePreview')}
+                {step === 'DONE' && t('subtitleDone')}
               </p>
             </div>
             <button
@@ -660,7 +662,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                         <p className="text-3xl font-bold font-mono text-red-600 dark:text-red-400">
                           {formatTime(recordingTime)}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1">Maks 2 dakika</p>
+                        <p className="text-xs text-slate-500 mt-1">{t('maxDuration')}</p>
                       </div>
 
                       {/* Silence countdown */}
@@ -672,10 +674,10 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                           className="text-center px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
                         >
                           <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                            Tamamlandi mi? {countdown}...
+                            {t('silenceDetectedCountdown', { countdown })}
                           </p>
                           <p className="text-xs text-amber-500 dark:text-amber-500 mt-0.5">
-                            Konusmaya devam edin veya durdurun
+                            {t('silenceContinueOrStop')}
                           </p>
                         </motion.div>
                       )}
@@ -686,20 +688,20 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                         className="gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg px-8"
                       >
                         <Square className="h-4 w-4" />
-                        Durdur
+                        {t('stop')}
                       </Button>
                     </>
                   )}
 
                   {!isRecording && !isEditMode && (
                     <div className="text-center space-y-3 max-w-sm">
-                      <p className="text-sm text-slate-500">Teklifinizi söylemek için mikrofona basın</p>
+                      <p className="text-sm text-slate-500">{t('tapToRecord')}</p>
                       <div className="text-left space-y-2">
-                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Örnek Kullanımlar:</p>
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('exampleUsages')}</p>
                         <ul className="text-xs text-slate-400 space-y-1">
-                          <li>• &quot;Ahmet Beye 10 adet laptop 15.000 liradan teklif hazırla&quot;</li>
-                          <li>• &quot;ABC Mühendislik&apos;e 100 adet M8 civata ve 50 kilo çelik levha&quot;</li>
-                          <li>• &quot;XYZ İnşaat&apos;a yüzde 10 iskontolu 30 gün vadeli teklif&quot;</li>
+                          <li>• &quot;{t('exampleUsage1')}&quot;</li>
+                          <li>• &quot;{t('exampleUsage2')}&quot;</li>
+                          <li>• &quot;{t('exampleUsage3')}&quot;</li>
                         </ul>
                       </div>
                     </div>
@@ -707,17 +709,17 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
                   {!isRecording && isEditMode && (
                     <div className="text-center space-y-3 max-w-sm">
-                      <p className="text-sm text-slate-500">Değişikliğinizi söylemek için mikrofona basın</p>
+                      <p className="text-sm text-slate-500">{t('tapToRecordEdit')}</p>
                       <div className="text-left space-y-2">
-                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Örnek Düzenlemeler:</p>
+                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('exampleEdits')}</p>
                         <ul className="text-xs text-slate-400 space-y-1">
-                          <li>• &quot;Miktarı 200 yap&quot;</li>
-                          <li>• &quot;M8 civata yerine M10 civata koy&quot;</li>
-                          <li>• &quot;Fiyatı 5 lira yap&quot;</li>
-                          <li>• &quot;İskontoyu yüzde 15 yap&quot;</li>
-                          <li>• &quot;50 adet M10 somun da ekle&quot;</li>
-                          <li>• &quot;Çelik levhayı çıkar&quot;</li>
-                          <li>• &quot;Müşteriyi XYZ İnşaat yap&quot;</li>
+                          <li>• &quot;{t('exampleEdit1')}&quot;</li>
+                          <li>• &quot;{t('exampleEdit2')}&quot;</li>
+                          <li>• &quot;{t('exampleEdit3')}&quot;</li>
+                          <li>• &quot;{t('exampleEdit4')}&quot;</li>
+                          <li>• &quot;{t('exampleEdit5')}&quot;</li>
+                          <li>• &quot;{t('exampleEdit6')}&quot;</li>
+                          <li>• &quot;{t('exampleEdit7')}&quot;</li>
                         </ul>
                       </div>
                     </div>
@@ -732,7 +734,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                         onClick={() => { setError(null); startRecording() }}
                         className="mt-2 mx-auto block"
                       >
-                        Tekrar Dene
+                        {t('retryButton')}
                       </Button>
                     </div>
                   )}
@@ -754,7 +756,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
                   <div className="text-center">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {transcript ? 'Teklif hazirlaniyor...' : 'Ses taniniyor...'}
+                      {transcript ? t('preparingProposal') : t('recognizingSpeech')}
                     </p>
                   </div>
 
@@ -797,7 +799,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                     >
                       <Volume2 className="h-4 w-4 text-blue-500 animate-pulse" />
                       <span className="text-xs text-blue-600 dark:text-blue-400">
-                        Sesli komut dinleniyor... (&quot;onayla&quot;, &quot;iptal&quot;, &quot;düzenle&quot;)
+                        {t('listeningCommands')}
                       </span>
                     </motion.div>
                   )}
@@ -836,10 +838,10 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
 
                   <div className="text-center">
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                      Teklif Olusturuldu!
+                      {t('proposalCreatedTitle')}
                     </h3>
                     <p className="text-sm text-slate-500 mt-1">
-                      Taslak teklifiniz basariyla kaydedildi.
+                      {t('proposalCreatedDesc')}
                     </p>
                   </div>
 
@@ -852,7 +854,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                       className="gap-2 w-full"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      Teklifi Goruntule
+                      {t('viewProposal')}
                     </Button>
 
                     {/* WhatsApp Send via API */}
@@ -869,7 +871,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                       ) : (
                         <Send className="h-4 w-4" />
                       )}
-                      {whatsAppSent ? 'WhatsApp ile Gonderildi' : "WhatsApp'tan Gonder"}
+                      {whatsAppSent ? t('whatsAppSent') : t('whatsAppSend')}
                     </Button>
 
                     {/* Fallback: open WhatsApp manually */}
@@ -880,7 +882,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                     >
                       <a href={whatsAppLink} target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="h-3 w-3" />
-                        Manuel WhatsApp Linki
+                        {t('manualWhatsAppLink')}
                       </a>
                     </Button>
 
@@ -890,7 +892,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
                       onClick={handleRetry}
                       className="text-slate-500"
                     >
-                      Yeni Sesli Teklif
+                      {t('newVoiceProposal')}
                     </Button>
                   </div>
                 </motion.div>

@@ -120,25 +120,27 @@ const getActivityIcon = (type: string) => {
   }
 };
 
-const getActivityLabel = (type: string) => {
-  switch (type) {
-    case 'CREATED': return 'Oluşturuldu';
-    case 'SENT': return 'Gönderildi';
-    case 'VIEWED': return 'Görüntülendi';
-    case 'ACCEPTED': return 'Kabul Edildi';
-    case 'REJECTED': return 'Reddedildi';
-    case 'REVISION_REQUESTED': return 'Revize İstendi';
-    case 'UPDATED': return 'Güncellendi';
-    case 'CANCELLED': return 'Silindi';
-    default: return type;
-  }
+const ACTIVITY_KEY_MAP: Record<string, string> = {
+  CREATED: 'activity.created',
+  SENT: 'activity.sent',
+  VIEWED: 'activity.viewed',
+  ACCEPTED: 'activity.accepted',
+  REJECTED: 'activity.rejected',
+  REVISION_REQUESTED: 'activity.revisionRequested',
+  UPDATED: 'activity.updated',
+  CANCELLED: 'activity.cancelled',
 };
 
 export default function ProposalDetailPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('proposals');
+  const tc = useTranslations('common');
   const confirm = useConfirm();
+  const getActivityLabel = (type: string) => {
+    const key = ACTIVITY_KEY_MAP[type];
+    return key ? t(key as Parameters<typeof t>[0]) : type;
+  };
   const params = useParams();
   const proposalId = params.id as string;
 
@@ -162,13 +164,13 @@ export default function ProposalDetailPage() {
       const res = await fetch(`/api/v1/proposals/${proposalId}/parasut`, { method: 'POST' });
       const result = await res.json();
       if (result.success) {
-        toast.success('Teklif Paraşüt\'e gönderildi!');
+        toast.success(t('parasut.sentSuccess'));
         window.location.reload();
       } else {
-        toast.error(result.error || 'Paraşüt\'e gönderme başarısız');
+        toast.error(result.error || t('parasut.sendFailed'));
       }
     } catch {
-      toast.error('Paraşüt bağlantı hatası');
+      toast.error(t('parasut.connectionError'));
     } finally {
       setParasutLoading(null);
     }
@@ -180,15 +182,15 @@ export default function ProposalDetailPage() {
       const res = await fetch(`/api/v1/proposals/${proposalId}/parasut`);
       const result = await res.json();
       if (result.success) {
-        toast.success(`Paraşüt durumu: ${result.data.parasutStatus}`);
+        toast.success(`${t('parasut.statusPulled')} ${result.data.parasutStatus}`);
         if (result.data.teklifproStatus !== proposal?.status) {
           window.location.reload();
         }
       } else {
-        toast.error(result.error || 'Durum çekme başarısız');
+        toast.error(result.error || t('parasut.pullFailed'));
       }
     } catch {
-      toast.error('Paraşüt bağlantı hatası');
+      toast.error(t('parasut.connectionError'));
     } finally {
       setParasutLoading(null);
     }
@@ -201,14 +203,14 @@ export default function ProposalDetailPage() {
       const result = await res.json();
       if (result.success && result.data.pdfUrl) {
         window.open(result.data.pdfUrl, '_blank');
-        toast.success('PDF hazır!');
+        toast.success(t('parasut.pdfReady'));
       } else if (result.success) {
-        toast.info('PDF hazırlanıyor, lütfen birkaç saniye sonra tekrar deneyin');
+        toast.info(t('parasut.pdfPreparing'));
       } else {
-        toast.error(result.error || 'PDF oluşturulamadı');
+        toast.error(result.error || t('parasut.pdfFailed'));
       }
     } catch {
-      toast.error('PDF oluşturma hatası');
+      toast.error(t('parasut.pdfError'));
     } finally {
       setParasutLoading(null);
     }
@@ -216,7 +218,7 @@ export default function ProposalDetailPage() {
 
   const handleParasutShare = async () => {
     if (!proposal?.customer?.email) {
-      toast.error('Müşteri e-posta adresi bulunamadı');
+      toast.error(t('parasut.emailNotFound'));
       return;
     }
     setParasutLoading('share');
@@ -228,12 +230,12 @@ export default function ProposalDetailPage() {
       });
       const result = await res.json();
       if (result.success) {
-        toast.success(`Teklif ${proposal.customer.email} adresine gönderildi!`);
+        toast.success(t('parasut.emailSent', { email: proposal.customer.email }));
       } else {
-        toast.error(result.error || 'E-posta gönderilemedi');
+        toast.error(result.error || t('parasut.emailFailed'));
       }
     } catch {
-      toast.error('E-posta gönderme hatası');
+      toast.error(t('parasut.emailError'));
     } finally {
       setParasutLoading(null);
     }
@@ -245,13 +247,13 @@ export default function ProposalDetailPage() {
       const res = await fetch(`/api/v1/proposals/${proposalId}/parasut/invoice`, { method: 'POST' });
       const result = await res.json();
       if (result.success) {
-        toast.success('Fatura oluşturuldu!');
+        toast.success(t('parasut.invoiceCreated'));
         window.location.reload();
       } else {
-        toast.error(result.error || 'Fatura oluşturulamadı');
+        toast.error(result.error || t('parasut.invoiceFailed'));
       }
     } catch {
-      toast.error('Fatura oluşturma hatası');
+      toast.error(t('parasut.invoiceError'));
     } finally {
       setParasutLoading(null);
     }
@@ -264,14 +266,14 @@ export default function ProposalDetailPage() {
       const result = await res.json();
       if (result.success) {
         const d = result.data;
-        const statusText = d.paymentStatus === 'paid' ? 'Ödendi' : d.paymentStatus === 'overdue' ? 'Vadesi Geçmiş' : 'Ödenmedi';
-        const eDocText = d.eDocumentStatus ? ` | E-Belge: ${d.eDocumentStatus}` : '';
-        toast.success(`Fatura: ${statusText}${eDocText}`);
+        const statusText = d.paymentStatus === 'paid' ? t('parasut.paid') : d.paymentStatus === 'overdue' ? t('parasut.overdue') : t('parasut.unpaid');
+        const eDocText = d.eDocumentStatus ? ` | ${t('parasut.eDocument')} ${d.eDocumentStatus}` : '';
+        toast.success(`${t('parasut.invoice')}: ${statusText}${eDocText}`);
       } else {
-        toast.error(result.error || 'Fatura durumu çekilemedi');
+        toast.error(result.error || t('parasut.invoiceStatusFailed'));
       }
     } catch {
-      toast.error('Fatura durum hatası');
+      toast.error(t('parasut.invoiceStatusError'));
     } finally {
       setParasutLoading(null);
     }
@@ -289,10 +291,10 @@ export default function ProposalDetailPage() {
       if (result.success) {
         toast.success(result.data.message);
       } else {
-        toast.error(result.error || 'E-belge gönderilemedi');
+        toast.error(result.error || t('parasut.eDocFailed'));
       }
     } catch {
-      toast.error('E-belge gönderme hatası');
+      toast.error(t('parasut.eDocError'));
     } finally {
       setParasutLoading(null);
     }
@@ -307,23 +309,23 @@ export default function ProposalDetailPage() {
   };
 
   const handleDelete = async () => {
-    const ok = await confirm({ message: 'Bu teklifi silmek istediğinizden emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    const ok = await confirm({ message: t('confirmDelete'), confirmText: tc('delete'), variant: 'danger' });
     if (!ok) return;
     try {
       const res = await fetch(`/api/v1/proposals/${proposalId}`, { method: 'DELETE' });
       if (res.ok) {
         router.push(`/${locale}/proposals`);
       } else {
-        toast.error('Silme işlemi sırasında hata oluştu.');
+        toast.error(t('deleteError2'));
       }
     } catch {
-      toast.error('Silme işlemi sırasında hata oluştu.');
+      toast.error(t('deleteError2'));
     }
   };
 
   const handleMakeReady = async () => {
     try {
-      toast.loading('Teklif hazırlanıyor...', { id: 'make-ready' });
+      toast.loading(t('preparing'), { id: 'make-ready' });
       const res = await fetch(`/api/v1/proposals/${proposalId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -331,9 +333,9 @@ export default function ProposalDetailPage() {
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
-        throw new Error(result.error || 'Durum değiştirilemedi');
+        throw new Error(result.error || t('statusChangeFailed'));
       }
-      toast.success('Teklif hazır durumuna getirildi!', { id: 'make-ready' });
+      toast.success(t('readySuccess'), { id: 'make-ready' });
       router.refresh();
       window.location.reload();
     } catch (error) {
@@ -343,11 +345,11 @@ export default function ProposalDetailPage() {
 
   const handleSendWhatsApp = async () => {
     if (!proposal?.customer?.phone) {
-      toast.error('Müşteri telefon numarası bulunamadı');
+      toast.error(t('phoneNotFound'));
       return;
     }
     try {
-      toast.loading('WhatsApp mesajı gönderiliyor...', { id: 'whatsapp-send' });
+      toast.loading(t('whatsappSending'), { id: 'whatsapp-send' });
       const res = await fetch(`/api/v1/proposals/${proposalId}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -355,12 +357,12 @@ export default function ProposalDetailPage() {
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
-        throw new Error(result.error || 'Gönderim başarısız');
+        throw new Error(result.error || t('sendFailed'));
       }
-      toast.success('WhatsApp mesajı gönderildi!', { id: 'whatsapp-send' });
+      toast.success(t('whatsappSent'), { id: 'whatsapp-send' });
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'WhatsApp gönderilemedi', { id: 'whatsapp-send' });
+      toast.error(error instanceof Error ? error.message : t('whatsappFailed'), { id: 'whatsapp-send' });
     }
   };
 
@@ -374,12 +376,12 @@ export default function ProposalDetailPage() {
     if (!proposal?.publicToken) return;
     const link = `${window.location.origin}/proposal/${proposal.publicToken}`;
     navigator.clipboard.writeText(link);
-    toast.success('Link kopyalandı!');
+    toast.success(t('linkCopied'));
   };
 
   const handleDownloadPDF = async () => {
     try {
-      toast.loading('PDF oluşturuluyor...', { id: 'pdf-download' });
+      toast.loading(t('pdfDownloading'), { id: 'pdf-download' });
       const res = await fetch(`/api/v1/proposals/${proposalId}/pdf`);
       if (res.ok) {
         const blob = await res.blob();
@@ -391,15 +393,15 @@ export default function ProposalDetailPage() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        toast.success('PDF indirildi!', { id: 'pdf-download' });
+        toast.success(t('pdfDownloaded'), { id: 'pdf-download' });
       } else {
         const errorData = await res.json().catch(() => ({}));
         logger.error('PDF download failed', { status: res.status, errorData });
-        toast.error(`PDF indirme başarısız (${res.status})`, { id: 'pdf-download' });
+        toast.error(`${t('pdfDownloadFailed')} (${res.status})`, { id: 'pdf-download' });
       }
     } catch (err) {
       logger.error('PDF download error', err);
-      toast.error('PDF indirme sırasında hata oluştu.', { id: 'pdf-download' });
+      toast.error(t('pdfDownloadError'), { id: 'pdf-download' });
     }
   };
 
@@ -467,7 +469,7 @@ export default function ProposalDetailPage() {
               <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
             </div>
             <p className="text-lg font-medium text-red-600 dark:text-red-400">
-              {error?.message === 'HTTP 404' ? 'Teklif bulunamadi.' : 'Veriler yuklenirken hata olustu. Lutfen sayfayi yenileyin.'}
+              {error?.message === 'HTTP 404' ? t('errorNotFound') : t('errorGeneral')}
             </p>
           </div>
         </div>
@@ -494,7 +496,7 @@ export default function ProposalDetailPage() {
               onClick={() => router.push(`/${locale}/proposals`)}
               className="text-white/60 hover:text-white transition-colors"
             >
-              Teklifler
+              {t('breadcrumbTitle')}
             </button>
             <ChevronRight className="h-4 w-4 text-white/40" />
             <span className="text-white/90 font-medium">{proposal.proposalNumber}</span>
@@ -519,19 +521,19 @@ export default function ProposalDetailPage() {
               <button
                 onClick={handleMakeReady}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/80 hover:bg-cyan-500 text-white rounded-xl backdrop-blur-sm transition-colors text-sm font-medium"
-                title="Hazırla"
+                title={t('makeReady')}
               >
                 <CheckCircle className="h-4 w-4" />
-                <span>Hazırla</span>
+                <span>{t('makeReady')}</span>
               </button>
             )}
             <button
               onClick={handleEdit}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors text-sm font-medium"
-              title="Düzenle"
+              title={tc('edit')}
             >
               <Edit className="h-4 w-4" />
-              <span>Düzenle</span>
+              <span>{tc('edit')}</span>
             </button>
             <button
               onClick={handleSendWhatsApp}
@@ -595,21 +597,21 @@ export default function ProposalDetailPage() {
                 {/* Proposal Info Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Teklif Tarihi</p>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('proposalDate')}</p>
                     <p className="text-gray-900 dark:text-white font-semibold text-sm">{formatDate(proposal.createdAt)}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Teklif No</p>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('proposalNo')}</p>
                     <p className="text-gray-900 dark:text-white font-semibold text-sm">{proposal.proposalNumber}</p>
                   </div>
                   {proposal.expiresAt && (
                     <div>
-                      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Geçerlilik</p>
+                      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('validity')}</p>
                       <p className="text-gray-900 dark:text-white font-semibold text-sm">{formatDate(proposal.expiresAt)}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Durum</p>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('list.status')}</p>
                     <Badge className={`${STATUS_COLORS[status] || ''} w-fit text-xs`}>
                       {statusLabel(status) || status}
                     </Badge>
@@ -619,7 +621,7 @@ export default function ProposalDetailPage() {
                 {/* Customer Info in Preview */}
                 {proposal.customer && (
                   <div className="mb-8">
-                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Müşteri</p>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('customer')}</p>
                     <p className="text-gray-900 dark:text-white font-semibold">{proposal.customer.name}</p>
                     {proposal.customer.email && <p className="text-gray-500 dark:text-gray-400 text-sm">{proposal.customer.email}</p>}
                     {proposal.customer.phone && <p className="text-gray-500 dark:text-gray-400 text-sm">{proposal.customer.phone}</p>}
@@ -628,19 +630,19 @@ export default function ProposalDetailPage() {
 
                 {/* Line Items - Desktop Table */}
                 <div className="mb-8">
-                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Kalemler</p>
+                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('lineItems')}</p>
 
                   {/* Desktop table */}
                   <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-gray-50/80 dark:bg-gray-800/50">
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ürün/Hizmet</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Miktar</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Birim Fiyat</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">İskonto</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">KDV</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Toplam</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('productService')}</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('quantity')}</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('unitPrice')}</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('discount')}</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('vat')}</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('total')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -675,24 +677,24 @@ export default function ProposalDetailPage() {
                         <p className="font-semibold text-gray-900 dark:text-white mb-2">{item.name}</p>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="text-gray-400 text-xs">Miktar</span>
+                            <span className="text-gray-400 text-xs">{t('quantity')}</span>
                             <p className="text-gray-700 dark:text-gray-300">{item.quantity}</p>
                           </div>
                           <div>
-                            <span className="text-gray-400 text-xs">Birim Fiyat</span>
+                            <span className="text-gray-400 text-xs">{t('unitPrice')}</span>
                             <p className="text-gray-700 dark:text-gray-300">{formatAmount(Number(item.unitPrice) || 0)}</p>
                           </div>
                           <div>
-                            <span className="text-gray-400 text-xs">İskonto</span>
+                            <span className="text-gray-400 text-xs">{t('discount')}</span>
                             <p className="text-gray-700 dark:text-gray-300">%{Number(item.discountRate) || 0}</p>
                           </div>
                           <div>
-                            <span className="text-gray-400 text-xs">KDV</span>
+                            <span className="text-gray-400 text-xs">{t('vat')}</span>
                             <p className="text-gray-700 dark:text-gray-300">%{Number(item.vatRate) || 0}</p>
                           </div>
                         </div>
                         <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                          <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Toplam</span>
+                          <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{t('total')}</span>
                           <span className="font-bold text-gray-900 dark:text-white">
                             {formatAmount(Number(item.lineTotal) || 0)}
                           </span>
@@ -706,23 +708,23 @@ export default function ProposalDetailPage() {
                 <div className="flex justify-end mb-8">
                   <div className="w-full md:w-72 space-y-2">
                     <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>Ara Toplam:</span>
+                      <span>{t('araToplam')}</span>
                       <span>{formatAmount(Number(proposal.subtotal) || 0)}</span>
                     </div>
                     {Number(proposal.discountAmount) > 0 && (
                       <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                        <span>İskonto:</span>
+                        <span>{t('iskonto')}</span>
                         <span>-{formatAmount(Number(proposal.discountAmount))}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>KDV:</span>
+                      <span>{t('kdv')}</span>
                       <span>{formatAmount(Number(proposal.vatTotal) || 0)}</span>
                     </div>
                     {/* Grand total with gradient bg */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 mt-2">
                       <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
-                        <span>Genel Toplam:</span>
+                        <span>{t('genelToplam')}</span>
                         <span>{formatAmount(Number(proposal.grandTotal) || 0)}</span>
                       </div>
                     </div>
@@ -732,7 +734,7 @@ export default function ProposalDetailPage() {
                 {/* Notes */}
                 {proposal.notes && (
                   <div className="mb-6 p-4 bg-gray-50/80 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800">
-                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Notlar</p>
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('notesLabel')}</p>
                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{proposal.notes}</p>
                   </div>
                 )}
@@ -740,9 +742,9 @@ export default function ProposalDetailPage() {
                 {/* Terms */}
                 {(proposal.paymentTerms || proposal.deliveryTerms) && (
                   <div className="p-4 bg-gray-50/80 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-800">
-                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Sartlar</p>
-                    {proposal.paymentTerms && <p className="text-sm text-gray-700 dark:text-gray-300">Odeme: {proposal.paymentTerms}</p>}
-                    {proposal.deliveryTerms && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">Teslimat: {proposal.deliveryTerms}</p>}
+                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('termsLabel')}</p>
+                    {proposal.paymentTerms && <p className="text-sm text-gray-700 dark:text-gray-300">{t('paymentPrefix')} {proposal.paymentTerms}</p>}
+                    {proposal.deliveryTerms && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{t('deliveryPrefix')} {proposal.deliveryTerms}</p>}
                   </div>
                 )}
               </div>
@@ -804,10 +806,10 @@ export default function ProposalDetailPage() {
             <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-emerald-500">
               <div className="p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Paraşüt Entegrasyonu</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('parasut.title')}</h3>
                   {proposal.parasutOfferId && (
                     <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0 text-[10px]">
-                      Bağlı
+                      {t('parasut.connected')}
                     </Badge>
                   )}
                 </div>
@@ -815,11 +817,11 @@ export default function ProposalDetailPage() {
                 {proposal.parasutOfferId ? (
                   <div className="space-y-3">
                     <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Paraşüt Teklif ID</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('parasut.offerId')}</p>
                       <p className="text-sm font-mono font-medium text-gray-900 dark:text-white">{proposal.parasutOfferId}</p>
                       {proposal.parasutLastSyncAt && (
                         <p className="text-[10px] text-gray-400 mt-1">
-                          Son sync: {new Date(proposal.parasutLastSyncAt).toLocaleString('tr-TR')}
+                          {t('parasut.lastSync')} {new Date(proposal.parasutLastSyncAt).toLocaleString(locale)}
                         </p>
                       )}
                     </div>
@@ -832,7 +834,7 @@ export default function ProposalDetailPage() {
                         onClick={handleParasutPull}
                       >
                         {parasutLoading === 'pull' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                        Durum Çek
+                        {t('parasut.pullStatus')}
                       </Button>
                       <Button
                         variant="outline"
@@ -842,7 +844,7 @@ export default function ProposalDetailPage() {
                         onClick={handleParasutPush}
                       >
                         {parasutLoading === 'push' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CloudUpload className="h-3 w-3 mr-1" />}
-                        Güncelle
+                        {t('parasut.update')}
                       </Button>
                       <Button
                         variant="outline"
@@ -862,17 +864,17 @@ export default function ProposalDetailPage() {
                         onClick={handleParasutShare}
                       >
                         {parasutLoading === 'share' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
-                        E-posta
+                        {t('parasut.email')}
                       </Button>
                     </div>
 
                     {/* Invoice Section */}
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-                      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Fatura</p>
+                      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('parasut.invoice')}</p>
                       {proposal.parasutInvoiceId ? (
                         <div className="space-y-2">
                           <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Fatura ID</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('parasut.invoiceId')}</p>
                             <p className="text-sm font-mono font-medium text-gray-900 dark:text-white">{proposal.parasutInvoiceId}</p>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
@@ -884,7 +886,7 @@ export default function ProposalDetailPage() {
                               onClick={handleParasutInvoiceStatus}
                             >
                               {parasutLoading === 'invoiceStatus' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                              Fatura Durum
+                              {t('parasut.invoiceStatus')}
                             </Button>
                             <Button
                               variant="outline"
@@ -894,7 +896,7 @@ export default function ProposalDetailPage() {
                               onClick={() => handleParasutEFatura('e_invoice')}
                             >
                               {parasutLoading === 'efatura' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
-                              E-Fatura
+                              {t('parasut.eFatura')}
                             </Button>
                             <Button
                               variant="outline"
@@ -904,7 +906,7 @@ export default function ProposalDetailPage() {
                               onClick={() => handleParasutEFatura('e_archive')}
                             >
                               {parasutLoading === 'efatura' ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
-                              E-Arşiv Fatura
+                              {t('parasut.eArsiv')}
                             </Button>
                           </div>
                         </div>
@@ -920,7 +922,7 @@ export default function ProposalDetailPage() {
                           ) : (
                             <CloudUpload className="h-4 w-4 mr-2" />
                           )}
-                          Faturaya Dönüştür
+                          {t('parasut.convertToInvoice')}
                         </Button>
                       )}
                     </div>
@@ -928,7 +930,7 @@ export default function ProposalDetailPage() {
                 ) : (
                   <div className="space-y-3">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Bu teklif henüz Paraşüt ile senkronize edilmemiş.
+                      {t('parasut.notSynced')}
                     </p>
                     <Button
                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -941,7 +943,7 @@ export default function ProposalDetailPage() {
                       ) : (
                         <CloudUpload className="h-4 w-4 mr-2" />
                       )}
-                      Paraşüt&apos;e Gönder
+                      {t('parasut.sendToParasut')}
                     </Button>
                   </div>
                 )}
@@ -951,10 +953,10 @@ export default function ProposalDetailPage() {
             {/* Activity Feed */}
             <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
               <div className="p-5">
-                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">Faaliyet Geçmişi</h3>
+                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">{t('activityHistory')}</h3>
                 <div className="space-y-0">
                   {activities.length === 0 ? (
-                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">Henuz faaliyet yok.</p>
+                    <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('noActivity')}</p>
                   ) : (
                     activities.map((activity: ProposalActivity, idx: number) => (
                       <div key={activity.id} className="flex gap-3">
@@ -986,7 +988,7 @@ export default function ProposalDetailPage() {
             {proposal.customer && (
               <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-blue-500">
                 <div className="p-5">
-                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">Müşteri Bilgileri</h3>
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">{t('customerInfo')}</h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0">
@@ -994,7 +996,7 @@ export default function ProposalDetailPage() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-900 dark:text-white truncate">{proposal.customer.name}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">Müşteri</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t('customer')}</p>
                       </div>
                     </div>
                     {proposal.customer.email && (

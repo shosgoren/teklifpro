@@ -46,16 +46,16 @@ const fetcher = (url: string) =>
     return data;
   });
 
-const STATUS_CONFIG: Record<ProposalStatus, { label: string; color: string; dot: string; border: string }> = {
-  DRAFT: { label: 'Taslak', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400', border: 'border-l-slate-400' },
-  READY: { label: 'Hazır', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', dot: 'bg-cyan-500', border: 'border-l-cyan-500' },
-  SENT: { label: 'Gönderildi', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500', border: 'border-l-blue-500' },
-  VIEWED: { label: 'Görüntülendi', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500', border: 'border-l-amber-500' },
-  ACCEPTED: { label: 'Kabul Edildi', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500', border: 'border-l-emerald-500' },
-  REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500', border: 'border-l-red-500' },
-  REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500', border: 'border-l-orange-500' },
-  EXPIRED: { label: 'Süresi Doldu', color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-l-gray-400' },
-  INVOICED: { label: 'Faturalandı', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300', dot: 'bg-indigo-500', border: 'border-l-indigo-500' },
+const STATUS_CONFIG: Record<ProposalStatus, { color: string; dot: string; border: string }> = {
+  DRAFT: { color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400', border: 'border-l-slate-400' },
+  READY: { color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', dot: 'bg-cyan-500', border: 'border-l-cyan-500' },
+  SENT: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500', border: 'border-l-blue-500' },
+  VIEWED: { color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500', border: 'border-l-amber-500' },
+  ACCEPTED: { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500', border: 'border-l-emerald-500' },
+  REJECTED: { color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500', border: 'border-l-red-500' },
+  REVISION_REQUESTED: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500', border: 'border-l-orange-500' },
+  EXPIRED: { color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-l-gray-400' },
+  INVOICED: { color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300', dot: 'bg-indigo-500', border: 'border-l-indigo-500' },
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -64,6 +64,7 @@ export default function ProposalsPage() {
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations('proposals');
+  const tc = useTranslations('common');
   const confirm = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
@@ -122,19 +123,19 @@ export default function ProposalsPage() {
     e.stopPropagation();
     const link = `${window.location.origin}/proposal/${token}`;
     navigator.clipboard.writeText(link);
-    toast.success('Link kopyalandı!');
+    toast.success(t('linkCopied'));
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const ok = await confirm({ message: 'Bu teklifi silmek istediğinizden emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    const ok = await confirm({ message: t('confirmDelete'), confirmText: tc('delete'), variant: 'danger' });
     if (!ok) return;
     try {
       await fetch(`/api/v1/proposals/${id}`, { method: 'DELETE' });
-      toast.success('Teklif silindi');
+      toast.success(t('deleted'));
       mutate();
     } catch {
-      toast.error('Silme işlemi sırasında hata oluştu');
+      toast.error(t('deleteError'));
     }
   };
 
@@ -142,10 +143,10 @@ export default function ProposalsPage() {
     const date = new Date(dateStr);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return 'Bugün';
-    if (diffDays === 1) return 'Dün';
-    if (diffDays < 7) return `${diffDays} gün önce`;
-    return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    if (diffDays === 0) return t('today');
+    if (diffDays === 1) return t('yesterday');
+    if (diffDays < 7) return t('daysAgo', { count: diffDays });
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   };
 
   const formatAmount = (amount: number) =>
@@ -186,7 +187,7 @@ export default function ProposalsPage() {
       <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
         <div className="md:shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
-            <p className="text-white/70 text-sm">Teklif oluştur, takip et ve yönet</p>
+            <p className="text-white/70 text-sm">{t('heroSubtitle')}</p>
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
@@ -195,8 +196,8 @@ export default function ProposalsPage() {
               <div className="p-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-lg shadow-red-500/20 mb-4">
                 <FileText className="h-8 w-8 text-white" />
               </div>
-              <p className="text-base font-semibold text-red-700 dark:text-red-400">Veriler yüklenirken hata oluştu</p>
-              <p className="text-sm text-muted-foreground mt-1">Lütfen sayfayı yenileyin.</p>
+              <p className="text-base font-semibold text-red-700 dark:text-red-400">{t('errorLoading')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('errorLoadingHint')}</p>
             </div>
           </div>
         </div>
@@ -222,7 +223,7 @@ export default function ProposalsPage() {
         <div className="relative max-w-7xl mx-auto space-y-4">
           {/* Subtitle + Actions */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-white/70 text-sm">Teklif oluştur, takip et ve yönet</p>
+            <p className="text-white/70 text-sm">{t('heroSubtitle')}</p>
             <div className="flex gap-2 items-center">
               {/* View Toggle */}
               <div className="hidden md:flex items-center border border-white/20 rounded-xl overflow-hidden">
@@ -244,7 +245,7 @@ export default function ProposalsPage() {
                 className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20 h-11 px-6"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Yeni Teklif
+                {t('new')}
               </Button>
             </div>
           </div>
@@ -254,7 +255,7 @@ export default function ProposalsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
               <Input
-                placeholder="Teklif No, Müşteri, Başlık..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 className="pl-10 rounded-xl bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:bg-white/20 focus:border-white/30 h-11"
@@ -263,13 +264,13 @@ export default function ProposalsPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20 h-11">
-                  {statusFilter === 'ALL' ? 'Tum Durumlar' : t(`status.${statusFilter}` as Parameters<typeof t>[0])}
+                  {statusFilter === 'ALL' ? t('allStatuses') : t(`status.${statusFilter}` as Parameters<typeof t>[0])}
                   <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48 rounded-xl">
                 <DropdownMenuItem onClick={() => { setStatusFilter('ALL'); setCurrentPage(1); }}>
-                  Tum Durumlar
+                  {t('allStatuses')}
                 </DropdownMenuItem>
                 {(Object.keys(STATUS_CONFIG) as ProposalStatus[]).map((status) => (
                   <DropdownMenuItem key={status} onClick={() => { setStatusFilter(status); setCurrentPage(1); }}>
@@ -284,11 +285,11 @@ export default function ProposalsPage() {
           {/* ─── Mini Stats (glass cards on gradient) ─── */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10">
-              <p className="text-xs font-medium text-white/70">Toplam</p>
+              <p className="text-xs font-medium text-white/70">{t('totalCount')}</p>
               <p className="text-2xl font-bold mt-1">{pagination.total}</p>
             </div>
             <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10">
-              <p className="text-xs font-medium text-white/70">Beklemede</p>
+              <p className="text-xs font-medium text-white/70">{t('pending')}</p>
               <p className="text-2xl font-bold mt-1">{pendingCount}</p>
             </div>
             <button
@@ -300,18 +301,18 @@ export default function ProposalsPage() {
                   : 'bg-white/15 backdrop-blur-sm border-white/10 hover:bg-white/25'
               )}
             >
-              <p className="text-xs font-medium text-white/70">Revize</p>
+              <p className="text-xs font-medium text-white/70">{t('revision')}</p>
               <p className="text-2xl font-bold mt-1">{revisionCount}</p>
               {revisionCount > 0 && (
                 <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white animate-pulse" />
               )}
             </button>
             <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10">
-              <p className="text-xs font-medium text-white/70">Kabul</p>
+              <p className="text-xs font-medium text-white/70">{t('accepted')}</p>
               <p className="text-2xl font-bold mt-1">{acceptedCount}</p>
             </div>
             <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4 text-white border border-white/10 col-span-2 md:col-span-1">
-              <p className="text-xs font-medium text-white/70">Toplam Değer</p>
+              <p className="text-xs font-medium text-white/70">{t('totalValue')}</p>
               <p className="text-xl font-bold mt-1 truncate">{formatAmount(totalValue)}</p>
             </div>
           </div>
@@ -334,14 +335,14 @@ export default function ProposalsPage() {
           <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
             <FileText className="h-10 w-10 text-white" />
           </div>
-          <p className="text-base font-semibold">Teklif bulunamadi</p>
-          <p className="text-sm text-muted-foreground mt-1">Ilk teklifinizi olusturarak baslayın</p>
+          <p className="text-base font-semibold">{t('noProposals')}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t('noProposalsHint')}</p>
           <Button
             onClick={() => router.push(`/${locale}/proposals/new`)}
             className="mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Ilk Teklifini Olustur
+            {t('createFirst')}
           </Button>
         </div>
       ) : (
@@ -350,11 +351,11 @@ export default function ProposalsPage() {
           <table className="w-full hidden md:table">
             <thead className="sticky top-0 z-10">
               <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900">
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Teklif</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Müşteri</th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tutar</th>
-                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Durum</th>
-                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tarih</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('proposal')}</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('customer')}</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('amount')}</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('list.status')}</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('date')}</th>
                 <th className="px-5 py-3.5 w-12"></th>
               </tr>
             </thead>
@@ -392,13 +393,13 @@ export default function ProposalsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl">
                           <DropdownMenuItem onClick={() => handleRowClick(proposal.id)}>
-                            <Eye className="h-4 w-4 mr-2" /> Goruntule
+                            <Eye className="h-4 w-4 mr-2" /> {t('view')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => handleCopyLink(e, proposal.publicToken)}>
-                            <Link className="h-4 w-4 mr-2" /> Link Kopyala
+                            <Link className="h-4 w-4 mr-2" /> {t('copyLink')}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => handleDelete(e, proposal.id)} className="text-red-600 focus:text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" /> Sil
+                            <Trash2 className="h-4 w-4 mr-2" /> {tc('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -555,7 +556,7 @@ export default function ProposalsPage() {
                     <X className="h-4 w-4 text-white" />
                   </button>
                   <Badge className="bg-white/20 text-white border-white/30 text-xs mb-3">
-                    {previewStatus.label}
+                    {t(`status.${selectedProposal.status}` as Parameters<typeof t>[0])}
                   </Badge>
                   <p className="text-white/70 text-xs font-mono">{selectedProposal.proposalNumber}</p>
                   <h2 className="text-white text-lg font-bold mt-1 pr-8">
@@ -569,7 +570,7 @@ export default function ProposalsPage() {
                   <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Musteri</span>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('customer')}</span>
                     </div>
                     <p className="text-sm font-semibold">{selectedProposal.customer?.name ?? '-'}</p>
                     {selectedProposal.customer?.email && (
@@ -584,7 +585,7 @@ export default function ProposalsPage() {
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Toplam Tutar</span>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('totalAmount')}</span>
                     </div>
                     <p className="text-2xl font-bold">
                       {Number(selectedProposal.grandTotal || 0).toLocaleString('tr-TR', {
@@ -599,7 +600,7 @@ export default function ProposalsPage() {
                     <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Olusturulma</span>
+                        <span className="text-xs text-muted-foreground">{t('createdAt')}</span>
                       </div>
                       <p className="text-sm font-semibold">
                         {new Date(selectedProposal.createdAt).toLocaleDateString('tr-TR')}
@@ -608,9 +609,9 @@ export default function ProposalsPage() {
                     <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
                       <div className="flex items-center gap-1.5 mb-1">
                         <div className={cn('h-2.5 w-2.5 rounded-full', previewStatus.dot)} />
-                        <span className="text-xs text-muted-foreground">Durum</span>
+                        <span className="text-xs text-muted-foreground">{t('list.status')}</span>
                       </div>
-                      <p className="text-sm font-semibold">{previewStatus.label}</p>
+                      <p className="text-sm font-semibold">{t(`status.${selectedProposal.status}` as Parameters<typeof t>[0])}</p>
                     </div>
                   </div>
 
@@ -618,7 +619,7 @@ export default function ProposalsPage() {
                   {selectedProposal.publicToken && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
                       <ExternalLink className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Canli link mevcut</span>
+                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{t('liveLink')}</span>
                     </div>
                   )}
                 </div>
@@ -631,14 +632,14 @@ export default function ProposalsPage() {
                     onClick={() => router.push(`/${locale}/proposals/${selectedProposal.id}`)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    Tam Ekran Goruntule
+                    {t('fullScreenView')}
                   </Button>
                   <Button
                     className="flex-1 rounded-xl h-11"
                     onClick={() => router.push(`/${locale}/proposals/${selectedProposal.id}/edit`)}
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    Duzenle
+                    {tc('edit')}
                   </Button>
                 </div>
               </>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -63,6 +64,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   disabled = false,
   className = '',
 }) => {
+  const t = useTranslations('currency');
   // Döviz kurları durumu
   const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,7 +86,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         setRates(fetchedRates);
       } catch (err) {
         logger.error('Doviz kurlari yuklenemedi', err);
-        setError('Döviz kurları yüklenemedi');
+        setError('rates_error');
       } finally {
         setLoading(false);
       }
@@ -168,7 +170,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         disabled={disabled}
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Para birimini seç">
+          <SelectValue placeholder={t('selectPlaceholder')}>
             <div className="flex items-center justify-between gap-2">
               <span>{selectedLabel}</span>
               {showRate && selectedRateLabel && (
@@ -187,7 +189,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
               <span>{getCurrencyLabel('TRY')}</span>
               {showRate && (
                 <span className="text-xs text-gray-500">
-                  (Temel para birimi)
+                  ({t('baseCurrency')})
                 </span>
               )}
             </div>
@@ -243,20 +245,20 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
       {/* Döviz Kuru Yükleme Durumu */}
       {showRate && loading && (
         <p className="text-xs text-gray-400 mt-2 animate-pulse">
-          Döviz kurları güncelleniyor...
+          {t('ratesUpdating')}
         </p>
       )}
 
       {/* Hata Mesajı */}
       {showRate && error && (
-        <p className="text-xs text-red-500 mt-2">{error}</p>
+        <p className="text-xs text-red-500 mt-2">{t('ratesError')}</p>
       )}
 
       {/* Kur Bilgisi Göster */}
       {showRate && rates && !loading && !error && value !== 'TRY' && (
         <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-gray-600 border border-blue-100">
           <p className="font-medium mb-1">
-            Güncellenme: {rates.date}
+            {t('updatedAt', { date: rates.date })}
           </p>
           <p>
             1 {getCurrencyInfo(value).symbol} = {convertCurrency(1, value, 'TRY', rates).toFixed(2)} ₺

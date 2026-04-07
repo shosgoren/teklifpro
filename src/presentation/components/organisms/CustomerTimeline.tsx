@@ -26,6 +26,7 @@ import {
   Pin,
 } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
+import { useTranslations } from 'next-intl';
 import { format, formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useToast } from '@/shared/components/ui/use-toast';
@@ -171,6 +172,7 @@ export function CustomerTimeline({
   onNoteCreate,
 }: CustomerTimelineProps) {
   const confirm = useConfirm();
+  const tl = useTranslations('timeline');
   // Durum yönetimi
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [pinnedEvents, setPinnedEvents] = useState<TimelineEvent[]>([]);
@@ -497,7 +499,7 @@ export function CustomerTimeline({
             <Textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Notu buraya yazın..."
+              placeholder={tl('notePlaceholder')}
               className="w-full"
               rows={3}
               disabled={isSubmitting}

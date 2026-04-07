@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { encryptSignature, decryptSignature } from '@/shared/utils/signatureCrypto';
+import { parseJsonBody, PayloadTooLargeError } from '@/shared/utils/requestSize';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('LogoSettingsAPI');
@@ -70,8 +71,8 @@ async function handlePost(request: NextRequest) {
   try {
     const session = getSessionFromRequest(request)!;
 
-    const body = await request.json();
-    const { logo, name, phone, address, taxNumber, taxOffice, bankAccounts, companySignature, companySeal, companySignerName, companySignerTitle } = body;
+    const body = await parseJsonBody(request, 1_048_576); // 1MB limit
+    const { logo, name, phone, address, taxNumber, taxOffice, bankAccounts, companySignature, companySeal, companySignerName, companySignerTitle } = body as Record<string, any>;
 
     // Validate logo if provided (must be a data URL, max 500KB base64)
     if (logo !== undefined && logo !== null) {
@@ -157,6 +158,13 @@ async function handlePost(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: tenant });
   } catch (error) {
+    if (error instanceof PayloadTooLargeError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 413 }
+      );
+    }
+
     logger.error('Logo upload error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },

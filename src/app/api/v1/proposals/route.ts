@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { CreateProposalSchema, GetProposalsSchema } from '@/shared/validations/proposal';
+import { parseJsonBody, PayloadTooLargeError } from '@/shared/utils/requestSize';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProposalAPI');
@@ -147,7 +148,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
   try {
     const session = getSessionFromRequest(request)!;
 
-    const body = await request.json();
+    const body = await parseJsonBody(request, 2_097_152); // 2MB limit (voice notes with base64)
     const payload = CreateProposalSchema.parse(body);
 
     // Validate voice note security
@@ -249,6 +250,13 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
     );
   } catch (error) {
     logger.error('POST /api/v1/proposals error:', error);
+
+    if (error instanceof PayloadTooLargeError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 413 }
+      );
+    }
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
