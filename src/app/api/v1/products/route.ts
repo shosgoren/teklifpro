@@ -83,6 +83,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
 
     const where: Prisma.ProductWhereInput = {
       tenantId: session.tenant.id,
+      deletedAt: null,
     };
 
     if (queryData.search) {

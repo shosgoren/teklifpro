@@ -190,6 +190,20 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
     }
     const totalDiscount = itemDiscountTotal + generalDiscountAmount;
 
+    // Verify contactId belongs to the customer
+    if (payload.contactId) {
+      const contact = await prisma.customerContact.findUnique({
+        where: { id: payload.contactId },
+        select: { customerId: true },
+      });
+      if (!contact || contact.customerId !== payload.customerId) {
+        return NextResponse.json(
+          { success: false, error: 'Contact does not belong to the specified customer' },
+          { status: 400 }
+        );
+      }
+    }
+
     const { nanoid } = await import('nanoid');
     const proposalNumber = `TKL-${new Date().getFullYear()}-${nanoid(6).toUpperCase()}`;
     const publicToken = nanoid(24);
