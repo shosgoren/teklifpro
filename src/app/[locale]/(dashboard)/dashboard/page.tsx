@@ -92,14 +92,14 @@ const fetcher = (url: string) =>
       return data;
     });
 
-const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
-  DRAFT: { label: 'Taslak', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400' },
-  SENT: { label: 'Gönderildi', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500' },
-  VIEWED: { label: 'Görüntülendi', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500' },
-  ACCEPTED: { label: 'Kabul Edildi', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500' },
-  REJECTED: { label: 'Reddedildi', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
-  REVISION_REQUESTED: { label: 'Revize', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500' },
-  EXPIRED: { label: 'Süresi Doldu', color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400' },
+const statusConfig: Record<string, { color: string; dot: string }> = {
+  DRAFT: { color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400' },
+  SENT: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500' },
+  VIEWED: { color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500' },
+  ACCEPTED: { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500' },
+  REJECTED: { color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
+  REVISION_REQUESTED: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500' },
+  EXPIRED: { color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400' },
 };
 
 const WIDGET_ORDER_KEY = 'teklifpro-dashboard-order';

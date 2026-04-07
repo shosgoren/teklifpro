@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
@@ -74,12 +74,14 @@ export default function ProposalsPage() {
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('teklifpro-proposals-view') as 'list' | 'kanban') || 'list';
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+
+  useEffect(() => {
+    const stored = localStorage.getItem('teklifpro-proposals-view') as 'list' | 'kanban' | null;
+    if (stored === 'list' || stored === 'kanban') {
+      setViewMode(stored);
     }
-    return 'list';
-  });
+  }, []);
 
   const toggleViewMode = (mode: 'list' | 'kanban') => {
     setViewMode(mode);

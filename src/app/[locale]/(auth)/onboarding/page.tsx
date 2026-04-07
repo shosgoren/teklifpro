@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -108,19 +108,19 @@ interface ProgressIndicatorProps {
   currentStep: number;
   totalSteps: number;
   completedSteps: number[];
+  stepLabels: string[];
 }
 
 const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   currentStep,
   totalSteps,
   completedSteps,
+  stepLabels,
 }) => {
-  const steps = [
-    { number: 1, label: 'Company Info' },
-    { number: 2, label: 'Parasut Integration' },
-    { number: 3, label: 'WhatsApp Settings' },
-    { number: 4, label: 'Done' },
-  ];
+  const steps = stepLabels.map((label, i) => ({
+    number: i + 1,
+    label,
+  }));
 
   return (
     <div className="mb-8">
@@ -176,7 +176,9 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
 const Confetti = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  useState(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -211,6 +213,8 @@ const Confetti = () => {
       });
     }
 
+    let animationId: number;
+
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -231,18 +235,25 @@ const Confetti = () => {
       ctx.globalAlpha = 1;
 
       if (particles.length > 0) {
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
       }
     };
 
     animate();
-  });
+
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, []);
 
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" />;
 };
 
 export default function OnboardingPage() {
   const t = useTranslations('onboarding');
+  const tOnboarding = useTranslations('onboardingPage');
   const router = useRouter();
   const locale = useLocale();
   const [currentStep, setCurrentStep] = useState(1);
@@ -467,6 +478,12 @@ export default function OnboardingPage() {
             currentStep={currentStep}
             totalSteps={4}
             completedSteps={completedSteps}
+            stepLabels={[
+              tOnboarding('stepCompanyInfo'),
+              tOnboarding('stepParasutIntegration'),
+              tOnboarding('stepWhatsAppSettings'),
+              tOnboarding('stepDone'),
+            ]}
           />
 
           {/* Step 1: Company Info */}

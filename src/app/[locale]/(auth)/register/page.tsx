@@ -45,6 +45,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
+  const tRegister = useTranslations('registerPage');
   const locale = useLocale();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -130,19 +131,17 @@ export default function RegisterPage() {
             <span className="text-3xl font-bold">TeklifPro</span>
           </div>
           <h2 className="text-4xl font-extrabold mb-4 leading-tight">
-            İşletmenizi
-            <br />
-            Büyütmeye Başlayın
+            {tRegister('heroTitle')}
           </h2>
           <p className="text-blue-100 text-lg mb-10 leading-relaxed">
-            14 gün ücretsiz deneyin. Kredi kartı gerekmez. Hemen başlayın.
+            {tRegister('heroSubtitle')}
           </p>
 
           <div className="space-y-4">
             {[
-              { icon: Zap, text: 'Paraşüt ile otomatik senkronizasyon' },
-              { icon: Shield, text: 'Güvenli ve hızlı altyapı' },
-              { icon: BarChart3, text: 'Detaylı analitik ve raporlar' },
+              { icon: Zap, text: tRegister('featureSync') },
+              { icon: Shield, text: tRegister('featureSecure') },
+              { icon: BarChart3, text: tRegister('featureAnalytics') },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
@@ -173,7 +172,7 @@ export default function RegisterPage() {
               {t('register.title')}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">
-              14 gün ücretsiz deneyin
+              {tRegister('subtitle')}
             </p>
           </div>
 

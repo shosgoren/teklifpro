@@ -533,7 +533,9 @@
       "duplicateItem": "Duplicate Row",
       "replaceSearch": "Select the product to replace with",
       "itemActions": "Actions"
-    }
+    },
+    "statusUpdated": "Status updated: {status}",
+    "statusUpdateError": "Failed to update status"
   },
   "customers": {
     "title": "Customers",
@@ -1549,5 +1551,45 @@
     "bestSelling": "Best Selling",
     "avgProposalTime": "Avg. Proposal Time",
     "conversionRate": "Conversion Rate"
+  },
+  "loginPage": {
+    "heroTitle": "Send Your Proposals in Seconds",
+    "heroSubtitle": "Grow your business with Parasut integration, WhatsApp delivery, and smart analytics.",
+    "subtitle": "Sign in to your account to continue",
+    "featureSync": "Automatic sync with Parasut",
+    "featureSecure": "Secure and fast infrastructure",
+    "featureAnalytics": "Detailed analytics and reports"
+  },
+  "registerPage": {
+    "heroTitle": "Start Growing Your Business",
+    "heroSubtitle": "Try free for 14 days. No credit card required. Get started now.",
+    "subtitle": "Try free for 14 days",
+    "featureSync": "Automatic sync with Parasut",
+    "featureSecure": "Secure and fast infrastructure",
+    "featureAnalytics": "Detailed analytics and reports"
+  },
+  "resetPasswordPage": {
+    "emailSentTitle": "Email Sent",
+    "emailSentDescription": "A password reset link has been sent to your email address. Please check your inbox.",
+    "backToLogin": "Back to Login",
+    "passwordResetTitle": "Password Reset",
+    "passwordResetDescription": "Your password has been updated successfully. You can now sign in with your new password.",
+    "login": "Sign In",
+    "setNewPassword": "Set your new password",
+    "sendResetLink": "Send a password reset link",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "updating": "Updating...",
+    "updatePassword": "Update Password",
+    "emailLabel": "Email Address",
+    "sending": "Sending...",
+    "sendResetButton": "Send Reset Link",
+    "backToLoginLink": "Back to login page"
+  },
+  "onboardingPage": {
+    "stepCompanyInfo": "Company Info",
+    "stepParasutIntegration": "Parasut Integration",
+    "stepWhatsAppSettings": "WhatsApp Settings",
+    "stepDone": "Done"
   }
 }

@@ -41,37 +41,38 @@ interface KanbanBoardProps {
   mutate: () => void;
 }
 
-const KANBAN_COLUMNS: { status: ProposalStatus; label: string; color: string; dotColor: string; bgColor: string; borderColor: string }[] = [
-  { status: 'DRAFT', label: 'Taslak', color: 'text-slate-600 dark:text-slate-300', dotColor: 'bg-slate-400', bgColor: 'bg-slate-50 dark:bg-slate-900/50', borderColor: 'border-slate-200 dark:border-slate-700' },
-  { status: 'READY', label: 'Hazır', color: 'text-cyan-600 dark:text-cyan-400', dotColor: 'bg-cyan-500', bgColor: 'bg-cyan-50/50 dark:bg-cyan-950/30', borderColor: 'border-cyan-200 dark:border-cyan-800' },
-  { status: 'SENT', label: 'Gönderildi', color: 'text-blue-600 dark:text-blue-400', dotColor: 'bg-blue-500', bgColor: 'bg-blue-50/50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
-  { status: 'VIEWED', label: 'Görüntülendi', color: 'text-amber-600 dark:text-amber-400', dotColor: 'bg-amber-500', bgColor: 'bg-amber-50/50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
-  { status: 'REVISION_REQUESTED', label: 'Revize', color: 'text-orange-600 dark:text-orange-400', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50/50 dark:bg-orange-950/30', borderColor: 'border-orange-200 dark:border-orange-800' },
-  { status: 'ACCEPTED', label: 'Kabul Edildi', color: 'text-emerald-600 dark:text-emerald-400', dotColor: 'bg-emerald-500', bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/30', borderColor: 'border-emerald-200 dark:border-emerald-800' },
-  { status: 'REJECTED', label: 'Reddedildi', color: 'text-red-600 dark:text-red-400', dotColor: 'bg-red-500', bgColor: 'bg-red-50/50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
-  { status: 'INVOICED', label: 'Faturalandı', color: 'text-indigo-600 dark:text-indigo-400', dotColor: 'bg-indigo-500', bgColor: 'bg-indigo-50/50 dark:bg-indigo-950/30', borderColor: 'border-indigo-200 dark:border-indigo-800' },
+const KANBAN_COLUMNS: { status: ProposalStatus; color: string; dotColor: string; bgColor: string; borderColor: string }[] = [
+  { status: 'DRAFT', color: 'text-slate-600 dark:text-slate-300', dotColor: 'bg-slate-400', bgColor: 'bg-slate-50 dark:bg-slate-900/50', borderColor: 'border-slate-200 dark:border-slate-700' },
+  { status: 'READY', color: 'text-cyan-600 dark:text-cyan-400', dotColor: 'bg-cyan-500', bgColor: 'bg-cyan-50/50 dark:bg-cyan-950/30', borderColor: 'border-cyan-200 dark:border-cyan-800' },
+  { status: 'SENT', color: 'text-blue-600 dark:text-blue-400', dotColor: 'bg-blue-500', bgColor: 'bg-blue-50/50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
+  { status: 'VIEWED', color: 'text-amber-600 dark:text-amber-400', dotColor: 'bg-amber-500', bgColor: 'bg-amber-50/50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
+  { status: 'REVISION_REQUESTED', color: 'text-orange-600 dark:text-orange-400', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50/50 dark:bg-orange-950/30', borderColor: 'border-orange-200 dark:border-orange-800' },
+  { status: 'ACCEPTED', color: 'text-emerald-600 dark:text-emerald-400', dotColor: 'bg-emerald-500', bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/30', borderColor: 'border-emerald-200 dark:border-emerald-800' },
+  { status: 'REJECTED', color: 'text-red-600 dark:text-red-400', dotColor: 'bg-red-500', bgColor: 'bg-red-50/50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
+  { status: 'INVOICED', color: 'text-indigo-600 dark:text-indigo-400', dotColor: 'bg-indigo-500', bgColor: 'bg-indigo-50/50 dark:bg-indigo-950/30', borderColor: 'border-indigo-200 dark:border-indigo-800' },
 ];
 
-const formatAmount = (amount: number) =>
-  new Intl.NumberFormat('tr-TR', {
-    style: 'currency', currency: 'TRY',
+const formatAmount = (amount: number, locale: string) =>
+  new Intl.NumberFormat(locale === 'en' ? 'en-US' : 'tr-TR', {
+    style: 'currency', currency: locale === 'en' ? 'USD' : 'TRY',
     minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(amount);
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string, t: ReturnType<typeof import('next-intl').useTranslations>, locale: string) => {
   const date = new Date(dateStr);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Bugün';
-  if (diffDays === 1) return 'Dün';
-  if (diffDays < 7) return `${diffDays} gün önce`;
-  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+  if (diffDays === 0) return t('today');
+  if (diffDays === 1) return t('yesterday');
+  if (diffDays < 7) return t('daysAgo', { count: diffDays });
+  return date.toLocaleDateString(locale === 'en' ? 'en-US' : 'tr-TR', { day: 'numeric', month: 'short' });
 };
 
 // ─── Draggable Card ───
 function ProposalCard({ proposal, isDragging }: { proposal: Proposal; isDragging?: boolean }) {
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('proposals');
 
   const {
     attributes,
@@ -121,11 +122,11 @@ function ProposalCard({ proposal, isDragging }: { proposal: Proposal; isDragging
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-gray-400">
             <Calendar className="h-3 w-3" />
-            {formatDate(proposal.createdAt)}
+            {formatDate(proposal.createdAt, t, locale)}
           </div>
           <div className="flex items-center gap-1 text-sm font-bold text-gray-900 dark:text-white">
             <Banknote className="h-3.5 w-3.5 text-gray-400" />
-            {formatAmount(Number(proposal.grandTotal) || 0)}
+            {formatAmount(Number(proposal.grandTotal) || 0, locale)}
           </div>
         </div>
       </div>
@@ -135,6 +136,7 @@ function ProposalCard({ proposal, isDragging }: { proposal: Proposal; isDragging
 
 // ─── Overlay Card (shown while dragging) ───
 function OverlayCard({ proposal }: { proposal: Proposal }) {
+  const locale = useLocale();
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border-2 border-violet-400 dark:border-violet-500 p-3.5 shadow-2xl shadow-violet-500/20 w-[260px] rotate-2">
       <p className="text-sm font-semibold truncate">{proposal.title || proposal.proposalNumber}</p>
@@ -145,7 +147,7 @@ function OverlayCard({ proposal }: { proposal: Proposal }) {
           <span className="truncate">{proposal.customer.name}</span>
         </div>
       )}
-      <p className="text-sm font-bold mt-2">{formatAmount(Number(proposal.grandTotal) || 0)}</p>
+      <p className="text-sm font-bold mt-2">{formatAmount(Number(proposal.grandTotal) || 0, locale)}</p>
     </div>
   );
 }
@@ -161,6 +163,7 @@ function KanbanColumn({
   activeId: string | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: column.status });
+  const t = useTranslations('proposals');
 
   return (
     <div
@@ -176,7 +179,7 @@ function KanbanColumn({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn('h-2.5 w-2.5 rounded-full', column.dotColor)} />
-            <span className={cn('text-sm font-semibold', column.color)}>{column.label}</span>
+            <span className={cn('text-sm font-semibold', column.color)}>{t(`status.${column.status}`)}</span>
           </div>
           <span className="text-xs font-medium bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full text-gray-500 shadow-sm">
             {proposals.length}
@@ -196,7 +199,7 @@ function KanbanColumn({
         {proposals.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <FileText className="h-6 w-6 text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-xs text-gray-400 dark:text-gray-500">Teklif yok</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{t('noProposals')}</p>
           </div>
         )}
       </div>
@@ -238,10 +241,10 @@ export default function KanbanBoard({ proposals, onStatusChange, mutate }: Kanba
 
     try {
       await onStatusChange(proposalId, newStatus);
-      toast.success(`Durum güncellendi: ${KANBAN_COLUMNS.find(c => c.status === newStatus)?.label}`);
+      toast.success(t('statusUpdated', { status: t(`status.${newStatus}`) }));
       mutate();
     } catch {
-      toast.error('Durum güncellenirken hata oluştu');
+      toast.error(t('statusUpdateError'));
     }
   }, [proposals, onStatusChange, mutate]);
 

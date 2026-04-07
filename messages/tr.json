@@ -533,7 +533,9 @@
       "duplicateItem": "Satırı Kopyala",
       "replaceSearch": "Değiştirmek istediğiniz ürünü seçin",
       "itemActions": "İşlemler"
-    }
+    },
+    "statusUpdated": "Durum güncellendi: {status}",
+    "statusUpdateError": "Durum güncellenirken hata oluştu"
   },
   "customers": {
     "title": "Müşteriler",
@@ -1549,5 +1551,45 @@
     "bestSelling": "En Cok Satan",
     "avgProposalTime": "Ort. Teklif Suresi",
     "conversionRate": "Donusum Orani"
+  },
+  "loginPage": {
+    "heroTitle": "Tekliflerinizi Saniyeler İçinde Gönderin",
+    "heroSubtitle": "Paraşüt entegrasyonu, WhatsApp gönderimi ve akıllı analitik ile işinizi büyütün.",
+    "subtitle": "Hesabınıza giriş yaparak devam edin",
+    "featureSync": "Paraşüt ile otomatik senkronizasyon",
+    "featureSecure": "Güvenli ve hızlı altyapı",
+    "featureAnalytics": "Detaylı analitik ve raporlar"
+  },
+  "registerPage": {
+    "heroTitle": "İşletmenizi Büyütmeye Başlayın",
+    "heroSubtitle": "14 gün ücretsiz deneyin. Kredi kartı gerekmez. Hemen başlayın.",
+    "subtitle": "14 gün ücretsiz deneyin",
+    "featureSync": "Paraşüt ile otomatik senkronizasyon",
+    "featureSecure": "Güvenli ve hızlı altyapı",
+    "featureAnalytics": "Detaylı analitik ve raporlar"
+  },
+  "resetPasswordPage": {
+    "emailSentTitle": "E-posta Gönderildi",
+    "emailSentDescription": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu kontrol edin.",
+    "backToLogin": "Giriş Sayfasına Dön",
+    "passwordResetTitle": "Şifre Sıfırlandı",
+    "passwordResetDescription": "Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.",
+    "login": "Giriş Yap",
+    "setNewPassword": "Yeni şifrenizi belirleyin",
+    "sendResetLink": "Şifre sıfırlama bağlantısı gönderin",
+    "newPassword": "Yeni Şifre",
+    "confirmPassword": "Şifre Tekrar",
+    "updating": "Güncelleniyor...",
+    "updatePassword": "Şifreyi Güncelle",
+    "emailLabel": "E-posta Adresi",
+    "sending": "Gönderiliyor...",
+    "sendResetButton": "Sıfırlama Bağlantısı Gönder",
+    "backToLoginLink": "Giriş sayfasına dön"
+  },
+  "onboardingPage": {
+    "stepCompanyInfo": "Firma Bilgileri",
+    "stepParasutIntegration": "Paraşüt Entegrasyonu",
+    "stepWhatsAppSettings": "WhatsApp Ayarları",
+    "stepDone": "Tamamlandı"
   }
 }

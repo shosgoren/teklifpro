@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { getLocale } from 'next-intl/server';
 import './globals.css';
 import { Toaster } from 'sonner';
 import CookieConsent from '@/presentation/components/CookieConsent';
@@ -134,7 +135,8 @@ export const metadata: Metadata = {
   category: 'Business',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -203,7 +205,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="tr" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"

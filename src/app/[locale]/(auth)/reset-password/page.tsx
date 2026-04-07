@@ -52,6 +52,7 @@ const labelClassName =
 
 export default function ResetPasswordPage() {
   const t = useTranslations('auth');
+  const tReset = useTranslations('resetPasswordPage');
   const locale = useLocale();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -126,13 +127,13 @@ export default function ResetPasswordPage() {
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-500 dark:text-green-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">E-posta Gönderildi</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{tReset('emailSentTitle')}</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu kontrol edin.
+              {tReset('emailSentDescription')}
             </p>
             <Link href={`/${locale}/login`}>
               <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all">
-                Giriş Sayfasına Dön
+                {tReset('backToLogin')}
               </Button>
             </Link>
           </div>
@@ -149,13 +150,13 @@ export default function ResetPasswordPage() {
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-green-500 dark:text-green-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Şifre Sıfırlandı</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{tReset('passwordResetTitle')}</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.
+              {tReset('passwordResetDescription')}
             </p>
             <Link href={`/${locale}/login`}>
               <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all">
-                Giriş Yap
+                {tReset('login')}
               </Button>
             </Link>
           </div>
@@ -173,7 +174,7 @@ export default function ResetPasswordPage() {
               TeklifPro
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {token ? 'Yeni şifrenizi belirleyin' : 'Şifre sıfırlama bağlantısı gönderin'}
+              {token ? tReset('setNewPassword') : tReset('sendResetLink')}
             </p>
           </div>
 
@@ -191,7 +192,7 @@ export default function ResetPasswordPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className={labelClassName}>Yeni Şifre</FormLabel>
+                      <FormLabel className={labelClassName}>{tReset('newPassword')}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -213,7 +214,7 @@ export default function ResetPasswordPage() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className={labelClassName}>Şifre Tekrar</FormLabel>
+                      <FormLabel className={labelClassName}>{tReset('confirmPassword')}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -235,7 +236,7 @@ export default function ResetPasswordPage() {
                   disabled={isLoading}
                   className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all"
                 >
-                  {isLoading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
+                  {isLoading ? tReset('updating') : tReset('updatePassword')}
                 </Button>
               </form>
             </Form>
@@ -247,7 +248,7 @@ export default function ResetPasswordPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className={labelClassName}>E-posta Adresi</FormLabel>
+                      <FormLabel className={labelClassName}>{tReset('emailLabel')}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
@@ -269,7 +270,7 @@ export default function ResetPasswordPage() {
                   disabled={isLoading}
                   className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all"
                 >
-                  {isLoading ? 'Gönderiliyor...' : 'Sıfırlama Bağlantısı Gönder'}
+                  {isLoading ? tReset('sending') : tReset('sendResetButton')}
                 </Button>
               </form>
             </Form>
@@ -281,7 +282,7 @@ export default function ResetPasswordPage() {
               className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium inline-flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
-              Giriş sayfasına dön
+              {tReset('backToLoginLink')}
             </Link>
           </p>
         </div>

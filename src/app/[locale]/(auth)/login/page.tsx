@@ -33,6 +33,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const t = useTranslations('auth');
+  const tLogin = useTranslations('loginPage');
   const locale = useLocale();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -99,19 +100,17 @@ export default function LoginPage() {
             <span className="text-3xl font-bold">TeklifPro</span>
           </div>
           <h2 className="text-4xl font-extrabold mb-4 leading-tight">
-            Tekliflerinizi Saniyeler
-            <br />
-            İçinde Gönderin
+            {tLogin('heroTitle')}
           </h2>
           <p className="text-blue-100 text-lg mb-10 leading-relaxed">
-            Paraşüt entegrasyonu, WhatsApp gönderimi ve akıllı analitik ile işinizi büyütün.
+            {tLogin('heroSubtitle')}
           </p>
 
           <div className="space-y-4">
             {[
-              { icon: Zap, text: 'Paraşüt ile otomatik senkronizasyon' },
-              { icon: Shield, text: 'Güvenli ve hızlı altyapı' },
-              { icon: BarChart3, text: 'Detaylı analitik ve raporlar' },
+              { icon: Zap, text: tLogin('featureSync') },
+              { icon: Shield, text: tLogin('featureSecure') },
+              { icon: BarChart3, text: tLogin('featureAnalytics') },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
@@ -142,7 +141,7 @@ export default function LoginPage() {
               {t('login.title')}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Hesabınıza giriş yaparak devam edin
+              {tLogin('subtitle')}
             </p>
           </div>
 
