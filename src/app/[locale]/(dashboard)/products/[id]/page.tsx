@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLocale } from 'next-intl';
 import useSWR from 'swr';
+import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig';
 import {
   ArrowLeft,
   Edit,
@@ -258,39 +259,46 @@ export default function ProductDetailPage() {
 
   const { data: productData, error: productError, isLoading, mutate: mutateProduct } = useSWR(
     `/api/v1/products/${productId}`,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const { data: movementsData, mutate: mutateMovements } = useSWR(
     activeTab === 'stock' ? `/api/v1/stock/movements?productId=${productId}&limit=20` : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const { data: bomData } = useSWR(
     activeTab === 'bom' ? `/api/v1/bom?productId=${productId}` : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const { data: costData } = useSWR(
     activeTab === 'bom' && bomData?.data?.boms?.[0]?.id
       ? `/api/v1/bom/${bomData.data.boms[0].id}/cost`
       : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const { data: suppliersData, mutate: mutateSuppliers } = useSWR(
     activeTab === 'suppliers' ? `/api/v1/products/${productId}/suppliers` : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const { data: availableSuppliersData } = useSWR(
     isAddSupplierOpen ? '/api/v1/suppliers?limit=100' : null,
-    fetcher
+    fetcher,
+    swrStaticOptions
   );
 
   const { data: priceHistoryData, mutate: mutatePriceHistory } = useSWR(
     activeTab === 'general' ? `/api/v1/products/${productId}/price-history` : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const product: Product | null = productData?.data ?? null;

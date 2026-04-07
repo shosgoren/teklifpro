@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
+import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import {
   AreaChart,
   Area,
@@ -119,19 +120,19 @@ export default function AnalyticsDashboard() {
     data: proposalsData,
     isLoading: proposalsLoading,
     error: proposalsError,
-  } = useSWR('/api/v1/proposals?limit=100', fetcher);
+  } = useSWR('/api/v1/proposals?limit=100', fetcher, swrDefaultOptions);
 
   const {
     data: customersData,
     isLoading: customersLoading,
     error: customersError,
-  } = useSWR('/api/v1/customers?limit=100', fetcher);
+  } = useSWR('/api/v1/customers?limit=100', fetcher, swrDefaultOptions);
 
   const {
     data: productsData,
     isLoading: productsLoading,
     error: productsError,
-  } = useSWR('/api/v1/products?limit=100', fetcher);
+  } = useSWR('/api/v1/products?limit=100', fetcher, swrDefaultOptions);
 
   interface AnalyticsProposal {
     id: string;

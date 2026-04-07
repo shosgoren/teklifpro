@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
+import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig';
 import {
   Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, AlertTriangle,
   LayoutGrid, List, Package, TrendingUp, TrendingDown, Percent, ArrowUpDown,
@@ -76,7 +77,7 @@ const isLowStock = (product: Product) =>
   product.trackStock && product.minStockLevel > 0 && product.stockQuantity < product.minStockLevel;
 
 // ─── Stock Level Bar ───
-function StockBar({ product }: { product: Product }) {
+const StockBar = memo(function StockBar({ product }: { product: Product }) {
   if (!product.trackStock || product.minStockLevel <= 0) return null;
 
   const ratio = product.minStockLevel > 0 ? product.stockQuantity / product.minStockLevel : 1;
@@ -103,10 +104,10 @@ function StockBar({ product }: { product: Product }) {
       {isLowStock(product) && <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />}
     </div>
   );
-}
+});
 
 // ─── Product Thumbnail ───
-function ProductThumbnail({ product, size = 'sm' }: { product: Product; size?: 'sm' | 'md' }) {
+const ProductThumbnail = memo(function ProductThumbnail({ product, size = 'sm' }: { product: Product; size?: 'sm' | 'md' }) {
   const dim = size === 'sm' ? 'w-9 h-9' : 'w-14 h-14';
   const textSize = size === 'sm' ? 'text-xs' : 'text-lg';
   const iconSize = size === 'sm' ? 'h-4 w-4' : 'h-6 w-6';
@@ -138,7 +139,7 @@ function ProductThumbnail({ product, size = 'sm' }: { product: Product; size?: '
       <Package className={cn(iconSize, 'text-white/80')} />
     </div>
   );
-}
+});
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -207,11 +208,12 @@ export default function ProductsPage() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/v1/products?${queryParams.toString()}`,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   // Fetch dynamic categories and units for form suggestions
-  const { data: metaData } = useSWR('/api/v1/products/meta', fetcher);
+  const { data: metaData } = useSWR('/api/v1/products/meta', fetcher, swrStaticOptions);
   const dynamicCategories: string[] = metaData?.data?.categories ?? [];
   const dynamicUnits: string[] = metaData?.data?.units ?? [];
 

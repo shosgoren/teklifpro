@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
+import { swrRealtimeOptions } from '@/shared/utils/swrConfig';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import { QRCodeSVG } from 'qrcode.react';
 import { Logger } from '@/infrastructure/logger';
@@ -150,7 +151,7 @@ export default function ProposalDetailPage() {
   const { data, error, isLoading } = useSWR(
     proposalId ? `/api/v1/proposals/${proposalId}` : null,
     fetcher,
-    { refreshInterval: 10000 } // Auto-refresh every 10s for realtime status updates
+    swrRealtimeOptions(10000) // Auto-refresh every 10s for realtime status updates
   );
 
   const proposal = data?.data;

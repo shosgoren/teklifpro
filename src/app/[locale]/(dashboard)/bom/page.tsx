@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
+import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import {
   Plus,
@@ -202,6 +203,7 @@ export default function BomPage() {
   const { data: bomListData, error: bomListError, isLoading: bomListLoading, mutate: mutateBomList } = useSWR(
     '/api/v1/bom',
     fetcher,
+    swrDefaultOptions,
   );
 
   const boms: BomListItem[] = bomListData?.data ?? [];
@@ -220,6 +222,7 @@ export default function BomPage() {
   const { data: bomDetailData, mutate: mutateBomDetail } = useSWR(
     selectedBomId ? `/api/v1/bom/${selectedBomId}` : null,
     fetcher,
+    swrDefaultOptions,
   );
   const bomDetail: BomDetail | null = bomDetailData?.data ?? null;
 
@@ -227,10 +230,12 @@ export default function BomPage() {
   const { data: commercialProducts } = useSWR(
     isDialogOpen ? '/api/v1/products?productType=COMMERCIAL&limit=200' : null,
     fetcher,
+    swrStaticOptions,
   );
   const { data: semiFinishedProducts } = useSWR(
     isDialogOpen ? '/api/v1/products?productType=SEMI_FINISHED&limit=200' : null,
     fetcher,
+    swrStaticOptions,
   );
 
   const productOptions: ProductOption[] = useMemo(() => {
@@ -251,10 +256,12 @@ export default function BomPage() {
   const { data: rawMaterials } = useSWR(
     isDialogOpen ? '/api/v1/products?productType=RAW_MATERIAL&limit=200' : null,
     fetcher,
+    swrStaticOptions,
   );
   const { data: consumableMaterials } = useSWR(
     isDialogOpen ? '/api/v1/products?productType=CONSUMABLE&limit=200' : null,
     fetcher,
+    swrStaticOptions,
   );
 
   const materialOptions: ProductOption[] = useMemo(() => {

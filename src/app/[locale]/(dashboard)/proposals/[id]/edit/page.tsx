@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import useSWR from 'swr'
+import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -168,7 +169,7 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const { data: customersData } = useSWR('/api/v1/customers?limit=100', apiFetcher)
+  const { data: customersData } = useSWR('/api/v1/customers?limit=100', apiFetcher, swrStaticOptions)
   const customers: Customer[] = customersData?.data?.customers ?? []
 
   const filteredCustomers = useMemo(() => {
@@ -291,7 +292,7 @@ function ProductSelectionStep({
   const [dragging, setDragging] = useState<number | null>(null)
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
 
-  const { data: productsData } = useSWR('/api/v1/products?limit=100', apiFetcher)
+  const { data: productsData } = useSWR('/api/v1/products?limit=100', apiFetcher, swrStaticOptions)
   const allProducts: Product[] = productsData?.data?.products ?? []
 
   const filteredProducts = useMemo(() => {
@@ -1198,7 +1199,8 @@ export default function EditProposalPage() {
   // Fetch existing proposal data
   const { data: proposalData, error: fetchError, isLoading } = useSWR(
     proposalId ? `/api/v1/proposals/${proposalId}` : null,
-    apiFetcher
+    apiFetcher,
+    swrDefaultOptions
   )
 
   // Populate form when data loads

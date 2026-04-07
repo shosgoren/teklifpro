@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import useSWR from 'swr';
+import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -209,7 +210,8 @@ function ProposalColumn({
 }) {
   const { data, error, isLoading } = useSWR(
     `/api/v1/proposals/${proposalId}`,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const proposal: Proposal | null = data?.data?.proposal ?? null;
@@ -387,7 +389,8 @@ export default function ProposalComparePage() {
   // Fetch all proposals for the selection list
   const { data, error, isLoading } = useSWR(
     '/api/v1/proposals?limit=50',
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const allProposals: Proposal[] = data?.data?.proposals ?? [];

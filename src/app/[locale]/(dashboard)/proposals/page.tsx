@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
+import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3, Calendar, User, ExternalLink, DollarSign, X } from 'lucide-react';
 import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
 import KanbanBoard from './kanban-board';
@@ -91,14 +92,16 @@ export default function ProposalsPage() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/v1/proposals?${queryParams.toString()}`,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   // Kanban: fetch all proposals (no pagination, no filter)
   const kanbanParams = new URLSearchParams({ page: '1', limit: '100', ...(searchTerm && { search: searchTerm }) });
   const { data: kanbanData, mutate: kanbanMutate } = useSWR(
     viewMode === 'kanban' ? `/api/v1/proposals?${kanbanParams.toString()}` : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
   const kanbanProposals = kanbanData?.data?.proposals ?? [];
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useState, useEffect, useMemo } from 'react';
+import { useCallback, useState, useEffect, useMemo, memo } from 'react';
 import useSWR from 'swr';
+import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Logger } from '@/infrastructure/logger';
@@ -104,13 +105,13 @@ const WIDGET_ORDER_KEY = 'teklifpro-dashboard-order';
 const DEFAULT_WIDGETS = ['alerts', 'chart', 'recent'];
 
 // ─── Animated Number ───
-function AnimatedNumber({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
+const AnimatedNumber = memo(function AnimatedNumber({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
   const animated = useCountUp(value, 1400);
   return <>{prefix}{animated.toLocaleString('tr-TR')}{suffix}</>;
-}
+});
 
 // ─── Animated Currency ───
-function AnimatedCurrency({ value }: { value: number }) {
+const AnimatedCurrency = memo(function AnimatedCurrency({ value }: { value: number }) {
   const animated = useCountUp(value, 1600);
   const formatted = new Intl.NumberFormat('tr-TR', {
     style: 'currency',
@@ -119,10 +120,10 @@ function AnimatedCurrency({ value }: { value: number }) {
     maximumFractionDigits: 0,
   }).format(animated);
   return <>{formatted}</>;
-}
+});
 
 // ─── Sortable Widget Wrapper ───
-function SortableWidget({ id, children }: { id: string; children: React.ReactNode }) {
+const SortableWidget = memo(function SortableWidget({ id, children }: { id: string; children: React.ReactNode }) {
   const {
     attributes,
     listeners,
@@ -158,7 +159,7 @@ function SortableWidget({ id, children }: { id: string; children: React.ReactNod
       {children}
     </div>
   );
-}
+});
 
 // ─── FAB (Floating Action Button) ───
 function FloatingActionButton({ locale, lastProposalId }: { locale: string; lastProposalId?: string }) {
@@ -284,9 +285,9 @@ export default function DashboardPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGETS);
 
-  const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher);
-  const { data: customersData, isLoading: customersLoading } = useSWR('/api/v1/customers?limit=1', fetcher);
-  const { data: alertsData } = useSWR('/api/v1/stock/alerts', fetcher);
+  const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher, swrDefaultOptions);
+  const { data: customersData, isLoading: customersLoading } = useSWR('/api/v1/customers?limit=1', fetcher, swrDefaultOptions);
+  const { data: alertsData } = useSWR('/api/v1/stock/alerts', fetcher, swrDefaultOptions);
 
   const proposals = proposalsData?.data?.proposals ?? [];
   const proposalTotal = proposalsData?.data?.pagination?.total ?? 0;

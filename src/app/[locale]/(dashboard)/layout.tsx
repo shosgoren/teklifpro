@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, type ComponentType } from 'react'
 import { ConfirmProvider, useConfirm } from '@/shared/components/confirm-dialog'
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
@@ -449,7 +450,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
         {/* Page Content */}
         <div className="flex-1 overflow-auto pb-20 md:pb-0">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
       </div>
 

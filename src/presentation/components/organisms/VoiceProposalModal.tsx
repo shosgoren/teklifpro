@@ -3,14 +3,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, Square, X, Loader2, CheckCircle2, MessageCircle, ExternalLink, Send, Volume2 } from 'lucide-react'
-import { Button } from '@/shared/components/ui/button'
+import { X } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
-import { VoiceActivityIndicator } from '@/presentation/components/molecules/VoiceActivityIndicator'
-import { LiveTranscript } from '@/presentation/components/molecules/LiveTranscript'
-import { VoiceEditHistory } from '@/presentation/components/molecules/VoiceEditHistory'
 import { OfflineIndicator } from '@/presentation/components/molecules/OfflineIndicator'
-import { VoiceProposalPreview } from '@/presentation/components/organisms/VoiceProposalPreview'
 import { VoiceActivityDetector } from '@/infrastructure/services/voice/VoiceActivityDetector'
 import { VoiceConfirmation } from '@/infrastructure/services/voice/VoiceConfirmation'
 import { VoiceSpeechCommands } from '@/infrastructure/services/voice/VoiceSpeechCommands'
@@ -18,16 +13,13 @@ import { OfflineQueueService } from '@/infrastructure/services/voice/OfflineQueu
 import type { VoiceParseResult, VoiceEditChange } from '@/infrastructure/services/voice/types'
 import { VOICE_MAX_DURATION_MS } from '@/infrastructure/services/voice/types'
 import { Logger } from '@/infrastructure/logger'
+import type { Step, VoiceProposalModalProps } from './voice-proposal/types'
+import { RecordingStep } from './voice-proposal/RecordingStep'
+import { ProcessingStep } from './voice-proposal/ProcessingStep'
+import { PreviewStep } from './voice-proposal/PreviewStep'
+import { DoneStep } from './voice-proposal/DoneStep'
 
 const logger = new Logger('VoiceProposalModal')
-
-type Step = 'RECORDING' | 'PROCESSING' | 'PREVIEW' | 'DONE'
-
-interface VoiceProposalModalProps {
-  isOpen: boolean
-  onClose: () => void
-  locale: string
-}
 
 export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalModalProps) {
   const t = useTranslations('voiceProposal')
@@ -175,12 +167,6 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     return () => window.removeEventListener('keydown', handler)
   }, [isOpen, onClose])
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
-
   // ── Start Recording ──
   const startRecording = useCallback(async () => {
     setError(null)
@@ -230,7 +216,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       setRecordingTime(0)
       setStep('RECORDING')
 
-      // Voice Activity Detection (replaces basic volume monitor + silence timer)
+      // Voice Activity Detection
       const vad = new VoiceActivityDetector({
         silenceThreshold: -45,
         silenceDuration: 3000,
@@ -273,7 +259,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     setCountdown(null)
   }, [])
 
-  // ── Process Audio: Transcribe → Parse ──
+  // ── Process Audio: Transcribe -> Parse ──
   const processAudio = useCallback(async (audioBase64: string) => {
     setStep('PROCESSING')
     setTranscript('')
@@ -399,62 +385,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     setIsListeningCommands(false)
   }, [])
 
-  // ── TTS confirmation & speech command listener on PREVIEW ──
-  useEffect(() => {
-    if (step !== 'PREVIEW' || !parseResult) {
-      stopVoiceServices()
-      return
-    }
-
-    // Speak the proposal confirmation via TTS
-    const vc = new VoiceConfirmation()
-    voiceConfirmationRef.current = vc
-
-    if (vc.isSupported()) {
-      const customerName = parseResult.customer.matchedName || parseResult.customer.query
-      const total = parseResult.items.reduce((sum, item) => {
-        return sum + item.quantity * (item.unitPrice ?? 0)
-      }, 0)
-
-      vc.speakProposalConfirmation(customerName, total).catch(() => {
-        // TTS failure is not critical
-      })
-    }
-
-    // Start listening for voice commands
-    const sc = new VoiceSpeechCommands()
-    speechCommandsRef.current = sc
-
-    if (sc.isSupported()) {
-      setIsListeningCommands(true)
-      sc.startListening((command) => {
-        switch (command) {
-          case 'approve':
-            handleApprove()
-            break
-          case 'cancel':
-            handleRetry()
-            break
-          case 'edit':
-            handleVoiceEdit()
-            break
-          case 'undo':
-            if (historyIndex > 0) {
-              handleHistoryChange(historyIndex - 1)
-            }
-            break
-          default:
-            break
-        }
-      })
-    }
-
-    return () => {
-      stopVoiceServices()
-    }
-  }, [step, parseResult]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Approve → Create draft proposal ──
+  // ── Approve -> Create draft proposal ──
   const handleApprove = useCallback(async () => {
     if (!parseResult) return
     setIsApproving(true)
@@ -515,6 +446,61 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     }
   }, [editHistory])
 
+  // ── TTS confirmation & speech command listener on PREVIEW ──
+  useEffect(() => {
+    if (step !== 'PREVIEW' || !parseResult) {
+      stopVoiceServices()
+      return
+    }
+
+    // Speak the proposal confirmation via TTS
+    const vc = new VoiceConfirmation()
+    voiceConfirmationRef.current = vc
+
+    if (vc.isSupported()) {
+      const customerName = parseResult.customer.matchedName || parseResult.customer.query
+      const total = parseResult.items.reduce((sum, item) => {
+        return sum + item.quantity * (item.unitPrice ?? 0)
+      }, 0)
+
+      vc.speakProposalConfirmation(customerName, total).catch(() => {
+        // TTS failure is not critical
+      })
+    }
+
+    // Start listening for voice commands
+    const sc = new VoiceSpeechCommands()
+    speechCommandsRef.current = sc
+
+    if (sc.isSupported()) {
+      setIsListeningCommands(true)
+      sc.startListening((command) => {
+        switch (command) {
+          case 'approve':
+            handleApprove()
+            break
+          case 'cancel':
+            handleRetry()
+            break
+          case 'edit':
+            handleVoiceEdit()
+            break
+          case 'undo':
+            if (historyIndex > 0) {
+              handleHistoryChange(historyIndex - 1)
+            }
+            break
+          default:
+            break
+        }
+      })
+    }
+
+    return () => {
+      stopVoiceServices()
+    }
+  }, [step, parseResult]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── WhatsApp send via API ──
   const handleWhatsAppSend = useCallback(async () => {
     if (!createdProposalId) return
@@ -558,11 +544,6 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
     setWhatsAppSent(false)
     setIsListeningCommands(false)
   }, [stopVoiceServices])
-
-  // ── WhatsApp link ──
-  const whatsAppLink = createdProposalId
-    ? `https://wa.me/?text=${encodeURIComponent(`Teklifiniz hazir: ${window.location.origin}/${locale}/proposals/${createdProposalId}`)}`
-    : '#'
 
   if (!isOpen) return null
 
@@ -621,281 +602,57 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
             />
 
             <AnimatePresence mode="wait">
-              {/* ── RECORDING ── */}
               {step === 'RECORDING' && (
-                <motion.div
-                  key="recording"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="flex flex-col items-center gap-6 py-8"
-                >
-                  {/* Mic button */}
-                  {!isRecording ? (
-                    <button
-                      onClick={startRecording}
-                      className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-xl shadow-emerald-500/30 hover:scale-105 transition-transform active:scale-95"
-                    >
-                      <Mic className="h-10 w-10 text-white" />
-                      {/* Pulse ring */}
-                      <span className="absolute inset-0 rounded-full border-2 border-emerald-400 animate-ping opacity-30" />
-                    </button>
-                  ) : (
-                    <>
-                      {/* Recording indicator */}
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20" />
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-xl shadow-red-500/30">
-                          <Mic className="h-10 w-10 text-white" />
-                        </div>
-                      </div>
-
-                      {/* Activity indicator */}
-                      <VoiceActivityIndicator
-                        isActive={isRecording}
-                        volume={volume}
-                        className="w-full max-w-xs"
-                      />
-
-                      {/* Timer */}
-                      <div className="text-center">
-                        <p className="text-3xl font-bold font-mono text-red-600 dark:text-red-400">
-                          {formatTime(recordingTime)}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">{t('maxDuration')}</p>
-                      </div>
-
-                      {/* Silence countdown */}
-                      {countdown !== null && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          className="text-center px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
-                        >
-                          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                            {t('silenceDetectedCountdown', { countdown })}
-                          </p>
-                          <p className="text-xs text-amber-500 dark:text-amber-500 mt-0.5">
-                            {t('silenceContinueOrStop')}
-                          </p>
-                        </motion.div>
-                      )}
-
-                      {/* Stop button */}
-                      <Button
-                        onClick={stopRecording}
-                        className="gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg px-8"
-                      >
-                        <Square className="h-4 w-4" />
-                        {t('stop')}
-                      </Button>
-                    </>
-                  )}
-
-                  {!isRecording && !isEditMode && (
-                    <div className="text-center space-y-3 max-w-sm">
-                      <p className="text-sm text-slate-500">{t('tapToRecord')}</p>
-                      <div className="text-left space-y-2">
-                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('exampleUsages')}</p>
-                        <ul className="text-xs text-slate-400 space-y-1">
-                          <li>• &quot;{t('exampleUsage1')}&quot;</li>
-                          <li>• &quot;{t('exampleUsage2')}&quot;</li>
-                          <li>• &quot;{t('exampleUsage3')}&quot;</li>
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-
-                  {!isRecording && isEditMode && (
-                    <div className="text-center space-y-3 max-w-sm">
-                      <p className="text-sm text-slate-500">{t('tapToRecordEdit')}</p>
-                      <div className="text-left space-y-2">
-                        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{t('exampleEdits')}</p>
-                        <ul className="text-xs text-slate-400 space-y-1">
-                          <li>• &quot;{t('exampleEdit1')}&quot;</li>
-                          <li>• &quot;{t('exampleEdit2')}&quot;</li>
-                          <li>• &quot;{t('exampleEdit3')}&quot;</li>
-                          <li>• &quot;{t('exampleEdit4')}&quot;</li>
-                          <li>• &quot;{t('exampleEdit5')}&quot;</li>
-                          <li>• &quot;{t('exampleEdit6')}&quot;</li>
-                          <li>• &quot;{t('exampleEdit7')}&quot;</li>
-                        </ul>
-                      </div>
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="w-full p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400 text-center">
-                      {error}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => { setError(null); startRecording() }}
-                        className="mt-2 mx-auto block"
-                      >
-                        {t('retryButton')}
-                      </Button>
-                    </div>
-                  )}
-                </motion.div>
+                <RecordingStep
+                  isRecording={isRecording}
+                  volume={volume}
+                  recordingTime={recordingTime}
+                  countdown={countdown}
+                  isEditMode={isEditMode}
+                  error={error}
+                  onStartRecording={startRecording}
+                  onStopRecording={stopRecording}
+                  onClearError={() => setError(null)}
+                  t={t}
+                />
               )}
 
-              {/* ── PROCESSING ── */}
               {step === 'PROCESSING' && (
-                <motion.div
-                  key="processing"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className="flex flex-col items-center gap-6 py-8"
-                >
-                  <div className="relative">
-                    <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {transcript ? t('preparingProposal') : t('recognizingSpeech')}
-                    </p>
-                  </div>
-
-                  {transcript && (
-                    <LiveTranscript
-                      text={transcript}
-                      isProcessing={!parseResult}
-                      className="w-full"
-                    />
-                  )}
-                </motion.div>
+                <ProcessingStep
+                  transcript={transcript}
+                  parseResult={parseResult}
+                  t={t}
+                />
               )}
 
-              {/* ── PREVIEW ── */}
               {step === 'PREVIEW' && parseResult && (
-                <motion.div
-                  key="preview"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                >
-                  <VoiceProposalPreview
-                    data={parseResult}
-                    onEdit={() => {
-                      // Navigate to manual edit page
-                      window.location.href = `/${locale}/proposals/new?voiceData=${encodeURIComponent(JSON.stringify(parseResult))}`
-                    }}
-                    onVoiceEdit={handleVoiceEdit}
-                    onApprove={handleApprove}
-                    onRetry={handleRetry}
-                    isLoading={isApproving}
-                  />
-
-                  {/* Voice command listening indicator */}
-                  {isListeningCommands && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
-                    >
-                      <Volume2 className="h-4 w-4 text-blue-500 animate-pulse" />
-                      <span className="text-xs text-blue-600 dark:text-blue-400">
-                        {t('listeningCommands')}
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {/* Edit History (undo/redo) - shown when there are multiple versions */}
-                  {editHistory.length > 1 && (
-                    <VoiceEditHistory
-                      history={editHistory}
-                      currentIndex={historyIndex}
-                      onChange={handleHistoryChange}
-                      changes={editChanges}
-                      className="mt-4"
-                    />
-                  )}
-                </motion.div>
+                <PreviewStep
+                  parseResult={parseResult}
+                  isApproving={isApproving}
+                  isListeningCommands={isListeningCommands}
+                  editHistory={editHistory}
+                  editChanges={editChanges}
+                  historyIndex={historyIndex}
+                  locale={locale}
+                  onEdit={handleVoiceEdit}
+                  onVoiceEdit={handleVoiceEdit}
+                  onApprove={handleApprove}
+                  onRetry={handleRetry}
+                  onHistoryChange={handleHistoryChange}
+                  t={t}
+                />
               )}
 
-              {/* ── DONE ── */}
               {step === 'DONE' && (
-                <motion.div
-                  key="done"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex flex-col items-center gap-6 py-8"
-                >
-                  {/* Success animation */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }}
-                    className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-xl shadow-emerald-500/30"
-                  >
-                    <CheckCircle2 className="h-10 w-10 text-white" />
-                  </motion.div>
-
-                  <div className="text-center">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {t('proposalCreatedTitle')}
-                    </h3>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {t('proposalCreatedDesc')}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-3 w-full max-w-xs">
-                    {/* View proposal */}
-                    <Button
-                      onClick={() => {
-                        window.location.href = `/${locale}/proposals/${createdProposalId}`
-                      }}
-                      className="gap-2 w-full"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      {t('viewProposal')}
-                    </Button>
-
-                    {/* WhatsApp Send via API */}
-                    <Button
-                      variant="outline"
-                      onClick={handleWhatsAppSend}
-                      disabled={isSendingWhatsApp || whatsAppSent}
-                      className="gap-2 w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
-                    >
-                      {isSendingWhatsApp ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : whatsAppSent ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                      {whatsAppSent ? t('whatsAppSent') : t('whatsAppSend')}
-                    </Button>
-
-                    {/* Fallback: open WhatsApp manually */}
-                    <Button
-                      variant="ghost"
-                      asChild
-                      className="gap-2 w-full text-slate-500 text-xs"
-                    >
-                      <a href={whatsAppLink} target="_blank" rel="noopener noreferrer">
-                        <MessageCircle className="h-3 w-3" />
-                        {t('manualWhatsAppLink')}
-                      </a>
-                    </Button>
-
-                    {/* Create another */}
-                    <Button
-                      variant="ghost"
-                      onClick={handleRetry}
-                      className="text-slate-500"
-                    >
-                      {t('newVoiceProposal')}
-                    </Button>
-                  </div>
-                </motion.div>
+                <DoneStep
+                  createdProposalId={createdProposalId}
+                  isSendingWhatsApp={isSendingWhatsApp}
+                  whatsAppSent={whatsAppSent}
+                  locale={locale}
+                  onWhatsAppSend={handleWhatsAppSend}
+                  onRetry={handleRetry}
+                  t={t}
+                />
               )}
             </AnimatePresence>
           </div>

@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
+import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import {
   Search,
   PackagePlus,
@@ -175,14 +176,16 @@ export default function StockPage() {
 
   const { data: stockData, error: stockError, isLoading: stockLoading, mutate: mutateStock } = useSWR(
     `/api/v1/stock?${stockParams.toString()}`,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
-  const { data: alertsData } = useSWR('/api/v1/stock/alerts', fetcher);
+  const { data: alertsData } = useSWR('/api/v1/stock/alerts', fetcher, swrDefaultOptions);
 
   const { data: movementsData } = useSWR(
     selectedProduct ? `/api/v1/stock/movements?productId=${selectedProduct.id}&limit=10` : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   // Product search for movement dialog
@@ -190,7 +193,8 @@ export default function StockPage() {
     movementDialogType && movementForm.productSearch.length >= 2
       ? `/api/v1/stock?search=${encodeURIComponent(movementForm.productSearch)}&limit=10`
       : null,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const products: StockProduct[] = stockData?.data?.products ?? stockData?.data?.items ?? [];

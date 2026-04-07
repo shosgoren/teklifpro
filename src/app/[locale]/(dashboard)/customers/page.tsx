@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import useSWR from 'swr';
+import { swrDefaultOptions } from '@/shared/utils/swrConfig';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import { Plus, RefreshCw, Search, Filter, Edit, Trash2, ChevronDown, Users, Phone, Mail, MapPin, AlertCircle, ExternalLink, Calendar, X } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
@@ -92,7 +93,8 @@ export default function CustomersPage() {
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/v1/customers?${queryParams.toString()}`,
-    fetcher
+    fetcher,
+    swrDefaultOptions
   );
 
   const customers: Customer[] = data?.data?.customers ?? [];
