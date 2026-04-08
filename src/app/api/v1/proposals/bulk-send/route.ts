@@ -68,7 +68,7 @@ async function handlePost(
         },
         tenantId: tenant.id,
         status: {
-          in: ['READY', 'SENT'],
+          in: ['READY', 'SENT', 'REVISED'],
         },
         deletedAt: null,
       },

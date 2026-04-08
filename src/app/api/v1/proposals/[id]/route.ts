@@ -110,7 +110,8 @@ async function handlePut(
         VIEWED: ['ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED'],
         ACCEPTED: ['INVOICED'],
         REJECTED: ['DRAFT'],
-        REVISION_REQUESTED: ['DRAFT'],
+        REVISION_REQUESTED: ['DRAFT', 'REVISED'],
+        REVISED: ['READY', 'SENT', 'CANCELLED'],
         EXPIRED: ['DRAFT'],
       };
       const allowed = VALID_TRANSITIONS[existingProposal.status] || [];

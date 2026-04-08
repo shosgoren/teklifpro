@@ -1336,7 +1336,7 @@ export default function EditProposalPage() {
       }
     })
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       customerId: data.customer.id,
       title: data.title,
       description: data.notes || '',
@@ -1348,6 +1348,11 @@ export default function EditProposalPage() {
       discountValue: Number(data.generalDiscount.value) || 0,
       voiceNoteData: data.voiceNoteData || null,
       voiceNoteDuration: data.voiceNoteDuration || null,
+    }
+
+    // Transition revised proposals to REVISED status so they can be re-sent
+    if (proposalStatus === 'REVISION_REQUESTED') {
+      payload.status = 'REVISED'
     }
 
     const res = await fetch(`/api/v1/proposals/${proposalId}`, {
