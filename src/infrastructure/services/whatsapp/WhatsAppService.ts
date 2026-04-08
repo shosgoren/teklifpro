@@ -65,68 +65,41 @@ export class WhatsAppService {
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const formattedTo = this.formatPhoneNumber(params.to)
 
-    const proposalText = `Merhaba ${params.customerName},\n\n` +
-      `*${params.proposalTitle}*\n` +
-      `Teklif No: ${params.proposalNumber}\n` +
-      `Tutar: ${params.grandTotal}\n\n` +
-      `Teklifi görüntülemek için:\n${params.proposalUrl}\n\n` +
-      `${params.companyName}`
+    // Extract the path suffix from proposalUrl for template URL button
+    // Template URL base is set in Meta, we only pass the dynamic suffix
+    const urlParts = params.proposalUrl.split('/proposal/')
+    const publicToken = urlParts[1] || ''
 
-    // 1. Send hello_world template to open conversation window
-    //    Templates can be sent without a 24h session — they initiate the conversation
     try {
-      const templateResult = await this.sendTemplate({
+      // Send proposal_notification template with URL button
+      // This works without a 24h conversation window (templates initiate conversations)
+      const result = await this.sendTemplate({
         to: formattedTo,
-        templateName: 'hello_world',
-        language: 'en_US',
-        parameters: {},
+        templateName: 'proposal_notification',
+        language: 'tr',
+        headerParams: [params.companyName],
+        parameters: {
+          '1': params.customerName,
+          '2': params.proposalTitle,
+          '3': params.proposalNumber,
+          '4': params.grandTotal,
+        },
+        buttonParams: [publicToken],
       })
 
-      logger.info('Template sent successfully', { to: formattedTo, messageId: templateResult?.messages?.[0]?.id })
+      logger.info('Proposal template sent successfully', {
+        to: formattedTo,
+        messageId: result?.messages?.[0]?.id,
+        template: 'proposal_notification',
+      })
 
-      // 2. Send CTA URL button message with proposal details
-      //    The template opened the conversation window so interactive messages can go through now
-      await new Promise(resolve => setTimeout(resolve, 3000))
-
-      try {
-        const ctaResult = await this.sendCtaUrlMessage({
-          to: formattedTo,
-          header: `${params.companyName} - Teklif`,
-          body: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek için aşağıdaki butona tıklayınız.`,
-          footer: 'TeklifPro ile gönderildi',
-          buttonText: 'Teklifi Görüntüle',
-          url: params.proposalUrl,
-        })
-        logger.info('CTA URL message sent successfully', { to: formattedTo, messageId: ctaResult?.messages?.[0]?.id })
-        return {
-          success: true,
-          messageId: ctaResult?.messages?.[0]?.id || templateResult?.messages?.[0]?.id,
-        }
-      } catch (ctaError) {
-        const ctaDetail = ctaError instanceof Error ? ctaError.message : String(ctaError)
-        logger.warn('CTA URL failed after template, trying plain text', { error: ctaDetail, to: formattedTo })
-
-        // 3. Last resort: send as plain text with link
-        try {
-          const textResult = await this.sendTextMessage(formattedTo, proposalText)
-          logger.info('Plain text proposal sent', { to: formattedTo, messageId: textResult?.messages?.[0]?.id })
-          return {
-            success: true,
-            messageId: textResult?.messages?.[0]?.id || templateResult?.messages?.[0]?.id,
-          }
-        } catch (textError) {
-          const textDetail = textError instanceof Error ? textError.message : String(textError)
-          logger.error('All message methods failed after template', { ctaError: ctaDetail, textError: textDetail, to: formattedTo })
-          return {
-            success: true,
-            messageId: templateResult?.messages?.[0]?.id,
-            error: 'Template gönderildi ancak teklif detayları iletilemedi. Tekrar göndermeyi deneyin.',
-          }
-        }
+      return {
+        success: true,
+        messageId: result?.messages?.[0]?.id,
       }
     } catch (templateError) {
       const errorDetail = templateError instanceof Error ? templateError.message : String(templateError)
-      logger.error('Template mesaj hatasi', { error: errorDetail, to: formattedTo, phoneNumberId: this.phoneNumberId })
+      logger.error('Proposal template failed', { error: errorDetail, to: formattedTo, phoneNumberId: this.phoneNumberId })
 
       // Parse WhatsApp API error for user-friendly message
       let userMessage = 'WhatsApp mesajı gönderilemedi.'
@@ -138,6 +111,8 @@ export class WhatsAppService {
         userMessage += ' Müşteriyle 24 saat içinde iletişim penceresi açık değil.'
       } else if (errorDetail.includes('100') || errorDetail.includes('parameter')) {
         userMessage += ' API yapılandırma hatası. WhatsApp Phone ID ve Access Token ayarlarını kontrol edin.'
+      } else if (errorDetail.includes('132001') || errorDetail.includes('template')) {
+        userMessage += ' Template bulunamadı. Meta Business Suite\'te "proposal_notification" template\'ini oluşturun.'
       } else {
         userMessage += ` Detay: ${errorDetail.substring(0, 200)}`
       }
