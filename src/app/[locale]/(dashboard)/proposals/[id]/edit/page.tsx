@@ -1595,7 +1595,7 @@ export default function EditProposalPage() {
               ) : (
                 <Button
                   type="button"
-                  onClick={() => handleFormSubmit()}
+                  onClick={() => handleSaveAndSend('draft')}
                   className="gap-2 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 flex-1 md:flex-none"
                   disabled={isSubmitting}
                 >
