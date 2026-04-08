@@ -3,7 +3,7 @@
 import { Button } from '@/shared/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 /**
  * Custom Error Page (Error Boundary)
@@ -20,10 +20,46 @@ interface ErrorPageProps {
   reset: () => void;
 }
 
+const dictionaries = {
+  tr: {
+    heading: 'Bir Hata Oluştu',
+    description:
+      'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyiniz veya ana sayfaya dönüp devam edin.',
+    errorDetails: 'Hata Detayları:',
+    serverError: '500 - İç Sunucu Hatası',
+    retry: 'Tekrar Dene',
+    goHome: 'Ana Sayfaya Dön',
+    contactPrompt: 'Sorun devam ederse lütfen iletişime geçin',
+    contactSupport: 'Destek Ekibine Ulaş',
+  },
+  en: {
+    heading: 'An Error Occurred',
+    description:
+      'An unexpected error occurred. Please try again or return to the home page.',
+    errorDetails: 'Error Details:',
+    serverError: '500 - Internal Server Error',
+    retry: 'Try Again',
+    goHome: 'Go to Home Page',
+    contactPrompt: 'If the problem persists, please contact us',
+    contactSupport: 'Contact Support',
+  },
+} as const;
+
+type Locale = keyof typeof dictionaries;
+
+function getLocaleFromPath(): Locale {
+  if (typeof window === 'undefined') return 'tr';
+  const pathLocale = window.location.pathname.split('/')[1];
+  return pathLocale === 'en' ? 'en' : 'tr';
+}
+
 export default function ErrorPage({
   error,
   reset,
 }: ErrorPageProps): JSX.Element {
+  const locale = getLocaleFromPath();
+  const t = useMemo(() => dictionaries[locale], [locale]);
+
   // Log error details for debugging
   useEffect(() => {
     // Log to console in development
@@ -61,20 +97,19 @@ export default function ErrorPage({
 
         {/* Heading */}
         <h1 className="text-4xl font-bold text-gray-900 mb-3">
-          Bir Hata Oluştu
+          {t.heading}
         </h1>
 
         {/* Description */}
         <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-          Beklenmeyen bir hata oluştu. Lütfen tekrar deneyiniz veya ana
-          sayfaya dönüp devam edin.
+          {t.description}
         </p>
 
         {/* Error Message (Development Only) */}
         {isDevelopment && error.message && (
           <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4 text-left">
             <h2 className="text-sm font-semibold text-red-800 mb-2">
-              Hata Detayları:
+              {t.errorDetails}
             </h2>
             <p className="text-xs text-red-700 font-mono break-words">
               {error.message}
@@ -99,7 +134,7 @@ export default function ErrorPage({
 
         {/* Error Code - Always Visible */}
         <div className="mb-8 text-sm text-gray-500 font-mono bg-gray-100 py-2 px-4 rounded-lg">
-          500 - İç Sunucu Hatası
+          {t.serverError}
         </div>
 
         {/* Buttons */}
@@ -109,7 +144,7 @@ export default function ErrorPage({
             onClick={reset}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
           >
-            Tekrar Dene
+            {t.retry}
           </Button>
 
           {/* Go Home Button */}
@@ -118,7 +153,7 @@ export default function ErrorPage({
               variant="outline"
               className="w-full text-blue-600 border border-blue-600 hover:bg-blue-50 font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
             >
-              Ana Sayfaya Dön
+              {t.goHome}
             </Button>
           </Link>
         </div>
@@ -126,13 +161,13 @@ export default function ErrorPage({
         {/* Support Info */}
         <div className="mt-10 pt-8 border-t border-gray-200">
           <p className="text-sm text-gray-600 mb-3">
-            Sorun devam ederse lütfen iletişime geçin
+            {t.contactPrompt}
           </p>
           <Link
             href="/contact"
             className="text-blue-600 hover:text-blue-800 hover:underline text-sm font-medium"
           >
-            Destek Ekibine Ulaş
+            {t.contactSupport}
           </Link>
         </div>
 
@@ -143,7 +178,7 @@ export default function ErrorPage({
               Environment: {process.env.NODE_ENV}
             </p>
             <p className="text-xs text-gray-500 font-mono">
-              Time: {new Date().toLocaleString('tr-TR')}
+              Time: {new Date().toLocaleString(locale === 'en' ? 'en-US' : 'tr-TR')}
             </p>
           </div>
         )}

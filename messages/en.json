@@ -1922,5 +1922,26 @@
     "totalRevenue": "Total Revenue",
     "pendingProposals": "Pending Proposals",
     "previousPeriod": "vs last period"
+  },
+  "errorPage": {
+    "errorTitle": "Error loading {page}",
+    "errorDescription": "An unexpected error occurred while loading the page. Please try again.",
+    "retry": "Try Again",
+    "pages": {
+      "customers": "Customers",
+      "auditLog": "Audit Log",
+      "settings": "Settings",
+      "templates": "Templates",
+      "products": "Products",
+      "productDetail": "Product Detail",
+      "bom": "Bill of Materials",
+      "dashboard": "Dashboard",
+      "stock": "Stock",
+      "newProposal": "New Proposal",
+      "proposals": "Proposals",
+      "proposalCompare": "Proposal Comparison",
+      "proposalDetail": "Proposal Detail",
+      "analytics": "Analytics"
+    }
   }
 }

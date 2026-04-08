@@ -231,7 +231,7 @@ export function NotificationCenter({
                           {notification.description}
                         </p>
                         <p className="text-xs text-gray-500 mt-2">
-                          {getTimeAgo(notification.timestamp)}
+                          {getTimeAgo(notification.timestamp, t, locale)}
                         </p>
                       </div>
 
@@ -336,7 +336,11 @@ function getNotificationIconBg(type: Notification['type']): string {
   }
 }
 
-function getTimeAgo(date: Date | string): string {
+function getTimeAgo(
+  date: Date | string,
+  t: (key: string, values?: Record<string, string | number>) => string,
+  locale: string
+): string {
   const now = new Date();
   const notificationDate = typeof date === 'string' ? new Date(date) : date;
   const seconds = Math.floor(
@@ -344,25 +348,26 @@ function getTimeAgo(date: Date | string): string {
   );
 
   if (seconds < 60) {
-    return 'Birkaç saniye önce';
+    return t('timeAgo.seconds');
   }
 
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) {
-    return minutes === 1 ? '1 dakika önce' : `${minutes} dakika önce`;
+    return minutes === 1 ? t('timeAgo.minute') : t('timeAgo.minutes', { count: minutes });
   }
 
   const hours = Math.floor(minutes / 60);
   if (hours < 24) {
-    return hours === 1 ? '1 saat önce' : `${hours} saat önce`;
+    return hours === 1 ? t('timeAgo.hour') : t('timeAgo.hours', { count: hours });
   }
 
   const days = Math.floor(hours / 24);
   if (days < 7) {
-    return days === 1 ? '1 gün önce' : `${days} gün önce`;
+    return days === 1 ? t('timeAgo.day') : t('timeAgo.days', { count: days });
   }
 
-  return notificationDate.toLocaleDateString('tr-TR', {
+  const localeStr = locale === 'tr' ? 'tr-TR' : 'en-US';
+  return notificationDate.toLocaleDateString(localeStr, {
     month: 'short',
     day: 'numeric',
   });

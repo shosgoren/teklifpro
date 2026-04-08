@@ -91,10 +91,30 @@ interface ProposalContentProps {
   token: string
 }
 
-const statusDisplay: Record<string, { label: string; color: string; bg: string; icon: typeof CheckCircle }> = {
-  ACCEPTED: { label: 'Kabul Edildi', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle },
-  REJECTED: { label: 'Reddedildi', color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: XCircle },
-  REVISION_REQUESTED: { label: 'Revize Talep Edildi', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: RotateCw },
+const statusDisplayDict = {
+  tr: {
+    ACCEPTED: { label: 'Kabul Edildi', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle },
+    REJECTED: { label: 'Reddedildi', color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: XCircle },
+    REVISION_REQUESTED: { label: 'Revize Talep Edildi', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: RotateCw },
+  },
+  en: {
+    ACCEPTED: { label: 'Accepted', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle },
+    REJECTED: { label: 'Rejected', color: 'text-red-700', bg: 'bg-red-50 border-red-200', icon: XCircle },
+    REVISION_REQUESTED: { label: 'Revision Requested', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: RotateCw },
+  },
+} as const
+
+type ProposalLocale = 'tr' | 'en'
+
+function getProposalLocale(): ProposalLocale {
+  if (typeof window !== 'undefined') {
+    return navigator.language.startsWith('tr') ? 'tr' : 'en'
+  }
+  return 'tr'
+}
+
+function getLocaleString(locale: ProposalLocale): string {
+  return locale === 'tr' ? 'tr-TR' : 'en-US'
 }
 
 export default function ProposalContent({
@@ -114,6 +134,9 @@ export default function ProposalContent({
   const [showDetails, setShowDetails] = useState(false)
   const [showBankInfo, setShowBankInfo] = useState(false)
   const [copiedIban, setCopiedIban] = useState<string | null>(null)
+  const proposalLocale = getProposalLocale()
+  const localeStr = getLocaleString(proposalLocale)
+  const statusDisplay = statusDisplayDict[proposalLocale]
 
   const copyIban = (iban: string) => {
     navigator.clipboard.writeText(iban)
@@ -122,9 +145,9 @@ export default function ProposalContent({
   }
 
   const fmt = (amount: number) =>
-    amount.toLocaleString('tr-TR', { style: 'currency', currency: proposal.currency })
+    amount.toLocaleString(localeStr, { style: 'currency', currency: proposal.currency })
 
-  const currentStatus = statusDisplay[proposal.status]
+  const currentStatus = statusDisplay[proposal.status as keyof typeof statusDisplay]
 
   const cardClass = "animate-fade-in-up"
   const cardShadow = "shadow-sm hover:shadow-md transition-shadow"
@@ -253,7 +276,7 @@ export default function ProposalContent({
             <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
               {signature.signerName && <span className="font-medium">{signature.signerName}</span>}
               {signature.signedAt && (
-                <span>{new Date(signature.signedAt).toLocaleString('tr-TR')}</span>
+                <span>{new Date(signature.signedAt).toLocaleString(localeStr)}</span>
               )}
             </div>
           </div>
@@ -609,7 +632,7 @@ export default function ProposalContent({
                   <p className="text-sm font-semibold text-gray-900">{signature.signerName}</p>
                   {signature.signedAt && (
                     <p className="text-xs text-gray-500">
-                      {new Date(signature.signedAt).toLocaleDateString('tr-TR', {
+                      {new Date(signature.signedAt).toLocaleDateString(localeStr, {
                         day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
                     </p>

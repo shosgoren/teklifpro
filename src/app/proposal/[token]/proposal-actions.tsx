@@ -18,8 +18,98 @@ interface ProposalActionsProps {
 
 type ModalType = 'accept' | 'reject' | 'revision' | null
 
+const proposalActionDict = {
+  tr: {
+    accept: 'Kabul Et',
+    revision: 'Revize',
+    reject: 'Reddet',
+    cancel: 'İptal',
+    send: 'Gönder',
+    acceptProposal: 'Teklifi Kabul Et',
+    requestRevision: 'Revize Talep Et',
+    rejectProposal: 'Teklifi Reddet',
+    acceptAriaLabel: 'Teklifi kabul et',
+    revisionAriaLabel: 'Teklif için revize talep et',
+    rejectAriaLabel: 'Teklifi reddet',
+    operationFailed: 'İşlem başarısız oldu',
+    errorOccurred: 'Bir hata oluştu',
+    enterFullName: 'Lütfen ad soyad giriniz',
+    pleaseSign: 'Lütfen imzanızı atınız',
+    describeRevision: 'Lütfen revize talebinizi açıklayınız',
+    operationSuccess: 'İşlem Başarılı!',
+    responseSent: 'Yanıtınız iletildi.',
+    confirmAccept: 'Teklifi kabul etmek istediğinize emin misiniz?',
+    signerPerson: 'İmzalayan Kişi',
+    selectPerson: 'Kişi seçiniz...',
+    otherManual: 'Diğer (elle giriş)',
+    enterFullNamePlaceholder: 'Ad Soyad giriniz',
+    signerFullName: 'İmzalayan kişinin adı soyadı',
+    eSignature: 'E-İmza',
+    clear: 'Temizle',
+    signatureLoading: 'İmza yükleniyor...',
+    signWithFingerOrPen: 'Parmağınız veya kaleminizle imzalayın',
+    noteOptional: 'Notunuz (Opsiyonel)',
+    additionalNotes: 'Ek notlarınız...',
+    specifyChanges: 'Lütfen hangi değişiklikleri istediğinizi belirtin.',
+    revisionRequest: 'Revize Talebiniz',
+    revisionPlaceholder: 'Örn: Fiyatları %10 düşürebilir misiniz?',
+    aboutToReject: 'Teklifi reddetmek üzeresiniz.',
+    rejectionReasonOptional: 'Reddetme Nedeni (Opsiyonel)',
+    rejectionPlaceholder: 'Örn: Fiyat fazla, Başka tedarikçi seçtik...',
+  },
+  en: {
+    accept: 'Accept',
+    revision: 'Revise',
+    reject: 'Reject',
+    cancel: 'Cancel',
+    send: 'Send',
+    acceptProposal: 'Accept Proposal',
+    requestRevision: 'Request Revision',
+    rejectProposal: 'Reject Proposal',
+    acceptAriaLabel: 'Accept proposal',
+    revisionAriaLabel: 'Request revision for proposal',
+    rejectAriaLabel: 'Reject proposal',
+    operationFailed: 'Operation failed',
+    errorOccurred: 'An error occurred',
+    enterFullName: 'Please enter your full name',
+    pleaseSign: 'Please provide your signature',
+    describeRevision: 'Please describe your revision request',
+    operationSuccess: 'Success!',
+    responseSent: 'Your response has been submitted.',
+    confirmAccept: 'Are you sure you want to accept this proposal?',
+    signerPerson: 'Signer',
+    selectPerson: 'Select a person...',
+    otherManual: 'Other (manual entry)',
+    enterFullNamePlaceholder: 'Enter full name',
+    signerFullName: 'Full name of the signer',
+    eSignature: 'E-Signature',
+    clear: 'Clear',
+    signatureLoading: 'Loading signature...',
+    signWithFingerOrPen: 'Sign with your finger or stylus',
+    noteOptional: 'Your Note (Optional)',
+    additionalNotes: 'Additional notes...',
+    specifyChanges: 'Please specify the changes you would like.',
+    revisionRequest: 'Your Revision Request',
+    revisionPlaceholder: 'E.g.: Can you reduce prices by 10%?',
+    aboutToReject: 'You are about to reject this proposal.',
+    rejectionReasonOptional: 'Rejection Reason (Optional)',
+    rejectionPlaceholder: 'E.g.: Price too high, Chose another supplier...',
+  },
+} as const
+
+type ProposalActionLocale = keyof typeof proposalActionDict
+
+function getProposalActionLocale(): ProposalActionLocale {
+  if (typeof window !== 'undefined') {
+    return navigator.language.startsWith('tr') ? 'tr' : 'en'
+  }
+  return 'tr'
+}
+
 export default function ProposalActions({ proposalId, contacts }: ProposalActionsProps) {
   const router = useRouter()
+  const locale = getProposalActionLocale()
+  const t = proposalActionDict[locale]
   const [activeModal, setActiveModal] = useState<ModalType>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,7 +144,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
       })
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error?.message || 'İşlem başarısız oldu')
+        throw new Error(data.error?.message || t.operationFailed)
       }
       setSuccess(true)
       setTimeout(() => {
@@ -63,7 +153,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
         setSuccess(false)
       }, 1500)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Bir hata oluştu')
+      setError(err instanceof Error ? err.message : t.errorOccurred)
     } finally {
       setIsLoading(false)
     }
@@ -71,11 +161,11 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
 
   const handleAccept = () => {
     if (!signerName.trim()) {
-      setError('Lütfen ad soyad giriniz')
+      setError(t.enterFullName)
       return
     }
     if (!sigCanvasRef.current || sigCanvasRef.current.isEmpty()) {
-      setError('Lütfen imzanızı atınız')
+      setError(t.pleaseSign)
       return
     }
     const signatureData = sigCanvasRef.current.getTrimmedCanvas().toDataURL('image/png')
@@ -92,7 +182,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
 
   const handleRevision = () => {
     if (!revisionNote.trim()) {
-      setError('Lütfen revize talebinizi açıklayınız')
+      setError(t.describeRevision)
       return
     }
     handleSubmit('REVISION_REQUESTED', { revisionNote: revisionNote.trim() })
@@ -124,31 +214,31 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
         <button
           onClick={() => setActiveModal('accept')}
           disabled={isLoading}
-          aria-label="Teklifi kabul et"
+          aria-label={t.acceptAriaLabel}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-2xl hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-emerald-500/30"
         >
           <CheckCircle className="w-4 h-4" />
-          <span>Kabul Et</span>
+          <span>{t.accept}</span>
         </button>
 
         <button
           onClick={() => setActiveModal('revision')}
           disabled={isLoading}
-          aria-label="Teklif için revize talep et"
+          aria-label={t.revisionAriaLabel}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-2xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-amber-500/30"
         >
           <RotateCw className="w-4 h-4" />
-          <span>Revize</span>
+          <span>{t.revision}</span>
         </button>
 
         <button
           onClick={() => setActiveModal('reject')}
           disabled={isLoading}
-          aria-label="Teklifi reddet"
+          aria-label={t.rejectAriaLabel}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-500/25 disabled:opacity-50 text-sm hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-red-500/30"
         >
           <XCircle className="w-4 h-4" />
-          <span>Reddet</span>
+          <span>{t.reject}</span>
         </button>
       </div>
 
@@ -171,17 +261,17 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                 <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
                   <CheckCircle className="w-8 h-8 text-emerald-500" />
                 </div>
-                <p className="text-lg font-bold text-gray-900">İşlem Başarılı!</p>
-                <p className="text-sm text-gray-500 mt-1">Yanıtınız iletildi.</p>
+                <p className="text-lg font-bold text-gray-900">{t.operationSuccess}</p>
+                <p className="text-sm text-gray-500 mt-1">{t.responseSent}</p>
               </div>
             )}
 
             {/* Header */}
             <div className="px-6 py-3 flex items-center justify-between">
               <h3 className="text-lg font-bold text-gray-900">
-                {activeModal === 'accept' && 'Teklifi Kabul Et'}
-                {activeModal === 'revision' && 'Revize Talep Et'}
-                {activeModal === 'reject' && 'Teklifi Reddet'}
+                {activeModal === 'accept' && t.acceptProposal}
+                {activeModal === 'revision' && t.requestRevision}
+                {activeModal === 'reject' && t.rejectProposal}
               </h3>
               <button
                 onClick={closeModal}
@@ -205,12 +295,12 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                 <>
                   <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl">
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
-                    <p className="text-sm text-emerald-800">Teklifi kabul etmek istediğinize emin misiniz?</p>
+                    <p className="text-sm text-emerald-800">{t.confirmAccept}</p>
                   </div>
 
                   {/* Signer Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">İmzalayan Kişi</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t.signerPerson}</label>
                     {contacts.length > 0 ? (
                       <>
                         <select
@@ -227,20 +317,20 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                           disabled={isLoading}
                           className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50 appearance-none"
                         >
-                          <option value="">Kişi seçiniz...</option>
+                          <option value="">{t.selectPerson}</option>
                           {contacts.map(c => (
                             <option key={c.id} value={c.id}>
                               {c.name}{c.title ? ` — ${c.title}` : ''}
                             </option>
                           ))}
-                          <option value="other">Diğer (elle giriş)</option>
+                          <option value="other">{t.otherManual}</option>
                         </select>
                         {selectedContactId === 'other' && (
                           <input
                             type="text"
                             value={signerName}
                             onChange={(e) => setSignerName(e.target.value)}
-                            placeholder="Ad Soyad giriniz"
+                            placeholder={t.enterFullNamePlaceholder}
                             disabled={isLoading}
                             className="w-full mt-2 px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50"
                           />
@@ -251,7 +341,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                         type="text"
                         value={signerName}
                         onChange={(e) => setSignerName(e.target.value)}
-                        placeholder="İmzalayan kişinin adı soyadı"
+                        placeholder={t.signerFullName}
                         disabled={isLoading}
                         className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50 disabled:opacity-50"
                       />
@@ -263,7 +353,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                     <div className="flex items-center justify-between mb-2">
                       <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                         <PenTool className="w-4 h-4" />
-                        E-İmza
+                        {t.eSignature}
                       </label>
                       {hasSigned && (
                         <button
@@ -271,7 +361,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                           className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
                         >
                           <Eraser className="w-3 h-3" />
-                          Temizle
+                          {t.clear}
                         </button>
                       )}
                     </div>
@@ -288,12 +378,12 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                         />
                       ) : (
                         <div style={{ width: '100%', height: '160px' }} className="flex items-center justify-center">
-                          <p className="text-sm text-gray-400">İmza yükleniyor...</p>
+                          <p className="text-sm text-gray-400">{t.signatureLoading}</p>
                         </div>
                       )}
                       {!hasSigned && SignatureCanvasComp && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <p className="text-sm text-gray-400">Parmağınız veya kaleminizle imzalayın</p>
+                          <p className="text-sm text-gray-400">{t.signWithFingerOrPen}</p>
                         </div>
                       )}
                     </div>
@@ -301,11 +391,11 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
 
                   {/* Customer Note */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Notunuz (Opsiyonel)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t.noteOptional}</label>
                     <textarea
                       value={customerNote}
                       onChange={(e) => setCustomerNote(e.target.value)}
-                      placeholder="Ek notlarınız..."
+                      placeholder={t.additionalNotes}
                       disabled={isLoading}
                       className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 resize-none bg-gray-50 disabled:opacity-50"
                       rows={2}
@@ -318,14 +408,14 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                 <>
                   <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl">
                     <RotateCw className="w-8 h-8 text-amber-500" />
-                    <p className="text-sm text-amber-800">Lütfen hangi değişiklikleri istediğinizi belirtin.</p>
+                    <p className="text-sm text-amber-800">{t.specifyChanges}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Revize Talebiniz</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t.revisionRequest}</label>
                     <textarea
                       value={revisionNote}
                       onChange={(e) => setRevisionNote(e.target.value)}
-                      placeholder="Örn: Fiyatları %10 düşürebilir misiniz?"
+                      placeholder={t.revisionPlaceholder}
                       disabled={isLoading}
                       className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none bg-gray-50 disabled:opacity-50"
                       rows={4}
@@ -338,14 +428,14 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                 <>
                   <div className="flex items-center gap-3 p-4 bg-red-50 rounded-2xl">
                     <XCircle className="w-8 h-8 text-red-500" />
-                    <p className="text-sm text-red-800">Teklifi reddetmek üzeresiniz.</p>
+                    <p className="text-sm text-red-800">{t.aboutToReject}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Reddetme Nedeni (Opsiyonel)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t.rejectionReasonOptional}</label>
                     <textarea
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="Örn: Fiyat fazla, Başka tedarikçi seçtik..."
+                      placeholder={t.rejectionPlaceholder}
                       disabled={isLoading}
                       className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 resize-none bg-gray-50 disabled:opacity-50"
                       rows={3}
@@ -362,7 +452,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                 disabled={isLoading}
                 className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 rounded-2xl font-medium text-sm hover:bg-gray-200 disabled:opacity-50"
               >
-                İptal
+                {t.cancel}
               </button>
               <button
                 onClick={activeModal === 'accept' ? handleAccept : activeModal === 'revision' ? handleRevision : handleReject}
@@ -376,7 +466,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
                 }`}
               >
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {activeModal === 'accept' ? 'Kabul Et' : activeModal === 'revision' ? 'Gönder' : 'Reddet'}
+                {activeModal === 'accept' ? t.accept : activeModal === 'revision' ? t.send : t.reject}
               </button>
             </div>
           </div>

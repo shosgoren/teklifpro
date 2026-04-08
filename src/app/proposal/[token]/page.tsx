@@ -10,7 +10,8 @@ import ProposalUnavailable from './proposal-unavailable'
 import PhoneGate from './phone-gate'
 import { ViewTracker } from './view-tracker'
 import { format } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { tr, enUS } from 'date-fns/locale'
+import { headers } from 'next/headers'
 
 interface ProposalPageProps {
   params: {
@@ -72,7 +73,21 @@ function verifyPhoneCookie(token: string): boolean {
   return crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expectedHmac, 'hex'))
 }
 
+function detectLocaleFromHeaders(): 'tr' | 'en' {
+  try {
+    const headersList = headers()
+    const acceptLanguage = headersList.get('accept-language') || ''
+    return acceptLanguage.startsWith('tr') ? 'tr' : 'en'
+  } catch {
+    return 'tr'
+  }
+}
+
 export default async function ProposalPage({ params }: ProposalPageProps) {
+  const detectedLocale = detectLocaleFromHeaders()
+  const dateFnsLocale = detectedLocale === 'tr' ? tr : enUS
+  const localeStr = detectedLocale === 'tr' ? 'tr-TR' : 'en-US'
+
   const proposal = await prisma.proposal.findFirst({
     where: { publicToken: params.token, deletedAt: null },
     include: {
@@ -186,11 +201,11 @@ export default async function ProposalPage({ params }: ProposalPageProps) {
     updatedProposal.status === 'REVISION_REQUESTED'
 
   const formatCurrency = (amount: number) =>
-    amount.toLocaleString('tr-TR', { style: 'currency', currency: updatedProposal.currency })
+    amount.toLocaleString(localeStr, { style: 'currency', currency: updatedProposal.currency })
 
-  const createdDate = format(new Date(updatedProposal.createdAt), 'dd MMMM yyyy', { locale: tr })
+  const createdDate = format(new Date(updatedProposal.createdAt), 'dd MMMM yyyy', { locale: dateFnsLocale })
   const expiresDate = updatedProposal.expiresAt
-    ? format(new Date(updatedProposal.expiresAt), 'dd MMMM yyyy', { locale: tr })
+    ? format(new Date(updatedProposal.expiresAt), 'dd MMMM yyyy', { locale: dateFnsLocale })
     : null
 
   return (

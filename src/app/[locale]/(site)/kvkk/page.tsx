@@ -6,8 +6,9 @@ export const metadata = {
   description: 'TeklifPro KVKK Aydınlatma Metni ve Kişisel Verilerin İşlenmesi Hakkında Bilgi',
 };
 
-export default function KVKKPage() {
-  const lastUpdated = new Date('2024-03-30').toLocaleDateString('tr-TR', {
+export default function KVKKPage({ params }: { params: { locale: string } }) {
+  const localeStr = params.locale === 'tr' ? 'tr-TR' : 'en-US';
+  const lastUpdated = new Date('2024-03-30').toLocaleDateString(localeStr, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

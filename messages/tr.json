@@ -1922,5 +1922,26 @@
     "totalRevenue": "Toplam Gelir",
     "pendingProposals": "Bekleyen Teklifler",
     "previousPeriod": "geçen dönem"
+  },
+  "errorPage": {
+    "errorTitle": "{page} yüklenirken hata oluştu",
+    "errorDescription": "Sayfa yüklenirken beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+    "retry": "Tekrar Dene",
+    "pages": {
+      "customers": "Müşteriler",
+      "auditLog": "Denetim Günlüğü",
+      "settings": "Ayarlar",
+      "templates": "Şablonlar",
+      "products": "Ürünler",
+      "productDetail": "Ürün Detayı",
+      "bom": "Ürün Reçeteleri",
+      "dashboard": "Dashboard",
+      "stock": "Stok",
+      "newProposal": "Yeni Teklif",
+      "proposals": "Teklifler",
+      "proposalCompare": "Teklif Karşılaştırma",
+      "proposalDetail": "Teklif Detayı",
+      "analytics": "Analitik"
+    }
   }
 }
