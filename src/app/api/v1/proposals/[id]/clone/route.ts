@@ -16,12 +16,9 @@ const logger = new Logger('ProposalCloneAPI');
  */
 
 /**
- * Helper: UUID formati kontrol et
+ * Helper: ID formati kontrol et (CUID veya UUID kabul eder)
  */
-function isValidUUID(uuid: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
-}
+const idSchema = z.string().min(1, 'ID bos olamaz');
 
 /**
  * Helper: Teklif iliskilerini getir
@@ -72,8 +69,9 @@ async function handlePost(
 
     // ============ 1. DOGRULAMA ============
 
-    // UUID formati kontrol et
-    if (!isValidUUID(sourceProposalId)) {
+    // ID formati kontrol et
+    const idResult = idSchema.safeParse(sourceProposalId);
+    if (!idResult.success) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,

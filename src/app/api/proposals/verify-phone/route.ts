@@ -90,7 +90,10 @@ export async function POST(request: NextRequest) {
     // Success — clear attempts and create a signed verification token
     attempts.delete(ip)
 
-    const secret = process.env.NEXTAUTH_SECRET || 'fallback-secret'
+    const secret = process.env.NEXTAUTH_SECRET
+    if (!secret) {
+      throw new Error('NEXTAUTH_SECRET environment variable is not set')
+    }
     const expiry = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
     const payload = `${token}:${expiry}`
     const hmac = crypto.createHmac('sha256', secret).update(payload).digest('hex')

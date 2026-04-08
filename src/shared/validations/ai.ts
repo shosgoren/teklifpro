@@ -2,12 +2,12 @@ import { z } from 'zod'
 
 export const suggestProductsSchema = z.object({
   action: z.literal('suggest-products'),
-  customerId: z.string().uuid(),
+  customerId: z.string().min(1),
 })
 
 export const suggestPricingSchema = z.object({
   action: z.literal('suggest-pricing'),
-  customerId: z.string().uuid(),
+  customerId: z.string().min(1),
   items: z.array(z.object({
     productId: z.string(),
     productName: z.string(),
@@ -30,7 +30,7 @@ export const predictAcceptanceSchema = z.object({
 
 export const suggestFollowUpSchema = z.object({
   action: z.literal('suggest-followup'),
-  proposalId: z.string().uuid(),
+  proposalId: z.string().min(1),
 })
 
 export const improveTextSchema = z.object({

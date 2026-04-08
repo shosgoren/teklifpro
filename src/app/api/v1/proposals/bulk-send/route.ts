@@ -65,7 +65,7 @@ async function handlePost(
         },
         tenantId: tenant.id,
         status: {
-          in: ['DRAFT', 'REVISED'],
+          in: ['READY', 'SENT'],
         },
         deletedAt: null,
       },
@@ -80,7 +80,7 @@ async function handlePost(
       return NextResponse.json(
         {
           success: false,
-          error: 'Gecerli teklif bulunamadi (DRAFT veya REVISED durumunda)',
+          error: 'Gecerli teklif bulunamadi (READY veya SENT durumunda)',
         },
         { status: 400 }
       );

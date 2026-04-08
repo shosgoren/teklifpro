@@ -33,7 +33,7 @@ export const bulkPriceSchema = z.object({
   field: z.enum(['listPrice', 'costPrice']).default('listPrice'),
   category: z.string().optional(),
   productType: z.enum(['COMMERCIAL', 'RAW_MATERIAL', 'SEMI_FINISHED', 'CONSUMABLE']).optional(),
-  productIds: z.array(z.string().uuid()).optional(),
+  productIds: z.array(z.string().min(1)).optional(),
 })
 
 export const linkSupplierSchema = z.object({

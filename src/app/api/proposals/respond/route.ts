@@ -13,11 +13,11 @@ const logger = new Logger('ProposalRespondAPI')
 async function handlePost(request: NextRequest) {
   try {
     const body = await request.json()
-    const { proposalId, action, customerNote, rejectionReason, revisionNote, signatureData, signerName, contactId } = body
+    const { publicToken, action, customerNote, rejectionReason, revisionNote, signatureData, signerName, contactId } = body
 
-    if (!proposalId || !action) {
+    if (!publicToken || !action) {
       return NextResponse.json(
-        { success: false, error: { message: 'proposalId ve action zorunludur' } },
+        { success: false, error: { message: 'publicToken ve action zorunludur' } },
         { status: 400 }
       )
     }
@@ -30,9 +30,9 @@ async function handlePost(request: NextRequest) {
       )
     }
 
-    // Find proposal with items for potential Parasut invoice creation
+    // Find proposal by publicToken for tenant isolation - only the customer with the link can respond
     const proposal = await prisma.proposal.findFirst({
-      where: { id: proposalId, deletedAt: null },
+      where: { publicToken, deletedAt: null },
       include: {
         user: true,
         customer: true,
@@ -105,6 +105,8 @@ async function handlePost(request: NextRequest) {
 
     // Encrypt signature data before storage
     const encryptedSignature = signatureData ? encryptSignature(signatureData) : null
+
+    const proposalId = proposal.id
 
     // Update proposal status
     const updatedProposal = await prisma.proposal.update({

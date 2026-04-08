@@ -60,8 +60,8 @@ export const SendProposalSchema = z.object({
 })
 
 export const CloneProposalBodySchema = z.object({
-  customerId: z.string().uuid().optional(),
-  contactId: z.string().uuid().optional(),
+  customerId: z.string().min(1).optional(),
+  contactId: z.string().min(1).optional(),
   title: z.string().min(1).max(255).optional(),
   priceMultiplier: z.number().positive().optional(),
   includeNotes: z.boolean().default(true),

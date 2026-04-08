@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
+import { createProductSchema } from '@/shared/validations/product';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProductDetailAPI');
@@ -45,6 +46,17 @@ async function handlePut(
 
     const body = await request.json();
 
+    // Validate request body with Zod (partial for PUT)
+    const updateSchema = createProductSchema.partial();
+    const validation = updateSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validation.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+    const validatedData = validation.data;
+
     const existing = await prisma.product.findFirst({
       where: { id: params.id, tenantId: session.tenant.id, deletedAt: null },
     });
@@ -55,9 +67,9 @@ async function handlePut(
 
     // Track price changes
     const priceFields = [
-      { field: 'listPrice', bodyVal: body.listPrice, existingVal: existing.listPrice },
-      { field: 'costPrice', bodyVal: body.costPrice, existingVal: existing.costPrice },
-      { field: 'laborCost', bodyVal: body.laborCost, existingVal: existing.laborCost },
+      { field: 'listPrice', bodyVal: validatedData.listPrice, existingVal: existing.listPrice },
+      { field: 'costPrice', bodyVal: validatedData.costPrice, existingVal: existing.costPrice },
+      { field: 'laborCost', bodyVal: validatedData.laborCost, existingVal: existing.laborCost },
     ];
 
     const priceChanges = priceFields
@@ -77,20 +89,20 @@ async function handlePut(
     const updated = await prisma.product.update({
       where: { id: params.id },
       data: {
-        name: body.name ?? existing.name,
-        code: body.code ?? existing.code,
-        description: body.description ?? existing.description,
-        category: body.category ?? existing.category,
-        productType: body.productType ?? existing.productType,
-        unit: body.unit ?? existing.unit,
-        listPrice: body.listPrice !== undefined ? body.listPrice : existing.listPrice,
-        costPrice: body.costPrice !== undefined ? body.costPrice : existing.costPrice,
-        laborCost: body.laborCost !== undefined ? body.laborCost : existing.laborCost,
-        overheadRate: body.overheadRate !== undefined ? body.overheadRate : existing.overheadRate,
-        minStockLevel: body.minStockLevel !== undefined ? body.minStockLevel : existing.minStockLevel,
-        currency: body.currency ?? existing.currency,
-        vatRate: body.vatRate !== undefined ? body.vatRate : existing.vatRate,
-        isActive: body.isActive !== undefined ? body.isActive : existing.isActive,
+        name: validatedData.name ?? existing.name,
+        code: validatedData.code ?? existing.code,
+        description: validatedData.description ?? existing.description,
+        category: validatedData.category ?? existing.category,
+        productType: validatedData.productType ?? existing.productType,
+        unit: validatedData.unit ?? existing.unit,
+        listPrice: validatedData.listPrice !== undefined ? validatedData.listPrice : existing.listPrice,
+        costPrice: validatedData.costPrice !== undefined ? validatedData.costPrice : existing.costPrice,
+        laborCost: validatedData.laborCost !== undefined ? validatedData.laborCost : existing.laborCost,
+        overheadRate: validatedData.overheadRate !== undefined ? validatedData.overheadRate : existing.overheadRate,
+        minStockLevel: validatedData.minStockLevel !== undefined ? validatedData.minStockLevel : existing.minStockLevel,
+        currency: existing.currency,
+        vatRate: validatedData.vatRate !== undefined ? validatedData.vatRate : existing.vatRate,
+        isActive: validatedData.isActive !== undefined ? validatedData.isActive : existing.isActive,
       },
     });
 

@@ -75,6 +75,7 @@ export const PERMISSIONS = {
 
   // Audit logs
   AUDIT_READ: 'audit.read',
+  AUDIT_WRITE: 'audit.write',
 
   // Admin
   ADMIN_USERS: 'admin.users',
@@ -113,6 +114,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'ai.use',
     // Audit
     'audit.read',
+    'audit.write',
   ],
 
   USER: [

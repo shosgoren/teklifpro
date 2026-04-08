@@ -345,9 +345,8 @@ async function handleDelete(
   assertAuthenticated(userId);
   assertAuthorized(userRole, ['OWNER']);
 
-  // Extract ID from URL path
-  const pathname = new URL(req.url).pathname;
-  const id = pathname.split('/').pop();
+  // Extract ID from query parameter since this is a non-dynamic route
+  const id = new URL(req.url).searchParams.get('id');
 
   if (!id) {
     throw badRequest('Audit log ID is required');
