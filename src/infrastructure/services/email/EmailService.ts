@@ -1,6 +1,9 @@
 import { Resend } from 'resend';
 import { Logger } from '@/infrastructure/logger';
 
+// TODO: derive from tenant settings when locale is stored per-tenant
+const TENANT_LOCALE = 'tr-TR';
+
 interface ProposalData {
   id: string;
   number: string;
@@ -357,8 +360,8 @@ export class EmailService {
 
               <div class="info-box">
                 <p><strong>Teklif No:</strong> ${proposalNumber}</p>
-                <p><strong>Tutar:</strong> <span class="amount">${amount.toLocaleString('tr-TR')} ${currency}</span></p>
-                <p><strong>Geçerlilik:</strong> ${validUntil.toLocaleDateString('tr-TR')}</p>
+                <p><strong>Tutar:</strong> <span class="amount">${amount.toLocaleString(TENANT_LOCALE)} ${currency}</span></p>
+                <p><strong>Geçerlilik:</strong> ${validUntil.toLocaleDateString(TENANT_LOCALE)}</p>
               </div>
 
               <p>Teklifi görmek için aşağıdaki butona tıklayın:</p>
@@ -415,7 +418,7 @@ export class EmailService {
               <p><strong>${clientName}</strong> sizin ${proposalNumber} nolu teklifinizi kabul etti!</p>
 
               <p style="font-size: 16px; margin: 20px 0;">
-                <strong>Teklif Tutarı:</strong> ${amount.toLocaleString('tr-TR')} ${currency}
+                <strong>Teklif Tutarı:</strong> ${amount.toLocaleString(TENANT_LOCALE)} ${currency}
               </p>
 
               <p>Sonraki adımlar için panonuza dönün:</p>

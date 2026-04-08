@@ -1945,5 +1945,25 @@
       "proposalDetail": "Teklif Detayı",
       "analytics": "Analitik"
     }
+  },
+  "widgetSettings": {
+    "openSettings": "Ayarları aç",
+    "title": "{widget} Ayarları",
+    "description": "Widget davranışını ve verilerini özelleştirin",
+    "dateRange": "Tarih Aralığı",
+    "last7Days": "Son 7 Gün",
+    "last30Days": "Son 30 Gün",
+    "last90Days": "Son 90 Gün",
+    "customRange": "Özel Aralık",
+    "chartType": "Grafik Türü",
+    "areaChart": "Alan Grafiği",
+    "lineChart": "Çizgi Grafiği",
+    "barChart": "Çubuk Grafiği",
+    "widgetSize": "Widget Boyutu",
+    "sizeSmall": "Küçük",
+    "sizeMedium": "Orta",
+    "sizeLarge": "Büyük",
+    "cancel": "İptal",
+    "save": "Kaydet"
   }
 }

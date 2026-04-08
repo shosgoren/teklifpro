@@ -1945,5 +1945,25 @@
       "proposalDetail": "Proposal Detail",
       "analytics": "Analytics"
     }
+  },
+  "widgetSettings": {
+    "openSettings": "Open settings",
+    "title": "{widget} Settings",
+    "description": "Customize widget behavior and data",
+    "dateRange": "Date Range",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "customRange": "Custom Range",
+    "chartType": "Chart Type",
+    "areaChart": "Area Chart",
+    "lineChart": "Line Chart",
+    "barChart": "Bar Chart",
+    "widgetSize": "Widget Size",
+    "sizeSmall": "Small",
+    "sizeMedium": "Medium",
+    "sizeLarge": "Large",
+    "cancel": "Cancel",
+    "save": "Save"
   }
 }
