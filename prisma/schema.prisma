@@ -72,6 +72,7 @@ model Tenant {
   proposalTemplates    ProposalTemplate[]
   auditLogs            AuditLog[]
   parasutSyncLogs      ParasutSyncLog[]
+  productSuppliers     ProductSupplier[]
 
   @@map("tenants")
 }
@@ -194,19 +195,22 @@ enum CustomerType {
 
 model CustomerContact {
   id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
   customerId  String    @map("customer_id")
   name        String
   title       String?
   email       String?
   phone       String?
   isPrimary   Boolean   @default(false) @map("is_primary")
+  deletedAt   DateTime? @map("deleted_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  customer    Customer  @relation(fields: [customerId], references: [id])
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   proposals   Proposal[]
 
   @@index([customerId])
+  @@index([tenantId])
   @@map("customer_contacts")
 }
 
@@ -221,7 +225,7 @@ model CustomerNote {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
 
-  customer    Customer  @relation(fields: [customerId], references: [id])
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id])
 
   // Note: tenant is accessible indirectly via customer.tenantId (CustomerNote -> Customer -> Tenant)
@@ -339,7 +343,7 @@ model PriceHistory {
   notes       String?
   createdAt   DateTime @default(now()) @map("created_at")
 
-  product     Product  @relation(fields: [productId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, createdAt])
   @@index([tenantId, createdAt])
@@ -415,6 +419,7 @@ model Supplier {
 
 model ProductSupplier {
   id              String    @id @default(cuid())
+  tenantId        String    @map("tenant_id")
   productId       String    @map("product_id")
   supplierId      String    @map("supplier_id")
   unitPrice       Decimal   @default(0) @db.Decimal(15, 2) @map("unit_price")
@@ -424,14 +429,17 @@ model ProductSupplier {
   isPreferred     Boolean   @default(false) @map("is_preferred")
   lastPurchaseAt  DateTime? @map("last_purchase_at")
   notes           String?
+  deletedAt       DateTime? @map("deleted_at")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  product         Product   @relation(fields: [productId], references: [id])
-  supplier        Supplier  @relation(fields: [supplierId], references: [id])
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier        Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@unique([productId, supplierId])
   @@index([supplierId])
+  @@index([tenantId, productId])
   @@map("product_suppliers")
 }
 
@@ -458,7 +466,7 @@ model StockMovement {
   createdBy   String?           @map("created_by")
   createdAt   DateTime          @default(now()) @map("created_at")
 
-  product     Product           @relation(fields: [productId], references: [id])
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
   @@index([productId, createdAt])

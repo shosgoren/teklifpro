@@ -68,11 +68,6 @@ function verifyWebhookSignature(
   const appSecret = process.env.WHATSAPP_APP_SECRET || '';
 
   if (!appSecret) {
-    // If APP_SECRET not configured, skip signature check in dev
-    if (process.env.NODE_ENV === 'development') {
-      logger.warn('WHATSAPP_APP_SECRET not set, skipping signature check in dev');
-      return true;
-    }
     logger.error('WHATSAPP_APP_SECRET not configured');
     return false;
   }

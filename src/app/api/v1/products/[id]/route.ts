@@ -86,32 +86,33 @@ async function handlePut(
         changedBy: session.user.id,
       }));
 
-    const updated = await prisma.product.update({
-      where: { id: params.id },
-      data: {
-        name: validatedData.name ?? existing.name,
-        code: validatedData.code ?? existing.code,
-        description: validatedData.description ?? existing.description,
-        category: validatedData.category ?? existing.category,
-        productType: validatedData.productType ?? existing.productType,
-        unit: validatedData.unit ?? existing.unit,
-        listPrice: validatedData.listPrice !== undefined ? validatedData.listPrice : existing.listPrice,
-        costPrice: validatedData.costPrice !== undefined ? validatedData.costPrice : existing.costPrice,
-        laborCost: validatedData.laborCost !== undefined ? validatedData.laborCost : existing.laborCost,
-        overheadRate: validatedData.overheadRate !== undefined ? validatedData.overheadRate : existing.overheadRate,
-        minStockLevel: validatedData.minStockLevel !== undefined ? validatedData.minStockLevel : existing.minStockLevel,
-        currency: existing.currency,
-        vatRate: validatedData.vatRate !== undefined ? validatedData.vatRate : existing.vatRate,
-        isActive: validatedData.isActive !== undefined ? validatedData.isActive : existing.isActive,
-      },
-    });
-
-    // Log price changes (fire-and-forget)
-    if (priceChanges.length > 0) {
-      prisma.priceHistory.createMany({ data: priceChanges }).catch((err) => {
-        logger.error('Failed to log price history:', err);
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.product.update({
+        where: { id: params.id },
+        data: {
+          name: validatedData.name ?? existing.name,
+          code: validatedData.code ?? existing.code,
+          description: validatedData.description ?? existing.description,
+          category: validatedData.category ?? existing.category,
+          productType: validatedData.productType ?? existing.productType,
+          unit: validatedData.unit ?? existing.unit,
+          listPrice: validatedData.listPrice !== undefined ? validatedData.listPrice : existing.listPrice,
+          costPrice: validatedData.costPrice !== undefined ? validatedData.costPrice : existing.costPrice,
+          laborCost: validatedData.laborCost !== undefined ? validatedData.laborCost : existing.laborCost,
+          overheadRate: validatedData.overheadRate !== undefined ? validatedData.overheadRate : existing.overheadRate,
+          minStockLevel: validatedData.minStockLevel !== undefined ? validatedData.minStockLevel : existing.minStockLevel,
+          currency: existing.currency,
+          vatRate: validatedData.vatRate !== undefined ? validatedData.vatRate : existing.vatRate,
+          isActive: validatedData.isActive !== undefined ? validatedData.isActive : existing.isActive,
+        },
       });
-    }
+
+      if (priceChanges.length > 0) {
+        await tx.priceHistory.createMany({ data: priceChanges });
+      }
+
+      return result;
+    });
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {

@@ -36,7 +36,7 @@ async function handleGet(
     }
 
     const productSuppliers = await prisma.productSupplier.findMany({
-      where: { productId },
+      where: { productId, tenantId: session.tenant.id, deletedAt: null },
       include: {
         supplier: {
           select: {
@@ -135,12 +135,12 @@ async function handlePost(
     }
 
     // Check for existing link
-    const existing = await prisma.productSupplier.findUnique({
+    const existing = await prisma.productSupplier.findFirst({
       where: {
-        productId_supplierId: {
-          productId,
-          supplierId: data.supplierId,
-        },
+        productId,
+        supplierId: data.supplierId,
+        tenantId: session.tenant.id,
+        deletedAt: null,
       },
     });
 
@@ -155,6 +155,7 @@ async function handlePost(
       data: {
         productId,
         supplierId: data.supplierId,
+        tenantId: session.tenant.id,
         unitPrice: data.unitPrice,
         currency: data.currency,
         leadTimeDays: data.leadTimeDays ?? null,
@@ -250,12 +251,12 @@ async function handleDelete(
     }
 
     // Find and delete the link
-    const existing = await prisma.productSupplier.findUnique({
+    const existing = await prisma.productSupplier.findFirst({
       where: {
-        productId_supplierId: {
-          productId,
-          supplierId: data.supplierId,
-        },
+        productId,
+        supplierId: data.supplierId,
+        tenantId: session.tenant.id,
+        deletedAt: null,
       },
     });
 
@@ -266,8 +267,9 @@ async function handleDelete(
       );
     }
 
-    await prisma.productSupplier.delete({
+    await prisma.productSupplier.update({
       where: { id: existing.id },
+      data: { deletedAt: new Date() },
     });
 
     return NextResponse.json({

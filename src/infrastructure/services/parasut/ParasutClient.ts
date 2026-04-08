@@ -412,6 +412,7 @@ export class ParasutClient {
                     },
                     create: {
                       id: `parasut_${cpData.id}`,
+                      tenantId: this.tenantId,
                       customerId: customer.id,
                       name: cpData.attributes.name,
                       email: cpData.attributes.email,
