@@ -101,25 +101,9 @@ export class WhatsAppService {
       const errorDetail = templateError instanceof Error ? templateError.message : String(templateError)
       logger.error('Proposal template failed', { error: errorDetail, to: formattedTo, phoneNumberId: this.phoneNumberId })
 
-      // Parse WhatsApp API error for user-friendly message
-      let userMessage = 'WhatsApp mesajı gönderilemedi.'
-      if (errorDetail.includes('131030') || errorDetail.includes('recipient')) {
-        userMessage += ' Müşterinin WhatsApp numarasını kontrol edin.'
-      } else if (errorDetail.includes('190') || errorDetail.includes('access_token') || errorDetail.includes('OAuthException')) {
-        userMessage += ' WhatsApp API erişim anahtarı geçersiz veya süresi dolmuş. Ayarlardan güncelleyin.'
-      } else if (errorDetail.includes('131047') || errorDetail.includes('re-engage')) {
-        userMessage += ' Müşteriyle 24 saat içinde iletişim penceresi açık değil.'
-      } else if (errorDetail.includes('100') || errorDetail.includes('parameter')) {
-        userMessage += ' API yapılandırma hatası. WhatsApp Phone ID ve Access Token ayarlarını kontrol edin.'
-      } else if (errorDetail.includes('132001') || errorDetail.includes('template')) {
-        userMessage += ' Template bulunamadı. Meta Business Suite\'te "proposal_notification" template\'ini oluşturun.'
-      } else {
-        userMessage += ` Detay: ${errorDetail.substring(0, 200)}`
-      }
-
       return {
         success: false,
-        error: userMessage,
+        error: `WhatsApp API Hatası: ${errorDetail.substring(0, 500)}`,
       }
     }
   }
