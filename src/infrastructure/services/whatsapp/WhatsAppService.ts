@@ -84,22 +84,44 @@ export class WhatsAppService {
 
       logger.info('Template sent successfully', { to: formattedTo, messageId: templateResult?.messages?.[0]?.id })
 
-      // 2. Send the actual proposal details as a follow-up text
-      //    The template opens the conversation window so the text message can go through
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // 2. Send CTA URL button message with proposal details
+      //    The template opened the conversation window so interactive messages can go through now
+      await new Promise(resolve => setTimeout(resolve, 3000))
 
       try {
-        const textResult = await this.sendTextMessage(formattedTo, proposalText)
+        const ctaResult = await this.sendCtaUrlMessage({
+          to: formattedTo,
+          header: `${params.companyName} - Teklif`,
+          body: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek için aşağıdaki butona tıklayınız.`,
+          footer: 'TeklifPro ile gönderildi',
+          buttonText: 'Teklifi Görüntüle',
+          url: params.proposalUrl,
+        })
+        logger.info('CTA URL message sent successfully', { to: formattedTo, messageId: ctaResult?.messages?.[0]?.id })
         return {
           success: true,
-          messageId: textResult?.messages?.[0]?.id || templateResult?.messages?.[0]?.id,
+          messageId: ctaResult?.messages?.[0]?.id || templateResult?.messages?.[0]?.id,
         }
-      } catch {
-        // Text follow-up failed but template was sent
-        logger.warn('Follow-up text after template failed, template was sent', { to: formattedTo })
-        return {
-          success: true,
-          messageId: templateResult?.messages?.[0]?.id,
+      } catch (ctaError) {
+        const ctaDetail = ctaError instanceof Error ? ctaError.message : String(ctaError)
+        logger.warn('CTA URL failed after template, trying plain text', { error: ctaDetail, to: formattedTo })
+
+        // 3. Last resort: send as plain text with link
+        try {
+          const textResult = await this.sendTextMessage(formattedTo, proposalText)
+          logger.info('Plain text proposal sent', { to: formattedTo, messageId: textResult?.messages?.[0]?.id })
+          return {
+            success: true,
+            messageId: textResult?.messages?.[0]?.id || templateResult?.messages?.[0]?.id,
+          }
+        } catch (textError) {
+          const textDetail = textError instanceof Error ? textError.message : String(textError)
+          logger.error('All message methods failed after template', { ctaError: ctaDetail, textError: textDetail, to: formattedTo })
+          return {
+            success: true,
+            messageId: templateResult?.messages?.[0]?.id,
+            error: 'Template gönderildi ancak teklif detayları iletilemedi. Tekrar göndermeyi deneyin.',
+          }
         }
       }
     } catch (templateError) {
