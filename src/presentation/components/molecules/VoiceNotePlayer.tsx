@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Play, Pause, Volume2 } from 'lucide-react'
 import { cn } from '@/shared/utils/cn'
 
@@ -19,6 +20,7 @@ export function VoiceNotePlayer({
   className,
   label,
 }: VoiceNotePlayerProps) {
+  const t = useTranslations('voiceProposal')
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
@@ -140,7 +142,7 @@ export function VoiceNotePlayer({
           <div className="flex items-center gap-2 mb-2">
             <Volume2 className="h-3.5 w-3.5 text-blue-200" />
             <p className="text-xs text-blue-200 font-medium truncate">
-              {label || (senderName ? `${senderName} size sesli mesaj bıraktı` : 'Sesli mesaj')}
+              {label || (senderName ? t('voiceMessageFrom', { name: senderName }) : t('voiceMessage'))}
             </p>
           </div>
 

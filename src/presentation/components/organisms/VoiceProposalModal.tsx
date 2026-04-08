@@ -274,7 +274,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       const transcribeData = await transcribeRes.json()
 
       if (!transcribeData.success || !transcribeData.data?.text) {
-        throw new Error(transcribeData.error || 'Ses tanima basarisiz oldu')
+        throw new Error(transcribeData.error || t('errorSpeechRecognition'))
       }
 
       setTranscript(transcribeData.data.text)
@@ -312,7 +312,7 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       const parseData = await parseRes.json()
 
       if (!parseData.success || !parseData.data) {
-        throw new Error(parseData.error || 'Teklif olusturulamadi')
+        throw new Error(parseData.error || t('errorProposalCreate'))
       }
 
       if (isEditMode) {
@@ -418,14 +418,14 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       const data = await res.json()
 
       if (!data.success || !data.data?.id) {
-        throw new Error(data.error?.message || data.error || 'Teklif olusturulamadi')
+        throw new Error(data.error?.message || data.error || t('errorProposalCreate'))
       }
 
       setCreatedProposalId(data.data.id)
       setStep('DONE')
     } catch (err) {
       logger.error('Approve failed', err)
-      setError(err instanceof Error ? err.message : 'Teklif onaylanamadi')
+      setError(err instanceof Error ? err.message : t('errorProposalApprove'))
     } finally {
       setIsApproving(false)
     }
@@ -516,13 +516,13 @@ export function VoiceProposalModal({ isOpen, onClose, locale }: VoiceProposalMod
       const data = await res.json()
 
       if (!data.success) {
-        throw new Error(data.error?.message || data.error || 'WhatsApp gonderilemedi')
+        throw new Error(data.error?.message || data.error || t('errorWhatsApp'))
       }
 
       setWhatsAppSent(true)
     } catch (err) {
       logger.error('WhatsApp send failed', err)
-      setError(err instanceof Error ? err.message : 'WhatsApp gonderilemedi')
+      setError(err instanceof Error ? err.message : t('errorWhatsApp'))
     } finally {
       setIsSendingWhatsApp(false)
     }

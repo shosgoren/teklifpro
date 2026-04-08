@@ -15,7 +15,7 @@ export function DoneStep({
   t,
 }: DoneStepProps) {
   const whatsAppLink = createdProposalId
-    ? `https://wa.me/?text=${encodeURIComponent(`Teklifiniz hazir: ${window.location.origin}/${locale}/proposals/${createdProposalId}`)}`
+    ? `https://wa.me/?text=${encodeURIComponent(t('whatsAppShareText', { url: `${window.location.origin}/${locale}/proposals/${createdProposalId}` }))}`
     : '#';
 
   return (

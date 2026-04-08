@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import useSWR from 'swr';
 import { swrDefaultOptions, swrStaticOptions } from '@/shared/utils/swrConfig';
 import {
@@ -166,18 +166,18 @@ interface PriceHistoryEntry {
 
 type TabKey = 'general' | 'stock' | 'bom' | 'suppliers';
 
-const TABS: { key: TabKey; label: string; icon: typeof Package }[] = [
-  { key: 'general', label: 'Genel', icon: Package },
-  { key: 'stock', label: 'Stok', icon: Warehouse },
-  { key: 'bom', label: 'Reçete', icon: ClipboardList },
-  { key: 'suppliers', label: 'Tedarikçiler', icon: Truck },
+const TABS: { key: TabKey; labelKey: string; icon: typeof Package }[] = [
+  { key: 'general', labelKey: 'tabs.general', icon: Package },
+  { key: 'stock', labelKey: 'tabs.stock', icon: Warehouse },
+  { key: 'bom', labelKey: 'tabs.bom', icon: ClipboardList },
+  { key: 'suppliers', labelKey: 'tabs.suppliers', icon: Truck },
 ];
 
-const PRODUCT_TYPE_LABELS: Record<string, string> = {
-  COMMERCIAL: 'Ticari',
-  RAW_MATERIAL: 'Hammadde',
-  SEMI_FINISHED: 'Yarı Mamül',
-  CONSUMABLE: 'Sarf',
+const PRODUCT_TYPE_LABEL_KEYS: Record<string, string> = {
+  COMMERCIAL: 'productTypes.commercial',
+  RAW_MATERIAL: 'productTypes.rawMaterial',
+  SEMI_FINISHED: 'productTypes.semiFinished',
+  CONSUMABLE: 'productTypes.consumable',
 };
 
 const PRODUCT_TYPE_COLORS: Record<string, string> = {
@@ -187,12 +187,12 @@ const PRODUCT_TYPE_COLORS: Record<string, string> = {
   CONSUMABLE: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
 };
 
-const MOVEMENT_TYPE_CONFIG: Record<string, { label: string; color: string; positive: boolean }> = {
-  IN: { label: 'Giriş', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', positive: true },
-  OUT: { label: 'Çıkış', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', positive: false },
-  ADJUSTMENT: { label: 'Düzeltme', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', positive: true },
-  PRODUCTION_IN: { label: 'Üretim Girişi', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200', positive: true },
-  PRODUCTION_OUT: { label: 'Üretime Çıkış', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', positive: false },
+const MOVEMENT_TYPE_CONFIG: Record<string, { labelKey: string; color: string; positive: boolean }> = {
+  IN: { labelKey: 'movementTypes.in', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', positive: true },
+  OUT: { labelKey: 'movementTypes.out', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', positive: false },
+  ADJUSTMENT: { labelKey: 'movementTypes.adjustment', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', positive: true },
+  PRODUCTION_IN: { labelKey: 'movementTypes.productionIn', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200', positive: true },
+  PRODUCTION_OUT: { labelKey: 'movementTypes.productionOut', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', positive: false },
 };
 
 const fetcher = (url: string) =>
@@ -224,6 +224,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const locale = useLocale();
+  const t = useTranslations('productDetail');
   const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const { formatCurrency } = useCurrency();
   const productId = params.id as string;
@@ -313,7 +314,7 @@ export default function ProductDetailPage() {
 
   const handleMovementSubmit = useCallback(async () => {
     if (!movementForm.quantity || Number(movementForm.quantity) <= 0) {
-      toast.error('Lütfen geçerli bir miktar girin');
+      toast.error(t('toast.invalidQuantity'));
       return;
     }
 
@@ -334,20 +335,20 @@ export default function ProductDetailPage() {
 
       const data = await response.json();
       if (data.success) {
-        toast.success(movementDialogType === 'IN' ? 'Stok girişi kaydedildi' : 'Stok çıkışı kaydedildi');
+        toast.success(movementDialogType === 'IN' ? t('toast.stockInSaved') : t('toast.stockOutSaved'));
         setMovementDialogType(null);
         setMovementForm({ quantity: '', unitPrice: '', reference: '', notes: '' });
         mutateProduct();
         mutateMovements();
       } else {
-        toast.error(data.error || 'Bir hata oluştu');
+        toast.error(data.error || t('toast.genericError'));
       }
     } catch {
-      toast.error('İşlem sırasında hata oluştu');
+      toast.error(t('toast.operationError'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [movementForm, movementDialogType, productId, mutateProduct, mutateMovements]);
+  }, [movementForm, movementDialogType, productId, mutateProduct, mutateMovements, t]);
 
   const openEditDialog = useCallback(() => {
     if (!product) return;
@@ -371,7 +372,7 @@ export default function ProductDetailPage() {
 
   const handleEditSubmit = useCallback(async () => {
     if (!editForm.name) {
-      toast.error('Ürün adı zorunludur');
+      toast.error(t('toast.nameRequired'));
       return;
     }
     setIsSubmitting(true);
@@ -397,25 +398,25 @@ export default function ProductDetailPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Ürün başarıyla güncellendi');
+        toast.success(t('toast.productUpdated'));
         setIsEditOpen(false);
         mutateProduct();
       } else {
-        toast.error(data.error || 'Güncelleme sırasında hata oluştu');
+        toast.error(data.error || t('toast.updateError'));
       }
     } catch {
-      toast.error('Güncelleme sırasında hata oluştu');
+      toast.error(t('toast.updateError'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [editForm, productId, mutateProduct]);
+  }, [editForm, productId, mutateProduct, t]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Dosya boyutu 5MB\'dan küçük olmalıdır');
+      toast.error(t('toast.fileTooLarge'));
       return;
     }
 
@@ -430,13 +431,13 @@ export default function ProductDetailPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Görsel yüklendi');
+        toast.success(t('toast.imageUploaded'));
         mutateProduct();
       } else {
-        toast.error(data.error || 'Görsel yüklenemedi');
+        toast.error(data.error || t('toast.imageUploadFailed'));
       }
     } catch {
-      toast.error('Görsel yüklenirken hata oluştu');
+      toast.error(t('toast.imageUploadError'));
     } finally {
       setIsUploadingImage(false);
       e.target.value = '';
@@ -444,20 +445,19 @@ export default function ProductDetailPage() {
   }, [productId, mutateProduct]);
 
   const handleImageDelete = useCallback(async () => {
-    if (!window.confirm('Ürün görselini kaldırmak istediğinize emin misiniz?')) return;
     try {
       const response = await fetch(`/api/v1/products/${productId}/image`, { method: 'DELETE' });
       const data = await response.json();
       if (data.success) {
-        toast.success('Görsel kaldırıldı');
+        toast.success(t('toast.imageRemoved'));
         mutateProduct();
       } else {
-        toast.error(data.error || 'Görsel kaldırılamadı');
+        toast.error(data.error || t('toast.imageRemoveFailed'));
       }
     } catch {
-      toast.error('İşlem sırasında hata oluştu');
+      toast.error(t('toast.operationError'));
     }
-  }, [productId, mutateProduct]);
+  }, [productId, mutateProduct, t]);
 
   const availableSuppliers = (availableSuppliersData?.data?.suppliers ?? []).filter(
     (s: { id: string }) => !suppliers.some((ps) => ps.supplierId === s.id)
@@ -465,7 +465,7 @@ export default function ProductDetailPage() {
 
   const handleAddSupplier = useCallback(async () => {
     if (!supplierForm.supplierId || !supplierForm.unitPrice) {
-      toast.error('Tedarikçi ve birim fiyat zorunludur');
+      toast.error(t('toast.supplierAndPriceRequired'));
       return;
     }
     setIsSubmitting(true);
@@ -485,22 +485,21 @@ export default function ProductDetailPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Tedarikçi eklendi');
+        toast.success(t('toast.supplierAdded'));
         setIsAddSupplierOpen(false);
         setSupplierForm({ supplierId: '', unitPrice: '', currency: 'TRY', leadTimeDays: '', minOrderQty: '', isPreferred: false, notes: '' });
         mutateSuppliers();
       } else {
-        toast.error(data.error || 'Bir hata oluştu');
+        toast.error(data.error || t('toast.genericError'));
       }
     } catch {
-      toast.error('İşlem sırasında hata oluştu');
+      toast.error(t('toast.operationError'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [supplierForm, productId, mutateSuppliers]);
+  }, [supplierForm, productId, mutateSuppliers, t]);
 
-  const handleRemoveSupplier = useCallback(async (supplierId: string, supplierName: string) => {
-    if (!window.confirm(`${supplierName} tedarikçisini bu üründen kaldırmak istediğinize emin misiniz?`)) return;
+  const handleRemoveSupplier = useCallback(async (supplierId: string, _supplierName: string) => {
     try {
       const response = await fetch(`/api/v1/products/${productId}/suppliers`, {
         method: 'DELETE',
@@ -509,15 +508,15 @@ export default function ProductDetailPage() {
       });
       const data = await response.json();
       if (data.success) {
-        toast.success('Tedarikçi kaldırıldı');
+        toast.success(t('toast.supplierRemoved'));
         mutateSuppliers();
       } else {
-        toast.error(data.error || 'Bir hata oluştu');
+        toast.error(data.error || t('toast.genericError'));
       }
     } catch {
-      toast.error('İşlem sırasında hata oluştu');
+      toast.error(t('toast.operationError'));
     }
-  }, [productId, mutateSuppliers]);
+  }, [productId, mutateSuppliers, t]);
 
   // ─── Loading / Error ───
 
@@ -537,10 +536,10 @@ export default function ProductDetailPage() {
   if (productError || !product) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 p-6 py-20">
-        <p className="text-lg font-medium text-muted-foreground">Ürün bulunamadı</p>
+        <p className="text-lg font-medium text-muted-foreground">{t('productNotFound')}</p>
         <Button variant="outline" onClick={() => router.push(`/${locale}/products`)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Ürünlere Dön
+          {t('backToProducts')}
         </Button>
       </div>
     );
@@ -555,7 +554,7 @@ export default function ProductDetailPage() {
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
         >
           <ArrowLeft className="h-4 w-4" />
-          Ürünler
+          {t('products')}
         </button>
 
         <div className="flex items-start justify-between gap-3">
@@ -563,10 +562,10 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate">{product.name}</h1>
               <Badge className={cn('text-xs border-0 shrink-0', PRODUCT_TYPE_COLORS[product.productType])}>
-                {PRODUCT_TYPE_LABELS[product.productType] || product.productType}
+                {PRODUCT_TYPE_LABEL_KEYS[product.productType] ? t(PRODUCT_TYPE_LABEL_KEYS[product.productType]) : product.productType}
               </Badge>
               {!product.isActive && (
-                <Badge variant="secondary" className="shrink-0">Pasif</Badge>
+                <Badge variant="secondary" className="shrink-0">{t('status.inactive')}</Badge>
               )}
             </div>
             {product.code && (
@@ -575,7 +574,7 @@ export default function ProductDetailPage() {
           </div>
           <Button variant="outline" size="sm" onClick={openEditDialog} className="shrink-0">
             <Edit className="mr-1.5 h-4 w-4" />
-            Düzenle
+            {t('edit')}
           </Button>
         </div>
       </div>
@@ -598,7 +597,7 @@ export default function ProductDetailPage() {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {tab.label}
+                {t(tab.labelKey)}
                 {tab.key === 'stock' && isLowStock(product) && (
                   <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
                 )}
@@ -651,17 +650,17 @@ export default function ProductDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.label || 'Stok Hareketi'}
+              {movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.labelKey ? t(MOVEMENT_TYPE_CONFIG[movementDialogType].labelKey) : t('stockMovement')}
             </DialogTitle>
             <DialogDescription>
-              {product.name} için {movementDialogType === 'ADJUSTMENT' ? 'stok düzeltmesi' : movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.label.toLowerCase()} yapın
-              {movementDialogType === 'ADJUSTMENT' && ' (Miktarı doğrudan yeni değere ayarlar)'}
+              {t('movementDialog.description', { productName: product.name, type: movementDialogType === 'ADJUSTMENT' ? t('movementDialog.stockAdjustment') : movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.labelKey ? t(MOVEMENT_TYPE_CONFIG[movementDialogType].labelKey).toLowerCase() : '' })}
+              {movementDialogType === 'ADJUSTMENT' && ` (${t('movementDialog.adjustmentNote')})`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-2">
-              <Label>Miktar ({product.unit}) *</Label>
+              <Label>{t('movementDialog.quantity', { unit: product.unit })} *</Label>
               <Input
                 type="number"
                 min="0"
@@ -672,29 +671,29 @@ export default function ProductDetailPage() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label>Birim Fiyat (TRY)</Label>
+              <Label>{t('movementDialog.unitPrice')}</Label>
               <Input
                 type="number"
                 min="0"
                 step="any"
-                placeholder="Opsiyonel"
+                placeholder={t('optional')}
                 value={movementForm.unitPrice}
                 onChange={(e) => setMovementForm((f) => ({ ...f, unitPrice: e.target.value }))}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label>Referans</Label>
+              <Label>{t('movementDialog.reference')}</Label>
               <Input
-                placeholder="Sipariş No, Fatura No..."
+                placeholder={t('movementDialog.referencePlaceholder')}
                 value={movementForm.reference}
                 onChange={(e) => setMovementForm((f) => ({ ...f, reference: e.target.value }))}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label>Not</Label>
+              <Label>{t('note')}</Label>
               <textarea
                 className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="Ek açıklama..."
+                placeholder={t('additionalNotes')}
                 value={movementForm.notes}
                 onChange={(e) => setMovementForm((f) => ({ ...f, notes: e.target.value }))}
               />
@@ -702,7 +701,7 @@ export default function ProductDetailPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setMovementDialogType(null)}>İptal</Button>
+            <Button variant="outline" onClick={() => setMovementDialogType(null)}>{t('cancel')}</Button>
             <Button
               onClick={handleMovementSubmit}
               disabled={isSubmitting || !movementForm.quantity}
@@ -715,7 +714,7 @@ export default function ProductDetailPage() {
               )}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.label || 'Kaydet'}
+              {movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.labelKey ? t(MOVEMENT_TYPE_CONFIG[movementDialogType].labelKey) : t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -725,12 +724,12 @@ export default function ProductDetailPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ürünü Düzenle</DialogTitle>
-            <DialogDescription>Ürün bilgilerini güncelleyin.</DialogDescription>
+            <DialogTitle>{t('editDialog.title')}</DialogTitle>
+            <DialogDescription>{t('editDialog.description')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Ürün Adı *</Label>
+              <Label>{t('editDialog.productName')} *</Label>
               <Input
                 value={editForm.name}
                 onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
@@ -738,58 +737,58 @@ export default function ProductDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Ürün Kodu</Label>
+                <Label>{t('editDialog.productCode')}</Label>
                 <Input
                   value={editForm.code}
                   onChange={(e) => setEditForm((f) => ({ ...f, code: e.target.value }))}
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Ürün Türü</Label>
+                <Label>{t('editDialog.productType')}</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={editForm.productType}
                   onChange={(e) => setEditForm((f) => ({ ...f, productType: e.target.value }))}
                 >
-                  <option value="COMMERCIAL">Ticari</option>
-                  <option value="RAW_MATERIAL">Hammadde</option>
-                  <option value="SEMI_FINISHED">Yarı Mamül</option>
-                  <option value="CONSUMABLE">Sarf Malzeme</option>
+                  <option value="COMMERCIAL">{t('productTypes.commercial')}</option>
+                  <option value="RAW_MATERIAL">{t('productTypes.rawMaterial')}</option>
+                  <option value="SEMI_FINISHED">{t('productTypes.semiFinished')}</option>
+                  <option value="CONSUMABLE">{t('productTypes.consumable')}</option>
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Birim</Label>
+                <Label>{t('editDialog.unit')}</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={editForm.unit}
                   onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
                 >
-                  <option value="Adet">Adet</option>
-                  <option value="Saat">Saat</option>
-                  <option value="Gün">Gün</option>
-                  <option value="Ay">Ay</option>
-                  <option value="Yıl">Yıl</option>
-                  <option value="Paket">Paket</option>
-                  <option value="kg">kg</option>
-                  <option value="m">m</option>
-                  <option value="m²">m²</option>
-                  <option value="lt">lt</option>
+                  <option value="Adet">{t('units.piece')}</option>
+                  <option value="Saat">{t('units.hour')}</option>
+                  <option value="Gün">{t('units.day')}</option>
+                  <option value="Ay">{t('units.month')}</option>
+                  <option value="Yıl">{t('units.year')}</option>
+                  <option value="Paket">{t('units.pack')}</option>
+                  <option value="kg">{t('units.kg')}</option>
+                  <option value="m">{t('units.m')}</option>
+                  <option value="m²">{t('units.m2')}</option>
+                  <option value="lt">{t('units.lt')}</option>
                 </select>
               </div>
               <div className="grid gap-2">
-                <Label>Kategori</Label>
+                <Label>{t('editDialog.category')}</Label>
                 <Input
                   value={editForm.category}
                   onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
-                  placeholder="Ör: Yazılım, Donanım"
+                  placeholder={t('editDialog.categoryPlaceholder')}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Liste Fiyatı (TRY)</Label>
+                <Label>{t('editDialog.listPrice')}</Label>
                 <Input
                   type="number" min="0" step="0.01"
                   value={editForm.listPrice || ''}
@@ -797,7 +796,7 @@ export default function ProductDetailPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>KDV Oranı (%)</Label>
+                <Label>{t('editDialog.vatRate')}</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={editForm.vatRate}
@@ -814,7 +813,7 @@ export default function ProductDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Maliyet Fiyatı (TRY)</Label>
+                <Label>{t('editDialog.costPrice')}</Label>
                 <Input
                   type="number" min="0" step="0.01"
                   value={editForm.costPrice || ''}
@@ -822,7 +821,7 @@ export default function ProductDetailPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>İşçilik Maliyeti (TRY)</Label>
+                <Label>{t('editDialog.laborCost')}</Label>
                 <Input
                   type="number" min="0" step="0.01"
                   value={editForm.laborCost || ''}
@@ -832,7 +831,7 @@ export default function ProductDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Genel Gider Oranı (%)</Label>
+                <Label>{t('editDialog.overheadRate')}</Label>
                 <Input
                   type="number" min="0" step="0.1"
                   value={editForm.overheadRate || ''}
@@ -840,7 +839,7 @@ export default function ProductDetailPage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Min. Stok Seviyesi</Label>
+                <Label>{t('editDialog.minStockLevel')}</Label>
                 <Input
                   type="number" min="0" step="1"
                   value={editForm.minStockLevel || ''}
@@ -849,7 +848,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label>Açıklama</Label>
+              <Label>{t('description')}</Label>
               <textarea
                 className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={editForm.description}
@@ -864,15 +863,15 @@ export default function ProductDetailPage() {
                 onChange={(e) => setEditForm((f) => ({ ...f, isActive: e.target.checked }))}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <Label htmlFor="edit-active">Aktif</Label>
+              <Label htmlFor="edit-active">{t('status.active')}</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)} disabled={isSubmitting}>
-              İptal
+              {t('cancel')}
             </Button>
             <Button onClick={handleEditSubmit} disabled={isSubmitting}>
-              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Kaydediliyor...</> : 'Kaydet'}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('saving')}</> : t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -885,29 +884,29 @@ export default function ProductDetailPage() {
       }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Tedarikçi Ekle</DialogTitle>
-            <DialogDescription>Bu ürüne bir tedarikçi bağlayın</DialogDescription>
+            <DialogTitle>{t('supplierDialog.title')}</DialogTitle>
+            <DialogDescription>{t('supplierDialog.description')}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-2">
-              <Label>Tedarikçi *</Label>
+              <Label>{t('supplierDialog.supplier')} *</Label>
               <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={supplierForm.supplierId}
                 onChange={(e) => setSupplierForm((f) => ({ ...f, supplierId: e.target.value }))}
               >
-                <option value="">Tedarikçi seçin...</option>
+                <option value="">{t('supplierDialog.selectSupplier')}</option>
                 {availableSuppliers.map((s: { id: string; name: string }) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
               {availableSuppliers.length === 0 && (
-                <p className="text-xs text-muted-foreground">Eklenecek tedarikçi bulunamadı</p>
+                <p className="text-xs text-muted-foreground">{t('supplierDialog.noSuppliersAvailable')}</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label>Birim Fiyat *</Label>
+                <Label>{t('supplierDialog.unitPrice')} *</Label>
                 <Input
                   type="number" min="0" step="0.01" placeholder="0.00"
                   value={supplierForm.unitPrice}
@@ -915,7 +914,7 @@ export default function ProductDetailPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label>Para Birimi</Label>
+                <Label>{t('supplierDialog.currency')}</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={supplierForm.currency}
@@ -929,17 +928,17 @@ export default function ProductDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label>Teslim Süresi (gün)</Label>
+                <Label>{t('supplierDialog.leadTime')}</Label>
                 <Input
-                  type="number" min="0" step="1" placeholder="Opsiyonel"
+                  type="number" min="0" step="1" placeholder={t('optional')}
                   value={supplierForm.leadTimeDays}
                   onChange={(e) => setSupplierForm((f) => ({ ...f, leadTimeDays: e.target.value }))}
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label>Min. Sipariş</Label>
+                <Label>{t('supplierDialog.minOrder')}</Label>
                 <Input
-                  type="number" min="0" step="1" placeholder="Opsiyonel"
+                  type="number" min="0" step="1" placeholder={t('optional')}
                   value={supplierForm.minOrderQty}
                   onChange={(e) => setSupplierForm((f) => ({ ...f, minOrderQty: e.target.value }))}
                 />
@@ -952,22 +951,22 @@ export default function ProductDetailPage() {
                 onChange={(e) => setSupplierForm((f) => ({ ...f, isPreferred: e.target.checked }))}
                 className="h-4 w-4 rounded border-gray-300"
               />
-              <Label htmlFor="supplier-preferred">Tercih Edilen Tedarikçi</Label>
+              <Label htmlFor="supplier-preferred">{t('supplierDialog.preferred')}</Label>
             </div>
             <div className="flex flex-col gap-2">
-              <Label>Not</Label>
+              <Label>{t('note')}</Label>
               <textarea
                 className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="Ek açıklama..."
+                placeholder={t('additionalNotes')}
                 value={supplierForm.notes}
                 onChange={(e) => setSupplierForm((f) => ({ ...f, notes: e.target.value }))}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddSupplierOpen(false)}>İptal</Button>
+            <Button variant="outline" onClick={() => setIsAddSupplierOpen(false)}>{t('cancel')}</Button>
             <Button onClick={handleAddSupplier} disabled={isSubmitting || !supplierForm.supplierId || !supplierForm.unitPrice}>
-              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Ekleniyor...</> : 'Tedarikçi Ekle'}
+              {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('adding')}</> : t('supplierDialog.addSupplier')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -978,10 +977,10 @@ export default function ProductDetailPage() {
 
 // ─── General Tab ─────────────────────────────────────────
 
-const PRICE_FIELD_LABELS: Record<string, string> = {
-  listPrice: 'Liste Fiyatı',
-  costPrice: 'Maliyet Fiyatı',
-  laborCost: 'İşçilik Maliyeti',
+const PRICE_FIELD_LABEL_KEYS: Record<string, string> = {
+  listPrice: 'priceFields.listPrice',
+  costPrice: 'priceFields.costPrice',
+  laborCost: 'priceFields.laborCost',
 };
 
 function GeneralTab({
@@ -999,13 +998,14 @@ function GeneralTab({
 }) {
   const { formatCurrency } = useCurrency();
   const locale = useLocale();
+  const t = useTranslations('productDetail');
   const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Product Image */}
       <div className="rounded-lg border p-4 space-y-3 md:col-span-2">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Ürün Görseli
+          {t('general.productImage')}
         </h3>
         <div className="flex items-center gap-4">
           {product.imageUrl ? (
@@ -1041,7 +1041,7 @@ function GeneralTab({
               ) : (
                 <Upload className="h-4 w-4" />
               )}
-              {isUploadingImage ? 'Yükleniyor...' : product.imageUrl ? 'Görseli Değiştir' : 'Görsel Yükle'}
+              {isUploadingImage ? t('general.uploading') : product.imageUrl ? t('general.changeImage') : t('general.uploadImage')}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
@@ -1050,7 +1050,7 @@ function GeneralTab({
                 disabled={isUploadingImage}
               />
             </label>
-            <p className="text-xs text-muted-foreground">JPEG, PNG veya WebP. Max 5MB.</p>
+            <p className="text-xs text-muted-foreground">{t('general.imageHint')}</p>
           </div>
         </div>
       </div>
@@ -1058,31 +1058,31 @@ function GeneralTab({
       {/* Basic Info */}
       <div className="rounded-lg border p-4 space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Temel Bilgiler
+          {t('general.basicInfo')}
         </h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-muted-foreground">Ürün Kodu</p>
+            <p className="text-muted-foreground">{t('general.productCode')}</p>
             <p className="font-medium">{product.code ?? '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Kategori</p>
+            <p className="text-muted-foreground">{t('general.category')}</p>
             <p className="font-medium">{product.category ?? '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Birim</p>
+            <p className="text-muted-foreground">{t('general.unit')}</p>
             <p className="font-medium">{product.unit}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Durum</p>
+            <p className="text-muted-foreground">{t('general.status')}</p>
             <Badge variant={product.isActive ? 'default' : 'secondary'}>
-              {product.isActive ? 'Aktif' : 'Pasif'}
+              {product.isActive ? t('status.active') : t('status.inactive')}
             </Badge>
           </div>
         </div>
         {product.description && (
           <div className="pt-2 border-t">
-            <p className="text-muted-foreground text-xs mb-1">Açıklama</p>
+            <p className="text-muted-foreground text-xs mb-1">{t('description')}</p>
             <p className="text-sm">{product.description}</p>
           </div>
         )}
@@ -1091,43 +1091,43 @@ function GeneralTab({
       {/* Pricing */}
       <div className="rounded-lg border p-4 space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Fiyatlandırma
+          {t('general.pricing')}
         </h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-muted-foreground">Liste Fiyatı</p>
+            <p className="text-muted-foreground">{t('general.listPrice')}</p>
             <p className="font-medium text-lg">{formatCurrency(product.listPrice)}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">KDV Dahil</p>
+            <p className="text-muted-foreground">{t('general.vatIncluded')}</p>
             <p className="font-medium text-lg">
               {formatCurrency(product.listPrice * (1 + product.vatRate / 100))}
             </p>
           </div>
           <div>
-            <p className="text-muted-foreground">Maliyet Fiyatı</p>
+            <p className="text-muted-foreground">{t('general.costPrice')}</p>
             <p className="font-medium">{product.costPrice > 0 ? formatCurrency(product.costPrice) : '-'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">KDV Oranı</p>
+            <p className="text-muted-foreground">{t('general.vatRate')}</p>
             <p className="font-medium">%{product.vatRate}</p>
           </div>
           {product.laborCost > 0 && (
             <div>
-              <p className="text-muted-foreground">İşçilik</p>
+              <p className="text-muted-foreground">{t('general.labor')}</p>
               <p className="font-medium">{formatCurrency(product.laborCost)}</p>
             </div>
           )}
           {product.overheadRate > 0 && (
             <div>
-              <p className="text-muted-foreground">Genel Gider</p>
+              <p className="text-muted-foreground">{t('general.overhead')}</p>
               <p className="font-medium">%{product.overheadRate}</p>
             </div>
           )}
         </div>
         {product.costPrice > 0 && product.listPrice > 0 && (
           <div className="pt-2 border-t">
-            <p className="text-muted-foreground text-xs mb-1">Kar Marjı</p>
+            <p className="text-muted-foreground text-xs mb-1">{t('general.profitMargin')}</p>
             <p className="text-lg font-bold text-green-600 dark:text-green-400">
               %{(((product.listPrice - product.costPrice) / product.listPrice) * 100).toFixed(1)}
             </p>
@@ -1138,7 +1138,7 @@ function GeneralTab({
       {/* Sync Info */}
       <div className="rounded-lg border p-4 space-y-3 md:col-span-2">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Senkronizasyon
+          {t('general.sync')}
         </h3>
         <div className="flex items-center gap-2">
           <div
@@ -1148,16 +1148,16 @@ function GeneralTab({
             )}
           />
           <span className="text-sm">
-            {product.syncedFromParasut ? 'Paraşüt\'ten senkronize' : 'Manuel eklenmiş'}
+            {product.syncedFromParasut ? t('general.syncedFromParasut') : t('general.manuallyAdded')}
           </span>
           {product.lastSyncAt && (
             <span className="text-xs text-muted-foreground ml-2">
-              Son: {formatDate(product.lastSyncAt, dateLocale)}
+              {t('general.lastSync')}: {formatDate(product.lastSyncAt, dateLocale)}
             </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Oluşturulma: {formatDate(product.createdAt, dateLocale)}
+          {t('general.createdAt')}: {formatDate(product.createdAt, dateLocale)}
         </p>
       </div>
 
@@ -1166,7 +1166,7 @@ function GeneralTab({
         <div className="rounded-lg border p-4 space-y-3 md:col-span-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <History className="h-4 w-4" />
-            Fiyat Geçmişi
+            {t('general.priceHistory')}
           </h3>
           <div className="flex flex-col gap-2">
             {priceHistory.slice(0, 10).map((entry) => {
@@ -1183,7 +1183,7 @@ function GeneralTab({
                     }
                     <div className="min-w-0">
                       <span className="font-medium">
-                        {PRICE_FIELD_LABELS[entry.field] || entry.field}
+                        {PRICE_FIELD_LABEL_KEYS[entry.field] ? t(PRICE_FIELD_LABEL_KEYS[entry.field]) : entry.field}
                       </span>
                       <span className="text-muted-foreground ml-2">
                         {formatCurrency(entry.oldValue)} → {formatCurrency(entry.newValue)}
@@ -1223,6 +1223,7 @@ function StockTab({
   onMovement: (type: 'IN' | 'OUT' | 'ADJUSTMENT' | 'PRODUCTION_IN' | 'PRODUCTION_OUT') => void;
 }) {
   const locale = useLocale();
+  const t = useTranslations('productDetail');
   const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const low = isLowStock(product);
 
@@ -1237,7 +1238,7 @@ function StockTab({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Stok Durumu
+            {t('stock.stockStatus')}
           </h3>
           <div className="flex gap-2 flex-wrap">
             <Button
@@ -1246,7 +1247,7 @@ function StockTab({
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               <PackagePlus className="mr-1.5 h-4 w-4" />
-              Giriş
+              {t('movementTypes.in')}
             </Button>
             <Button
               size="sm"
@@ -1254,27 +1255,27 @@ function StockTab({
               onClick={() => onMovement('OUT')}
             >
               <PackageMinus className="mr-1.5 h-4 w-4" />
-              Çıkış
+              {t('movementTypes.out')}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline">
                   <ChevronDown className="mr-1.5 h-4 w-4" />
-                  Diğer
+                  {t('stock.other')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onMovement('ADJUSTMENT')}>
                   <RotateCcw className="mr-2 h-4 w-4 text-blue-500" />
-                  Stok Düzeltme
+                  {t('stock.stockAdjustment')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onMovement('PRODUCTION_IN')}>
                   <Factory className="mr-2 h-4 w-4 text-emerald-500" />
-                  Üretim Girişi
+                  {t('movementTypes.productionIn')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onMovement('PRODUCTION_OUT')}>
                   <Factory className="mr-2 h-4 w-4 text-orange-500" />
-                  Üretime Çıkış
+                  {t('movementTypes.productionOut')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1283,27 +1284,27 @@ function StockTab({
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-muted-foreground">Mevcut Stok</p>
+            <p className="text-xs text-muted-foreground">{t('stock.currentStock')}</p>
             <p className="text-2xl font-bold">
               {product.stockQuantity}
               <span className="text-sm font-normal text-muted-foreground ml-1">{product.unit}</span>
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Min. Seviye</p>
+            <p className="text-xs text-muted-foreground">{t('stock.minLevel')}</p>
             <p className="text-2xl font-bold">{product.minStockLevel}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Durum</p>
+            <p className="text-xs text-muted-foreground">{t('general.status')}</p>
             {low ? (
               <Badge className="mt-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
                 <AlertTriangle className="mr-1 h-3 w-3" />
-                Düşük Stok
+                {t('stock.lowStock')}
               </Badge>
             ) : (
               <Badge className="mt-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                 <CheckCircle2 className="mr-1 h-3 w-3" />
-                Normal
+                {t('stock.normal')}
               </Badge>
             )}
           </div>
@@ -1313,17 +1314,17 @@ function StockTab({
       {/* Movement History */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Stok Hareketleri
+          {t('stock.movements')}
         </h3>
         {movements.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center">
-            <p className="text-sm text-muted-foreground">Henüz stok hareketi bulunmuyor</p>
+            <p className="text-sm text-muted-foreground">{t('stock.noMovements')}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {movements.map((mov) => {
               const config = MOVEMENT_TYPE_CONFIG[mov.type] ?? {
-                label: mov.type,
+                labelKey: mov.type,
                 color: 'bg-gray-100 text-gray-800',
                 positive: true,
               };
@@ -1340,7 +1341,7 @@ function StockTab({
                     {mov.type === 'PRODUCTION_OUT' && <Factory className="h-5 w-5 shrink-0 text-orange-500" />}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <Badge className={cn('text-xs', config.color)}>{config.label}</Badge>
+                        <Badge className={cn('text-xs', config.color)}>{t(config.labelKey)}</Badge>
                         {mov.reference && (
                           <span className="text-xs text-muted-foreground truncate">{mov.reference}</span>
                         )}
@@ -1383,15 +1384,16 @@ function BomTab({
   costBreakdown: CostBreakdown | null;
 }) {
   const { formatCurrency } = useCurrency();
+  const t = useTranslations('productDetail');
   if (!bom) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <ClipboardList className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
-        <p className="text-sm font-medium text-muted-foreground">Bu ürün için henüz reçete tanımlanmamış</p>
+        <p className="text-sm font-medium text-muted-foreground">{t('bom.noBom')}</p>
         <p className="text-xs text-muted-foreground mt-1">
           {product.productType === 'COMMERCIAL' || product.productType === 'SEMI_FINISHED'
-            ? 'Reçete eklemek için BOM sayfasını kullanabilirsiniz'
-            : 'Reçeteler yalnızca Ticari ve Yarı Mamül ürünler için tanımlanır'}
+            ? t('bom.useBomPage')
+            : t('bom.bomOnlyForCommercial')}
         </p>
       </div>
     );
@@ -1403,15 +1405,15 @@ function BomTab({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Reçete v{bom.version}
+            {t('bom.bomVersion', { version: bom.version })}
           </h3>
           {bom.isActive && (
             <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
-              Aktif
+              {t('status.active')}
             </Badge>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">{bom.items.length} malzeme</p>
+        <p className="text-xs text-muted-foreground">{t('bom.materialsCount', { count: bom.items.length })}</p>
       </div>
 
       {/* Materials List */}
@@ -1420,12 +1422,12 @@ function BomTab({
         <table className="w-full text-sm hidden md:table">
           <thead className="bg-muted/50">
             <tr>
-              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Malzeme</th>
-              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Miktar</th>
-              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Fire %</th>
-              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Stok</th>
-              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Birim Fiyat</th>
-              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Toplam</th>
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">{t('bom.material')}</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">{t('bom.quantity')}</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">{t('bom.wastePercent')}</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">{t('bom.stock')}</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">{t('bom.unitPrice')}</th>
+              <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">{t('bom.total')}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -1485,11 +1487,11 @@ function BomTab({
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{item.quantity} {item.unit}</span>
-                  {item.wasteRate > 0 && <span>Fire: %{item.wasteRate}</span>}
+                  {item.wasteRate > 0 && <span>{t('bom.waste')}: %{item.wasteRate}</span>}
                   <span className={cn(
                     item.material.stockQuantity < item.quantity ? 'text-red-600 font-medium' : ''
                   )}>
-                    Stok: {item.material.stockQuantity}
+                    {t('bom.stock')}: {item.material.stockQuantity}
                   </span>
                 </div>
               </div>
@@ -1503,35 +1505,35 @@ function BomTab({
         <div className="rounded-lg border p-4 space-y-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <Calculator className="h-4 w-4" />
-            Maliyet Hesabı
+            {t('bom.costCalculation')}
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Malzeme Maliyeti</span>
+              <span className="text-muted-foreground">{t('bom.materialCost')}</span>
               <span className="font-medium">{formatCurrency(costBreakdown.totalMaterialCost)}</span>
             </div>
             {costBreakdown.laborCost > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">İşçilik</span>
+                <span className="text-muted-foreground">{t('general.labor')}</span>
                 <span className="font-medium">{formatCurrency(costBreakdown.laborCost)}</span>
               </div>
             )}
             {costBreakdown.overheadCost > 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Genel Gider</span>
+                <span className="text-muted-foreground">{t('general.overhead')}</span>
                 <span className="font-medium">{formatCurrency(costBreakdown.overheadCost)}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t font-semibold">
-              <span>Toplam Üretim Maliyeti</span>
+              <span>{t('bom.totalProductionCost')}</span>
               <span>{formatCurrency(costBreakdown.totalProductionCost)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Liste Fiyatı</span>
+              <span>{t('general.listPrice')}</span>
               <span>{formatCurrency(costBreakdown.listPrice)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t">
-              <span className="font-semibold">Kar Marjı</span>
+              <span className="font-semibold">{t('general.profitMargin')}</span>
               <span
                 className={cn(
                   'font-bold text-lg',
@@ -1549,7 +1551,7 @@ function BomTab({
 
       {bom.notes && (
         <div className="rounded-lg border p-4">
-          <p className="text-xs text-muted-foreground mb-1">Notlar</p>
+          <p className="text-xs text-muted-foreground mb-1">{t('notes')}</p>
           <p className="text-sm">{bom.notes}</p>
         </div>
       )}
@@ -1569,16 +1571,17 @@ function SuppliersTab({
   onRemove: (supplierId: string, supplierName: string) => void;
 }) {
   const { formatCurrency } = useCurrency();
+  const t = useTranslations('productDetail');
   if (suppliers.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
         <Truck className="mx-auto h-10 w-10 text-muted-foreground/50 mb-3" />
         <p className="text-sm font-medium text-muted-foreground">
-          Bu ürün için henüz tedarikçi tanımlanmamış
+          {t('suppliers.noSuppliers')}
         </p>
         <Button variant="outline" size="sm" onClick={onAdd} className="mt-3">
           <Plus className="mr-1.5 h-4 w-4" />
-          Tedarikçi Ekle
+          {t('supplierDialog.addSupplier')}
         </Button>
       </div>
     );
@@ -1588,11 +1591,11 @@ function SuppliersTab({
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          {suppliers.length} Tedarikçi
+          {t('suppliers.supplierCount', { count: suppliers.length })}
         </h3>
         <Button variant="outline" size="sm" onClick={onAdd}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Tedarikçi Ekle
+          {t('supplierDialog.addSupplier')}
         </Button>
       </div>
       {suppliers.map((s) => (
@@ -1622,7 +1625,7 @@ function SuppliersTab({
               <button
                 onClick={() => onRemove(s.supplierId, s.supplierName)}
                 className="p-1 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-                title="Tedarikçiyi kaldır"
+                title={t('suppliers.removeSupplier')}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -1631,8 +1634,8 @@ function SuppliersTab({
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {s.phone && <span>{s.phone}</span>}
             {s.email && <span>{s.email}</span>}
-            {s.leadTimeDays !== null && <span>Teslim: {s.leadTimeDays} gün</span>}
-            {s.minOrderQty !== null && <span>Min. sipariş: {s.minOrderQty}</span>}
+            {s.leadTimeDays !== null && <span>{t('suppliers.delivery')}: {s.leadTimeDays} {t('suppliers.days')}</span>}
+            {s.minOrderQty !== null && <span>{t('suppliers.minOrder')}: {s.minOrderQty}</span>}
             <span>{s.currency}</span>
           </div>
           {s.notes && (

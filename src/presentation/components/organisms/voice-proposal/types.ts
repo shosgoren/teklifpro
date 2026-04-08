@@ -50,5 +50,5 @@ export interface DoneStepProps {
   locale: string;
   onWhatsAppSend: () => void;
   onRetry: () => void;
-  t: (key: string) => string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }

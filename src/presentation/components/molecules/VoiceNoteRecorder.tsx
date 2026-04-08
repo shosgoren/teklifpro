@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Mic, Square, Play, Pause, Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
@@ -35,6 +36,7 @@ export function VoiceNoteRecorder({
   maxDuration = 60,
   labels = {},
 }: VoiceNoteRecorderProps) {
+  const t = useTranslations('voiceProposal')
   const [isRecording, setIsRecording] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
@@ -218,13 +220,13 @@ export function VoiceNoteRecorder({
 
           <div className="text-center">
             <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-              {labels.recording || 'Kayıt yapılıyor...'}
+              {labels.recording || t('recorderRecording')}
             </p>
             <p className="text-2xl font-bold font-mono text-red-600 dark:text-red-300 mt-1">
               {formatTime(recordingTime)}
             </p>
             <p className="text-xs text-red-500/70 mt-1">
-              {labels.maxDurationLabel || `Maks ${maxDuration} saniye`}
+              {labels.maxDurationLabel || t('recorderMaxDuration', { seconds: maxDuration })}
             </p>
           </div>
 
@@ -249,7 +251,7 @@ export function VoiceNoteRecorder({
             className="gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg"
           >
             <Square className="h-4 w-4" />
-            {labels.stop || 'Kaydı Durdur'}
+            {labels.stop || t('recorderStop')}
           </Button>
         </div>
       </div>
@@ -293,7 +295,7 @@ export function VoiceNoteRecorder({
               ))}
             </div>
             <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-              {formatTime(duration || recordingTime)} — {labels.play || 'Sesli not hazır'}
+              {formatTime(duration || recordingTime)} — {labels.play || t('recorderReady')}
             </p>
           </div>
 
@@ -303,7 +305,7 @@ export function VoiceNoteRecorder({
               type="button"
               onClick={() => { deleteRecording(); startRecording() }}
               className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 flex items-center justify-center text-amber-600 transition-colors"
-              title={labels.reRecord || 'Tekrar kaydet'}
+              title={labels.reRecord || t('recorderReRecord')}
             >
               <RotateCcw className="h-4 w-4" />
             </button>
@@ -311,7 +313,7 @@ export function VoiceNoteRecorder({
               type="button"
               onClick={deleteRecording}
               className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 flex items-center justify-center text-red-600 transition-colors"
-              title={labels.delete || 'Sil'}
+              title={labels.delete || t('recorderDelete')}
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -333,14 +335,14 @@ export function VoiceNoteRecorder({
           <Mic className="h-7 w-7 text-white" />
         </button>
         <div className="text-center">
-          <p className="text-sm font-semibold">{labels.record || 'Sesli Not Kaydet'}</p>
+          <p className="text-sm font-semibold">{labels.record || t('recorderRecord')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {labels.maxDurationLabel || `Maks ${maxDuration} saniye`}
+            {labels.maxDurationLabel || t('recorderMaxDuration', { seconds: maxDuration })}
           </p>
         </div>
         {permissionDenied && (
           <p className="text-xs text-red-500 text-center">
-            Mikrofon izni gerekli. Tarayıcı ayarlarından mikrofon erişimine izin verin.
+            {t('recorderMicPermission')}
           </p>
         )}
       </div>

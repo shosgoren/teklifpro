@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { Undo2, Redo2 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
@@ -13,12 +14,6 @@ interface VoiceEditHistoryProps {
   className?: string
 }
 
-function summarizeChanges(changeSet: VoiceEditChange[]): string {
-  if (changeSet.length === 0) return 'Ilk teklif'
-  if (changeSet.length === 1) return changeSet[0].description
-  return `${changeSet.length} degisiklik`
-}
-
 export function VoiceEditHistory({
   history,
   currentIndex,
@@ -26,8 +21,15 @@ export function VoiceEditHistory({
   changes,
   className,
 }: VoiceEditHistoryProps) {
+  const t = useTranslations('voiceProposal')
   const canUndo = currentIndex > 0
   const canRedo = currentIndex < history.length - 1
+
+  const summarizeChanges = (changeSet: VoiceEditChange[]): string => {
+    if (changeSet.length === 0) return t('historyInitial')
+    if (changeSet.length === 1) return changeSet[0].description
+    return t('historyChangesCount', { count: changeSet.length })
+  }
 
   return (
     <div
@@ -44,10 +46,10 @@ export function VoiceEditHistory({
         disabled={!canUndo}
         onClick={() => onChange(currentIndex - 1)}
         className="shrink-0 gap-1 px-2 text-xs"
-        title="Geri Al"
+        title={t('historyUndo')}
       >
         <Undo2 className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Geri Al</span>
+        <span className="hidden sm:inline">{t('historyUndo')}</span>
       </Button>
 
       {/* Timeline */}
@@ -55,7 +57,7 @@ export function VoiceEditHistory({
         {history.map((_, idx) => {
           const isActive = idx === currentIndex
           const changeSet = changes[idx] ?? []
-          const label = idx === 0 ? 'Ilk teklif' : summarizeChanges(changeSet)
+          const label = idx === 0 ? t('historyInitial') : summarizeChanges(changeSet)
 
           return (
             <button
@@ -83,9 +85,9 @@ export function VoiceEditHistory({
         disabled={!canRedo}
         onClick={() => onChange(currentIndex + 1)}
         className="shrink-0 gap-1 px-2 text-xs"
-        title="Ileri Al"
+        title={t('historyRedo')}
       >
-        <span className="hidden sm:inline">Ileri Al</span>
+        <span className="hidden sm:inline">{t('historyRedo')}</span>
         <Redo2 className="h-3.5 w-3.5" />
       </Button>
     </div>
