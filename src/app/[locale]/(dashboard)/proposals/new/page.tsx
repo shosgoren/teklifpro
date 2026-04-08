@@ -1309,7 +1309,7 @@ export default function CreateProposalPage() {
           <p className="text-sm text-muted-foreground mt-1">{t('proposals.createDescription')}</p>
         </div>
 
-        <form onSubmit={(e) => { if (currentStep < steps.length - 1) { e.preventDefault(); return } handleSubmit(onSubmit)(e) }} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < steps.length - 1) e.preventDefault() }} className="space-y-6">
+        <form onSubmit={(e) => { e.preventDefault() }} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }} className="space-y-6">
           {/* Stepper */}
           <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm p-4 md:p-6">
             <div className="flex justify-between items-center">
@@ -1430,7 +1430,8 @@ export default function CreateProposalPage() {
                 </Button>
               ) : (
                 <Button
-                  type="submit"
+                  type="button"
+                  onClick={() => handleSubmit(onSubmit)()}
                   className="gap-2 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 flex-1 md:flex-none"
                   disabled={isSubmitting}
                 >
