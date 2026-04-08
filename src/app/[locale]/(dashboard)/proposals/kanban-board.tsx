@@ -22,7 +22,7 @@ import { Badge } from '@/shared/components/ui/badge';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
-type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
+type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED' | 'EXPIRED' | 'CANCELLED' | 'INVOICED';
 
 interface Proposal {
   id: string;
@@ -47,6 +47,7 @@ const KANBAN_COLUMNS: { status: ProposalStatus; color: string; dotColor: string;
   { status: 'SENT', color: 'text-blue-600 dark:text-blue-400', dotColor: 'bg-blue-500', bgColor: 'bg-blue-50/50 dark:bg-blue-950/30', borderColor: 'border-blue-200 dark:border-blue-800' },
   { status: 'VIEWED', color: 'text-amber-600 dark:text-amber-400', dotColor: 'bg-amber-500', bgColor: 'bg-amber-50/50 dark:bg-amber-950/30', borderColor: 'border-amber-200 dark:border-amber-800' },
   { status: 'REVISION_REQUESTED', color: 'text-orange-600 dark:text-orange-400', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50/50 dark:bg-orange-950/30', borderColor: 'border-orange-200 dark:border-orange-800' },
+  { status: 'REVISED', color: 'text-purple-600 dark:text-purple-400', dotColor: 'bg-purple-500', bgColor: 'bg-purple-50/50 dark:bg-purple-950/30', borderColor: 'border-purple-200 dark:border-purple-800' },
   { status: 'ACCEPTED', color: 'text-emerald-600 dark:text-emerald-400', dotColor: 'bg-emerald-500', bgColor: 'bg-emerald-50/50 dark:bg-emerald-950/30', borderColor: 'border-emerald-200 dark:border-emerald-800' },
   { status: 'REJECTED', color: 'text-red-600 dark:text-red-400', dotColor: 'bg-red-500', bgColor: 'bg-red-50/50 dark:bg-red-950/30', borderColor: 'border-red-200 dark:border-red-800' },
   { status: 'INVOICED', color: 'text-indigo-600 dark:text-indigo-400', dotColor: 'bg-indigo-500', bgColor: 'bg-indigo-50/50 dark:bg-indigo-950/30', borderColor: 'border-indigo-200 dark:border-indigo-800' },

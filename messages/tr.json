@@ -1586,8 +1586,10 @@
     "statusViewed": "Goruntulendi",
     "statusAccepted": "Kabul",
     "statusRejected": "Red",
-    "statusRevisionRequested": "Revize",
+    "statusRevisionRequested": "Revize İstendi",
+    "statusRevised": "Revize Edildi",
     "statusExpired": "Suresi Doldu",
+    "statusCancelled": "İptal Edildi",
     "statusInvoiced": "Faturalandi"
   },
   "demoPage": {

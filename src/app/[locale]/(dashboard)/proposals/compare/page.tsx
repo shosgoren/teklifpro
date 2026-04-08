@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/compo
 import { Checkbox } from '@/shared/components/ui/checkbox';
 
 // Types matching API response
-type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
+type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED' | 'EXPIRED' | 'CANCELLED' | 'INVOICED';
 
 interface ProposalItem {
   id: string;
@@ -73,7 +73,9 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   ACCEPTED: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
   REVISION_REQUESTED: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+  REVISED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
   EXPIRED: 'bg-slate-700 text-white dark:bg-slate-600 dark:text-slate-200',
+  CANCELLED: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   INVOICED: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
 };
 
@@ -85,7 +87,9 @@ const STATUS_LABEL_KEYS: Record<ProposalStatus, string> = {
   ACCEPTED: 'statusAccepted',
   REJECTED: 'statusRejected',
   REVISION_REQUESTED: 'statusRevisionRequested',
+  REVISED: 'statusRevised',
   EXPIRED: 'statusExpired',
+  CANCELLED: 'statusCancelled',
   INVOICED: 'statusInvoiced',
 };
 

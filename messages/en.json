@@ -1587,7 +1587,9 @@
     "statusAccepted": "Accepted",
     "statusRejected": "Rejected",
     "statusRevisionRequested": "Revision Requested",
+    "statusRevised": "Revised",
     "statusExpired": "Expired",
+    "statusCancelled": "Cancelled",
     "statusInvoiced": "Invoiced"
   },
   "demoPage": {

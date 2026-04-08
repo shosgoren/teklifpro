@@ -45,7 +45,7 @@ import { toast } from 'sonner';
 
 const logger = new Logger('ProposalDetailPage');
 
-type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'EXPIRED' | 'INVOICED';
+type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED' | 'EXPIRED' | 'CANCELLED' | 'INVOICED';
 
 const fetcher = (url: string) =>
   fetch(url).then(res => {
@@ -64,7 +64,9 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   ACCEPTED: 'bg-green-100 text-green-800',
   REJECTED: 'bg-red-100 text-red-800',
   REVISION_REQUESTED: 'bg-orange-100 text-orange-800',
+  REVISED: 'bg-purple-100 text-purple-800',
   EXPIRED: 'bg-slate-700 text-white',
+  CANCELLED: 'bg-gray-200 text-gray-600',
   INVOICED: 'bg-indigo-100 text-indigo-800',
 };
 

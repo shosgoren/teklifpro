@@ -99,7 +99,9 @@ const statusConfig: Record<string, { color: string; dot: string }> = {
   ACCEPTED: { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500' },
   REJECTED: { color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
   REVISION_REQUESTED: { color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300', dot: 'bg-orange-500' },
+  REVISED: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', dot: 'bg-purple-500' },
   EXPIRED: { color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400' },
+  CANCELLED: { color: 'bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400' },
 };
 
 const WIDGET_ORDER_KEY = 'teklifpro-dashboard-order';
