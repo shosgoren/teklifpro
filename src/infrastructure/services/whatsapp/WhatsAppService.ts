@@ -77,7 +77,6 @@ export class WhatsAppService {
         to: formattedTo,
         templateName: 'proposal_notification',
         language: 'tr',
-        headerParams: [params.companyName],
         parameters: {
           '1': params.customerName,
           '2': params.proposalTitle,
