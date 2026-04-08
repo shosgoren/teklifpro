@@ -106,6 +106,16 @@ async function handlePost(
         );
       }
 
+      const dbToken = tenant.whatsappAccessToken || '';
+      const envToken = process.env.WHATSAPP_ACCESS_TOKEN || '';
+      const usedToken = dbToken || envToken;
+      logger.info('WhatsApp config debug', {
+        phoneId: tenant.whatsappPhoneId || process.env.WHATSAPP_PHONE_NUMBER_ID,
+        tokenSource: dbToken ? 'database' : 'env',
+        tokenPrefix: usedToken.substring(0, 15) + '...',
+        tokenLength: usedToken.length,
+      });
+
       const whatsappService = WhatsAppService.fromTenantConfig({
         whatsappPhoneId: tenant.whatsappPhoneId,
         whatsappAccessToken: tenant.whatsappAccessToken,
