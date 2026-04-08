@@ -65,28 +65,15 @@ export class WhatsAppService {
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const formattedTo = this.formatPhoneNumber(params.to)
 
-    // 1. Try CTA URL button (requires 24h conversation window)
-    try {
-      const response = await this.sendCtaUrlMessage({
-        to: formattedTo,
-        header: `${params.companyName} - Teklif`,
-        body: `Merhaba ${params.customerName},\n\n*${params.proposalTitle}*\nTeklif No: ${params.proposalNumber}\nTutar: ${params.grandTotal}\n\nTeklifi incelemek için aşağıdaki butona tıklayınız.`,
-        footer: 'TeklifPro ile gönderildi',
-        buttonText: 'Teklifi Görüntüle',
-        url: params.proposalUrl,
-      })
+    const proposalText = `Merhaba ${params.customerName},\n\n` +
+      `*${params.proposalTitle}*\n` +
+      `Teklif No: ${params.proposalNumber}\n` +
+      `Tutar: ${params.grandTotal}\n\n` +
+      `Teklifi görüntülemek için:\n${params.proposalUrl}\n\n` +
+      `${params.companyName}`
 
-      return {
-        success: true,
-        messageId: response?.messages?.[0]?.id,
-      }
-    } catch (ctaError) {
-      const ctaDetail = ctaError instanceof Error ? ctaError.message : String(ctaError)
-      logger.warn('CTA URL failed, trying hello_world template', { error: ctaDetail, to: formattedTo })
-    }
-
-    // 2. Fallback: hello_world template + text message with link
-    //    Template opens conversation window, then we send the actual proposal link
+    // 1. Send hello_world template to open conversation window
+    //    Templates can be sent without a 24h session — they initiate the conversation
     try {
       const templateResult = await this.sendTemplate({
         to: formattedTo,
@@ -95,27 +82,25 @@ export class WhatsAppService {
         parameters: {},
       })
 
-      // Now send the actual proposal details as a follow-up text
-      const proposalText = `Merhaba ${params.customerName},\n\n` +
-        `*${params.proposalTitle}*\n` +
-        `Teklif No: ${params.proposalNumber}\n` +
-        `Tutar: ${params.grandTotal}\n\n` +
-        `Teklifi görüntülemek için:\n${params.proposalUrl}\n\n` +
-        `${params.companyName}`
+      logger.info('Template sent successfully', { to: formattedTo, messageId: templateResult?.messages?.[0]?.id })
 
-      // Small delay to ensure template opens the window
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // 2. Send the actual proposal details as a follow-up text
+      //    The template opens the conversation window so the text message can go through
+      await new Promise(resolve => setTimeout(resolve, 1500))
 
       try {
-        await this.sendTextMessage(formattedTo, proposalText)
+        const textResult = await this.sendTextMessage(formattedTo, proposalText)
+        return {
+          success: true,
+          messageId: textResult?.messages?.[0]?.id || templateResult?.messages?.[0]?.id,
+        }
       } catch {
-        // Text follow-up failed but template was sent — still a success
-        logger.warn('Follow-up text after template failed, template was sent')
-      }
-
-      return {
-        success: true,
-        messageId: templateResult?.messages?.[0]?.id,
+        // Text follow-up failed but template was sent
+        logger.warn('Follow-up text after template failed, template was sent', { to: formattedTo })
+        return {
+          success: true,
+          messageId: templateResult?.messages?.[0]?.id,
+        }
       }
     } catch (templateError) {
       const errorDetail = templateError instanceof Error ? templateError.message : String(templateError)
@@ -128,7 +113,7 @@ export class WhatsAppService {
       } else if (errorDetail.includes('190') || errorDetail.includes('access_token') || errorDetail.includes('OAuthException')) {
         userMessage += ' WhatsApp API erişim anahtarı geçersiz veya süresi dolmuş. Ayarlardan güncelleyin.'
       } else if (errorDetail.includes('131047') || errorDetail.includes('re-engage')) {
-        userMessage += ' Müşteriyle 24 saat içinde iletişim penceresi açık değil. Önce template mesaj gerekli.'
+        userMessage += ' Müşteriyle 24 saat içinde iletişim penceresi açık değil.'
       } else if (errorDetail.includes('100') || errorDetail.includes('parameter')) {
         userMessage += ' API yapılandırma hatası. WhatsApp Phone ID ve Access Token ayarlarını kontrol edin.'
       } else {
