@@ -10,6 +10,9 @@ import { BulkSendSchema } from '@/shared/validations/proposal';
 
 const logger = new Logger('ProposalBulkSendAPI');
 
+// TODO: In the future, derive locale from tenant settings
+const TENANT_LOCALE = 'tr-TR';
+
 // Gonderim sonucu arayuzu
 interface SendResultItem {
   proposalId: string;
@@ -115,7 +118,7 @@ async function handlePost(
                 customerName: proposal.customer.name,
                 proposalNumber: proposal.proposalNumber,
                 proposalTitle: proposal.title,
-                grandTotal: `${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY`,
+                grandTotal: `${Number(proposal.grandTotal).toLocaleString(TENANT_LOCALE)} TRY`,
                 proposalUrl,
                 companyName: tenant.name,
               });

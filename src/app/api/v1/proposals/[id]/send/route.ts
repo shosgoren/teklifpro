@@ -10,6 +10,9 @@ import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProposalSendAPI');
 
+// TODO: In the future, derive locale from tenant settings
+const TENANT_LOCALE = 'tr-TR';
+
 interface SendResult {
   proposalId: string;
   proposalNumber: string;
@@ -117,7 +120,7 @@ async function handlePost(
 Teknoloji cozumlerimiz hakkinda size bir teklif hazirladik.
 
 Teklif Numarasi: ${proposal.proposalNumber}
-Toplam Tutar: ${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY
+Toplam Tutar: ${Number(proposal.grandTotal).toLocaleString(TENANT_LOCALE)} TRY
 
 Teklifi goruntulemek icin lutfen asagidaki linke tiklayiniz:
 ${proposalUrl}
@@ -131,7 +134,7 @@ Iyi calismalar!`.trim();
         customerName: proposal.customer.name,
         proposalNumber: proposal.proposalNumber,
         proposalTitle: proposal.title,
-        grandTotal: `${Number(proposal.grandTotal).toLocaleString('tr-TR')} TRY`,
+        grandTotal: `${Number(proposal.grandTotal).toLocaleString(TENANT_LOCALE)} TRY`,
         proposalUrl,
         companyName: tenant.name,
       });

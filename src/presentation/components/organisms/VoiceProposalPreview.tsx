@@ -1,6 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
+import { useCurrency } from '@/shared/hooks/useCurrency'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/utils/cn'
 import type { VoiceParseResult } from '@/infrastructure/services/voice/types'
@@ -25,15 +26,6 @@ interface VoiceProposalPreviewProps {
   onRetry: () => void
   onItemEdit?: (index: number) => void
   isLoading?: boolean
-}
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
 }
 
 function ConfidenceBadge({ confidence }: { confidence: number }) {
@@ -94,6 +86,7 @@ export function VoiceProposalPreview({
   isLoading = false,
 }: VoiceProposalPreviewProps) {
   const t = useTranslations('voiceProposal')
+  const { formatCurrency } = useCurrency()
   const subtotal = data.items.reduce((sum, item) => {
     const price = item.unitPrice ?? 0
     return sum + price * item.quantity

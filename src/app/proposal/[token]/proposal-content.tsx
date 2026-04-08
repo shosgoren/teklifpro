@@ -91,6 +91,101 @@ interface ProposalContentProps {
   token: string
 }
 
+const proposalDict = {
+  tr: {
+    proposalPresentation: 'Teklif Sunumu',
+    proposal: 'Teklif',
+    validUntil: 'Geçerli:',
+    voiceMessageLeft: 'size sesli mesaj bıraktı',
+    proposalStatus: 'Teklif Durumu:',
+    digitalSignature: 'Dijital İmza',
+    signatureAlt: 'İmza',
+    customer: 'Müşteri',
+    senderCompanyInfo: 'Gönderen Firma Bilgileri',
+    taxNumber: 'VKN:',
+    productsServices: 'Ürünler / Hizmetler',
+    itemCount: 'kalem',
+    vat: 'KDV',
+    productService: 'Ürün / Hizmet',
+    quantity: 'Miktar',
+    unitPrice: 'Birim Fiyat',
+    discount: 'İndirim',
+    total: 'Toplam',
+    subtotal: 'Ara Toplam',
+    lineDiscounts: 'Satır İndirimleri',
+    discountPercent: 'İndirim',
+    grandTotal: 'Genel Toplam',
+    description: 'Açıklama',
+    notes: 'Notlar',
+    paymentTerms: 'Ödeme Koşulları',
+    deliveryTerms: 'Teslimat Koşulları',
+    generalTerms: 'Genel Şartlar',
+    bankPayment: 'EFT / Havale ile Ödeme',
+    bankAccounts: 'banka hesabı',
+    bankPaymentInfo: 'Aşağıdaki hesaplardan birine ödeme yapabilirsiniz. IBAN\u0027ı kopyalamak için tıklayın.',
+    branch: 'Şube:',
+    accountHolder: 'Hesap Sahibi:',
+    copied: 'Kopyalandı',
+    copy: 'Kopyala',
+    proposalRejected: 'Teklif Reddedildi',
+    customerResponse: 'Müşteri yanıtı',
+    revisionRequested: 'Revize Talep Edildi',
+    proposalAccepted: 'Teklif Kabul Edildi',
+    approvedWithEsign: 'E-imza ile onaylandı',
+    eSignatureAlt: 'E-İmza',
+    signatureSecure: 'Bu imza güvenli şekilde şifrelenmiş olarak saklanmaktadır',
+    downloadSignedPdf: 'İmzalı PDF İndir',
+    sslSecure: 'SSL Güvenli',
+    viewCount: 'görüntülenme',
+  },
+  en: {
+    proposalPresentation: 'Proposal Presentation',
+    proposal: 'Proposal',
+    validUntil: 'Valid until:',
+    voiceMessageLeft: 'left you a voice message',
+    proposalStatus: 'Proposal Status:',
+    digitalSignature: 'Digital Signature',
+    signatureAlt: 'Signature',
+    customer: 'Customer',
+    senderCompanyInfo: 'Sender Company Details',
+    taxNumber: 'Tax No:',
+    productsServices: 'Products / Services',
+    itemCount: 'items',
+    vat: 'VAT',
+    productService: 'Product / Service',
+    quantity: 'Qty',
+    unitPrice: 'Unit Price',
+    discount: 'Discount',
+    total: 'Total',
+    subtotal: 'Subtotal',
+    lineDiscounts: 'Line Discounts',
+    discountPercent: 'Discount',
+    grandTotal: 'Grand Total',
+    description: 'Description',
+    notes: 'Notes',
+    paymentTerms: 'Payment Terms',
+    deliveryTerms: 'Delivery Terms',
+    generalTerms: 'General Terms',
+    bankPayment: 'EFT / Wire Transfer Payment',
+    bankAccounts: 'bank accounts',
+    bankPaymentInfo: 'You can make a payment to one of the accounts below. Click on IBAN to copy.',
+    branch: 'Branch:',
+    accountHolder: 'Account Holder:',
+    copied: 'Copied',
+    copy: 'Copy',
+    proposalRejected: 'Proposal Rejected',
+    customerResponse: 'Customer response',
+    revisionRequested: 'Revision Requested',
+    proposalAccepted: 'Proposal Accepted',
+    approvedWithEsign: 'Approved with e-signature',
+    eSignatureAlt: 'E-Signature',
+    signatureSecure: 'This signature is securely encrypted and stored',
+    downloadSignedPdf: 'Download Signed PDF',
+    sslSecure: 'SSL Secure',
+    viewCount: 'views',
+  },
+} as const
+
 const statusDisplayDict = {
   tr: {
     ACCEPTED: { label: 'Kabul Edildi', color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200', icon: CheckCircle },
@@ -137,6 +232,7 @@ export default function ProposalContent({
   const proposalLocale = getProposalLocale()
   const localeStr = getLocaleString(proposalLocale)
   const statusDisplay = statusDisplayDict[proposalLocale]
+  const t = proposalDict[proposalLocale]
 
   const copyIban = (iban: string) => {
     navigator.clipboard.writeText(iban)
@@ -202,13 +298,13 @@ export default function ProposalContent({
                 <p className="font-bold text-lg">{tenant.name}</p>
                 <svg className="w-4 h-4 text-blue-300" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
               </div>
-              <p className="text-blue-200 text-xs">Teklif Sunumu</p>
+              <p className="text-blue-200 text-xs">{t.proposalPresentation}</p>
             </div>
           </div>
 
           {/* Proposal title & number */}
           <h1 className="text-2xl sm:text-3xl font-extrabold mb-1 leading-tight">
-            {proposal.title || 'Teklif'}
+            {proposal.title || t.proposal}
           </h1>
           <p className="text-blue-200 text-sm font-mono">{proposal.proposalNumber}</p>
 
@@ -221,7 +317,7 @@ export default function ProposalContent({
             {proposal.expiresDate && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/30 backdrop-blur-sm border border-white/20 text-sm">
                 <Clock className="w-3.5 h-3.5" />
-                Geçerli: {proposal.expiresDate}
+                {t.validUntil} {proposal.expiresDate}
               </div>
             )}
           </div>
@@ -237,8 +333,8 @@ export default function ProposalContent({
               duration={voiceNote.duration}
               senderName={voiceNote.senderName ?? tenant.name}
               label={voiceNote.senderName
-                ? `${voiceNote.senderName} size sesli mesaj bıraktı`
-                : `${tenant.name} size sesli mesaj bıraktı`
+                ? `${voiceNote.senderName} ${t.voiceMessageLeft}`
+                : `${tenant.name} ${t.voiceMessageLeft}`
               }
             />
           </div>
@@ -250,7 +346,7 @@ export default function ProposalContent({
             <currentStatus.icon className={`w-5 h-5 ${currentStatus.color} shrink-0 mt-0.5`} />
             <div>
               <p className={`font-bold text-sm ${currentStatus.color}`}>
-                Teklif Durumu: {currentStatus.label}
+                {t.proposalStatus} {currentStatus.label}
               </p>
               {proposal.status === 'REJECTED' && proposal.rejectionReason && (
                 <p className="text-sm text-red-600 mt-1">{proposal.rejectionReason}</p>
@@ -267,11 +363,11 @@ export default function ProposalContent({
           <div className={`mb-4 p-5 bg-white rounded-2xl ${cardShadow} border border-emerald-100 ${cardClass}`}>
             <div className="flex items-center gap-2 mb-3">
               <PenTool className="w-4 h-4 text-emerald-600" />
-              <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Dijital İmza</p>
+              <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">{t.digitalSignature}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={signature.data} alt="İmza" className="max-h-24 mx-auto" />
+              <img src={signature.data} alt={t.signatureAlt} className="max-h-24 mx-auto" />
             </div>
             <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
               {signature.signerName && <span className="font-medium">{signature.signerName}</span>}
@@ -286,7 +382,7 @@ export default function ProposalContent({
         <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 ${cardClass}`}>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-1 h-4 rounded-full bg-blue-500" />
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Müşteri</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.customer}</p>
           </div>
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0 ring-2 ring-blue-200 ring-offset-2">
@@ -320,7 +416,7 @@ export default function ProposalContent({
         >
           <div className="flex items-center gap-2">
             <Building2 className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-600">Gönderen Firma Bilgileri</span>
+            <span className="text-sm font-medium text-gray-600">{t.senderCompanyInfo}</span>
           </div>
           <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
         </button>
@@ -332,7 +428,7 @@ export default function ProposalContent({
             {tenant.address && <div className="flex items-start gap-2"><MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5" />{tenant.address}</div>}
             {tenant.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-gray-400" />{tenant.phone}</div>}
             {tenant.email && <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-gray-400" /><a href={`mailto:${tenant.email}`} className="text-blue-600">{tenant.email}</a></div>}
-            {tenant.taxNumber && <div className="flex items-center gap-2 pt-2 border-t border-gray-100"><Building2 className="w-3.5 h-3.5 text-gray-400" />VKN: {tenant.taxNumber}</div>}
+            {tenant.taxNumber && <div className="flex items-center gap-2 pt-2 border-t border-gray-100"><Building2 className="w-3.5 h-3.5 text-gray-400" />{t.taxNumber} {tenant.taxNumber}</div>}
           </div>
         )}
 
@@ -342,10 +438,10 @@ export default function ProposalContent({
             <div className="flex items-center gap-2 mb-1">
               <div className="w-1 h-4 rounded-full bg-indigo-500" />
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Ürünler / Hizmetler
+                {t.productsServices}
               </p>
             </div>
-            <p className="text-xs text-gray-400 ml-3">{items.length} kalem</p>
+            <p className="text-xs text-gray-400 ml-3">{items.length} {t.itemCount}</p>
           </div>
 
           {/* Mobile: Card view */}
@@ -378,7 +474,7 @@ export default function ProposalContent({
                   {item.discountRate > 0 && (
                     <span className="text-orange-600 font-semibold">-{item.discountRate}%</span>
                   )}
-                  <span className="text-gray-400">KDV {item.vatRate}%</span>
+                  <span className="text-gray-400">{t.vat} {item.vatRate}%</span>
                 </div>
               </div>
             ))}
@@ -389,12 +485,12 @@ export default function ProposalContent({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400 uppercase tracking-wider">
-                  <th className="px-5 py-3 text-left font-semibold">Ürün / Hizmet</th>
-                  <th className="px-3 py-3 text-center font-semibold w-20">Miktar</th>
-                  <th className="px-3 py-3 text-right font-semibold w-24">Birim Fiyat</th>
-                  <th className="px-3 py-3 text-center font-semibold w-16">İndirim</th>
-                  <th className="px-3 py-3 text-center font-semibold w-14">KDV</th>
-                  <th className="px-5 py-3 text-right font-semibold w-28">Toplam</th>
+                  <th className="px-5 py-3 text-left font-semibold">{t.productService}</th>
+                  <th className="px-3 py-3 text-center font-semibold w-20">{t.quantity}</th>
+                  <th className="px-3 py-3 text-right font-semibold w-24">{t.unitPrice}</th>
+                  <th className="px-3 py-3 text-center font-semibold w-16">{t.discount}</th>
+                  <th className="px-3 py-3 text-center font-semibold w-14">{t.vat}</th>
+                  <th className="px-5 py-3 text-right font-semibold w-28">{t.total}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -431,12 +527,12 @@ export default function ProposalContent({
         <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 ${cardClass}`}>
           <div className="space-y-3">
             <div className="flex justify-between text-sm text-gray-600">
-              <span>Ara Toplam</span>
+              <span>{t.subtotal}</span>
               <span className="font-medium">{fmt(financials.subtotal)}</span>
             </div>
             {financials.totalDiscount > 0 && (
               <div className="flex justify-between text-sm text-orange-600">
-                <span>Satır İndirimleri</span>
+                <span>{t.lineDiscounts}</span>
                 <span className="font-medium">-{fmt(financials.totalDiscount)}</span>
               </div>
             )}
@@ -444,14 +540,14 @@ export default function ProposalContent({
               <div className="flex justify-between text-sm text-orange-600">
                 <span>
                   {proposal.discountType === 'PERCENTAGE'
-                    ? `İndirim (${proposal.discountValue}%)`
-                    : 'İndirim'}
+                    ? `${t.discountPercent} (${proposal.discountValue}%)`
+                    : t.discountPercent}
                 </span>
                 <span className="font-medium">-{fmt(financials.proposalLevelDiscount)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-gray-100">
-              <span>KDV</span>
+              <span>{t.vat}</span>
               <span className="font-medium">{fmt(financials.totalVat)}</span>
             </div>
           </div>
@@ -459,7 +555,7 @@ export default function ProposalContent({
           {/* Grand Total */}
           <div className="mt-4 p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 rounded-2xl text-white flex items-center justify-between animate-pulse-glow">
             <div>
-              <p className="text-blue-200 text-xs font-medium uppercase tracking-wider">Genel Toplam</p>
+              <p className="text-blue-200 text-xs font-medium uppercase tracking-wider">{t.grandTotal}</p>
               <p className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-1">{fmt(financials.grandTotal)}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
@@ -475,7 +571,7 @@ export default function ProposalContent({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-1 h-4 rounded-full bg-blue-500" />
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Açıklama</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.description}</p>
                 </div>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.description}</p>
               </div>
@@ -484,7 +580,7 @@ export default function ProposalContent({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-1 h-4 rounded-full bg-amber-500" />
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Notlar</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.notes}</p>
                 </div>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.notes}</p>
               </div>
@@ -493,7 +589,7 @@ export default function ProposalContent({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-1 h-4 rounded-full bg-emerald-500" />
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ödeme Koşulları</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.paymentTerms}</p>
                 </div>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.paymentTerms}</p>
               </div>
@@ -502,7 +598,7 @@ export default function ProposalContent({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-1 h-4 rounded-full bg-violet-500" />
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Teslimat Koşulları</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.deliveryTerms}</p>
                 </div>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.deliveryTerms}</p>
               </div>
@@ -511,7 +607,7 @@ export default function ProposalContent({
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
                   <div className="w-1 h-4 rounded-full bg-gray-400" />
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Genel Şartlar</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.generalTerms}</p>
                 </div>
                 <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed ml-3">{proposal.termsConditions}</p>
               </div>
@@ -531,8 +627,8 @@ export default function ProposalContent({
                   <CreditCard className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-sm text-gray-900">EFT / Havale ile Ödeme</p>
-                  <p className="text-xs text-gray-400">{tenant.bankAccounts.length} banka hesabı</p>
+                  <p className="font-bold text-sm text-gray-900">{t.bankPayment}</p>
+                  <p className="text-xs text-gray-400">{tenant.bankAccounts.length} {t.bankAccounts}</p>
                 </div>
               </div>
               <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showBankInfo ? 'rotate-180' : ''}`} />
@@ -541,7 +637,7 @@ export default function ProposalContent({
             {showBankInfo && (
               <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
                 <div className="pt-3">
-                  <p className="text-xs text-gray-500 mb-3">Aşağıdaki hesaplardan birine ödeme yapabilirsiniz. IBAN&apos;ı kopyalamak için tıklayın.</p>
+                  <p className="text-xs text-gray-500 mb-3">{t.bankPaymentInfo}</p>
                 </div>
                 {tenant.bankAccounts.map((bank, idx) => (
                   <div key={idx} className="p-4 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200 space-y-2">
@@ -553,9 +649,9 @@ export default function ProposalContent({
                       <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{bank.currency}</span>
                     </div>
                     {bank.branchName && (
-                      <p className="text-xs text-gray-500">Şube: {bank.branchName}</p>
+                      <p className="text-xs text-gray-500">{t.branch} {bank.branchName}</p>
                     )}
-                    <p className="text-xs text-gray-500">Hesap Sahibi: <span className="font-medium text-gray-700">{bank.accountHolder || tenant.name}</span></p>
+                    <p className="text-xs text-gray-500">{t.accountHolder} <span className="font-medium text-gray-700">{bank.accountHolder || tenant.name}</span></p>
                     <button
                       onClick={() => copyIban(bank.iban)}
                       className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors group"
@@ -563,9 +659,9 @@ export default function ProposalContent({
                       <span className="font-mono text-xs sm:text-sm text-gray-900 tracking-normal sm:tracking-wider break-all">{bank.iban}</span>
                       <span className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-blue-600">
                         {copiedIban === bank.iban ? (
-                          <><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Kopyalandı</>
+                          <><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> {t.copied}</>
                         ) : (
-                          <><Copy className="w-3.5 h-3.5" /> Kopyala</>
+                          <><Copy className="w-3.5 h-3.5" /> {t.copy}</>
                         )}
                       </span>
                     </button>
@@ -584,8 +680,8 @@ export default function ProposalContent({
                 <XCircle className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-bold text-sm text-gray-900">Teklif Reddedildi</p>
-                <p className="text-xs text-gray-400">Müşteri yanıtı</p>
+                <p className="font-bold text-sm text-gray-900">{t.proposalRejected}</p>
+                <p className="text-xs text-gray-400">{t.customerResponse}</p>
               </div>
             </div>
             <div className="p-3 bg-red-50 rounded-xl">
@@ -601,8 +697,8 @@ export default function ProposalContent({
                 <RotateCw className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-bold text-sm text-gray-900">Revize Talep Edildi</p>
-                <p className="text-xs text-gray-400">Müşteri yanıtı</p>
+                <p className="font-bold text-sm text-gray-900">{t.revisionRequested}</p>
+                <p className="text-xs text-gray-400">{t.customerResponse}</p>
               </div>
             </div>
             <div className="p-3 bg-amber-50 rounded-xl">
@@ -619,8 +715,8 @@ export default function ProposalContent({
                 <PenTool className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-bold text-sm text-gray-900">Teklif Kabul Edildi</p>
-                <p className="text-xs text-gray-400">E-imza ile onaylandı</p>
+                <p className="font-bold text-sm text-gray-900">{t.proposalAccepted}</p>
+                <p className="text-xs text-gray-400">{t.approvedWithEsign}</p>
               </div>
             </div>
 
@@ -645,7 +741,7 @@ export default function ProposalContent({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={signature.data}
-                  alt="E-İmza"
+                  alt={t.eSignatureAlt}
                   className="max-h-32 w-auto"
                 />
               </div>
@@ -653,7 +749,7 @@ export default function ProposalContent({
               {/* Security Badge */}
               <div className="flex items-center gap-2 text-xs text-gray-400">
                 <Shield className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Bu imza güvenli şekilde şifrelenmiş olarak saklanmaktadır</span>
+                <span>{t.signatureSecure}</span>
               </div>
 
               {/* Signed PDF Download */}
@@ -662,7 +758,7 @@ export default function ProposalContent({
                 className="flex items-center justify-center gap-2 w-full py-3 mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-emerald-500/25 transition-all text-sm"
               >
                 <Download className="w-4 h-4" />
-                İmzalı PDF İndir
+                {t.downloadSignedPdf}
               </a>
             </div>
           </div>
@@ -672,11 +768,11 @@ export default function ProposalContent({
         <div className="flex items-center justify-center gap-6 py-6 text-xs text-gray-400 print:hidden">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
             <Shield className="w-3.5 h-3.5 text-emerald-500" />
-            <span>SSL Güvenli</span>
+            <span>{t.sslSecure}</span>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full">
             <Eye className="w-3.5 h-3.5" />
-            <span>{proposal.viewCount} görüntülenme</span>
+            <span>{proposal.viewCount} {t.viewCount}</span>
           </div>
         </div>
       </div>
