@@ -5,15 +5,52 @@ import { Moon, Sun } from 'lucide-react';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ApiDocsPage');
+
+const i18n = {
+  tr: {
+    pageTitle: 'TeklifPro API Dokümantasyonu',
+    metaDescription: 'TeklifPro RESTful API Dokümantasyonu v1.0',
+    docVersion: 'Dokümantasyon v1.0',
+    loading: 'API Dokümantasyonu Yükleniyor...',
+    loadFailed: 'API Dokümantasyonu Yüklenemedi',
+    tryAgainLater: 'Lütfen daha sonra tekrar deneyiniz.',
+    privacyPolicy: 'Gizlilik Politikası',
+    support: 'Destek',
+  },
+  en: {
+    pageTitle: 'TeklifPro API Documentation',
+    metaDescription: 'TeklifPro RESTful API Documentation v1.0',
+    docVersion: 'Documentation v1.0',
+    loading: 'Loading API Documentation...',
+    loadFailed: 'Failed to Load API Documentation',
+    tryAgainLater: 'Please try again later.',
+    privacyPolicy: 'Privacy Policy',
+    support: 'Support',
+  },
+} as const;
+
+function detectLocale(): 'tr' | 'en' {
+  if (typeof window === 'undefined') return 'tr';
+  const path = window.location.pathname;
+  if (path.startsWith('/en')) return 'en';
+  const lang = navigator.language?.toLowerCase() ?? '';
+  if (lang.startsWith('en')) return 'en';
+  return 'tr';
+}
+
 export default function ApiDocsPage() {
   const [isDark, setIsDark] = useState(false);
   const [spec, setSpec] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [locale, setLocale] = useState<'tr' | 'en'>('tr');
 
   useEffect(() => {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDark(prefersDark);
+    setLocale(detectLocale());
   }, []);
+
+  const t = i18n[locale];
 
   useEffect(() => {
     const loadSpec = async () => {
@@ -36,10 +73,10 @@ export default function ApiDocsPage() {
   };
 
   return (
-    <html lang="tr" className={isDark ? 'dark' : ''}>
+    <html lang={locale} className={isDark ? 'dark' : ''}>
       <head>
-        <title>TeklifPro API Dökümantasyonu</title>
-        <meta name="description" content="TeklifPro RESTful API Dökümantasyonu v1.0" />
+        <title>{t.pageTitle}</title>
+        <meta name="description" content={t.metaDescription} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4/swagger-ui-standalone-preset.js"></script>
@@ -60,7 +97,7 @@ export default function ApiDocsPage() {
                 <div>
                   <h1 className="text-2xl font-bold">TeklifPro API</h1>
                   <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                    Dökümantasyonu v1.0
+                    {t.docVersion}
                   </p>
                 </div>
               </div>
@@ -80,7 +117,7 @@ export default function ApiDocsPage() {
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                   <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-                    API Dökümantasyonu Yükleniyor...
+                    {t.loading}
                   </p>
                 </div>
               </div>
@@ -119,10 +156,10 @@ export default function ApiDocsPage() {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <p className={`mb-4 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-                    API Dökümantasyonu Yüklenemedi
+                    {t.loadFailed}
                   </p>
                   <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
-                    Lütfen daha sonra tekrar deneyiniz.
+                    {t.tryAgainLater}
                   </p>
                 </div>
               </div>
@@ -133,12 +170,12 @@ export default function ApiDocsPage() {
             <div className="max-w-7xl mx-auto text-center">
               <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                 TeklifPro API v1.0 |
-                <a href="/tr/kvkk" className="ml-1 text-blue-500 hover:underline">
-                  Gizlilik Politikası
+                <a href={`/${locale}/kvkk`} className="ml-1 text-blue-500 hover:underline">
+                  {t.privacyPolicy}
                 </a>
                 {' '}|
                 <a href="https://support.teklifpro.com" className="ml-1 text-blue-500 hover:underline">
-                  Destek
+                  {t.support}
                 </a>
               </p>
             </div>

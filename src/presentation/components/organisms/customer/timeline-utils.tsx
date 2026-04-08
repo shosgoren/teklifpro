@@ -45,28 +45,8 @@ const TrendingUp = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-// i18n - translation placeholder function
-const translations: Record<string, string> = {
-  'timeline.title': 'Müşteri Aktivite Zaman Çizelgesi',
-  'timeline.emptyState': 'Henüz aktivite yok',
-  'timeline.addNote': 'Not Ekle',
-  'timeline.filters': 'Filtreler',
-  'timeline.loadMore': 'Daha Fazla Yükle',
-  'timeline.loading': 'Yükleniyor...',
-  'timeline.noteType': 'Not Türü',
-  'timeline.pinNote': 'Not\'u sabitle',
-  'timeline.unpinNote': 'Not\'u kaldır',
-  'timeline.delete': 'Sil',
-  'timeline.edit': 'Düzenle',
-  'timeline.cancel': 'İptal',
-  'timeline.save': 'Kaydet',
-  'timeline.error': 'Bir hata oluştu',
-  'timeline.success': 'Başarıyla kaydedildi',
-};
-
-export const t = (key: string, defaultValue?: string) => {
-  return translations[key] || defaultValue || key;
-};
+// Translation function type - accepts a next-intl translator
+export type TranslationFn = (key: string) => string;
 
 // Icon mapping by note type
 export const getIconByType = (type: TimelineEventType) => {

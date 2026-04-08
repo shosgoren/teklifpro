@@ -13,7 +13,6 @@ import { cn } from '@/shared/utils/cn';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/shared/components/ui/use-toast';
 import type { TimelineEvent, NoteType, FilterType, CustomerTimelineProps } from './customer/types';
-import { t } from './customer/timeline-utils';
 import { TimelineItem } from './customer/TimelineItem';
 import { TimelineFilters } from './customer/TimelineFilters';
 import { NoteForm } from './customer/NoteForm';
@@ -32,6 +31,7 @@ export function CustomerTimeline({
   onNoteCreate,
 }: CustomerTimelineProps) {
   const confirm = useConfirm();
+  const t = useTranslations('customerTimeline');
   const tl = useTranslations('timeline');
   // State management
   const [events, setEvents] = useState<TimelineEvent[]>([]);
@@ -70,7 +70,7 @@ export function CustomerTimeline({
         );
 
         if (!response.ok) {
-          throw new Error('Zaman çizelgesi yüklenemedi');
+          throw new Error(t('errorLoadTimeline'));
         }
 
         const data = await response.json();
@@ -89,17 +89,17 @@ export function CustomerTimeline({
         setHasMore(data.pagination.hasNextPage);
         setPage(pageNum);
       } catch (error) {
-        logger.error('Zaman cizelgesi yukleme hatasi', error);
+        logger.error('Timeline load error', error);
         toast({
-          title: 'Hata',
-          description: t('timeline.error'),
+          title: t('toastErrorTitle'),
+          description: t('error'),
           variant: 'destructive',
         });
       } finally {
         setIsLoading(false);
       }
     },
-    [customerId, filter, toast]
+    [customerId, filter, toast, t]
   );
 
   // Initial load and filter changes
@@ -111,8 +111,8 @@ export function CustomerTimeline({
   const handleSaveNote = async () => {
     if (!noteContent.trim()) {
       toast({
-        title: 'Uyarı',
-        description: 'Not içeriği boş olamaz',
+        title: t('toastWarningTitle'),
+        description: t('noteContentEmpty'),
         variant: 'default',
       });
       return;
@@ -138,7 +138,7 @@ export function CustomerTimeline({
         );
 
         if (!response.ok) {
-          throw new Error('Not güncellenirken hata oluştu');
+          throw new Error(t('errorUpdateNote'));
         }
 
         await loadTimeline(1, false);
@@ -160,7 +160,7 @@ export function CustomerTimeline({
         );
 
         if (!response.ok) {
-          throw new Error('Not oluşturulurken hata oluştu');
+          throw new Error(t('errorCreateNote'));
         }
 
         const newNote = await response.json();
@@ -175,15 +175,15 @@ export function CustomerTimeline({
       setIsPinning(false);
 
       toast({
-        title: 'Başarı',
-        description: t('timeline.success'),
+        title: t('toastSuccessTitle'),
+        description: t('success'),
         variant: 'default',
       });
     } catch (error) {
-      logger.error('Not kaydetme hatasi', error);
+      logger.error('Note save error', error);
       toast({
-        title: 'Hata',
-        description: t('timeline.error'),
+        title: t('toastErrorTitle'),
+        description: t('error'),
         variant: 'destructive',
       });
     } finally {
@@ -193,7 +193,7 @@ export function CustomerTimeline({
 
   // Delete note
   const handleDeleteNote = async (noteId: string) => {
-    const ok = await confirm({ message: 'Bu notu silmek istediğinizden emin misiniz?', confirmText: 'Sil', variant: 'danger' });
+    const ok = await confirm({ message: t('confirmDeleteNote'), confirmText: t('delete'), variant: 'danger' });
     if (!ok) return;
 
     try {
@@ -205,21 +205,21 @@ export function CustomerTimeline({
       );
 
       if (!response.ok) {
-        throw new Error('Not silinirken hata oluştu');
+        throw new Error(t('errorDeleteNote'));
       }
 
       await loadTimeline(1, false);
 
       toast({
-        title: 'Başarı',
-        description: 'Not başarıyla silindi',
+        title: t('toastSuccessTitle'),
+        description: t('noteDeleted'),
         variant: 'default',
       });
     } catch (error) {
-      logger.error('Not silme hatasi', error);
+      logger.error('Note delete error', error);
       toast({
-        title: 'Hata',
-        description: t('timeline.error'),
+        title: t('toastErrorTitle'),
+        description: t('error'),
         variant: 'destructive',
       });
     }
@@ -251,7 +251,7 @@ export function CustomerTimeline({
       {/* Title */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">
-          {t('timeline.title')}
+          {t('title')}
         </h2>
       </div>
 
@@ -283,13 +283,13 @@ export function CustomerTimeline({
           // Loading state
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-500">{t('timeline.loading')}</span>
+            <span className="ml-2 text-gray-500">{t('loading')}</span>
           </div>
         ) : events.length === 0 && pinnedEvents.length === 0 ? (
           // Empty state
           <div className="text-center py-12">
             <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">{t('timeline.emptyState')}</p>
+            <p className="text-gray-500 text-lg">{t('emptyState')}</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -298,7 +298,7 @@ export function CustomerTimeline({
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  Sabitlenmiş Notlar
+                  {t('pinnedNotes')}
                 </h3>
                 <div className="space-y-3">
                   {pinnedEvents.map((event) => (
@@ -319,7 +319,7 @@ export function CustomerTimeline({
             <div>
               {pinnedEvents.length > 0 && (
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                  Son Aktiviteler
+                  {t('recentActivities')}
                 </h3>
               )}
               <div className="space-y-0">
@@ -347,10 +347,10 @@ export function CustomerTimeline({
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {t('timeline.loading')}
+                      {t('loading')}
                     </>
                   ) : (
-                    t('timeline.loadMore')
+                    t('loadMore')
                   )}
                 </Button>
               </div>

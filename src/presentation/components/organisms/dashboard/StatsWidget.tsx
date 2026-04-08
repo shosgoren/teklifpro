@@ -2,15 +2,17 @@
 
 import React from 'react';
 import { TrendingUp, BarChart3, Zap, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import type { StatCardProps } from './types';
 import { MOCK_STATS } from './mock-data';
 
-const StatCard: React.FC<StatCardProps> = ({
+const StatCard: React.FC<StatCardProps & { periodLabel: string }> = ({
   title,
   value,
   change,
   icon,
   unit,
+  periodLabel,
 }) => {
   const isPositive = change >= 0;
   return (
@@ -29,7 +31,7 @@ const StatCard: React.FC<StatCardProps> = ({
               isPositive ? 'text-green-600' : 'text-red-600'
             }`}
           >
-            {isPositive ? '+' : ''}{change}% geçen dönem
+            {isPositive ? '+' : ''}{change}% {periodLabel}
           </p>
         </div>
         <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400">
@@ -41,32 +43,37 @@ const StatCard: React.FC<StatCardProps> = ({
 };
 
 export const StatsWidget: React.FC<{ settings?: Record<string, any> }> = () => {
+  const t = useTranslations('statsWidget');
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
-        title="Toplam Teklifler"
+        title={t('totalProposals')}
         value={MOCK_STATS.totalProposals}
         change={MOCK_STATS.proposalChange}
         icon={<BarChart3 className="h-6 w-6" />}
+        periodLabel={t('previousPeriod')}
       />
       <StatCard
-        title="Kabul Oranı"
+        title={t('acceptanceRate')}
         value={MOCK_STATS.acceptanceRate.toFixed(1)}
         change={MOCK_STATS.acceptanceChange}
         icon={<TrendingUp className="h-6 w-6" />}
         unit="%"
+        periodLabel={t('previousPeriod')}
       />
       <StatCard
-        title="Toplam Gelir"
+        title={t('totalRevenue')}
         value={`₺${(MOCK_STATS.totalRevenue / 1000).toFixed(0)}K`}
         change={MOCK_STATS.revenueChange}
         icon={<Zap className="h-6 w-6" />}
+        periodLabel={t('previousPeriod')}
       />
       <StatCard
-        title="Bekleyen Teklifler"
+        title={t('pendingProposals')}
         value={MOCK_STATS.pendingProposals}
         change={MOCK_STATS.pendingChange}
         icon={<Clock className="h-6 w-6" />}
+        periodLabel={t('previousPeriod')}
       />
     </div>
   );

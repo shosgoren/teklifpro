@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Loader2, Plus } from 'lucide-react';
-import { t } from './timeline-utils';
+import { useTranslations } from 'next-intl';
 import type { NoteFormProps, NoteType } from './types';
 
 export function NoteForm({
@@ -27,18 +27,19 @@ export function NoteForm({
   onCancelEdit,
   tl,
 }: NoteFormProps) {
+  const t = useTranslations('customerTimeline');
   return (
     <Card className="p-6 border-2 border-blue-100">
       <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Plus className="w-5 h-5" />
-        {editingId ? 'Notu Düzenle' : t('timeline.addNote')}
+        {editingId ? t('editNote') : t('addNote')}
       </h3>
 
       <div className="space-y-4">
         {/* Note content */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Not İçeriği
+            {t('noteContent')}
           </label>
           <Textarea
             value={noteContent}
@@ -54,7 +55,7 @@ export function NoteForm({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('timeline.noteType')}
+              {t('noteType')}
             </label>
             <Select
               value={noteType}
@@ -65,11 +66,11 @@ export function NoteForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="note">Not</SelectItem>
-                <SelectItem value="call">Arama</SelectItem>
-                <SelectItem value="meeting">Toplantı</SelectItem>
-                <SelectItem value="email">E-posta</SelectItem>
-                <SelectItem value="task">Görev</SelectItem>
+                <SelectItem value="note">{t('typeNote')}</SelectItem>
+                <SelectItem value="call">{t('typeCall')}</SelectItem>
+                <SelectItem value="meeting">{t('typeMeeting')}</SelectItem>
+                <SelectItem value="email">{t('typeEmail')}</SelectItem>
+                <SelectItem value="task">{t('typeTask')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -84,7 +85,7 @@ export function NoteForm({
                 className="w-4 h-4"
               />
               <span className="text-sm font-medium text-gray-700">
-                {t('timeline.pinNote')}
+                {t('pinNote')}
               </span>
             </label>
           </div>
@@ -98,7 +99,7 @@ export function NoteForm({
               onClick={onCancelEdit}
               disabled={isSubmitting}
             >
-              {t('timeline.cancel')}
+              {t('cancel')}
             </Button>
           )}
           <Button
@@ -108,7 +109,7 @@ export function NoteForm({
             {isSubmitting && (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             )}
-            {t('timeline.save')}
+            {t('save')}
           </Button>
         </div>
       </div>

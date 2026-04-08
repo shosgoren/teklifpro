@@ -31,6 +31,7 @@ export function ProposalHeader({
 }: ProposalHeaderProps) {
   const t = useTranslations('proposals');
   const tc = useTranslations('common');
+  const td = useTranslations('proposalDetail');
 
   return (
     <div className="relative overflow-hidden rounded-b-3xl md:rounded-b-none">
@@ -87,42 +88,48 @@ export function ProposalHeader({
           <button
             onClick={onSendWhatsApp}
             className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
-            title="WhatsApp Gonder"
+            title={td('sendWhatsApp')}
+            aria-label={td('sendWhatsApp')}
           >
             <MessageCircle className="h-4 w-4" />
           </button>
           <button
             onClick={onSendEmail}
             className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
-            title="E-posta Gonder"
+            title={td('sendEmail')}
+            aria-label={td('sendEmail')}
           >
             <Mail className="h-4 w-4" />
           </button>
           <button
             onClick={onCopyLink}
             className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
-            title="Link Kopyala"
+            title={td('copyLink')}
+            aria-label={td('copyLink')}
           >
             <Link className="h-4 w-4" />
           </button>
           <button
             onClick={onShowQR}
             className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
-            title="QR Kod"
+            title={td('qrCode')}
+            aria-label={td('qrCode')}
           >
             <QrCode className="h-4 w-4" />
           </button>
           <button
             onClick={onDownloadPDF}
             className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-xl backdrop-blur-sm transition-colors"
-            title="PDF Indir"
+            title={td('downloadPDF')}
+            aria-label={td('downloadPDF')}
           >
             <Download className="h-4 w-4" />
           </button>
           <button
             onClick={onDelete}
             className="inline-flex items-center justify-center w-10 h-10 bg-red-500/30 hover:bg-red-500/50 text-white rounded-xl backdrop-blur-sm transition-colors ml-auto"
-            title="Sil"
+            title={td('delete')}
+            aria-label={td('delete')}
           >
             <Trash2 className="h-4 w-4" />
           </button>

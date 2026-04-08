@@ -93,22 +93,10 @@ function getTypeBadgeVariant(type: 'proposal' | 'customer' | 'product') {
 }
 
 /**
- * Tür etiket metnini döndür (Türkçe)
+ * Tür etiket metnini döndür
  */
-function getTypeLabel(type: 'proposal' | 'customer' | 'product', labels?: { proposal: string; customer: string; product: string }) {
-  if (labels) {
-    return labels[type] || '';
-  }
-  switch (type) {
-    case 'proposal':
-      return 'Teklif';
-    case 'customer':
-      return 'Müşteri';
-    case 'product':
-      return 'Ürün';
-    default:
-      return '';
-  }
+function getTypeLabel(type: 'proposal' | 'customer' | 'product', labels: { proposal: string; customer: string; product: string }) {
+  return labels[type] || '';
 }
 
 /**

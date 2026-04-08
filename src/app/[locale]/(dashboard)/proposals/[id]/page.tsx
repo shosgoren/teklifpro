@@ -138,6 +138,7 @@ export default function ProposalDetailPage() {
   const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const t = useTranslations('proposals');
   const tc = useTranslations('common');
+  const td = useTranslations('proposalDetail');
   const confirm = useConfirm();
   const getActivityLabel = (type: string) => {
     const key = ACTIVITY_KEY_MAP[type];
@@ -341,7 +342,7 @@ export default function ProposalDetailPage() {
       router.refresh();
       window.location.reload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Hata oluştu', { id: 'make-ready' });
+      toast.error(error instanceof Error ? error.message : td('genericError'), { id: 'make-ready' });
     }
   };
 

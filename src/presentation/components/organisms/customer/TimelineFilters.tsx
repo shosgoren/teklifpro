@@ -1,18 +1,31 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '@/shared/components/ui/button';
-import { t } from './timeline-utils';
 import type { FilterType, TimelineFiltersProps } from './types';
+
+const FILTER_KEYS: Record<FilterType, string> = {
+  all: 'filterAll',
+  note: 'typeNote',
+  call: 'typeCall',
+  meeting: 'typeMeeting',
+  email: 'typeEmail',
+  task: 'typeTask',
+  proposal: 'filterProposal',
+  status: 'filterStatus',
+};
 
 export function TimelineFilters({
   filter,
   isLoading,
   onFilterChange,
 }: TimelineFiltersProps) {
+  const t = useTranslations('customerTimeline');
+
   return (
     <div className="flex gap-2 items-center">
       <span className="text-sm font-medium text-gray-700">
-        {t('timeline.filters')}:
+        {t('filters')}:
       </span>
       <div className="flex gap-2 flex-wrap">
         {(['all', 'note', 'call', 'meeting', 'email', 'task', 'proposal', 'status'] as FilterType[]).map(
@@ -23,10 +36,9 @@ export function TimelineFilters({
               size="sm"
               onClick={() => onFilterChange(f)}
               disabled={isLoading}
+              aria-pressed={filter === f}
             >
-              {f === 'all'
-                ? 'Tümü'
-                : f.charAt(0).toUpperCase() + f.slice(1)}
+              {t(FILTER_KEYS[f])}
             </Button>
           )
         )}

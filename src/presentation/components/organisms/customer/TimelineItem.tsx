@@ -1,13 +1,17 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Pin } from 'lucide-react';
 import { cn } from '@/shared/utils/cn';
 import { format, formatDistanceToNow } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import { getIconByType, getBadgeVariant, t } from './timeline-utils';
+import { tr, enUS } from 'date-fns/locale';
+import { getIconByType, getBadgeVariant } from './timeline-utils';
 import type { TimelineItemProps } from './types';
+
+const DATE_LOCALES: Record<string, typeof tr> = { tr, en: enUS };
 
 export function TimelineItem({
   event,
@@ -16,6 +20,20 @@ export function TimelineItem({
   onEdit,
   onDelete,
 }: TimelineItemProps) {
+  const t = useTranslations('customerTimeline');
+  const locale = useLocale();
+  const dateLoc = DATE_LOCALES[locale] || tr;
+
+  const TYPE_LABELS: Record<string, string> = {
+    note: t('typeNote'),
+    call: t('typeCall'),
+    meeting: t('typeMeeting'),
+    email: t('typeEmail'),
+    task: t('typeTask'),
+    proposal: t('filterProposal'),
+    status: t('filterStatus'),
+  };
+
   return (
     <div
       className={cn(
@@ -39,7 +57,7 @@ export function TimelineItem({
             <div className="flex-1">
               <div className="flex gap-2 items-center mb-2">
                 <Badge className={getBadgeVariant(event.type)}>
-                  {event.type === 'note' ? 'Not' : event.type.toUpperCase()}
+                  {TYPE_LABELS[event.type] || event.type.toUpperCase()}
                 </Badge>
                 {isPinned && (
                   <Pin className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -49,9 +67,9 @@ export function TimelineItem({
               {/* Timestamp and user */}
               <p className="text-sm text-gray-500 mb-2">
                 {event.user} •{' '}
-                <time title={format(new Date(event.timestamp), 'PPpp', { locale: tr })}>
+                <time title={format(new Date(event.timestamp), 'PPpp', { locale: dateLoc })}>
                   {formatDistanceToNow(new Date(event.timestamp), {
-                    locale: tr,
+                    locale: dateLoc,
                     addSuffix: true,
                   })}
                 </time>
@@ -65,7 +83,7 @@ export function TimelineItem({
               {/* Attachment count */}
               {event.attachmentsCount ? (
                 <p className="text-xs text-gray-500 mt-2">
-                  {event.attachmentsCount} ek dosya
+                  {t('attachmentCount', { count: event.attachmentsCount })}
                 </p>
               ) : null}
             </div>
@@ -77,8 +95,9 @@ export function TimelineItem({
                 size="sm"
                 onClick={() => onEdit(event)}
                 disabled={isSubmitting}
+                aria-label={t('edit')}
               >
-                {t('timeline.edit')}
+                {t('edit')}
               </Button>
               <Button
                 variant="ghost"
@@ -86,8 +105,9 @@ export function TimelineItem({
                 className="text-red-600 hover:text-red-700"
                 onClick={() => onDelete(event.id)}
                 disabled={isSubmitting}
+                aria-label={t('delete')}
               >
-                {t('timeline.delete')}
+                {t('delete')}
               </Button>
             </div>
           </div>
