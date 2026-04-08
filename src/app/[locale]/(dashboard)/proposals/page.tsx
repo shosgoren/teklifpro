@@ -76,13 +76,19 @@ export default function ProposalsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const stored = localStorage.getItem('teklifpro-proposals-view') as 'list' | 'kanban' | null;
     if (stored === 'list' || stored === 'kanban') {
       setViewMode(stored);
     }
-  }, []);
+  }, [mounted]);
 
   const toggleViewMode = (mode: 'list' | 'kanban') => {
     setViewMode(mode);

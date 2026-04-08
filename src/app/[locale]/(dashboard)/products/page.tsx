@@ -186,13 +186,19 @@ export default function ProductsPage() {
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     const stored = localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null;
     if (stored === 'table' || stored === 'grid') {
       setViewMode(stored);
     }
-  }, []);
+  }, [mounted]);
   const [bulkPrice, setBulkPrice] = useState<{ percentage: number; field: 'listPrice' | 'costPrice'; category: string; productType: string }>({ percentage: 10, field: 'listPrice', category: '', productType: '' });
   const [newProduct, setNewProduct] = useState({
     code: '', name: '', category: '', productType: 'COMMERCIAL', unit: 'Adet',

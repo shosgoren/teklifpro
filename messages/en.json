@@ -836,6 +836,7 @@
     "last10Amounts": "Amounts of last 10 proposals",
     "amount": "Amount",
     "quickActions": "Quick Actions",
+    "closeQuickActions": "Close quick actions",
     "createQuickProposal": "Create quick proposal",
     "customerCount": "customers",
     "products": "Products",
@@ -1509,7 +1510,8 @@
     "navProducts": "Products",
     "navAnalytics": "Analytics",
     "navSettings": "Settings",
-    "navMore": "More"
+    "navMore": "More",
+    "toggleTheme": "Toggle theme"
   },
   "notificationsPage": {
     "title": "Notifications",

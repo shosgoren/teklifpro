@@ -151,9 +151,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
     if (stored === 'true') setCollapsed(true)
-  }, [])
+  }, [mounted])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -388,6 +392,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               {mounted && (
                 <button
                   onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                  aria-label={t('toggleTheme')}
                   className="p-2 rounded-lg transition-colors duration-200 text-white/80 hover:bg-white/10 hover:text-white"
                 >
                   {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -430,6 +435,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                 onClick={handleLogout}
                 className="hidden md:flex p-2 rounded-lg transition-colors duration-200 text-white/80 hover:bg-white/10 hover:text-white"
                 title={t('signOut')}
+                aria-label={t('signOut')}
               >
                 <LogOut className="w-5 h-5" />
               </button>

@@ -255,6 +255,7 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
         )}
         <motion.button
           onClick={() => setOpen(!open)}
+          aria-label={open ? t('closeQuickActions') : t('quickActions')}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           className={cn(
@@ -281,6 +282,7 @@ export default function DashboardPage() {
   const tStatus = useTranslations('proposals');
   const [isSyncing, setIsSyncing] = useState(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGETS);
+  const [mounted, setMounted] = useState(false);
 
   const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher, swrDefaultOptions);
   const { data: customersData, isLoading: customersLoading } = useSWR('/api/v1/customers?limit=1', fetcher, swrDefaultOptions);
@@ -302,8 +304,13 @@ export default function DashboardPage() {
   const revisionCount = proposals.filter((p: DashboardProposal) => p.status === 'REVISION_REQUESTED').length;
   const lastProposalId = proposals[0]?.id;
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Load widget order from localStorage
   useEffect(() => {
+    if (!mounted) return;
     try {
       const stored = localStorage.getItem(WIDGET_ORDER_KEY);
       if (stored) {
@@ -315,7 +322,7 @@ export default function DashboardPage() {
     } catch {
       // ignore
     }
-  }, []);
+  }, [mounted]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),

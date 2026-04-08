@@ -836,6 +836,7 @@
     "last10Amounts": "Son 10 teklifin tutarları",
     "amount": "Tutar",
     "quickActions": "Hızlı İşlemler",
+    "closeQuickActions": "Hızlı işlemleri kapat",
     "createQuickProposal": "Hızlı teklif oluştur",
     "customerCount": "müşteri",
     "products": "Ürünler",
@@ -1509,7 +1510,8 @@
     "navProducts": "Ürünler",
     "navAnalytics": "Analitik",
     "navSettings": "Ayarlar",
-    "navMore": "Diğer"
+    "navMore": "Diğer",
+    "toggleTheme": "Temayı değiştir"
   },
   "notificationsPage": {
     "title": "Bildirimler",

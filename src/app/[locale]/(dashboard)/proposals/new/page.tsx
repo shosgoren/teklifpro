@@ -910,6 +910,7 @@ function PreviewStep({
   onVoiceNoteChange: (data: string | null, duration: number | null) => void
 }) {
   const t = useTranslations()
+  const locale = useLocale()
   const [sendDialog, setSendDialog] = useState<'email' | 'whatsapp' | null>(null)
 
   const handleAction = async (method: 'draft' | 'whatsapp' | 'email') => {
@@ -961,7 +962,7 @@ function PreviewStep({
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground text-xs mb-1">{t('proposals.date')}</p>
-                <p className="font-semibold">{new Date().toLocaleDateString()}</p>
+                <p className="font-semibold">{new Date().toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US')}</p>
                 <p className="text-xs text-muted-foreground">{data.validityDays} {t('proposals.days')}</p>
               </div>
             </div>
