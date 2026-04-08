@@ -32,7 +32,7 @@ export const CreateProposalSchema = z.object({
 export const UpdateProposalSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
-  status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED', 'INVOICED']).optional(),
+  status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED', 'INVOICED']).optional(),
   items: z.array(z.object({
     id: z.string().optional(),
     productId: z.string().optional(),
