@@ -70,6 +70,7 @@ async function handleGet(request: NextRequest) {
           ...where,
           minStockLevel: { gt: 0 },
         },
+        take: 1000,
         select: stockListSelect,
       });
 

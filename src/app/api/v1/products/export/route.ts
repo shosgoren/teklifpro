@@ -17,6 +17,7 @@ async function handleGet(request: NextRequest) {
     const products = await prisma.product.findMany({
       where: { tenantId: session.tenant.id, deletedAt: null },
       orderBy: { name: 'asc' },
+      take: 5000,
       select: {
         code: true,
         name: true,

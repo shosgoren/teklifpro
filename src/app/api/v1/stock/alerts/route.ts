@@ -17,6 +17,7 @@ async function handleGet(request: NextRequest) {
         minStockLevel: { gt: 0 },
         deletedAt: null,
       },
+      take: 200,
       select: {
         id: true,
         code: true,

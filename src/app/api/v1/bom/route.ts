@@ -14,6 +14,9 @@ async function handleGet(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const productId = searchParams.get('productId') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20));
+    const skip = (page - 1) * limit;
 
     const where: Prisma.BillOfMaterialWhereInput = {
       tenantId: session.tenant.id,
@@ -24,24 +27,29 @@ async function handleGet(request: NextRequest) {
       where.productId = productId;
     }
 
-    const boms = await prisma.billOfMaterial.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            unit: true,
-            category: true,
+    const [boms, total] = await Promise.all([
+      prisma.billOfMaterial.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              unit: true,
+              category: true,
+            },
+          },
+          _count: {
+            select: { items: true },
           },
         },
-        _count: {
-          select: { items: true },
-        },
-      },
-    });
+      }),
+      prisma.billOfMaterial.count({ where }),
+    ]);
 
     const formattedBoms = boms.map((bom) => ({
       id: bom.id,
@@ -58,6 +66,12 @@ async function handleGet(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: formattedBoms,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     logger.error('GET /api/v1/bom error:', error);

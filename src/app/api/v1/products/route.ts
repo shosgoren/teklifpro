@@ -142,6 +142,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
 
       const allTracked = await prisma.product.findMany({
         where,
+        take: 1000,
         select: productListSelect,
         orderBy,
       });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { prisma } from '@/shared/utils/prisma';
+import { Prisma } from '@prisma/client';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 
@@ -122,7 +123,8 @@ async function handlePost(request: NextRequest) {
     let skipped = 0;
     const skippedCodes: string[] = [];
 
-    // Create products in batches
+    // Filter out duplicates and prepare batch data
+    const toCreate: Prisma.ProductCreateManyInput[] = [];
     for (const row of rows) {
       if (row.code && existingCodes.has(row.code)) {
         skipped++;
@@ -132,25 +134,31 @@ async function handlePost(request: NextRequest) {
 
       const productType = (PRODUCT_TYPE_MAP[row.productType || ''] || 'COMMERCIAL') as 'COMMERCIAL' | 'RAW_MATERIAL' | 'SEMI_FINISHED' | 'CONSUMABLE';
 
-      await prisma.product.create({
-        data: {
-          tenantId: session.tenant.id,
-          code: row.code || null,
-          name: row.name,
-          category: row.category || null,
-          productType,
-          unit: row.unit || 'Adet',
-          listPrice: row.listPrice || 0,
-          costPrice: row.costPrice || 0,
-          laborCost: row.laborCost || 0,
-          overheadRate: row.overheadRate || 0,
-          vatRate: row.vatRate || 18,
-          description: row.description || null,
-        },
+      toCreate.push({
+        tenantId: session.tenant.id,
+        code: row.code || null,
+        name: row.name,
+        category: row.category || null,
+        productType,
+        unit: row.unit || 'Adet',
+        listPrice: row.listPrice || 0,
+        costPrice: row.costPrice || 0,
+        laborCost: row.laborCost || 0,
+        overheadRate: row.overheadRate || 0,
+        vatRate: row.vatRate || 18,
+        description: row.description || null,
       });
 
       if (row.code) existingCodes.add(row.code);
-      created++;
+    }
+
+    // Batch insert in a single transaction for performance
+    if (toCreate.length > 0) {
+      const result = await prisma.product.createMany({
+        data: toCreate,
+        skipDuplicates: true,
+      });
+      created = result.count;
     }
 
     return NextResponse.json({
