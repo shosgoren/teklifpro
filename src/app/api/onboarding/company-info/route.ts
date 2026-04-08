@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
+import { createRateLimitMap } from '@/shared/utils/rateLimit';
 
 const logger = new Logger('OnboardingCompanyInfoAPI');
 
 // Simple rate limit: 10 req/min per user
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const limiter = createRateLimitMap({ maxRequests: 10, windowMs: 60_000 });
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,16 +16,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const now = Date.now();
-    const key = session.user.id;
-    const entry = rateLimitMap.get(key);
-    if (entry && now < entry.resetAt && entry.count >= 10) {
+    const { allowed } = limiter.check(session.user.id);
+    if (!allowed) {
       return NextResponse.json({ error: 'Çok fazla istek. Lütfen biraz bekleyin.' }, { status: 429 });
-    }
-    if (!entry || now > (entry?.resetAt ?? 0)) {
-      rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 });
-    } else {
-      entry.count++;
     }
 
     const formData = await request.formData();

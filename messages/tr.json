@@ -919,7 +919,8 @@
     "genericError": "Bir hata oluştu",
     "phonePlaceholder": "Telefon numarası girin",
     "emailPlaceholder": "E-posta adresi girin",
-    "cityPlaceholder": "Şehir girin (opsiyonel)"
+    "cityPlaceholder": "Şehir girin (opsiyonel)",
+    "taxNumberPrefix": "VN"
   },
   "productsPage": {
     "title": "Ürünler",
@@ -1026,7 +1027,16 @@
     "saving": "Kaydediliyor...",
     "saveChanges": "Değişiklikleri Kaydet",
     "remove": "Kaldır",
-    "clearAll": "Tümünü Temizle"
+    "clearAll": "Tümünü Temizle",
+    "subtitle": "Ürün kataloğunu yönetin",
+    "importSuccess": "{created} ürün eklendi",
+    "importSkipped": "{skipped} atlandı (kod mevcut)",
+    "pricing": "Fiyatlandırma",
+    "stockStatus": "Stok Durumu",
+    "currentStock": "Mevcut Stok",
+    "minLevel": "Min. Seviye",
+    "fullScreenView": "Tam Ekran Görüntüle",
+    "parasut": "Paraşüt"
   },
   "stockPage": {
     "title": "Stok Yönetimi",

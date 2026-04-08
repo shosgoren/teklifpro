@@ -5,19 +5,12 @@ import { ProposalPdfService } from '@/infrastructure/services/pdf/ProposalPdfSer
 import type { Proposal } from '@/domain/entities/Proposal';
 import type { Tenant } from '@/domain/entities/Tenant';
 import { Logger } from '@/infrastructure/logger';
+import { createRateLimitMap } from '@/shared/utils/rateLimit';
 
 const logger = new Logger('SignedPdfAPI');
 
 // Rate limiting: 10 req/min per token
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-if (typeof globalThis !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, val] of rateLimitMap.entries()) {
-      if (now > val.resetAt) rateLimitMap.delete(key);
-    }
-  }, 60_000);
-}
+const limiter = createRateLimitMap({ maxRequests: 10, windowMs: 60_000 });
 
 /**
  * GET /api/proposals/signed-pdf?token=xxx
@@ -31,15 +24,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Rate limit
-    const now = Date.now();
-    const rl = rateLimitMap.get(token);
-    if (rl && now < rl.resetAt) {
-      if (rl.count >= 10) {
-        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
-      }
-      rl.count++;
-    } else {
-      rateLimitMap.set(token, { count: 1, resetAt: now + 60_000 });
+    const { allowed } = limiter.check(token);
+    if (!allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
     const dbProposal = await prisma.proposal.findFirst({

@@ -256,7 +256,7 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
               <p className="text-sm text-emerald-700 dark:text-emerald-300">{selectedCustomer.email}</p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-emerald-600 dark:text-emerald-400">
                 {selectedCustomer.phone && <span>{selectedCustomer.phone}</span>}
-                {selectedCustomer.taxNumber && <span>VN: {selectedCustomer.taxNumber}</span>}
+                {selectedCustomer.taxNumber && <span>{t('customersPage.taxNumberPrefix')}: {selectedCustomer.taxNumber}</span>}
               </div>
             </div>
           </div>

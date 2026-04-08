@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/shared/utils/prisma';
 import * as crypto from 'crypto';
+import { createRateLimitMap } from '@/shared/utils/rateLimit';
 
 // Rate limiting: 20 req/min per IP
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-if (typeof globalThis !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, val] of rateLimitMap.entries()) {
-      if (now > val.resetAt) rateLimitMap.delete(key);
-    }
-  }, 60_000);
-}
+const limiter = createRateLimitMap({ maxRequests: 20, windowMs: 60_000 });
 
 /**
  * Generate the same hash used in ProposalPdfService
@@ -33,15 +26,9 @@ export async function GET(request: NextRequest) {
 
   // Rate limit
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const now = Date.now();
-  const rl = rateLimitMap.get(ip);
-  if (rl && now < rl.resetAt) {
-    if (rl.count >= 20) {
-      return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
-    }
-    rl.count++;
-  } else {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 });
+  const { allowed } = limiter.check(ip);
+  if (!allowed) {
+    return NextResponse.json({ success: false, error: 'Rate limit exceeded' }, { status: 429 });
   }
 
   // Search proposals — we need to compute hash for each and match

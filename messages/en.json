@@ -919,7 +919,8 @@
     "genericError": "An error occurred",
     "phonePlaceholder": "Enter phone number",
     "emailPlaceholder": "Enter email address",
-    "cityPlaceholder": "Enter city (optional)"
+    "cityPlaceholder": "Enter city (optional)",
+    "taxNumberPrefix": "Tax ID"
   },
   "productsPage": {
     "title": "Products",
@@ -1026,7 +1027,16 @@
     "saving": "Saving...",
     "saveChanges": "Save Changes",
     "remove": "Remove",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "subtitle": "Manage your product catalog",
+    "importSuccess": "{created} products added",
+    "importSkipped": "{skipped} skipped (code exists)",
+    "pricing": "Pricing",
+    "stockStatus": "Stock Status",
+    "currentStock": "Current Stock",
+    "minLevel": "Min. Level",
+    "fullScreenView": "Full Screen View",
+    "parasut": "Parasut"
   },
   "stockPage": {
     "title": "Stock Management",

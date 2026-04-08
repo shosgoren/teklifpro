@@ -14,6 +14,7 @@ import crypto from 'crypto'
 import { ProposalStatus } from '@prisma/client'
 import { prisma } from '@/shared/utils/prisma'
 import { Logger } from '@/infrastructure/logger'
+import { createRateLimitMap } from '@/shared/utils/rateLimit'
 
 const logger = new Logger('ParasutWebhook')
 
@@ -281,32 +282,11 @@ async function handleSalesOfferEvent(
 
 // ==================== RATE LIMITING ====================
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const limiter = createRateLimitMap({ maxRequests: 100, windowMs: 60_000, cleanupIntervalMs: 300_000 })
 
 function checkRateLimit(tenantId: string): boolean {
-  const now = Date.now()
-  const limit = rateLimitMap.get(tenantId)
-
-  if (!limit || now > limit.resetAt) {
-    rateLimitMap.set(tenantId, { count: 1, resetAt: now + 60_000 }) // 60s window
-    return true
-  }
-
-  if (limit.count >= 100) { // max 100 webhook events per minute per tenant
-    return false
-  }
-
-  limit.count++
-  return true
+  return limiter.check(tenantId).allowed
 }
-
-// Clean up old rate limit entries periodically
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, val] of rateLimitMap) {
-    if (now > val.resetAt) rateLimitMap.delete(key)
-  }
-}, 300_000) // every 5 minutes
 
 // ==================== MAIN HANDLER ====================
 

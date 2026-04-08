@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '@/shared/utils/prisma';
 import { ActivityType } from '@prisma/client';
 import { Logger } from '@/infrastructure/logger';
+import { createRateLimitMap } from '@/shared/utils/rateLimit';
 
 const logger = new Logger('WhatsAppWebhook');
 
@@ -46,27 +47,10 @@ interface WhatsAppWebhookPayload {
 const processedMessageIds = new Set<string>();
 
 // IP-based rate limit for webhook: 120 req/min (Meta sends bursts)
-const webhookRateLimit = new Map<string, { count: number; resetAt: number }>();
-
-if (typeof globalThis !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, val] of webhookRateLimit) {
-      if (now > val.resetAt) webhookRateLimit.delete(key);
-    }
-  }, 5 * 60 * 1000);
-}
+const webhookLimiter = createRateLimitMap({ maxRequests: 120, windowMs: 60_000, cleanupIntervalMs: 300_000 });
 
 function checkWebhookRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = webhookRateLimit.get(ip);
-  if (entry && now < entry.resetAt && entry.count >= 120) return false;
-  if (!entry || now > (entry?.resetAt ?? 0)) {
-    webhookRateLimit.set(ip, { count: 1, resetAt: now + 60_000 });
-  } else {
-    entry.count++;
-  }
-  return true;
+  return webhookLimiter.check(ip).allowed;
 }
 
 /**

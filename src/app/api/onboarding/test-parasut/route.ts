@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getServerSessionWithAuth } from '@/infrastructure/middleware/authMiddleware';
 import { Logger } from '@/infrastructure/logger';
 import { testParasutSchema } from '@/shared/validations/integrations';
+import { createRateLimitMap } from '@/shared/utils/rateLimit';
 
 const logger = new Logger('TestParasutAPI');
 
@@ -12,7 +13,7 @@ const PARASUT_API_URL = process.env.PARASUT_API_URL || 'https://api.parasut.com/
 const testSchema = testParasutSchema;
 
 // Simple rate limit: 5 req/min per user (external API call)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const limiter = createRateLimitMap({ maxRequests: 5, windowMs: 60_000 });
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,16 +22,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const now = Date.now();
-    const key = session.user.id;
-    const entry = rateLimitMap.get(key);
-    if (entry && now < entry.resetAt && entry.count >= 5) {
+    const { allowed } = limiter.check(session.user.id);
+    if (!allowed) {
       return NextResponse.json({ error: 'Çok fazla istek. Lütfen biraz bekleyin.' }, { status: 429 });
-    }
-    if (!entry || now > (entry?.resetAt ?? 0)) {
-      rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 });
-    } else {
-      entry.count++;
     }
 
     const body = await request.json();

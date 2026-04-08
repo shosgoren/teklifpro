@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, memo } from 'react';
+import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
@@ -185,12 +185,14 @@ export default function ProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || 'table';
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_MODE_KEY) as ViewMode | null;
+    if (stored === 'table' || stored === 'grid') {
+      setViewMode(stored);
     }
-    return 'table';
-  });
+  }, []);
   const [bulkPrice, setBulkPrice] = useState<{ percentage: number; field: 'listPrice' | 'costPrice'; category: string; productType: string }>({ percentage: 10, field: 'listPrice', category: '', productType: '' });
   const [newProduct, setNewProduct] = useState({
     code: '', name: '', category: '', productType: 'COMMERCIAL', unit: 'Adet',
@@ -262,8 +264,8 @@ export default function ProductsPage() {
       });
       const data = await response.json();
       if (data.success) {
-        const msg = `${data.data.created} ürün eklendi` +
-          (data.data.skipped > 0 ? `, ${data.data.skipped} atlandı (kod mevcut)` : '');
+        const msg = t('importSuccess', { created: data.data.created }) +
+          (data.data.skipped > 0 ? `, ${t('importSkipped', { skipped: data.data.skipped })}` : '');
         toast.success(msg);
         mutate();
       } else {
@@ -467,7 +469,7 @@ export default function ProductsPage() {
         <div className="md:shrink-0 bg-gradient-to-br from-amber-500 to-orange-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
-            <p className="text-white/70 text-sm mt-1">Ürün kataloğunu yönet</p>
+            <p className="text-white/70 text-sm mt-1">{t('subtitle')}</p>
           </div>
         </div>
         <div className="md:flex-1 md:overflow-y-auto md:min-h-0 bg-gray-50/50 dark:bg-gray-950">
@@ -490,7 +492,7 @@ export default function ProductsPage() {
         <div className="relative max-w-7xl mx-auto space-y-4">
           {/* Subtitle + Actions */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-white/70 text-sm">Ürün kataloğunu yönet</p>
+            <p className="text-white/70 text-sm">{t('subtitle')}</p>
             <div className="flex gap-2 flex-wrap">
               <Button onClick={handleExport} size="sm"
                 className="rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/20">
@@ -773,7 +775,7 @@ export default function ProductsPage() {
                   <div className="mt-2 flex items-center justify-between">
                     <div className={cn('h-1.5 w-1.5 rounded-full', product.isActive ? 'bg-emerald-500' : 'bg-slate-300')} />
                     {product.syncedFromParasut && (
-                      <span className="text-[10px] text-muted-foreground">Paraşüt</span>
+                      <span className="text-[10px] text-muted-foreground">{t('parasut')}</span>
                     )}
                   </div>
                 </div>
@@ -817,7 +819,7 @@ export default function ProductsPage() {
                           {PRODUCT_TYPE_LABELS[product.productType] || product.productType}
                         </Badge>
                         {product.trackStock && product.minStockLevel > 0 && <StockBar product={product} />}
-                        <span className="text-xs text-muted-foreground">{product.unit} • KDV %{product.vatRate}</span>
+                        <span className="text-xs text-muted-foreground">{product.unit} • {t('vatRate')} %{product.vatRate}</span>
                       </div>
                       <p className="font-semibold text-sm">{formatPrice(product.listPrice)}</p>
                     </div>
@@ -859,7 +861,7 @@ export default function ProductsPage() {
                             <div className="flex items-center gap-2">
                               <span className="max-w-xs truncate">{product.name}</span>
                               {product.syncedFromParasut && (
-                                <div className="h-2 w-2 rounded-full bg-green-500 shrink-0" title="Paraşüt" />
+                                <div className="h-2 w-2 rounded-full bg-green-500 shrink-0" title={t('parasut')} />
                               )}
                             </div>
                           </TableCell>
@@ -1227,22 +1229,22 @@ export default function ProductsPage() {
                 <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4 space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
                     <Tag className="h-4 w-4" />
-                    Fiyatlandirma
+                    {t('pricing')}
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-xs text-muted-foreground">Liste Fiyati</p>
+                      <p className="text-xs text-muted-foreground">{t('listPrice')}</p>
                       <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {formatPrice(selectedProduct.listPrice)}
                       </p>
                     </div>
                     <Badge variant="secondary" className="text-xs">
-                      KDV %{selectedProduct.vatRate}
+                      {t('vatRate')} %{selectedProduct.vatRate}
                     </Badge>
                   </div>
                   {selectedProduct.costPrice > 0 && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Maliyet Fiyati</p>
+                      <p className="text-xs text-muted-foreground">{t('cost')}</p>
                       <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                         {formatPrice(selectedProduct.costPrice)}
                       </p>
@@ -1255,11 +1257,11 @@ export default function ProductsPage() {
                   <div className="rounded-2xl border p-4 space-y-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
                       <Box className="h-4 w-4" />
-                      Stok Durumu
+                      {t('stockStatus')}
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-xs text-muted-foreground">Mevcut Stok</p>
+                        <p className="text-xs text-muted-foreground">{t('currentStock')}</p>
                         <p className={cn(
                           'text-xl font-bold',
                           selectedProduct.minStockLevel > 0 && selectedProduct.stockQuantity < selectedProduct.minStockLevel
@@ -1271,7 +1273,7 @@ export default function ProductsPage() {
                       </div>
                       {selectedProduct.minStockLevel > 0 && (
                         <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Min. Seviye</p>
+                          <p className="text-xs text-muted-foreground">{t('minLevel')}</p>
                           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                             {selectedProduct.minStockLevel} {selectedProduct.unit}
                           </p>
@@ -1289,14 +1291,14 @@ export default function ProductsPage() {
                   <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                       <Layers className="h-3.5 w-3.5" />
-                      Kategori
+                      {t('category')}
                     </div>
                     <p className="text-sm font-medium">{selectedProduct.category || '-'}</p>
                   </div>
                   <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
                       <Package className="h-3.5 w-3.5" />
-                      Birim
+                      {t('unit')}
                     </div>
                     <p className="text-sm font-medium">{selectedProduct.unit}</p>
                   </div>
@@ -1305,7 +1307,7 @@ export default function ProductsPage() {
                 {/* Description */}
                 {selectedProduct.description && (
                   <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">Aciklama</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t('descriptionLabel')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                       {selectedProduct.description}
                     </p>
@@ -1324,7 +1326,7 @@ export default function ProductsPage() {
                   }}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Tam Ekran Goruntule
+                  {t('fullScreenView')}
                 </Button>
                 <Button
                   className="flex-1 rounded-xl"
@@ -1334,7 +1336,7 @@ export default function ProductsPage() {
                   }}
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  Duzenle
+                  {t('editBtn')}
                 </Button>
               </div>
             </>

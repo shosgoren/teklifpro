@@ -441,7 +441,7 @@ export default function CustomersPage() {
                       <div>
                         <p className="text-sm font-semibold">{customer.name}</p>
                         {customer.taxNumber && (
-                          <p className="text-xs text-muted-foreground">VN: {customer.taxNumber}</p>
+                          <p className="text-xs text-muted-foreground">{t('taxNumberPrefix')}: {customer.taxNumber}</p>
                         )}
                       </div>
                     </div>
