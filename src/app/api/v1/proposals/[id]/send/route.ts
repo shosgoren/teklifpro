@@ -66,8 +66,8 @@ async function handlePost(
       );
     }
 
-    // READY, SENT (re-send), or REVISED (after revision) proposals can be sent
-    if (proposal.status !== 'READY' && proposal.status !== 'SENT' && proposal.status !== 'REVISED') {
+    // READY, SENT (re-send), REVISED, or REVISION_REQUESTED proposals can be sent
+    if (!['READY', 'SENT', 'REVISED', 'REVISION_REQUESTED'].includes(proposal.status)) {
       const statusMessages: Record<string, string> = {
         DRAFT: 'Teklif taslak durumunda. Göndermeden önce "Hazırla" ile hazır durumuna getirin.',
         VIEWED: 'Bu teklif zaten görüntülenmiş.',

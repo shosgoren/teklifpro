@@ -110,7 +110,7 @@ async function handlePut(
         VIEWED: ['ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'EXPIRED'],
         ACCEPTED: ['INVOICED'],
         REJECTED: ['DRAFT'],
-        REVISION_REQUESTED: ['DRAFT', 'REVISED'],
+        REVISION_REQUESTED: ['DRAFT', 'REVISED', 'SENT'],
         REVISED: ['READY', 'SENT', 'CANCELLED'],
         EXPIRED: ['DRAFT'],
       };
