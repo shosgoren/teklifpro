@@ -190,7 +190,7 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
     }
   };
 
-  const actions = [
+  const actions = useMemo(() => [
     {
       icon: Mic,
       label: t('voiceProposal'),
@@ -217,7 +217,7 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
       color: 'from-amber-500 to-orange-600',
       onClick: () => router.push(`/${locale}/proposals?filter=followup`),
     },
-  ];
+  ], [t, router, locale, lastProposalId, cloning, handleClone]);
 
   return (
     <div className="fixed bottom-24 md:bottom-8 right-6 z-40">

@@ -25,6 +25,7 @@ async function handleGet(
         children: {
           where: { isActive: true },
           orderBy: { name: 'asc' },
+          take: 100,
         },
       },
     })

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, memo } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
@@ -150,20 +150,20 @@ export default function ProductsPage() {
   const confirm = useConfirm();
   const { formatCurrency: formatCurrencyFn } = useCurrency();
 
-  const PRODUCT_TYPE_LABELS: Record<string, string> = {
+  const PRODUCT_TYPE_LABELS: Record<string, string> = useMemo(() => ({
     COMMERCIAL: t('commercial'),
     RAW_MATERIAL: t('rawMaterial'),
     SEMI_FINISHED: t('semiFinished'),
     CONSUMABLE: t('consumable'),
-  };
+  }), [t]);
 
-  const PRODUCT_TYPE_OPTIONS = [
+  const PRODUCT_TYPE_OPTIONS = useMemo(() => [
     { value: 'all', label: t('all') },
     { value: 'COMMERCIAL', label: t('commercial') },
     { value: 'RAW_MATERIAL', label: t('rawMaterial') },
     { value: 'SEMI_FINISHED', label: t('semiFinished') },
     { value: 'CONSUMABLE', label: t('consumable') },
-  ];
+  ], [t]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProductType, setFilterProductType] = useState<FilterProductType>('all');
