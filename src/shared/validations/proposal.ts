@@ -6,6 +6,7 @@ export const VOICE_NOTE_MAX_DURATION = 60
 export const CreateProposalSchema = z.object({
   customerId: z.string(),
   contactId: z.string().optional(),
+  proposalType: z.enum(['OFFICIAL', 'UNOFFICIAL']).default('OFFICIAL'),
   title: z.string().min(1).max(255),
   description: z.string().optional(),
   items: z.array(
@@ -32,6 +33,7 @@ export const CreateProposalSchema = z.object({
 export const UpdateProposalSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
+  proposalType: z.enum(['OFFICIAL', 'UNOFFICIAL']).optional(),
   status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED', 'INVOICED']).optional(),
   items: z.array(z.object({
     id: z.string().optional(),
@@ -81,6 +83,7 @@ export const GetProposalsSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED', 'INVOICED']).optional(),
+  proposalType: z.enum(['OFFICIAL', 'UNOFFICIAL']).optional(),
 })
 
 export type CreateProposalInput = z.infer<typeof CreateProposalSchema>

@@ -74,6 +74,7 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
       limit: searchParams.get('limit') ?? undefined,
       search: searchParams.get('search') ?? undefined,
       status: searchParams.get('status') ?? undefined,
+      proposalType: searchParams.get('proposalType') ?? undefined,
     });
 
     const skip = (queryParams.page - 1) * queryParams.limit;
@@ -93,6 +94,10 @@ async function handleGet(request: NextRequest): Promise<NextResponse<ApiResponse
 
     if (queryParams.status) {
       whereClause.status = queryParams.status;
+    }
+
+    if (queryParams.proposalType) {
+      whereClause.proposalType = queryParams.proposalType;
     }
 
     const [proposals, total] = await Promise.all([
@@ -163,6 +168,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
     }
 
     // Calculate totals
+    const isUnofficial = payload.proposalType === 'UNOFFICIAL';
     let subtotal = 0;
     let itemDiscountTotal = 0;
     let vatTotal = 0;
@@ -172,7 +178,10 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
       const lineTotal = itemSubtotal - itemDiscount;
       subtotal += itemSubtotal;
       itemDiscountTotal += itemDiscount;
-      vatTotal += lineTotal * (item.vatRate / 100);
+      // UNOFFICIAL: KDV hesaplanmaz
+      if (!isUnofficial) {
+        vatTotal += lineTotal * (item.vatRate / 100);
+      }
     }
 
     // Apply general discount
@@ -184,7 +193,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
       } else {
         generalDiscountAmount = Math.min(payload.discountValue, afterItemDiscount);
       }
-      if (afterItemDiscount > 0) {
+      if (afterItemDiscount > 0 && !isUnofficial) {
         vatTotal = vatTotal * ((afterItemDiscount - generalDiscountAmount) / afterItemDiscount);
       }
     }
@@ -216,6 +225,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
         contactId: payload.contactId,
         proposalNumber,
         publicToken,
+        proposalType: payload.proposalType,
         title: payload.title,
         description: payload.description,
         status: 'DRAFT',

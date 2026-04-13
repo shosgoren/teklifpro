@@ -225,6 +225,7 @@ async function renderProposalPage(params: ProposalPageProps['params']) {
         id: updatedProposal.id,
         proposalNumber: updatedProposal.proposalNumber,
         title: updatedProposal.title,
+        proposalType: (updatedProposal as Record<string, unknown>).proposalType as string | undefined,
         status: updatedProposal.status,
         currency: updatedProposal.currency,
         description: updatedProposal.description,

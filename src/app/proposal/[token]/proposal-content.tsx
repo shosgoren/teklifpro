@@ -31,6 +31,7 @@ interface ProposalContentProps {
     id: string
     proposalNumber: string
     title: string
+    proposalType?: string | null
     status: string
     currency: string
     description: string | null
@@ -137,6 +138,8 @@ const proposalDict = {
     downloadSignedPdf: 'İmzalı PDF İndir',
     sslSecure: 'SSL Güvenli',
     viewCount: 'görüntülenme',
+    draftProposal: 'TASLAK TEKLİF',
+    draftProposalNote: 'Bu teklif gayri resmi olup, bilgilendirme amaçlıdır. KDV ve banka bilgileri dahil değildir.',
   },
   en: {
     proposalPresentation: 'Proposal Presentation',
@@ -183,6 +186,8 @@ const proposalDict = {
     downloadSignedPdf: 'Download Signed PDF',
     sslSecure: 'SSL Secure',
     viewCount: 'views',
+    draftProposal: 'DRAFT PROPOSAL',
+    draftProposalNote: 'This is an unofficial proposal for informational purposes only. VAT and bank details are not included.',
   },
 } as const
 
@@ -244,6 +249,7 @@ export default function ProposalContent({
     amount.toLocaleString(localeStr, { style: 'currency', currency: proposal.currency })
 
   const currentStatus = statusDisplay[proposal.status as keyof typeof statusDisplay]
+  const isUnofficial = proposal.proposalType === 'UNOFFICIAL'
 
   const cardClass = "animate-fade-in-up"
   const cardShadow = "shadow-sm hover:shadow-md transition-shadow"
@@ -274,6 +280,14 @@ export default function ProposalContent({
         .animate-pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
         html { scroll-behavior: smooth; }
       `}</style>
+
+      {/* ─── UNOFFICIAL Watermark Banner ─── */}
+      {isUnofficial && (
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white py-3 px-4 text-center">
+          <p className="text-sm sm:text-base font-extrabold uppercase tracking-widest">{t.draftProposal}</p>
+          <p className="text-xs opacity-90 mt-0.5">{t.draftProposalNote}</p>
+        </div>
+      )}
 
       {/* ─── Header ─── */}
       <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white overflow-hidden">
@@ -546,10 +560,12 @@ export default function ProposalContent({
                 <span className="font-medium">-{fmt(financials.proposalLevelDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-gray-100">
-              <span>{t.vat}</span>
-              <span className="font-medium">{fmt(financials.totalVat)}</span>
-            </div>
+            {!isUnofficial && (
+              <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-gray-100">
+                <span>{t.vat}</span>
+                <span className="font-medium">{fmt(financials.totalVat)}</span>
+              </div>
+            )}
           </div>
 
           {/* Grand Total */}
@@ -616,7 +632,7 @@ export default function ProposalContent({
         )}
 
         {/* ─── EFT / Havale Bank Info ─── */}
-        {tenant.bankAccounts && tenant.bankAccounts.length > 0 && (
+        {!isUnofficial && tenant.bankAccounts && tenant.bankAccounts.length > 0 && (
           <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
             <button
               onClick={() => setShowBankInfo(!showBankInfo)}

@@ -1,3 +1,11 @@
+export interface BankAccount {
+  bankName: string;
+  branchName?: string;
+  accountHolder?: string;
+  iban: string;
+  currency?: string;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -12,4 +20,5 @@ export interface Tenant {
   companySeal?: string;
   companySignerName?: string;
   companySignerTitle?: string;
+  bankAccounts?: BankAccount[];
 }

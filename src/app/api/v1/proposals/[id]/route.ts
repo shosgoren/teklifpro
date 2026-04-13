@@ -145,20 +145,24 @@ async function handlePut(
       ? { type: validatedData.discountType as 'PERCENTAGE' | 'FIXED', value: validatedData.discountValue }
       : undefined;
 
+    // Determine if this is an unofficial proposal (for VAT calculation)
+    const effectiveType = validatedData.proposalType || existingProposal.proposalType;
+    const isUnofficial = effectiveType === 'UNOFFICIAL';
+
     if (validatedData.items && validatedData.items.length > 0) {
-      const calculations = calculateTotals(validatedData.items, generalDiscount);
+      const calculations = calculateTotals(validatedData.items, generalDiscount, isUnofficial);
       subtotal = calculations.subtotal;
       discountAmount = calculations.discountAmount;
       vatTotal = calculations.vatTotal;
       grandTotal = calculations.grandTotal;
-    } else if (generalDiscount) {
-      // Recalculate with existing items but new general discount
+    } else if (generalDiscount || validatedData.proposalType) {
+      // Recalculate with existing items but new general discount or type change
       const existingItems = await prisma.proposalItem.findMany({ where: { proposalId } });
       const itemsForCalc = existingItems.map(i => ({
         quantity: Number(i.quantity), unitPrice: Number(i.unitPrice),
         discountRate: Number(i.discountRate), vatRate: Number(i.vatRate),
       }));
-      const calculations = calculateTotals(itemsForCalc, generalDiscount);
+      const calculations = calculateTotals(itemsForCalc, generalDiscount, isUnofficial);
       subtotal = calculations.subtotal;
       discountAmount = calculations.discountAmount;
       vatTotal = calculations.vatTotal;
@@ -201,6 +205,7 @@ async function handlePut(
         data: {
           title: validatedData.title ?? undefined,
           description: validatedData.description ?? undefined,
+          proposalType: validatedData.proposalType ?? undefined,
           status: validatedData.status ?? undefined,
           notes: validatedData.notes ?? undefined,
           paymentTerms: validatedData.paymentTerms ?? undefined,
@@ -343,7 +348,8 @@ function calculateTotals(
     discountRate: number;
     vatRate: number;
   }>,
-  generalDiscount?: { type: 'PERCENTAGE' | 'FIXED'; value: number }
+  generalDiscount?: { type: 'PERCENTAGE' | 'FIXED'; value: number },
+  isUnofficial = false
 ) {
   let subtotal = 0;
   let itemDiscountTotal = 0;
@@ -353,11 +359,13 @@ function calculateTotals(
     const itemSubtotal = item.quantity * item.unitPrice;
     const itemDiscount = (itemSubtotal * item.discountRate) / 100;
     const itemBeforeVat = itemSubtotal - itemDiscount;
-    const itemVat = (itemBeforeVat * item.vatRate) / 100;
 
     subtotal += itemSubtotal;
     itemDiscountTotal += itemDiscount;
-    totalVat += itemVat;
+    // UNOFFICIAL: KDV hesaplanmaz
+    if (!isUnofficial) {
+      totalVat += (itemBeforeVat * item.vatRate) / 100;
+    }
   });
 
   // Apply general discount
@@ -369,8 +377,8 @@ function calculateTotals(
     } else {
       generalDiscountAmount = Math.min(generalDiscount.value, afterItemDiscount);
     }
-    // Adjust VAT proportionally
-    if (afterItemDiscount > 0) {
+    // Adjust VAT proportionally (only for OFFICIAL)
+    if (afterItemDiscount > 0 && !isUnofficial) {
       totalVat = totalVat * ((afterItemDiscount - generalDiscountAmount) / afterItemDiscount);
     }
   }

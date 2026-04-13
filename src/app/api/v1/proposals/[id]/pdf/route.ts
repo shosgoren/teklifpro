@@ -4,7 +4,7 @@ import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/aut
 import { prisma } from '@/shared/utils/prisma';
 import { decryptSignature } from '@/shared/utils/signatureCrypto';
 import type { Proposal } from '@/domain/entities/Proposal';
-import type { Tenant } from '@/domain/entities/Tenant';
+import type { Tenant, BankAccount } from '@/domain/entities/Tenant';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProposalPdfAPI');
@@ -23,6 +23,7 @@ function mapToProposalEntity(
     date: dbProposal.createdAt,
     validUntil: dbProposal.expiresAt || dbProposal.createdAt,
     status: dbProposal.status,
+    proposalType: (dbProposal.proposalType as 'OFFICIAL' | 'UNOFFICIAL') || 'OFFICIAL',
     customer: {
       companyName: dbProposal.customer.name,
       name: dbProposal.customer.name,
@@ -96,8 +97,19 @@ async function addSignatureData(
   return proposal;
 }
 
+function parseBankAccounts(raw: unknown): BankAccount[] | undefined {
+  if (!raw) return undefined;
+  try {
+    const accounts = (typeof raw === 'string' ? JSON.parse(raw) : raw) as BankAccount[];
+    if (Array.isArray(accounts) && accounts.length > 0) return accounts;
+  } catch {
+    // Invalid JSON — skip gracefully
+  }
+  return undefined;
+}
+
 function mapToTenantEntity(
-  dbTenant: { id: string; name: string; address: string | null; phone: string | null; email: string; taxNumber: string | null; logo: string | null; companySignerName?: string | null; companySignerTitle?: string | null }
+  dbTenant: { id: string; name: string; address: string | null; phone: string | null; email: string; taxNumber: string | null; logo: string | null; companySignerName?: string | null; companySignerTitle?: string | null; bankAccounts?: unknown }
 ): Tenant {
   return {
     id: dbTenant.id,
@@ -109,6 +121,7 @@ function mapToTenantEntity(
     logo: dbTenant.logo || undefined,
     companySignerName: dbTenant.companySignerName || undefined,
     companySignerTitle: dbTenant.companySignerTitle || undefined,
+    bankAccounts: parseBankAccounts(dbTenant.bankAccounts),
   };
 }
 
@@ -173,7 +186,7 @@ async function handleGet(
     // Fetch tenant data
     const dbTenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, bankAccounts: true },
     });
     if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
@@ -250,7 +263,7 @@ async function handlePost(
 
     const dbTenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true },
+      select: { id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, bankAccounts: true },
     });
     if (!dbTenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });

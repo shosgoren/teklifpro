@@ -1,5 +1,5 @@
 import { Proposal, ProposalItem } from '@/domain/entities/Proposal';
-import { Tenant } from '@/domain/entities/Tenant';
+import { Tenant, BankAccount } from '@/domain/entities/Tenant';
 import * as crypto from 'crypto';
 
 /** pdfmake content node – covers text, columns, stack, table, canvas etc. */
@@ -28,6 +28,8 @@ const BG_ACCENT = '#EFF6FF';    // Blue-50
 const WHITE = '#FFFFFF';
 const RED = '#DC2626';
 const GREEN = '#16A34A';
+
+const WATERMARK_GRAY = '#D1D5DB'; // Gray-300 for watermark text
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: '#64748B', SENT: '#2563EB', VIEWED: '#D97706',
@@ -85,20 +87,29 @@ export class ProposalPdfService {
   // ══════════════════════════════════════════════════
   private static buildDocument(proposal: Proposal, tenant: Tenant): PdfContent {
     const hash = this.generateHash(proposal, tenant);
+    const isUnofficial = proposal.proposalType === 'UNOFFICIAL';
 
-    return {
+    const content: PdfContent[] = [
+      this.buildCustomerCard(proposal),
+      this.buildItemsTable(proposal.items),
+      this.buildTotalsSection(proposal),
+      ...this.buildTermsSection(proposal),
+    ];
+
+    // Bank account section: only for OFFICIAL proposals
+    if (!isUnofficial && tenant.bankAccounts && tenant.bankAccounts.length > 0) {
+      content.push(this.buildBankAccountSection(tenant.bankAccounts));
+    }
+
+    content.push(this.buildSignatureSection(tenant, hash, proposal));
+
+    const doc: PdfContent = {
       pageSize: 'A4',
       pageMargins: [40, 120, 40, 60] as [number, number, number, number],
       defaultStyle: { font: 'Roboto', fontSize: 9, color: TEXT_DARK, lineHeight: 1.2 },
       header: (currentPage: number) => this.buildHeader(tenant, proposal, currentPage),
       footer: (currentPage: number, pageCount: number) => this.buildFooter(tenant, hash, currentPage, pageCount),
-      content: [
-        this.buildCustomerCard(proposal),
-        this.buildItemsTable(proposal.items),
-        this.buildTotalsSection(proposal),
-        ...this.buildTermsSection(proposal),
-        this.buildSignatureSection(tenant, hash, proposal),
-      ],
+      content,
       info: {
         title: `Teklif - ${proposal.number}`,
         author: tenant.name,
@@ -109,6 +120,20 @@ export class ProposalPdfService {
           : `teklif,hash:${hash.substring(0, 16)}`,
       },
     };
+
+    // Watermark for UNOFFICIAL proposals
+    if (isUnofficial) {
+      doc.watermark = {
+        text: 'TASLAK TEKLİF',
+        color: WATERMARK_GRAY,
+        opacity: 0.15,
+        bold: true,
+        fontSize: 64,
+        angle: -45,
+      };
+    }
+
+    return doc;
   }
 
   // ══════════════════════════════════════════════════
@@ -341,6 +366,7 @@ export class ProposalPdfService {
   //  TOTALS
   // ══════════════════════════════════════════════════
   private static buildTotalsSection(proposal: Proposal): PdfContent {
+    const isUnofficial = proposal.proposalType === 'UNOFFICIAL';
     const rows: PdfContent[][] = [];
 
     rows.push([
@@ -355,7 +381,8 @@ export class ProposalPdfService {
       ]);
     }
 
-    if (proposal.taxAmount && proposal.taxAmount > 0) {
+    // Skip KDV row entirely for UNOFFICIAL proposals
+    if (!isUnofficial && proposal.taxAmount && proposal.taxAmount > 0) {
       rows.push([
         { text: 'KDV', fontSize: 9, color: TEXT_MED, alignment: 'right' as const },
         { text: this.formatCurrency(proposal.taxAmount), fontSize: 9, alignment: 'right' as const },
@@ -566,6 +593,71 @@ export class ProposalPdfService {
     };
 
     return { stack: [signatureBlock, verificationBlock] };
+  }
+
+  // ══════════════════════════════════════════════════
+  //  BANK ACCOUNTS (only shown for OFFICIAL proposals)
+  // ══════════════════════════════════════════════════
+  private static buildBankAccountSection(bankAccounts: BankAccount[]): PdfContent {
+    const rows: PdfContent[][] = bankAccounts.map((account) => {
+      const parts: PdfContent[] = [
+        { text: account.bankName, fontSize: 8.5, bold: true, color: TEXT_DARK },
+      ];
+      if (account.branchName) {
+        parts.push({ text: ` - ${account.branchName}`, fontSize: 8, color: TEXT_MED });
+      }
+
+      const details: PdfContent[] = [
+        { text: parts, margin: [0, 0, 0, 2] as [number, number, number, number] },
+        {
+          columns: [
+            { width: 50, text: 'IBAN:', fontSize: 8, color: TEXT_MED, bold: true },
+            { width: '*', text: account.iban, fontSize: 8.5, color: TEXT_DARK },
+          ],
+        },
+      ];
+
+      if (account.accountHolder) {
+        details.push({
+          columns: [
+            { width: 50, text: 'Hesap:', fontSize: 8, color: TEXT_MED, bold: true },
+            { width: '*', text: account.accountHolder, fontSize: 8, color: TEXT_DARK },
+          ],
+        });
+      }
+
+      if (account.currency && account.currency !== 'TRY') {
+        details.push({
+          columns: [
+            { width: 50, text: 'Döviz:', fontSize: 8, color: TEXT_MED, bold: true },
+            { width: '*', text: account.currency, fontSize: 8, color: TEXT_DARK },
+          ],
+        });
+      }
+
+      return [{ stack: details, margin: [12, 6, 12, 6] as [number, number, number, number] }];
+    });
+
+    return {
+      stack: [
+        { text: 'BANKA HESAP BİLGİLERİ', fontSize: 9, bold: true, color: PRIMARY, margin: [0, 0, 0, 6] as [number, number, number, number] },
+        {
+          table: {
+            widths: ['*'],
+            body: rows,
+          },
+          layout: {
+            hLineWidth: (i: number, node: PdfTableNode) => (i === 0 || i === node.table.body.length ? 1 : 0.5),
+            vLineWidth: () => 1,
+            hLineColor: () => BORDER,
+            vLineColor: () => BORDER,
+            paddingLeft: () => 0, paddingRight: () => 0,
+            paddingTop: () => 0, paddingBottom: () => 0,
+          },
+        },
+      ],
+      margin: [0, 0, 0, 10] as [number, number, number, number],
+    };
   }
 
   // ══════════════════════════════════════════════════

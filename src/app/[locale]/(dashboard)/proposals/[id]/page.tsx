@@ -515,9 +515,16 @@ export default function ProposalDetailPage() {
                 <p className="text-white/70 text-sm md:text-base">{proposal.title}</p>
               )}
             </div>
-            <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm px-3 py-1 text-sm font-medium w-fit">
-              {statusLabel(status) || status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm px-3 py-1 text-sm font-medium w-fit">
+                {statusLabel(status) || status}
+              </Badge>
+              {proposal.proposalType === 'UNOFFICIAL' && (
+                <Badge className="bg-amber-500/30 text-amber-100 border-0 backdrop-blur-sm px-3 py-1 text-sm font-medium w-fit">
+                  {t('proposalTypeUnofficial')}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Desktop Action Buttons */}

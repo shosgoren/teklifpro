@@ -131,6 +131,7 @@ const productItemSchema = z.object({
 
 const proposalFormSchema = z.object({
   customer: customerSchema,
+  proposalType: z.enum(['OFFICIAL', 'UNOFFICIAL']).default('OFFICIAL'),
   items: z.array(productItemSchema).min(1, 'At least one product is required'),
   title: z.string().min(3, 'Title must be at least 3 characters'),
   generalDiscount: z.object({
@@ -801,6 +802,41 @@ function DetailsStep({
 
   return (
     <div className="space-y-6">
+      {/* Proposal Type Toggle */}
+      <div>
+        <Label>{t('proposals.proposalType')}</Label>
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          <button
+            type="button"
+            onClick={() => onChange('proposalType', 'OFFICIAL')}
+            className={cn(
+              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
+              (data.proposalType || 'OFFICIAL') === 'OFFICIAL'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                : 'border-muted hover:border-muted-foreground/30'
+            )}
+          >
+            <FileText className="h-5 w-5 text-primary" />
+            <span className="text-sm font-semibold">{t('proposals.proposalTypeOfficial')}</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.officialDescription')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange('proposalType', 'UNOFFICIAL')}
+            className={cn(
+              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
+              data.proposalType === 'UNOFFICIAL'
+                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-500/20'
+                : 'border-muted hover:border-muted-foreground/30'
+            )}
+          >
+            <Eye className="h-5 w-5 text-amber-500" />
+            <span className="text-sm font-semibold">{t('proposals.proposalTypeUnofficial')}</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.unofficialDescription')}</span>
+          </button>
+        </div>
+      </div>
+
       <div>
         <Label htmlFor="title">{t('proposals.title')}</Label>
         <Input
@@ -1149,6 +1185,7 @@ export default function CreateProposalPage() {
     mode: 'onChange',
     defaultValues: {
       customer: { id: '', name: '', email: '', phone: '', address: '', taxNumber: '', contactPersonId: '' },
+      proposalType: 'OFFICIAL',
       items: [],
       title: '',
       generalDiscount: { type: 'percent', value: 0 },
@@ -1234,6 +1271,7 @@ export default function CreateProposalPage() {
 
     const payload = {
       customerId: data.customer.id,
+      proposalType: data.proposalType,
       title: data.title,
       description: data.notes || '',
       items,

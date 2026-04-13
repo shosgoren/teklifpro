@@ -552,6 +552,7 @@ model Proposal {
 
   // Proposal Info
   proposalNumber    String          @map("proposal_number")
+  proposalType      ProposalType    @default(OFFICIAL) @map("proposal_type")
   title             String
   description       String?
 
@@ -652,6 +653,11 @@ enum ProposalStatus {
 enum DiscountType {
   PERCENTAGE
   FIXED
+}
+
+enum ProposalType {
+  OFFICIAL
+  UNOFFICIAL
 }
 
 model ProposalItem {

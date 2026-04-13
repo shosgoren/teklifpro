@@ -3,11 +3,22 @@ import { prisma } from '@/shared/utils/prisma';
 import { decryptSignature } from '@/shared/utils/signatureCrypto';
 import { ProposalPdfService } from '@/infrastructure/services/pdf/ProposalPdfService';
 import type { Proposal } from '@/domain/entities/Proposal';
-import type { Tenant } from '@/domain/entities/Tenant';
+import type { Tenant, BankAccount } from '@/domain/entities/Tenant';
 import { Logger } from '@/infrastructure/logger';
 import { createRateLimitMap } from '@/shared/utils/rateLimit';
 
 const logger = new Logger('SignedPdfAPI');
+
+function parseBankAccounts(raw: unknown): BankAccount[] | undefined {
+  if (!raw) return undefined;
+  try {
+    const accounts = (typeof raw === 'string' ? JSON.parse(raw) : raw) as BankAccount[];
+    if (Array.isArray(accounts) && accounts.length > 0) return accounts;
+  } catch {
+    // Invalid JSON — skip gracefully
+  }
+  return undefined;
+}
 
 // Rate limiting: 10 req/min per token
 const limiter = createRateLimitMap({ maxRequests: 10, windowMs: 60_000 });
@@ -34,7 +45,7 @@ export async function GET(request: NextRequest) {
       include: {
         tenant: {
           select: {
-            id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true,
+            id: true, name: true, address: true, phone: true, email: true, taxNumber: true, logo: true, bankAccounts: true,
           },
         },
         customer: {
@@ -56,6 +67,7 @@ export async function GET(request: NextRequest) {
       date: dbProposal.createdAt,
       validUntil: dbProposal.expiresAt || dbProposal.createdAt,
       status: dbProposal.status,
+      proposalType: ((dbProposal as Record<string, unknown>).proposalType as 'OFFICIAL' | 'UNOFFICIAL') || 'OFFICIAL',
       customer: {
         companyName: dbProposal.customer.name,
         name: dbProposal.customer.name,
@@ -130,6 +142,7 @@ export async function GET(request: NextRequest) {
       email: dbProposal.tenant.email,
       taxNumber: dbProposal.tenant.taxNumber || undefined,
       logo: dbProposal.tenant.logo || undefined,
+      bankAccounts: parseBankAccounts((dbProposal.tenant as Record<string, unknown>).bankAccounts),
     };
 
     const pdfBuffer = await ProposalPdfService.generateProposalPdf(proposal, tenant);

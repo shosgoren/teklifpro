@@ -25,10 +25,13 @@ import { cn } from '@/shared/utils/cn';
 
 type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED' | 'EXPIRED' | 'CANCELLED' | 'INVOICED';
 
+type ProposalType = 'OFFICIAL' | 'UNOFFICIAL';
+
 interface Proposal {
   id: string;
   title?: string;
   proposalNumber: string;
+  proposalType?: ProposalType;
   status: ProposalStatus;
   grandTotal: number | string;
   createdAt: string;
@@ -75,6 +78,7 @@ export default function ProposalsPage() {
   const { formatCurrency: formatCurrencyFn } = useCurrency();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'ALL'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<ProposalType | 'ALL'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
@@ -102,6 +106,7 @@ export default function ProposalsPage() {
     limit: ITEMS_PER_PAGE.toString(),
     ...(searchTerm && { search: searchTerm }),
     ...(statusFilter !== 'ALL' && { status: statusFilter }),
+    ...(typeFilter !== 'ALL' && { proposalType: typeFilter }),
   });
 
   const { data, error, isLoading, mutate } = useSWR(
@@ -297,6 +302,27 @@ export default function ProposalsPage() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="rounded-xl min-w-[120px] justify-between bg-white/10 border border-white/20 text-white hover:bg-white/20 h-11" aria-label={t('proposalType')}>
+                  {typeFilter === 'ALL' ? t('proposalType') : t(typeFilter === 'OFFICIAL' ? 'proposalTypeOfficial' : 'proposalTypeUnofficial')}
+                  <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 rounded-xl">
+                <DropdownMenuItem onClick={() => { setTypeFilter('ALL'); setCurrentPage(1); }}>
+                  {t('proposalType')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setTypeFilter('OFFICIAL'); setCurrentPage(1); }}>
+                  <FileText className="h-3.5 w-3.5 mr-2 text-primary" />
+                  {t('proposalTypeOfficial')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setTypeFilter('UNOFFICIAL'); setCurrentPage(1); }}>
+                  <Eye className="h-3.5 w-3.5 mr-2 text-amber-500" />
+                  {t('proposalTypeUnofficial')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* ─── Mini Stats (glass cards on gradient) ─── */}
@@ -421,9 +447,16 @@ export default function ProposalsPage() {
                       {formatAmount(Number(proposal.grandTotal) || 0)}
                     </td>
                     <td className="px-5 py-4">
-                      <Badge className={cn('text-xs font-medium rounded-lg px-2.5 py-0.5', status.color)}>
-                        {t(`status.${proposal.status}` as Parameters<typeof t>[0]) || proposal.status}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge className={cn('text-xs font-medium rounded-lg px-2.5 py-0.5', status.color)}>
+                          {t(`status.${proposal.status}` as Parameters<typeof t>[0]) || proposal.status}
+                        </Badge>
+                        {proposal.proposalType === 'UNOFFICIAL' && (
+                          <Badge className="text-[10px] rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            {t('proposalTypeUnofficial')}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-sm text-muted-foreground text-right">
                       {formatDate(proposal.createdAt)}
@@ -478,7 +511,12 @@ export default function ProposalsPage() {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums">{formatAmount(Number(proposal.grandTotal) || 0)}</p>
-                    <Badge className={cn('text-[10px] mt-1 rounded-md', status.color)}>{t(`status.${proposal.status}` as Parameters<typeof t>[0]) || proposal.status}</Badge>
+                    <div className="flex items-center gap-1 justify-end mt-1">
+                      <Badge className={cn('text-[10px] rounded-md', status.color)}>{t(`status.${proposal.status}` as Parameters<typeof t>[0]) || proposal.status}</Badge>
+                      {proposal.proposalType === 'UNOFFICIAL' && (
+                        <Badge className="text-[9px] rounded-md bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">G.R.</Badge>
+                      )}
+                    </div>
                   </div>
                 </button>
               );

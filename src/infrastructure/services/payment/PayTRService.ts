@@ -270,6 +270,67 @@ export class PayTRService {
   }
 
   /**
+   * Creates a payment token for a proposal (OFFICIAL only)
+   * Returns iFrame token for PayTR checkout
+   */
+  createProposalPaymentToken(params: {
+    proposalId: string
+    proposalNumber: string
+    amount: number // kuruş cinsinden (e.g. 11935000 for 119,350.00 TL)
+    currency?: string
+    customerEmail: string
+    customerName: string
+    customerPhone: string
+    customerAddress?: string
+    userIp: string
+    okUrl: string
+    failUrl: string
+  }): { token: string; merchantOid: string; merchantId: string } {
+    const merchantOid = `PROP_${params.proposalId}_${Date.now()}`
+
+    const paymentParams: PayTRPaymentParams = {
+      merchant_id: this.merchantId,
+      user_ip: params.userIp,
+      merchant_oid: merchantOid,
+      email: params.customerEmail,
+      payment_amount: params.amount,
+      currency: params.currency === 'USD' ? 'USD' : params.currency === 'EUR' ? 'EUR' : 'TL',
+      user_name: params.customerName,
+      user_phone: params.customerPhone || '-',
+      user_address: params.customerAddress || '-',
+      user_city: '-',
+      user_country: 'TR',
+      merchant_ok_url: params.okUrl,
+      merchant_fail_url: params.failUrl,
+    }
+
+    const hashString = this.buildHashString(paymentParams)
+    const token = crypto
+      .createHmac('sha256', this.merchantKey)
+      .update(hashString)
+      .digest('base64')
+
+    this.logger.info('Proposal payment token generated', {
+      proposalId: params.proposalId,
+      proposalNumber: params.proposalNumber,
+      merchantOid,
+      amount: params.amount,
+    })
+
+    return { token, merchantOid, merchantId: this.merchantId }
+  }
+
+  /**
+   * Parses proposal ID from payment merchant_oid
+   * Format: PROP_{proposalId}_{timestamp}
+   */
+  static parseProposalIdFromOid(merchantOid: string): string | null {
+    if (!merchantOid.startsWith('PROP_')) return null
+    const parts = merchantOid.split('_')
+    return parts[1] || null
+  }
+
+  /**
    * Gets payment amount for a plan
    */
   private getPlanAmount(

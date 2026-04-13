@@ -33,6 +33,7 @@ export interface Proposal {
   date: Date | string;
   validUntil: Date | string;
   status: string;
+  proposalType?: 'OFFICIAL' | 'UNOFFICIAL';
   customer: ProposalCustomer;
   items: ProposalItem[];
   subtotal: number;
