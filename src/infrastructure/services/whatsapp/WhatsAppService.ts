@@ -13,7 +13,7 @@ import { Logger } from '@/infrastructure/logger'
 
 const logger = new Logger('WhatsAppService')
 
-const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v22.0'
+const WHATSAPP_API_URL = (process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v22.0').trim()
 
 export class WhatsAppService {
   private phoneNumberId: string
@@ -21,9 +21,9 @@ export class WhatsAppService {
   private appSecret: string
 
   constructor(phoneNumberId: string, accessToken: string, appSecret: string) {
-    this.phoneNumberId = phoneNumberId
-    this.accessToken = accessToken
-    this.appSecret = appSecret
+    this.phoneNumberId = phoneNumberId.trim()
+    this.accessToken = accessToken.trim()
+    this.appSecret = appSecret.trim()
   }
 
   /**
