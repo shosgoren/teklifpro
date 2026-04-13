@@ -4,6 +4,7 @@ import { prisma } from '@/shared/utils/prisma';
 import { withAuth, getSessionFromRequest } from '@/infrastructure/middleware/authMiddleware';
 import { UpdateProposalSchema, type UpdateProposalInput } from '@/shared/validations/proposal';
 import { parseJsonBody, PayloadTooLargeError } from '@/shared/utils/requestSize';
+import { decryptSignature } from '@/shared/utils/signatureCrypto';
 import { Logger } from '@/infrastructure/logger';
 
 const logger = new Logger('ProposalDetailAPI');
@@ -61,9 +62,20 @@ async function handleGet(
       );
     }
 
+    // Fetch tenant info for company header display
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.tenant.id },
+      select: { name: true, email: true, phone: true, address: true, taxNumber: true, taxOffice: true, logo: true },
+    });
+
+    // Decrypt signature data for display (stored encrypted with AES-256-GCM)
+    const decryptedSignature = proposal.signatureData
+      ? decryptSignature(proposal.signatureData)
+      : null;
+
     return NextResponse.json({
       success: true,
-      data: proposal,
+      data: { ...proposal, tenant, signatureData: decryptedSignature },
     });
   } catch (error) {
     logger.error('GET /api/v1/proposals/[id] error:', error);

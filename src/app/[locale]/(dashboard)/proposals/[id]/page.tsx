@@ -595,8 +595,10 @@ export default function ProposalDetailPage() {
               <div className="p-6 md:p-8">
                 {/* Company Header */}
                 <div className="mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Teklifpro</h2>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">www.teklifpro.com | info@teklifpro.com</p>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{proposal.tenant?.name || 'Şirket Adı'}</h2>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    {[proposal.tenant?.phone, proposal.tenant?.email].filter(Boolean).join(' | ') || ''}
+                  </p>
                 </div>
 
                 {/* Proposal Info Grid */}
