@@ -31,6 +31,11 @@ import {
   Sparkles,
   X,
   Mic,
+  CalendarDays,
+  Truck,
+  Wrench,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -105,7 +110,7 @@ const statusConfig: Record<string, { color: string; dot: string }> = {
 };
 
 const WIDGET_ORDER_KEY = 'teklifpro-dashboard-order';
-const DEFAULT_WIDGETS = ['alerts', 'chart', 'recent'];
+const DEFAULT_WIDGETS = ['alerts', 'chart', 'recent', 'calendar'];
 
 // ─── Animated Number ───
 const AnimatedNumber = memo(function AnimatedNumber({ value, prefix = '', suffix = '', dateLocale = 'tr-TR' }: { value: number; prefix?: string; suffix?: string; dateLocale?: string }) {
@@ -285,10 +290,12 @@ export default function DashboardPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGETS);
   const [mounted, setMounted] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher, swrDefaultOptions);
   const { data: customersData, isLoading: customersLoading } = useSWR('/api/v1/customers?limit=1', fetcher, swrDefaultOptions);
   const { data: alertsData } = useSWR('/api/v1/stock/alerts', fetcher, swrDefaultOptions);
+  const { data: calendarData } = useSWR('/api/v1/calendar', fetcher, swrDefaultOptions);
 
   const proposals = proposalsData?.data?.proposals ?? [];
   const proposalTotal = proposalsData?.data?.pagination?.total ?? 0;
@@ -750,6 +757,92 @@ export default function DashboardPage() {
         )}
       </motion.div>
     ),
+
+    calendar: (() => {
+      const calEvents = calendarData?.data?.events ?? {}
+      const year = calendarMonth.getFullYear()
+      const month = calendarMonth.getMonth()
+      const firstDay = new Date(year, month, 1).getDay()
+      const daysInMonth = new Date(year, month + 1, 0).getDate()
+      const monthName = calendarMonth.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })
+
+      const blanks = (firstDay + 6) % 7 // Monday-start
+      const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
+
+      const weekDays = locale === 'tr'
+        ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="rounded-2xl border bg-card dark:shadow-[0_0_20px_-8px_rgba(59,130,246,0.1)]"
+        >
+          <div className="flex items-center justify-between p-4 md:p-5 border-b">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-blue-500" />
+              <h3 className="font-semibold">{t('calendarTitle')}</h3>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg" onClick={() => setCalendarMonth(new Date(year, month - 1, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium min-w-[120px] text-center capitalize">{monthName}</span>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 rounded-lg" onClick={() => setCalendarMonth(new Date(year, month + 1, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {weekDays.map(d => (
+                <div key={d} className="text-[10px] font-medium text-muted-foreground text-center py-1">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: blanks }).map((_, i) => <div key={`b${i}`} />)}
+              {days.map(day => {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                const events: Array<{ type: string }> = calEvents[dateKey] ?? []
+                const hasDelivery = events.some((e: { type: string }) => e.type === 'delivery')
+                const hasInstallation = events.some((e: { type: string }) => e.type === 'installation')
+                const isToday = dateKey === new Date().toISOString().slice(0, 10)
+                return (
+                  <div
+                    key={day}
+                    className={cn(
+                      'relative flex flex-col items-center justify-center h-9 rounded-lg text-xs transition-colors',
+                      isToday && 'ring-1 ring-blue-500 font-bold',
+                      (hasDelivery || hasInstallation) && 'bg-gray-50 dark:bg-gray-800/50',
+                    )}
+                  >
+                    <span className={cn('text-xs', isToday ? 'text-blue-600 dark:text-blue-400' : '')}>{day}</span>
+                    {(hasDelivery || hasInstallation) && (
+                      <div className="flex gap-0.5 mt-0.5">
+                        {hasDelivery && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" title={t('delivery')} />}
+                        {hasInstallation && <div className="h-1.5 w-1.5 rounded-full bg-green-500" title={t('installation')} />}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                <Truck className="h-3 w-3" /> {t('delivery')}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="h-2 w-2 rounded-full bg-green-500" />
+                <Wrench className="h-3 w-3" /> {t('installation')}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )
+    })(),
   };
 
   return (

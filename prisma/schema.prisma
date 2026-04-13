@@ -58,6 +58,10 @@ model Tenant {
   // Bank Accounts (JSON array: [{bankName, branchName, accountHolder, iban, currency}])
   bankAccounts    Json?    @map("bank_accounts")
 
+  // Delivery/Installation Capacity
+  dailyDeliveryCapacity      Int       @default(1) @map("daily_delivery_capacity")
+  dailyInstallationCapacity  Int       @default(1) @map("daily_installation_capacity")
+
   // Smart Follow-up
   smartFollowupEnabled    Boolean   @default(false) @map("smart_followup_enabled")
   followupDaysAfterView   Int       @default(3)     @map("followup_days_after_view")
@@ -611,6 +615,16 @@ model Proposal {
   followupCount     Int             @default(0) @map("followup_count")
   lastFollowupAt    DateTime?       @map("last_followup_at")
 
+  // Delivery & Installation
+  deliveryDate              DateTime?       @map("delivery_date")
+  installationDate          DateTime?       @map("installation_date")
+  deliveryCompleted         Boolean         @default(false) @map("delivery_completed")
+  installationCompleted     Boolean         @default(false) @map("installation_completed")
+  deliveryRemindersSent     Int             @default(0) @map("delivery_reminders_sent")
+  installationRemindersSent Int             @default(0) @map("installation_reminders_sent")
+  lastDeliveryReminderAt    DateTime?       @map("last_delivery_reminder_at")
+  lastInstallationReminderAt DateTime?      @map("last_installation_reminder_at")
+
   // Metadata
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
@@ -624,6 +638,7 @@ model Proposal {
   items             ProposalItem[]
   activities        ProposalActivity[]
   revisions         ProposalRevision[]
+  dateChangeRequests DateChangeRequest[]
 
   @@unique([tenantId, proposalNumber])
   @@index([tenantId, status])
@@ -718,6 +733,14 @@ enum ActivityType {
   INVOICED
   E_FATURA_SENT
   E_ARSIV_SENT
+  DATE_CHANGE_REQUESTED
+  DATE_CHANGE_APPROVED
+  DATE_CHANGE_REJECTED
+  DATE_CHANGE_COUNTER
+  DELIVERY_REMINDER
+  INSTALLATION_REMINDER
+  DELIVERY_COMPLETED
+  INSTALLATION_COMPLETED
 }
 
 model ProposalRevision {
@@ -733,6 +756,41 @@ model ProposalRevision {
 
   @@unique([proposalId, version])
   @@map("proposal_revisions")
+}
+
+// ==================== DATE CHANGE REQUESTS ====================
+
+model DateChangeRequest {
+  id              String                @id @default(cuid())
+  proposalId      String                @map("proposal_id")
+  requestType     DateChangeType        @map("request_type")
+  currentDate     DateTime              @map("current_date")
+  requestedDate   DateTime              @map("requested_date")
+  status          DateChangeStatus      @default(PENDING)
+  counterDate     DateTime?             @map("counter_date")
+  customerNote    String?               @map("customer_note")
+  ownerNote       String?               @map("owner_note")
+  voiceNoteData   String?               @map("voice_note_data")
+  voiceNoteDuration Int?                @map("voice_note_duration")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  respondedAt     DateTime?             @map("responded_at")
+
+  proposal        Proposal              @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId, status])
+  @@map("date_change_requests")
+}
+
+enum DateChangeType {
+  DELIVERY
+  INSTALLATION
+}
+
+enum DateChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COUNTER_OFFERED
 }
 
 model ProposalTemplate {

@@ -21,8 +21,13 @@ import {
   Copy,
   CreditCard,
   Download,
+  Truck,
+  Wrench,
+  CalendarClock,
+  Send,
+  AlertCircle,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ProposalActions from './proposal-actions'
 import { VoiceNotePlayer } from '@/presentation/components/molecules/VoiceNotePlayer'
 
@@ -46,6 +51,8 @@ interface ProposalContentProps {
     expiresDate: string | null
     discountType: string | null
     discountValue: number
+    deliveryDate?: string | null
+    installationDate?: string | null
   }
   tenant: {
     name: string
@@ -140,6 +147,33 @@ const proposalDict = {
     viewCount: 'görüntülenme',
     draftProposal: 'TASLAK TEKLİF',
     draftProposalNote: 'Bu teklif gayri resmi olup, bilgilendirme amaçlıdır. KDV ve banka bilgileri dahil değildir.',
+    deliveryDate: 'Teslim Tarihi',
+    installationDate: 'Kurulum Tarihi',
+    remainingDays: 'gün kaldı',
+    today: 'Bugün',
+    passed: 'Geçti',
+    dateChangeRequest: 'Tarih Değişikliği Talebi',
+    dateChangeDesc: 'Teslim veya kurulum tarihi için değişiklik talep edebilirsiniz.',
+    requestType: 'Tarih Türü',
+    deliveryDateOption: 'Teslim Tarihi',
+    installationDateOption: 'Kurulum Tarihi',
+    currentDate: 'Mevcut Tarih',
+    newDate: 'Talep Edilen Tarih',
+    customerNoteLabel: 'Not (isteğe bağlı)',
+    customerNotePlaceholder: 'Neden tarih değişikliği istiyorsunuz?',
+    submitRequest: 'Talep Gönder',
+    submitting: 'Gönderiliyor...',
+    requestSuccess: 'Talebiniz başarıyla gönderildi.',
+    requestError: 'Talep gönderilemedi. Lütfen tekrar deneyin.',
+    existingRequests: 'Tarih Değişikliği Talepleri',
+    statusPending: 'Beklemede',
+    statusApproved: 'Onaylandı',
+    statusRejected: 'Reddedildi',
+    statusCounterOffered: 'Karşı Teklif',
+    requestedDateLabel: 'Talep Edilen',
+    counterDateLabel: 'Önerilen Tarih',
+    adminNote: 'Firma Notu',
+    noDateSelected: 'Tarih seçiniz',
   },
   en: {
     proposalPresentation: 'Proposal Presentation',
@@ -188,6 +222,33 @@ const proposalDict = {
     viewCount: 'views',
     draftProposal: 'DRAFT PROPOSAL',
     draftProposalNote: 'This is an unofficial proposal for informational purposes only. VAT and bank details are not included.',
+    deliveryDate: 'Delivery Date',
+    installationDate: 'Installation Date',
+    remainingDays: 'days left',
+    today: 'Today',
+    passed: 'Passed',
+    dateChangeRequest: 'Date Change Request',
+    dateChangeDesc: 'You can request a change for delivery or installation date.',
+    requestType: 'Date Type',
+    deliveryDateOption: 'Delivery Date',
+    installationDateOption: 'Installation Date',
+    currentDate: 'Current Date',
+    newDate: 'Requested Date',
+    customerNoteLabel: 'Note (optional)',
+    customerNotePlaceholder: 'Why do you need a date change?',
+    submitRequest: 'Submit Request',
+    submitting: 'Submitting...',
+    requestSuccess: 'Your request has been submitted successfully.',
+    requestError: 'Failed to submit request. Please try again.',
+    existingRequests: 'Date Change Requests',
+    statusPending: 'Pending',
+    statusApproved: 'Approved',
+    statusRejected: 'Rejected',
+    statusCounterOffered: 'Counter Offered',
+    requestedDateLabel: 'Requested',
+    counterDateLabel: 'Proposed Date',
+    adminNote: 'Company Note',
+    noDateSelected: 'Select a date',
   },
 } as const
 
@@ -234,6 +295,27 @@ export default function ProposalContent({
   const [showDetails, setShowDetails] = useState(false)
   const [showBankInfo, setShowBankInfo] = useState(false)
   const [copiedIban, setCopiedIban] = useState<string | null>(null)
+  const [showDateChangeForm, setShowDateChangeForm] = useState(false)
+  const [dateRequestType, setDateRequestType] = useState<'DELIVERY' | 'INSTALLATION'>(
+    proposal.deliveryDate ? 'DELIVERY' : 'INSTALLATION'
+  )
+  const [requestedDate, setRequestedDate] = useState('')
+  const [customerNote, setCustomerNote] = useState('')
+  const [dateSubmitting, setDateSubmitting] = useState(false)
+  const [dateSubmitResult, setDateSubmitResult] = useState<'success' | 'error' | null>(null)
+  const [existingDateRequests, setExistingDateRequests] = useState<Array<{
+    id: string
+    requestType: string
+    currentDate: string
+    requestedDate: string
+    customerNote: string | null
+    status: string
+    adminNote: string | null
+    counterDate: string | null
+    createdAt: string
+  }>>([])
+  const [disabledDates, setDisabledDates] = useState<string[]>([])
+  const [minCalendarDate, setMinCalendarDate] = useState('')
   const proposalLocale = getProposalLocale()
   const localeStr = getLocaleString(proposalLocale)
   const statusDisplay = statusDisplayDict[proposalLocale]
@@ -253,6 +335,93 @@ export default function ProposalContent({
 
   const cardClass = "animate-fade-in-up"
   const cardShadow = "shadow-sm hover:shadow-md transition-shadow"
+
+  const hasDateChangeFeature =
+    (proposal.deliveryDate || proposal.installationDate) &&
+    ['ACCEPTED', 'SENT', 'VIEWED'].includes(proposal.status)
+
+  const fetchDateRequests = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/proposals/date-change?token=${token}`)
+      if (res.ok) {
+        const data = await res.json()
+        setExistingDateRequests(data.requests ?? data ?? [])
+      }
+    } catch {
+      // silently fail
+    }
+  }, [token])
+
+  const fetchDisabledDates = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/proposals/calendar?token=${token}`)
+      if (res.ok) {
+        const data = await res.json()
+        setDisabledDates(data.disabledDates ?? [])
+      }
+    } catch {
+      // silently fail
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (hasDateChangeFeature) {
+      fetchDateRequests()
+      fetchDisabledDates()
+      // Set min date to tomorrow
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      setMinCalendarDate(tomorrow.toISOString().split('T')[0])
+    }
+  }, [hasDateChangeFeature, fetchDateRequests, fetchDisabledDates])
+
+  const handleDateChangeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!requestedDate || dateSubmitting) return
+    setDateSubmitting(true)
+    setDateSubmitResult(null)
+    try {
+      const res = await fetch('/api/proposals/date-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          requestType: dateRequestType,
+          requestedDate,
+          customerNote: customerNote.trim() || null,
+        }),
+      })
+      if (res.ok) {
+        setDateSubmitResult('success')
+        setRequestedDate('')
+        setCustomerNote('')
+        fetchDateRequests()
+      } else {
+        setDateSubmitResult('error')
+      }
+    } catch {
+      setDateSubmitResult('error')
+    } finally {
+      setDateSubmitting(false)
+    }
+  }
+
+  const getCurrentDateForType = (type: 'DELIVERY' | 'INSTALLATION') => {
+    const dateStr = type === 'DELIVERY' ? proposal.deliveryDate : proposal.installationDate
+    if (!dateStr) return '—'
+    return new Date(dateStr).toLocaleDateString(localeStr, {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+  }
+
+  const dateChangeStatusStyles: Record<string, { bg: string; text: string; label: string }> = {
+    PENDING: { bg: 'bg-amber-100', text: 'text-amber-700', label: t.statusPending },
+    APPROVED: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: t.statusApproved },
+    REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: t.statusRejected },
+    COUNTER_OFFERED: { bg: 'bg-blue-100', text: 'text-blue-700', label: t.statusCounterOffered },
+  }
 
   return (
     <div className="min-h-dvh bg-gray-50">
@@ -443,6 +612,62 @@ export default function ProposalContent({
             {tenant.phone && <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-gray-400" />{tenant.phone}</div>}
             {tenant.email && <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-gray-400" /><a href={`mailto:${tenant.email}`} className="text-blue-600">{tenant.email}</a></div>}
             {tenant.taxNumber && <div className="flex items-center gap-2 pt-2 border-t border-gray-100"><Building2 className="w-3.5 h-3.5 text-gray-400" />{t.taxNumber} {tenant.taxNumber}</div>}
+          </div>
+        )}
+
+        {/* ─── Delivery & Installation Dates ─── */}
+        {(proposal.deliveryDate || proposal.installationDate) && (
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 p-5 mb-4 ${cardClass}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {proposal.deliveryDate && (() => {
+                const deliveryDateObj = new Date(proposal.deliveryDate)
+                const now = new Date()
+                now.setHours(0, 0, 0, 0)
+                const diffMs = deliveryDateObj.getTime() - now.getTime()
+                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+                const formattedDate = deliveryDateObj.toLocaleDateString(localeStr, { day: '2-digit', month: 'long', year: 'numeric' })
+                const badgeColor = diffDays <= 0 ? 'bg-red-100 text-red-700' : diffDays <= 1 ? 'bg-red-100 text-red-700' : diffDays <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                const badgeText = diffDays < 0 ? t.passed : diffDays === 0 ? t.today : `${diffDays} ${t.remainingDays}`
+                return (
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                      <Truck className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.deliveryDate}</p>
+                      <p className="text-sm font-medium text-gray-900 mt-0.5">{formattedDate}</p>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
+                        {badgeText}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })()}
+              {proposal.installationDate && (() => {
+                const installDateObj = new Date(proposal.installationDate)
+                const now = new Date()
+                now.setHours(0, 0, 0, 0)
+                const diffMs = installDateObj.getTime() - now.getTime()
+                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+                const formattedDate = installDateObj.toLocaleDateString(localeStr, { day: '2-digit', month: 'long', year: 'numeric' })
+                const badgeColor = diffDays <= 0 ? 'bg-red-100 text-red-700' : diffDays <= 1 ? 'bg-red-100 text-red-700' : diffDays <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                const badgeText = diffDays < 0 ? t.passed : diffDays === 0 ? t.today : `${diffDays} ${t.remainingDays}`
+                return (
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                      <Wrench className="w-4 h-4 text-violet-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t.installationDate}</p>
+                      <p className="text-sm font-medium text-gray-900 mt-0.5">{formattedDate}</p>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${badgeColor}`}>
+                        {badgeText}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
         )}
 
@@ -777,6 +1002,226 @@ export default function ProposalContent({
                 {t.downloadSignedPdf}
               </a>
             </div>
+          </div>
+        )}
+
+        {/* ─── Date Change Request ─── */}
+        {hasDateChangeFeature && (
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
+            <button
+              onClick={() => setShowDateChangeForm(!showDateChangeForm)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <CalendarClock className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-sm text-gray-900">{t.dateChangeRequest}</p>
+                  <p className="text-xs text-gray-400">{t.dateChangeDesc}</p>
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showDateChangeForm ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showDateChangeForm && (
+              <div className="px-4 pb-4 border-t border-gray-100">
+                <form onSubmit={handleDateChangeSubmit} className="pt-4 space-y-4">
+                  {/* Request type toggle */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                      {t.requestType}
+                    </label>
+                    <div className="flex gap-2">
+                      {proposal.deliveryDate && (
+                        <button
+                          type="button"
+                          onClick={() => setDateRequestType('DELIVERY')}
+                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium border transition-colors ${
+                            dateRequestType === 'DELIVERY'
+                              ? 'bg-blue-50 border-blue-300 text-blue-700'
+                              : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Truck className="w-4 h-4" />
+                          {t.deliveryDateOption}
+                        </button>
+                      )}
+                      {proposal.installationDate && (
+                        <button
+                          type="button"
+                          onClick={() => setDateRequestType('INSTALLATION')}
+                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium border transition-colors ${
+                            dateRequestType === 'INSTALLATION'
+                              ? 'bg-violet-50 border-violet-300 text-violet-700'
+                              : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Wrench className="w-4 h-4" />
+                          {t.installationDateOption}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Current date display */}
+                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-xs text-gray-500 mb-0.5">{t.currentDate}</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {getCurrentDateForType(dateRequestType)}
+                    </p>
+                  </div>
+
+                  {/* New date picker */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                      {t.newDate}
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={requestedDate}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (disabledDates.includes(val)) return
+                        setRequestedDate(val)
+                      }}
+                      min={minCalendarDate}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Customer note */}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">
+                      {t.customerNoteLabel}
+                    </label>
+                    <textarea
+                      value={customerNote}
+                      onChange={(e) => setCustomerNote(e.target.value)}
+                      placeholder={t.customerNotePlaceholder}
+                      rows={3}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    />
+                  </div>
+
+                  {/* Submit result messages */}
+                  {dateSubmitResult === 'success' && (
+                    <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <p className="text-sm text-emerald-700">{t.requestSuccess}</p>
+                    </div>
+                  )}
+                  {dateSubmitResult === 'error' && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl border border-red-200">
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                      <p className="text-sm text-red-700">{t.requestError}</p>
+                    </div>
+                  )}
+
+                  {/* Submit button */}
+                  <button
+                    type="submit"
+                    disabled={dateSubmitting || !requestedDate}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-amber-500/25 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-4 h-4" />
+                    {dateSubmitting ? t.submitting : t.submitRequest}
+                  </button>
+                </form>
+
+                {/* Existing requests */}
+                {existingDateRequests.length > 0 && (
+                  <div className="mt-6 pt-4 border-t border-gray-100">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                      {t.existingRequests}
+                    </p>
+                    <div className="space-y-3">
+                      {existingDateRequests.map((req) => {
+                        const style = dateChangeStatusStyles[req.status] ?? {
+                          bg: 'bg-gray-100',
+                          text: 'text-gray-700',
+                          label: req.status,
+                        }
+                        const reqTypeLabel =
+                          req.requestType === 'DELIVERY'
+                            ? t.deliveryDateOption
+                            : t.installationDateOption
+                        const reqIcon =
+                          req.requestType === 'DELIVERY' ? Truck : Wrench
+                        const ReqIcon = reqIcon
+                        return (
+                          <div
+                            key={req.id}
+                            className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <ReqIcon className="w-3.5 h-3.5 text-gray-500" />
+                                <span className="text-sm font-medium text-gray-900">
+                                  {reqTypeLabel}
+                                </span>
+                              </div>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}
+                              >
+                                {style.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <span>
+                                {t.requestedDateLabel}:{' '}
+                                <span className="font-medium text-gray-700">
+                                  {new Date(req.requestedDate).toLocaleDateString(localeStr, {
+                                    day: '2-digit',
+                                    month: 'long',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </span>
+                            </div>
+                            {req.customerNote && (
+                              <p className="text-xs text-gray-600 italic">
+                                &ldquo;{req.customerNote}&rdquo;
+                              </p>
+                            )}
+                            {req.status === 'COUNTER_OFFERED' && req.counterDate && (
+                              <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+                                <p className="text-xs text-blue-700">
+                                  <span className="font-semibold">{t.counterDateLabel}:</span>{' '}
+                                  {new Date(req.counterDate).toLocaleDateString(localeStr, {
+                                    day: '2-digit',
+                                    month: 'long',
+                                    year: 'numeric',
+                                  })}
+                                </p>
+                              </div>
+                            )}
+                            {req.adminNote && (
+                              <div className="p-2 bg-gray-100 rounded-lg">
+                                <p className="text-xs text-gray-600">
+                                  <span className="font-semibold">{t.adminNote}:</span>{' '}
+                                  {req.adminNote}
+                                </p>
+                              </div>
+                            )}
+                            <p className="text-[10px] text-gray-400">
+                              {new Date(req.createdAt).toLocaleDateString(localeStr, {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

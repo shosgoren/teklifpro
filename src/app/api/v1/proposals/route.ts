@@ -236,6 +236,8 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
         vatTotal,
         grandTotal: subtotal - totalDiscount + vatTotal,
         expiresAt: payload.expiresAt ? new Date(payload.expiresAt) : undefined,
+        deliveryDate: payload.deliveryDate ? new Date(payload.deliveryDate) : undefined,
+        installationDate: payload.installationDate ? new Date(payload.installationDate) : undefined,
         notes: payload.notes,
         paymentTerms: payload.paymentTerms,
         deliveryTerms: payload.deliveryTerms,

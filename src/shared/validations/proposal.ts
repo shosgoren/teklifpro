@@ -9,6 +9,8 @@ export const CreateProposalSchema = z.object({
   proposalType: z.enum(['OFFICIAL', 'UNOFFICIAL']).default('OFFICIAL'),
   title: z.string().min(1).max(255),
   description: z.string().optional(),
+  deliveryDate: z.string().optional(),
+  installationDate: z.string().optional(),
   items: z.array(
     z.object({
       name: z.string(),
@@ -34,6 +36,10 @@ export const UpdateProposalSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   proposalType: z.enum(['OFFICIAL', 'UNOFFICIAL']).optional(),
+  deliveryDate: z.string().nullable().optional(),
+  installationDate: z.string().nullable().optional(),
+  deliveryCompleted: z.boolean().optional(),
+  installationCompleted: z.boolean().optional(),
   status: z.enum(['DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED', 'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED', 'INVOICED']).optional(),
   items: z.array(z.object({
     id: z.string().optional(),

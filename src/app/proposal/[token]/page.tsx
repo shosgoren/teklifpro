@@ -240,6 +240,12 @@ async function renderProposalPage(params: ProposalPageProps['params']) {
         expiresDate,
         discountType: updatedProposal.discountType,
         discountValue: Number(updatedProposal.discountValue),
+        deliveryDate: (updatedProposal as Record<string, unknown>).deliveryDate
+          ? ((updatedProposal as Record<string, unknown>).deliveryDate as Date).toISOString()
+          : null,
+        installationDate: (updatedProposal as Record<string, unknown>).installationDate
+          ? ((updatedProposal as Record<string, unknown>).installationDate as Date).toISOString()
+          : null,
       }}
       tenant={{
         name: updatedProposal.tenant.name,

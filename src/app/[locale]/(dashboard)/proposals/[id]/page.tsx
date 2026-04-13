@@ -31,6 +31,9 @@ import {
   ExternalLink,
   Send,
   Loader2,
+  Truck,
+  Wrench,
+  CalendarDays,
 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
@@ -159,6 +162,48 @@ export default function ProposalDetailPage() {
   );
 
   const proposal = data?.data;
+
+  // Date change requests
+  const { data: dateChangeData, mutate: mutateDateChange } = useSWR(
+    proposalId ? `/api/v1/proposals/${proposalId}/date-change` : null,
+    fetcher,
+    swrRealtimeOptions(15000)
+  );
+  const dateChangeRequests = dateChangeData?.data || [];
+  const [counterFormId, setCounterFormId] = useState<string | null>(null);
+  const [counterDate, setCounterDate] = useState('');
+  const [counterNote, setCounterNote] = useState('');
+  const [dateChangeLoading, setDateChangeLoading] = useState<string | null>(null);
+
+  const handleDateChangeAction = async (requestId: string, action: 'APPROVE' | 'REJECT' | 'COUNTER', ownerNote?: string, counterDateVal?: string) => {
+    setDateChangeLoading(requestId);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: any = { requestId, action };
+      if (ownerNote) body.ownerNote = ownerNote;
+      if (counterDateVal) body.counterDate = counterDateVal;
+      const res = await fetch(`/api/v1/proposals/${proposalId}/date-change`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      if (result.success) {
+        toast.success(action === 'APPROVE' ? t('dateChange.approved') : action === 'REJECT' ? t('dateChange.rejected') : t('dateChange.counterSent'));
+        mutateDateChange();
+        setCounterFormId(null);
+        setCounterDate('');
+        setCounterNote('');
+      } else {
+        toast.error(result.error || t('statusChangeFailed'));
+      }
+    } catch {
+      toast.error(t('statusChangeFailed'));
+    } finally {
+      setDateChangeLoading(null);
+    }
+  };
+
   const [showQR, setShowQR] = useState(false);
   const [parasutLoading, setParasutLoading] = useState<string | null>(null); // 'push' | 'pull' | 'pdf' | 'share'
 
@@ -798,6 +843,241 @@ export default function ProposalDetailPage() {
                 </div>
               </div>
             </Card>
+
+            {/* Delivery & Installation Dates */}
+            {(proposal.deliveryDate || proposal.installationDate) && (
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+                <div className="p-5">
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {t('deliveryDate')} / {t('installationDate')}
+                  </h3>
+                  <div className="space-y-3">
+                    {proposal.deliveryDate && (
+                      <div className={`flex items-center justify-between p-3 rounded-xl ${proposal.deliveryCompleted ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800' : 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'}`}>
+                        <div className="flex items-center gap-2.5">
+                          <Truck className={`h-4 w-4 ${proposal.deliveryCompleted ? 'text-emerald-600' : 'text-blue-600'}`} />
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('deliveryDate')}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {new Date(proposal.deliveryDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        {proposal.deliveryCompleted ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-[10px]">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {t('deliveryCompleted')}
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/v1/proposals/${proposalId}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ deliveryCompleted: true }),
+                                });
+                                const result = await res.json();
+                                if (result.success) {
+                                  toast.success(t('deliveryCompleted'));
+                                  window.location.reload();
+                                }
+                              } catch { toast.error(t('statusChangeFailed')); }
+                            }}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {t('markDeliveryComplete')}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                    {proposal.installationDate && (
+                      <div className={`flex items-center justify-between p-3 rounded-xl ${proposal.installationCompleted ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800' : 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800'}`}>
+                        <div className="flex items-center gap-2.5">
+                          <Wrench className={`h-4 w-4 ${proposal.installationCompleted ? 'text-emerald-600' : 'text-green-600'}`} />
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('installationDate')}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {new Date(proposal.installationDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        {proposal.installationCompleted ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-[10px]">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {t('installationCompleted')}
+                          </Badge>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs h-7 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`/api/v1/proposals/${proposalId}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ installationCompleted: true }),
+                                });
+                                const result = await res.json();
+                                if (result.success) {
+                                  toast.success(t('installationCompleted'));
+                                  window.location.reload();
+                                }
+                              } catch { toast.error(t('statusChangeFailed')); }
+                            }}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {t('markInstallationComplete')}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Date Change Requests */}
+            {dateChangeRequests.length > 0 && (
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
+                <div className="p-5">
+                  <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {t('dateChange.title')}
+                  </h3>
+                  <div className="space-y-3">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {dateChangeRequests.map((req: any) => {
+                      const isPending = req.status === 'PENDING';
+                      const TypeIcon = req.type === 'DELIVERY' ? Truck : Wrench;
+                      const statusColors: Record<string, string> = {
+                        PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+                        APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+                        REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+                        COUNTER_OFFERED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+                      };
+
+                      return (
+                        <div key={req.id} className={`p-3 rounded-xl border ${isPending ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'}`}>
+                          <div className="flex items-start gap-2 mb-2">
+                            <TypeIcon className={`h-4 w-4 mt-0.5 ${isPending ? 'text-amber-600' : 'text-gray-400'}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                  {req.type === 'DELIVERY' ? t('deliveryDate') : t('installationDate')}
+                                </span>
+                                <Badge className={`text-[10px] ${statusColors[req.status] || ''}`}>
+                                  {t(`dateChange.status.${req.status}` as Parameters<typeof t>[0])}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <span className="text-gray-500 line-through">
+                                  {new Date(req.currentDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short' })}
+                                </span>
+                                <ChevronRight className="h-3 w-3 text-gray-400" />
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  {new Date(req.requestedDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                              </div>
+                              {req.customerNote && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic">&ldquo;{req.customerNote}&rdquo;</p>
+                              )}
+                              {req.ownerNote && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  <span className="font-medium">{t('dateChange.yourNote')}:</span> {req.ownerNote}
+                                </p>
+                              )}
+                              {req.counterDate && (
+                                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
+                                  <RefreshCw className="h-3 w-3 inline mr-1" />
+                                  {t('dateChange.counterDate')}: {new Date(req.counterDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {isPending && (
+                            <>
+                              {counterFormId === req.id ? (
+                                <div className="mt-2 p-2.5 bg-white dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+                                  <input
+                                    type="date"
+                                    value={counterDate}
+                                    onChange={(e) => setCounterDate(e.target.value)}
+                                    className="w-full text-xs px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder={t('dateChange.notePlaceholder')}
+                                    value={counterNote}
+                                    onChange={(e) => setCounterNote(e.target.value)}
+                                    className="w-full text-xs px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                                  />
+                                  <div className="flex gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      className="flex-1 h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                      disabled={!counterDate || dateChangeLoading === req.id}
+                                      onClick={() => handleDateChangeAction(req.id, 'COUNTER', counterNote || undefined, counterDate)}
+                                    >
+                                      {dateChangeLoading === req.id ? <Loader2 className="h-3 w-3 animate-spin" /> : t('dateChange.send')}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-xs"
+                                      onClick={() => { setCounterFormId(null); setCounterDate(''); setCounterNote(''); }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1.5 mt-2">
+                                  <Button
+                                    size="sm"
+                                    className="flex-1 h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    disabled={dateChangeLoading === req.id}
+                                    onClick={() => handleDateChangeAction(req.id, 'APPROVE')}
+                                  >
+                                    {dateChangeLoading === req.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <><CheckCircle className="h-3 w-3 mr-1" />{t('dateChange.approve')}</>}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="flex-1 h-7 text-xs bg-red-600 hover:bg-red-700 text-white"
+                                    disabled={dateChangeLoading === req.id}
+                                    onClick={() => {
+                                      const note = window.prompt(t('dateChange.rejectReason'));
+                                      if (note !== null) handleDateChangeAction(req.id, 'REJECT', note || undefined);
+                                    }}
+                                  >
+                                    <XCircle className="h-3 w-3 mr-1" />{t('dateChange.reject')}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 h-7 text-xs text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                                    disabled={dateChangeLoading === req.id}
+                                    onClick={() => setCounterFormId(req.id)}
+                                  >
+                                    <RefreshCw className="h-3 w-3 mr-1" />{t('dateChange.counter')}
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Customer Response: Revision Note or Rejection Reason */}
             {proposal.status === 'REVISION_REQUESTED' && proposal.revisionNote && (

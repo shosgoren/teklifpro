@@ -67,6 +67,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/
 import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
 import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNoteRecorder'
+import { DatePicker } from '@/shared/components/ui/date-picker'
 
 const logger = new Logger('ProposalNewPage')
 
@@ -141,6 +142,8 @@ const proposalFormSchema = z.object({
   validityDays: z.coerce.number().min(1).max(365).default(30),
   paymentTerms: z.string().default('Net 30'),
   deliveryTerms: z.string().default('Standard'),
+  deliveryDate: z.date().nullable().optional(),
+  installationDate: z.date().nullable().optional(),
   notes: z.string().optional(),
   termsAndConditions: z.string().optional(),
   voiceNoteData: z.string().nullable().optional(),
@@ -794,11 +797,17 @@ function ProductSelectionStep({
 function DetailsStep({
   data,
   onChange,
+  onDateChange,
 }: {
   data: Partial<ProposalFormData>
   onChange: (field: string, value: string | number | boolean | null) => void
+  onDateChange: (field: 'deliveryDate' | 'installationDate', value: Date | null) => void
 }) {
   const t = useTranslations()
+
+  const { data: calendarData } = useSWR('/api/v1/calendar', apiFetcher, swrStaticOptions)
+  const disabledDeliveryDates: string[] = calendarData?.data?.disabledDeliveryDates ?? []
+  const disabledInstallationDates: string[] = calendarData?.data?.disabledInstallationDates ?? []
 
   return (
     <div className="space-y-6">
@@ -900,6 +909,33 @@ function DetailsStep({
             <SelectItem value="Same Day">Same Day</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Delivery & Installation Dates */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <Label>{t('proposals.deliveryDate')}</Label>
+          <div className="mt-2">
+            <DatePicker
+              value={data.deliveryDate ?? undefined}
+              onChange={(date) => onDateChange('deliveryDate', date ?? null)}
+              disabledDates={disabledDeliveryDates}
+              placeholder={t('proposals.selectDeliveryDate')}
+            />
+          </div>
+        </div>
+        <div>
+          <Label>{t('proposals.installationDate')}</Label>
+          <div className="mt-2">
+            <DatePicker
+              value={data.installationDate ?? undefined}
+              onChange={(date) => onDateChange('installationDate', date ?? null)}
+              disabledDates={disabledInstallationDates}
+              placeholder={t('proposals.selectInstallationDate')}
+              minDate={data.deliveryDate ?? undefined}
+            />
+          </div>
+        </div>
       </div>
 
       <div>
@@ -1192,6 +1228,8 @@ export default function CreateProposalPage() {
       validityDays: 30,
       paymentTerms: 'Net 30',
       deliveryTerms: 'Standard',
+      deliveryDate: null,
+      installationDate: null,
       notes: '',
       termsAndConditions: '',
       voiceNoteData: null,
@@ -1281,6 +1319,8 @@ export default function CreateProposalPage() {
       notes: data.notes || '',
       paymentTerms: data.paymentTerms || '',
       deliveryTerms: data.deliveryTerms || '',
+      deliveryDate: data.deliveryDate ? data.deliveryDate.toISOString() : undefined,
+      installationDate: data.installationDate ? data.installationDate.toISOString() : undefined,
       voiceNoteData: data.voiceNoteData || null,
       voiceNoteDuration: data.voiceNoteDuration || null,
     }
@@ -1423,7 +1463,7 @@ export default function CreateProposalPage() {
                 />
               )}
               {currentStep === 2 && (
-                <DetailsStep data={formData} onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }} />
+                <DetailsStep data={formData} onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }} onDateChange={(field, value) => setValue(field, value)} />
               )}
               {currentStep === 3 && (
                 <PreviewStep
