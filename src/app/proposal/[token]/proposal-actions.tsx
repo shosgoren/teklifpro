@@ -14,6 +14,7 @@ interface ContactOption {
 interface ProposalActionsProps {
   proposalId: string
   contacts: ContactOption[]
+  token: string
 }
 
 type ModalType = 'accept' | 'reject' | 'revision' | null
@@ -106,7 +107,7 @@ function getProposalActionLocale(): ProposalActionLocale {
   return 'tr'
 }
 
-export default function ProposalActions({ proposalId, contacts }: ProposalActionsProps) {
+export default function ProposalActions({ proposalId, contacts, token }: ProposalActionsProps) {
   const router = useRouter()
   const locale = getProposalActionLocale()
   const t = proposalActionDict[locale]
@@ -140,7 +141,7 @@ export default function ProposalActions({ proposalId, contacts }: ProposalAction
       const response = await fetch('/api/proposals/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proposalId, action, ...body }),
+        body: JSON.stringify({ publicToken: token, action, ...body }),
       })
       if (!response.ok) {
         const data = await response.json()
