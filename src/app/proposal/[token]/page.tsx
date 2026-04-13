@@ -84,6 +84,15 @@ function detectLocaleFromHeaders(): 'tr' | 'en' {
 }
 
 export default async function ProposalPage({ params }: ProposalPageProps) {
+  try {
+    return await renderProposalPage(params)
+  } catch (error) {
+    console.error('[ProposalPage] Server render error:', error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '')
+    throw error
+  }
+}
+
+async function renderProposalPage(params: ProposalPageProps['params']) {
   const detectedLocale = detectLocaleFromHeaders()
   const dateFnsLocale = detectedLocale === 'tr' ? tr : enUS
   const localeStr = detectedLocale === 'tr' ? 'tr-TR' : 'en-US'
