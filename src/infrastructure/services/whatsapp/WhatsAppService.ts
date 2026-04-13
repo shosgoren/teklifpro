@@ -75,7 +75,7 @@ export class WhatsAppService {
       // This works without a 24h conversation window (templates initiate conversations)
       const result = await this.sendTemplate({
         to: formattedTo,
-        templateName: 'proposal_notification',
+        templateName: 'teklif_bildirimi',
         language: 'tr',
         parameters: {
           '1': params.customerName,
