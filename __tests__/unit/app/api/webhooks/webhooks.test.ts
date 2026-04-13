@@ -41,6 +41,7 @@ jest.mock('@/shared/utils/prisma', () => ({
     },
     parasutSyncLog: {
       findFirst: jest.fn().mockResolvedValue(null),
+      findUnique: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockResolvedValue({ id: 'sync-1' }),
     },
   },

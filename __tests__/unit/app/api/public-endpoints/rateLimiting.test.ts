@@ -13,6 +13,7 @@
 jest.mock('@/shared/utils/prisma', () => ({
   prisma: {
     proposal: {
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
     },
@@ -78,7 +79,7 @@ describe('Public Endpoint Rate Limiting', () => {
 
     it('gecerli token ile 200 donmeli', async () => {
       const { prisma } = require('@/shared/utils/prisma');
-      prisma.proposal.findUnique.mockResolvedValueOnce({
+      prisma.proposal.findFirst.mockResolvedValueOnce({
         id: 'prop-1',
         totalViewDuration: 100,
       });

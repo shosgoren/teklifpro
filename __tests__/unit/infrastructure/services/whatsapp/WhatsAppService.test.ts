@@ -181,35 +181,7 @@ describe('WhatsAppService', () => {
       companyName: 'Acme Ltd',
     };
 
-    it('Basarili interactive mesaj gonderimi', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          messaging_product: 'whatsapp',
-          contacts: [{ input: '905321234567', wa_id: '905321234567' }],
-          messages: [{ id: 'wamid.interactive123' }],
-        }),
-      });
-
-      const result = await service.sendProposalLink(proposalParams);
-      expect(result.success).toBe(true);
-      expect(result.messageId).toBe('wamid.interactive123');
-
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.type).toBe('interactive');
-      expect(body.interactive.body.text).toContain('Ali Yilmaz');
-    });
-
-    it('Interactive basarisiz, template fallback basarili olmali', async () => {
-      // Interactive mesaj basarisiz (CTA URL)
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ error: { message: 'Template required' } }),
-      });
-
-      // hello_world template fallback basarili
+    it('Basarili template mesaj gonderimi', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -220,37 +192,21 @@ describe('WhatsAppService', () => {
         }),
       });
 
-      // Follow-up text message with proposal link
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          messaging_product: 'whatsapp',
-          contacts: [{ input: '905321234567', wa_id: '905321234567' }],
-          messages: [{ id: 'wamid.text123' }],
-        }),
-      });
-
       const result = await service.sendProposalLink(proposalParams);
       expect(result.success).toBe(true);
       expect(result.messageId).toBe('wamid.template123');
-      // 3 calls: CTA URL (fail) + template (ok) + text follow-up (ok)
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.type).toBe('template');
+      expect(body.template.name).toBe('teklif_bildirimi');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    it('Her iki yontem de basarisiz ise hata dondurmeli', async () => {
-      // Interactive basarisiz
+    it('Template basarisiz ise hata dondurmeli', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: async () => ({ error: { message: 'Interactive failed' } }),
-      });
-
-      // Template de basarisiz
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: async () => ({ error: { message: 'Template also failed' } }),
+        json: async () => ({ error: { message: 'Template failed' } }),
       });
 
       const result = await service.sendProposalLink(proposalParams);

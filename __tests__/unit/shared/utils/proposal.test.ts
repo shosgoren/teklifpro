@@ -39,15 +39,15 @@ describe('Proposal Utilities', () => {
 
   // Herkese açık token oluşturma testleri
   describe('generatePublicToken', () => {
-    it('24 karakterli token oluşturmalıdır', () => {
+    it('64 karakterli hex token oluşturmalıdır', () => {
       const token = generatePublicToken();
-      expect(token).toHaveLength(24);
+      expect(token).toHaveLength(64);
     });
 
-    it('Alphanumerik karakterlerden oluşmalıdır', () => {
+    it('Hex karakterlerden oluşmalıdır', () => {
       const token = generatePublicToken();
-      const alphanumericRegex = /^[a-zA-Z0-9]+$/;
-      expect(token).toMatch(alphanumericRegex);
+      const hexRegex = /^[a-f0-9]+$/;
+      expect(token).toMatch(hexRegex);
     });
 
     it('Her çağrıda farklı token oluşturmalıdır', () => {

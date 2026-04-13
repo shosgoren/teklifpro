@@ -71,6 +71,7 @@ describe('Proposals Verify Phone API', () => {
   beforeEach(async () => {
     jest.resetModules()
     mockFindFirst.mockReset()
+    process.env.NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || 'test-secret'
     // Re-import to reset in-memory rate limit map
     const route = await import('@/app/api/proposals/verify-phone/route')
     POST = route.POST
