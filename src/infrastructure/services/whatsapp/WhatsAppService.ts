@@ -160,20 +160,24 @@ export class WhatsAppService {
       })
     }
 
+    const payload = {
+      messaging_product: 'whatsapp',
+      to: params.to,
+      type: 'template',
+      template: {
+        name: params.templateName,
+        language: { code: params.language },
+        components,
+      },
+    }
+
+    logger.info('Template payload', { payload: JSON.stringify(payload) })
+
     return this.request<WhatsAppMessageResponse>(
       `${this.phoneNumberId}/messages`,
       {
         method: 'POST',
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: params.to,
-          type: 'template',
-          template: {
-            name: params.templateName,
-            language: { code: params.language },
-            components,
-          },
-        }),
+        body: JSON.stringify(payload),
       }
     )
   }
