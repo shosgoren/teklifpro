@@ -475,6 +475,9 @@
       "eDocFailed": "Failed to send e-document",
       "eDocError": "E-document sending error"
     },
+    "revisionRequest": "Revision Request",
+    "rejectionInfo": "Rejection Notice",
+    "customerResponse": "Customer response",
     "activityHistory": "Activity History",
     "noActivity": "No activity yet.",
     "customerInfo": "Customer Information",

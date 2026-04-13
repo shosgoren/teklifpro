@@ -475,6 +475,9 @@
       "eDocFailed": "E-belge gönderilemedi",
       "eDocError": "E-belge gönderme hatası"
     },
+    "revisionRequest": "Revize Talebi",
+    "rejectionInfo": "Ret Bildirimi",
+    "customerResponse": "Müşteri yanıtı",
     "activityHistory": "Faaliyet Geçmişi",
     "noActivity": "Henuz faaliyet yok.",
     "customerInfo": "Müşteri Bilgileri",

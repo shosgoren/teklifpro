@@ -790,6 +790,51 @@ export default function ProposalDetailPage() {
               </div>
             </Card>
 
+            {/* Customer Response: Revision Note or Rejection Reason */}
+            {proposal.status === 'REVISION_REQUESTED' && proposal.revisionNote && (
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-orange-500">
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-white flex items-center justify-center shrink-0">
+                      <AlertCircle className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('revisionRequest')}</h3>
+                      <p className="text-[10px] text-gray-400">{t('customerResponse')}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-orange-50 dark:bg-orange-950/20 rounded-xl border border-orange-100 dark:border-orange-900/30">
+                    <p className="text-sm text-orange-800 dark:text-orange-300 whitespace-pre-wrap leading-relaxed">{proposal.revisionNote}</p>
+                  </div>
+                  {proposal.respondedAt && (
+                    <p className="text-[10px] text-gray-400 mt-2">{new Date(proposal.respondedAt).toLocaleString(dateLocale)}</p>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {proposal.status === 'REJECTED' && proposal.rejectionReason && (
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-red-500">
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shrink-0">
+                      <XCircle className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('rejectionInfo')}</h3>
+                      <p className="text-[10px] text-gray-400">{t('customerResponse')}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900/30">
+                    <p className="text-sm text-red-800 dark:text-red-300 whitespace-pre-wrap leading-relaxed">{proposal.rejectionReason}</p>
+                  </div>
+                  {proposal.respondedAt && (
+                    <p className="text-[10px] text-gray-400 mt-2">{new Date(proposal.respondedAt).toLocaleString(dateLocale)}</p>
+                  )}
+                </div>
+              </Card>
+            )}
+
             {/* Digital Signature */}
             {proposal.signatureData && proposal.status === 'ACCEPTED' && (
               <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
