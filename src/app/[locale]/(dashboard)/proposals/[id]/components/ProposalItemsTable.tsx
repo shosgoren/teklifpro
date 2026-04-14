@@ -30,6 +30,7 @@ interface ProposalItemsTableProps {
     paymentTerms?: string;
     deliveryTerms?: string;
     title?: string;
+    proposalType?: string;
   };
   items: ProposalItem[];
   status: ProposalStatus;
@@ -40,6 +41,7 @@ interface ProposalItemsTableProps {
 
 export function ProposalItemsTable({ proposal, items, status, statusLabel, formatDate, formatAmount }: ProposalItemsTableProps) {
   const t = useTranslations('proposals');
+  const isUnofficial = proposal.proposalType === 'UNOFFICIAL';
 
   return (
     <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
@@ -99,7 +101,7 @@ export function ProposalItemsTable({ proposal, items, status, statusLabel, forma
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('quantity')}</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('unitPrice')}</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('discount')}</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('vat')}</th>
+                  {!isUnofficial && <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('vat')}</th>}
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('total')}</th>
                 </tr>
               </thead>
@@ -115,7 +117,7 @@ export function ProposalItemsTable({ proposal, items, status, statusLabel, forma
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{item.quantity}</td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{formatAmount(Number(item.unitPrice) || 0)}</td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">%{Number(item.discountRate) || 0}</td>
-                    <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">%{Number(item.vatRate) || 0}</td>
+                    {!isUnofficial && <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">%{Number(item.vatRate) || 0}</td>}
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                       {formatAmount(Number(item.lineTotal) || 0)}
                     </td>
@@ -146,10 +148,10 @@ export function ProposalItemsTable({ proposal, items, status, statusLabel, forma
                     <span className="text-gray-400 text-xs">{t('discount')}</span>
                     <p className="text-gray-700 dark:text-gray-300">%{Number(item.discountRate) || 0}</p>
                   </div>
-                  <div>
+                  {!isUnofficial && <div>
                     <span className="text-gray-400 text-xs">{t('vat')}</span>
                     <p className="text-gray-700 dark:text-gray-300">%{Number(item.vatRate) || 0}</p>
-                  </div>
+                  </div>}
                 </div>
                 <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
                   <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{t('total')}</span>
@@ -175,10 +177,12 @@ export function ProposalItemsTable({ proposal, items, status, statusLabel, forma
                 <span>-{formatAmount(Number(proposal.discountAmount))}</span>
               </div>
             )}
-            <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-              <span>{t('kdv')}</span>
-              <span>{formatAmount(Number(proposal.vatTotal) || 0)}</span>
-            </div>
+            {!isUnofficial && (
+              <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                <span>{t('kdv')}</span>
+                <span>{formatAmount(Number(proposal.vatTotal) || 0)}</span>
+              </div>
+            )}
             {/* Grand total with gradient bg */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 mt-2">
               <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">

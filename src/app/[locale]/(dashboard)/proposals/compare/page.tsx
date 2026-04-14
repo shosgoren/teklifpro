@@ -34,6 +34,7 @@ interface Proposal {
   currency: string;
   createdAt: string;
   expiresAt: string;
+  proposalType?: string;
   customer: { name: string };
   items: ProposalItem[];
 }
@@ -348,10 +349,10 @@ function ProposalColumn({
               <span className="text-gray-500 dark:text-gray-400">{t('subtotal')}</span>
               <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.subtotal), proposal.currency, dateLocale)}</span>
             </div>
-            <div className="flex justify-between">
+            {proposal.proposalType !== 'UNOFFICIAL' && <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">{t('vat')}</span>
               <span className="text-gray-700 dark:text-gray-300">{formatCurrency(Number(proposal.vatTotal), proposal.currency, dateLocale)}</span>
-            </div>
+            </div>}
             <div className="flex justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
               <span className="text-gray-900 dark:text-gray-100">{t('total')}</span>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -653,7 +654,7 @@ export default function ProposalComparePage() {
                           selectedProposals.filter((o) => o.id !== p.id).map((o) => Number(o.vatTotal))
                         )}`}
                       >
-                        {formatCurrency(Number(p.vatTotal), p.currency, dateLocale)}
+                        {p.proposalType === 'UNOFFICIAL' ? '-' : formatCurrency(Number(p.vatTotal), p.currency, dateLocale)}
                       </td>
                     ))}
                   </tr>

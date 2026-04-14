@@ -280,6 +280,7 @@ function ProductSelectionStep({
   onReorderItems,
   generalDiscount,
   onGeneralDiscountChange,
+  proposalType,
 }: {
   items: ProposalFormData['items']
   onAddItem: (item: ProposalFormData['items'][0]) => void
@@ -287,6 +288,7 @@ function ProductSelectionStep({
   onRemoveItem: (index: number) => void
   onReorderItems: (items: ProposalFormData['items']) => void
   generalDiscount: ProposalFormData['generalDiscount']
+  proposalType?: string
   onGeneralDiscountChange: (gd: ProposalFormData['generalDiscount']) => void
 }) {
   const t = useTranslations()
@@ -482,7 +484,7 @@ function ProductSelectionStep({
                             -{discountDisplay}
                           </Badge>
                         )}
-                        <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>
+                        {proposalType !== 'UNOFFICIAL' && <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -621,8 +623,8 @@ function ProductSelectionStep({
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
+                    <div className={`grid ${proposalType !== 'UNOFFICIAL' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
+                      {proposalType !== 'UNOFFICIAL' && <div>
                         <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.vat')}</Label>
                         <Select
                           value={String(item.vatPercent)}
@@ -640,7 +642,7 @@ function ProductSelectionStep({
                             <SelectItem value="20">%20</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
+                      </div>}
                       <div>
                         <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.total')}</Label>
                         <div className="h-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
@@ -652,7 +654,7 @@ function ProductSelectionStep({
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-gray-700">
                       <span>{t('proposals.subtotal')}: {formatCurrency(item.quantity * item.unitPrice)}</span>
                       {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(discountAmount)}</span>}
-                      <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>
+                      {proposalType !== 'UNOFFICIAL' && <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>}
                     </div>
 
                     <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -763,10 +765,10 @@ function ProductSelectionStep({
                 <p className="text-lg font-bold text-red-300">-{formatCurrency(totals.discountAmount)}</p>
               </div>
             )}
-            <div>
+            {proposalType !== 'UNOFFICIAL' && <div>
               <p className="text-xs text-blue-200 mb-0.5">{t('proposals.vat')}</p>
               <p className="text-lg font-bold">{formatCurrency(totals.vatAmount)}</p>
-            </div>
+            </div>}
             <div className="sm:text-right">
               <p className="text-xs text-blue-200 mb-0.5">{t('proposals.total')}</p>
               <p className="text-2xl font-extrabold">{formatCurrency(totals.grandTotal)}</p>
@@ -1042,7 +1044,7 @@ function PreviewStep({
                     <td className="py-3">{item.name}</td>
                     <td className="text-right">{item.quantity}</td>
                     <td className="text-right">{formatCurrency(item.unitPrice)}</td>
-                    <td className="text-right font-medium">{formatCurrency(calculateLineTotal(item, 'with_vat'))}</td>
+                    <td className="text-right font-medium">{formatCurrency(calculateLineTotal(item, data.proposalType === 'UNOFFICIAL' ? 'before_vat' : 'with_vat'))}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1062,10 +1064,10 @@ function PreviewStep({
                     <span>-{formatCurrency(totals.discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between mb-2">
+                {data.proposalType !== 'UNOFFICIAL' && <div className="flex justify-between mb-2">
                   <span className="text-muted-foreground">{t('proposals.vat')}</span>
                   <span>{formatCurrency(totals.vatAmount)}</span>
-                </div>
+                </div>}
                 <Separator className="my-2" />
                 <div className="flex justify-between text-base font-bold">
                   <span>{t('proposals.total')}</span>
@@ -1625,6 +1627,7 @@ export default function EditProposalPage() {
                   onReorderItems={handleReorderItems}
                   generalDiscount={formData.generalDiscount}
                   onGeneralDiscountChange={(gd) => setValue('generalDiscount', gd)}
+                  proposalType={formData.proposalType}
                 />
               )}
               {currentStep === 2 && (
