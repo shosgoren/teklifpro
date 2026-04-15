@@ -19,6 +19,7 @@
     "noData": "No data found",
     "error": "An error occurred",
     "success": "Operation successful",
+    "retry": "Retry",
     "required": "This field is required",
     "currency": "₺",
     "actions": "Actions",

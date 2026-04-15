@@ -124,6 +124,8 @@ const customerSchema = z.object({
 const productItemSchema = z.object({
   id: z.string().min(1, 'Product is required'),
   name: z.string(),
+  code: z.string().nullable().optional(),
+  unit: z.string().nullable().optional(),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
   unitPrice: z.coerce.number().min(0, 'Price cannot be negative'),
   discountType: z.enum(['percent', 'fixed']).default('percent'),
@@ -611,6 +613,8 @@ function ProductTable({
       onUpdateItem(replacingIndex, {
         id: product.id,
         name: product.name,
+        code: product.code,
+        unit: product.unit,
         unitPrice: product.listPrice || 0,
         vatPercent: product.vatRate || 18,
       })
@@ -619,6 +623,8 @@ function ProductTable({
       onAddItem({
         id: product.id,
         name: product.name,
+        code: product.code,
+        unit: product.unit,
         quantity: 1,
         unitPrice: product.listPrice || 0,
         discountType: 'percent',
@@ -707,7 +713,12 @@ function ProductTable({
         {items.length > 0 ? (
           <div>
             {/* Table header */}
-            <div className="hidden sm:grid grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px] gap-2 px-4 py-2 border-b bg-gray-50 dark:bg-gray-800/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider items-center">
+            <div className={cn(
+              "hidden sm:grid gap-2 px-4 py-2 border-b bg-gray-50 dark:bg-gray-800/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider items-center",
+              isUnofficial
+                ? "grid-cols-[auto_1fr_80px_100px_80px_100px_36px]"
+                : "grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px]"
+            )}>
               <div className="w-6" />
               <div>{t('proposals.product')}</div>
               <div className="text-center">{t('proposals.qty')}</div>
@@ -751,7 +762,12 @@ function ProductTable({
                   )}
                 >
                   {/* Desktop row */}
-                  <div className="hidden sm:grid grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px] gap-2 px-4 py-2 items-center">
+                  <div className={cn(
+                    "hidden sm:grid gap-2 px-4 py-2 items-center",
+                    isUnofficial
+                      ? "grid-cols-[auto_1fr_80px_100px_80px_100px_36px]"
+                      : "grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px]"
+                  )}>
                     {/* Drag handle */}
                     <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 w-6">
                       <GripVertical className="h-4 w-4" />
@@ -765,6 +781,11 @@ function ProductTable({
                         className="text-left w-full"
                       >
                         <p className="font-medium text-sm truncate">{item.name}</p>
+                        {(item.code || item.unit) && (
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {[item.code, item.unit].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
                       </button>
                     </div>
 
@@ -873,8 +894,10 @@ function ProductTable({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{item.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {item.code && <span className="text-[10px] text-muted-foreground font-mono">{item.code}</span>}
                           <span className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)}</span>
+                          {item.unit && <span className="text-[10px] text-muted-foreground">/ {item.unit}</span>}
                           {hasDiscount && (
                             <Badge className="text-[10px] px-1 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
                               -{discountDisplay}
@@ -1507,7 +1530,7 @@ export default function CreateProposalPage() {
       return {
         name: item.name,
         description: '',
-        unit: 'Adet',
+        unit: item.unit || 'Adet',
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
         discountRate: Math.round(discountRate * 100) / 100,

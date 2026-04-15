@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
-import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3, Calendar, User, ExternalLink, DollarSign, X } from 'lucide-react';
+import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3, Calendar, User, ExternalLink, DollarSign, X, RefreshCw } from 'lucide-react';
 import { FilterEmptyState } from '@/shared/components/FilterEmptyState';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
@@ -112,7 +112,11 @@ export default function ProposalsPage() {
   const { data, error, isLoading, mutate } = useSWR(
     `/api/v1/proposals?${queryParams.toString()}`,
     fetcher,
-    swrDefaultOptions
+    {
+      ...swrDefaultOptions,
+      errorRetryCount: 3,
+      errorRetryInterval: 2000,
+    }
   );
 
   // Kanban: fetch all proposals (no pagination, no filter)
@@ -216,6 +220,15 @@ export default function ProposalsPage() {
               </div>
               <p className="text-base font-semibold text-red-700 dark:text-red-400">{t('errorLoading')}</p>
               <p className="text-sm text-muted-foreground mt-1">{t('errorLoadingHint')}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 gap-2"
+                onClick={() => mutate()}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {tc('retry')}
+              </Button>
             </div>
           </div>
         </div>

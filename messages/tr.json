@@ -19,6 +19,7 @@
     "noData": "Veri bulunamadı",
     "error": "Bir hata oluştu",
     "success": "İşlem başarılı",
+    "retry": "Tekrar Dene",
     "required": "Bu alan zorunludur",
     "currency": "₺",
     "actions": "İşlemler",
