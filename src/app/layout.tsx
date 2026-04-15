@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import CookieConsent from '@/presentation/components/CookieConsent';
 import ThemeProvider from '@/shared/providers/ThemeProvider';
+import { DynamicFavicon } from '@/shared/components/DynamicFavicon';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -91,8 +92,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
     apple: [
@@ -220,6 +221,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <DynamicFavicon />
           {children}
           <Toaster position="top-right" richColors />
           <CookieConsent />
