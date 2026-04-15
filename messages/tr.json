@@ -337,6 +337,8 @@
     "emailWillSentTo": "E-posta şu adrese gönderilecek:",
     "whatsappMessageWillSentTo": "WhatsApp mesajı şu numaraya gönderilecek:",
     "saved": "Teklif başarıyla kaydedildi.",
+    "draftRestored": "Önceki taslak yüklendi",
+    "draftDiscard": "Taslağı Sil",
     "updated": "Teklif başarıyla güncellendi.",
     "editProposal": "Teklifi Düzenle",
     "editDescription": "Mevcut teklif bilgilerini güncelleyin.",

@@ -712,21 +712,10 @@ function ProductTable({
       <div className="flex-1 overflow-y-auto">
         {items.length > 0 ? (
           <div>
-            {/* Table header */}
-            <div className={cn(
-              "hidden sm:grid gap-2 px-4 py-2 border-b bg-gray-50 dark:bg-gray-800/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider items-center",
-              isUnofficial
-                ? "grid-cols-[auto_1fr_80px_100px_80px_100px_36px]"
-                : "grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px]"
-            )}>
-              <div className="w-6" />
-              <div>{t('proposals.product')}</div>
-              <div className="text-center">{t('proposals.qty')}</div>
-              <div className="text-right">{t('proposals.unitPrice')}</div>
-              <div className="text-center">{t('proposals.discount')}</div>
-              {!isUnofficial && <div className="text-center">{t('proposals.vat')}</div>}
-              <div className="text-right">{t('proposals.amount')}</div>
-              <div />
+            {/* Table header - minimal */}
+            <div className="hidden sm:flex items-center justify-between px-4 py-2 border-b bg-gray-50 dark:bg-gray-800/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <span>{t('proposals.product')}</span>
+              <span>{t('proposals.amount')}</span>
             </div>
 
             {/* Table rows */}
@@ -761,129 +750,131 @@ function ProductTable({
                     isExpanded && 'bg-blue-50/30 dark:bg-blue-950/10'
                   )}
                 >
-                  {/* Desktop row */}
-                  <div className={cn(
-                    "hidden sm:grid gap-2 px-4 py-2 items-center",
-                    isUnofficial
-                      ? "grid-cols-[auto_1fr_80px_100px_80px_100px_36px]"
-                      : "grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px]"
-                  )}>
-                    {/* Drag handle */}
-                    <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 w-6">
-                      <GripVertical className="h-4 w-4" />
-                    </div>
-
-                    {/* Product name */}
-                    <div className="min-w-0">
+                  {/* Desktop row - two-line card */}
+                  <div className="hidden sm:block px-4 py-2.5">
+                    {/* Top: Product info + total + actions */}
+                    <div className="flex items-start gap-2">
+                      <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 mt-0.5 shrink-0">
+                        <GripVertical className="h-4 w-4" />
+                      </div>
                       <button
                         type="button"
                         onClick={() => setExpandedRow(isExpanded ? null : index)}
-                        className="text-left w-full"
+                        className="flex-1 min-w-0 text-left"
                       >
-                        <p className="font-medium text-sm truncate">{item.name}</p>
-                        {(item.code || item.unit) && (
-                          <p className="text-[11px] text-muted-foreground truncate">
-                            {[item.code, item.unit].filter(Boolean).join(' · ')}
-                          </p>
+                        <p className="font-semibold text-sm leading-snug">{item.name}</p>
+                        {item.code && (
+                          <span className="text-[11px] text-muted-foreground font-mono">{item.code}</span>
                         )}
                       </button>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="flex items-center justify-center gap-0.5">
+                      <div className="text-right shrink-0 ml-2">
+                        <span className="font-bold text-sm">{formatCurrency(lineTotal)}</span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
-                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        onClick={() => onRemoveItem(index)}
+                        className="w-7 h-7 rounded flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
                       >
-                        <Minus className="h-3 w-3" />
-                      </button>
-                      <Input
-                        type="number"
-                        min="1"
-                        inputMode="numeric"
-                        value={item.quantity}
-                        onFocus={handleNumFocus}
-                        onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
-                        className="w-10 h-7 text-center text-xs font-semibold px-0 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })}
-                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        <Plus className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
 
-                    {/* Unit Price */}
-                    <div>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice}
-                        onFocus={handleNumFocus}
-                        onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
-                        className="h-7 text-right text-xs font-medium rounded px-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      />
-                    </div>
-
-                    {/* Discount */}
-                    <div className="text-center">
-                      {hasDiscount ? (
-                        <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 cursor-pointer"
-                          onClick={() => setExpandedRow(isExpanded ? null : index)}
-                        >
-                          -{discountDisplay}
-                        </Badge>
-                      ) : (
+                    {/* Bottom: Controls row */}
+                    <div className="flex items-center gap-3 mt-1.5 ml-6">
+                      {/* Quantity */}
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[10px] text-muted-foreground mr-1">{t('proposals.qty')}</span>
                         <button
                           type="button"
-                          onClick={() => setExpandedRow(isExpanded ? null : index)}
-                          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
-                          -
+                          <Minus className="h-3 w-3" />
                         </button>
+                        <Input
+                          type="number"
+                          min="1"
+                          inputMode="numeric"
+                          value={item.quantity}
+                          onFocus={handleNumFocus}
+                          onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
+                          className="w-10 h-7 text-center text-xs font-semibold px-0 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                        {item.unit && <span className="text-[10px] text-muted-foreground ml-0.5">/ {item.unit}</span>}
+                      </div>
+
+                      <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+
+                      {/* Unit Price */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">{t('proposals.unitPrice')}</span>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onFocus={handleNumFocus}
+                          onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
+                          className="w-24 h-7 text-right text-xs font-medium rounded px-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                      </div>
+
+                      <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+
+                      {/* Discount */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">{t('proposals.discount')}</span>
+                        {hasDiscount ? (
+                          <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 cursor-pointer"
+                            onClick={() => setExpandedRow(isExpanded ? null : index)}
+                          >
+                            -{discountDisplay}
+                          </Badge>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedRow(isExpanded ? null : index)}
+                            className="text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1.5"
+                          >
+                            -
+                          </button>
+                        )}
+                      </div>
+
+                      {/* VAT */}
+                      {!isUnofficial && (
+                        <>
+                          <div className="w-px h-4 bg-gray-200 dark:bg-gray-700" />
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] text-muted-foreground">{t('proposals.vat')}</span>
+                            <Select
+                              value={String(item.vatPercent)}
+                              onValueChange={(v) => onUpdateItem(index, { vatPercent: Number(v) })}
+                            >
+                              <SelectTrigger className="h-7 rounded text-[11px] font-medium px-1.5 w-16">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">%0</SelectItem>
+                                <SelectItem value="1">%1</SelectItem>
+                                <SelectItem value="8">%8</SelectItem>
+                                <SelectItem value="10">%10</SelectItem>
+                                <SelectItem value="18">%18</SelectItem>
+                                <SelectItem value="20">%20</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </>
                       )}
                     </div>
-
-                    {/* VAT */}
-                    {!isUnofficial && (
-                      <div className="text-center">
-                        <Select
-                          value={String(item.vatPercent)}
-                          onValueChange={(v) => onUpdateItem(index, { vatPercent: Number(v) })}
-                        >
-                          <SelectTrigger className="h-7 rounded text-[11px] font-medium px-1.5 w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">%0</SelectItem>
-                            <SelectItem value="1">%1</SelectItem>
-                            <SelectItem value="8">%8</SelectItem>
-                            <SelectItem value="10">%10</SelectItem>
-                            <SelectItem value="18">%18</SelectItem>
-                            <SelectItem value="20">%20</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* Line Total */}
-                    <div className="text-right">
-                      <span className="font-bold text-sm">{formatCurrency(lineTotal)}</span>
-                    </div>
-
-                    {/* Delete */}
-                    <button
-                      type="button"
-                      onClick={() => onRemoveItem(index)}
-                      className="w-7 h-7 rounded flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
                   </div>
 
                   {/* Mobile row */}
@@ -1475,7 +1466,16 @@ export default function CreateProposalPage() {
         if (parsed.deliveryDate) parsed.deliveryDate = new Date(parsed.deliveryDate)
         if (parsed.installationDate) parsed.installationDate = new Date(parsed.installationDate)
         reset(parsed)
-        toast.info(t('proposals.saved'))
+        toast(t('proposals.draftRestored'), {
+          action: {
+            label: t('proposals.draftDiscard'),
+            onClick: () => {
+              try { localStorage.removeItem(AUTOSAVE_KEY) } catch { /* ignore */ }
+              reset(undefined)
+              toast.success(t('common.success'))
+            },
+          },
+        })
       }
     } catch {
       // Ignore parse errors

@@ -337,6 +337,8 @@
     "emailWillSentTo": "Email will be sent to:",
     "whatsappMessageWillSentTo": "WhatsApp message will be sent to:",
     "saved": "Proposal saved successfully.",
+    "draftRestored": "Previous draft loaded",
+    "draftDiscard": "Discard Draft",
     "updated": "Proposal updated successfully.",
     "editProposal": "Edit Proposal",
     "editDescription": "Update existing proposal information.",
