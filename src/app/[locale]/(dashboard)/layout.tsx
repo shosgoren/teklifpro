@@ -27,6 +27,9 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { NotificationCenter } from '@/presentation/components/organisms/NotificationCenter'
+import useSWR from 'swr'
+
+const tenantFetcher = (url: string) => fetch(url).then(r => r.ok ? r.json() : null)
 
 interface NavItem {
   nameKey: string
@@ -122,6 +125,11 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   // Dynamic favicon moved to root layout DynamicFavicon component
+
+  // Fetch tenant info for sidebar branding
+  const { data: tenantData } = useSWR('/api/v1/settings/logo', tenantFetcher, { revalidateOnFocus: false })
+  const tenantLogo: string | null = tenantData?.data?.logo || null
+  const tenantName: string | null = tenantData?.data?.name || null
 
   useEffect(() => {
     setMounted(true)
@@ -219,13 +227,21 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         {/* Logo + Collapse Toggle */}
         <div className={`border-b border-slate-200 dark:border-slate-700/50 ${collapsed ? 'px-3 py-5' : 'px-6 py-8'}`}>
           <div className={`flex items-center ${collapsed ? 'flex-col gap-2' : 'gap-3'}`}>
-            <div className={`rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0 ${collapsed ? 'w-10 h-10' : 'w-10 h-10'}`}>
-              <span className="text-white font-bold text-lg">TP</span>
-            </div>
+            {tenantLogo ? (
+              <img
+                src={tenantLogo}
+                alt={tenantName || 'Logo'}
+                className={`rounded-lg object-contain flex-shrink-0 shadow-lg ${collapsed ? 'w-10 h-10' : 'w-10 h-10'}`}
+              />
+            ) : (
+              <div className={`rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0 ${collapsed ? 'w-10 h-10' : 'w-10 h-10'}`}>
+                <span className="text-white font-bold text-lg">{tenantName ? tenantName.charAt(0).toUpperCase() : 'TP'}</span>
+              </div>
+            )}
             {!collapsed && (
               <>
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">TeklifPro</h1>
+                  <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate">{tenantName || 'TeklifPro'}</h1>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {t('quotePlatform')}
                   </p>
