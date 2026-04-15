@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import useSWR from 'swr'
 import { swrStaticOptions } from '@/shared/utils/swrConfig'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -19,24 +19,23 @@ import {
   Send,
   FileText,
   MessageSquare,
-  ChevronRight,
-  ChevronLeft,
   Check,
   Building2,
   Package,
-  Settings,
   Eye,
   Minus,
   Percent,
   ChevronDown,
+  ChevronUp,
   ArrowLeftRight,
   Copy as CopyIcon,
   Mic,
+  Save,
+  Keyboard,
 } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Label } from '@/shared/components/ui/label'
 import { Separator } from '@/shared/components/ui/separator'
@@ -70,6 +69,9 @@ import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNote
 import { DatePicker } from '@/shared/components/ui/date-picker'
 
 const logger = new Logger('ProposalNewPage')
+
+const AUTOSAVE_KEY = 'teklifpro_proposal_draft'
+const AUTOSAVE_INTERVAL = 30_000
 
 // ── Interfaces ───────────────────────────────────────────
 
@@ -154,169 +156,419 @@ type ProposalFormData = z.infer<typeof proposalFormSchema>
 
 const apiFetcher = (url: string) =>
   fetch(url).then(res => {
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return res.json()
   }).then(data => {
-    if (!data.success) throw new Error(data.error || 'API error');
-    return data;
-  });
+    if (!data.success) throw new Error(data.error || 'API error')
+    return data
+  })
 
-// ── Step 1: Customer Selection ────────────────────────────
+// ── Helper: effective item for calculations ──────────────
 
-function CustomerSelectionStep({ selectedCustomer, onSelect, proposalType, onProposalTypeChange }: {
-  selectedCustomer: ProposalFormData['customer'] | null
-  onSelect: (customer: ProposalFormData['customer'], contact: Pick<CustomerContact, 'id' | 'name'>) => void
-  proposalType: string
-  onProposalTypeChange: (type: string) => void
+function getEffectiveItem(item: ProposalFormData['items'][0]) {
+  if (item.discountType === 'fixed' && item.discountFixed > 0) {
+    const lineSubtotal = item.quantity * item.unitPrice
+    const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
+    return { ...item, discountPercent: Math.min(effectivePercent, 100) }
+  }
+  return item
+}
+
+function handleNumFocus(e: React.FocusEvent<HTMLInputElement>) {
+  e.target.select()
+}
+
+// ── LeftPanel ─────────────────────────────────────────────
+
+function LeftPanel({
+  formData,
+  onSelectCustomer,
+  onProposalTypeChange,
+  onChange,
+  onDateChange,
+  onVoiceNoteChange,
+  collapsed,
+  onToggleCollapse,
+}: {
+  formData: ProposalFormData
+  onSelectCustomer: (customer: ProposalFormData['customer']) => void
+  onProposalTypeChange: (type: 'OFFICIAL' | 'UNOFFICIAL') => void
+  onChange: (field: string, value: string | number | boolean | null) => void
+  onDateChange: (field: 'deliveryDate' | 'installationDate', value: Date | null) => void
+  onVoiceNoteChange: (data: string | null, duration: number | null) => void
+  collapsed: boolean
+  onToggleCollapse: () => void
 }) {
   const t = useTranslations()
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
+  const [customerOpen, setCustomerOpen] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
 
   const { data: customersData } = useSWR('/api/v1/customers?limit=100', apiFetcher, swrStaticOptions)
   const customers: Customer[] = customersData?.data?.customers ?? []
 
+  const { data: calendarData } = useSWR('/api/v1/calendar', apiFetcher, swrStaticOptions)
+  const disabledDeliveryDates: string[] = calendarData?.data?.disabledDeliveryDates ?? []
+  const disabledInstallationDates: string[] = calendarData?.data?.disabledInstallationDates ?? []
+
   const filteredCustomers = useMemo(() => {
-    if (!search) return customers
-    const q = search.toLowerCase()
+    if (!customerSearch) return customers
+    const q = customerSearch.toLowerCase()
     return customers.filter((c: Customer) =>
       c.name.toLowerCase().includes(q) ||
       (c.email && c.email.toLowerCase().includes(q)) ||
-      (c.phone && c.phone.includes(search))
+      (c.phone && c.phone.includes(customerSearch))
     )
-  }, [search, customers])
+  }, [customerSearch, customers])
 
   const handleSelectCustomer = (customer: Customer) => {
-    onSelect(
-      {
-        id: customer.id,
-        name: customer.name,
-        email: customer.email || '',
-        phone: customer.phone || '',
-        address: customer.address || '',
-        taxNumber: customer.taxNumber || '',
-        contactPersonId: customer.id,
-      },
-      { id: customer.id, name: customer.name }
-    )
-    setOpen(false)
-    setSearch('')
+    onSelectCustomer({
+      id: customer.id,
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
+      taxNumber: customer.taxNumber || '',
+      contactPersonId: customer.id,
+    })
+    setCustomerOpen(false)
+    setCustomerSearch('')
   }
 
-  const handleTypeChange = (newType: string) => {
-    if (newType !== proposalType) {
-      if (confirm(t('proposals.proposalTypeChangeConfirm'))) {
-        onProposalTypeChange(newType)
-      }
-    }
+  // Collapsed view for tablet (md-lg)
+  if (collapsed) {
+    return (
+      <div className="hidden md:flex xl:hidden flex-col items-center w-14 border-r bg-white dark:bg-gray-900 py-4 gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Expand panel"
+        >
+          <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+        </button>
+        <Separator />
+        <button
+          type="button"
+          className={cn(
+            'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
+            formData.proposalType === 'OFFICIAL'
+              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+              : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'
+          )}
+          title={formData.proposalType === 'OFFICIAL' ? t('proposals.proposalTypeOfficial') : t('proposals.proposalTypeUnofficial')}
+          onClick={() => onProposalTypeChange(formData.proposalType === 'OFFICIAL' ? 'UNOFFICIAL' : 'OFFICIAL')}
+        >
+          {formData.proposalType === 'OFFICIAL' ? <FileText className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          onClick={() => { onToggleCollapse(); setTimeout(() => setCustomerOpen(true), 200) }}
+          className={cn(
+            'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
+            formData.customer.id ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'
+          )}
+          title={formData.customer.name || t('proposals.selectCustomer')}
+        >
+          <Building2 className="h-4 w-4" />
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Proposal Type Toggle */}
-      <div>
-        <Label className="text-sm font-medium mb-2 block">{t('proposals.proposalType')}</Label>
-        <div className="grid grid-cols-2 gap-3">
+    <div className={cn(
+      'w-full md:w-72 xl:w-72 shrink-0 border-r bg-white dark:bg-gray-900 overflow-y-auto',
+      'md:block'
+    )}>
+      <div className="p-4 space-y-5">
+        {/* Collapse button for tablet */}
+        <div className="hidden md:flex xl:hidden justify-end">
           <button
             type="button"
-            onClick={() => handleTypeChange('OFFICIAL')}
-            className={cn(
-              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
-              proposalType === 'OFFICIAL'
-                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                : 'border-muted hover:border-muted-foreground/30'
-            )}
+            onClick={onToggleCollapse}
+            className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Collapse panel"
           >
-            <FileText className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">{t('proposals.proposalTypeOfficial')}</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.officialDescription')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTypeChange('UNOFFICIAL')}
-            className={cn(
-              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
-              proposalType === 'UNOFFICIAL'
-                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-500/20'
-                : 'border-muted hover:border-muted-foreground/30'
-            )}
-          >
-            <Eye className="h-5 w-5 text-amber-500" />
-            <span className="text-sm font-semibold">{t('proposals.proposalTypeUnofficial')}</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.unofficialDescription')}</span>
+            <ChevronDown className="h-4 w-4 rotate-90" />
           </button>
         </div>
-      </div>
 
-      {/* Customer Selection */}
-      <div>
-        <Label className="text-sm font-medium mb-2 block">
-          {t('proposals.steps.selectCustomer')}
-        </Label>
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn('w-full justify-start text-left font-normal h-12 rounded-xl', !selectedCustomer && 'text-muted-foreground')}
+        {/* Proposal Type Toggle */}
+        <div>
+          <Label className="text-xs font-medium mb-2 block text-muted-foreground uppercase tracking-wider">
+            {t('proposals.proposalType')}
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onProposalTypeChange('OFFICIAL')}
+              className={cn(
+                'flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center',
+                formData.proposalType === 'OFFICIAL'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-muted hover:border-muted-foreground/30'
+              )}
             >
-              <Building2 className="mr-2 h-4 w-4" />
-              {selectedCustomer ? selectedCustomer.name : t('proposals.selectCustomer')}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[340px] p-0" align="start">
-            <Command shouldFilter={false}>
-              <CommandInput placeholder={t('proposals.searchCustomer')} value={search} onValueChange={setSearch} />
-              <CommandList>
-                <CommandEmpty>{t('proposals.noCustomer')}</CommandEmpty>
-                <CommandGroup>
-                  {filteredCustomers.map((customer: Customer) => (
-                    <CommandItem key={customer.id} onSelect={() => handleSelectCustomer(customer)}>
-                      <div className="flex items-center gap-3 w-full">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                          {customer.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate">{customer.name}</p>
-                          {customer.email && <p className="text-xs text-muted-foreground truncate">{customer.email}</p>}
-                        </div>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
+              <FileText className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold">{t('proposals.proposalTypeOfficial')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onProposalTypeChange('UNOFFICIAL')}
+              className={cn(
+                'flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center',
+                formData.proposalType === 'UNOFFICIAL'
+                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-500/20'
+                  : 'border-muted hover:border-muted-foreground/30'
+              )}
+            >
+              <Eye className="h-4 w-4 text-amber-500" />
+              <span className="text-xs font-semibold">{t('proposals.proposalTypeUnofficial')}</span>
+            </button>
+          </div>
+        </div>
 
-      {selectedCustomer && (
-        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 p-5 relative overflow-hidden">
-          <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-emerald-200/30 dark:bg-emerald-800/20" />
-          <div className="relative flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-lg shadow-emerald-500/20">
-              {selectedCustomer.name.charAt(0).toUpperCase()}
+        <Separator />
+
+        {/* Customer Selection */}
+        <div>
+          <Label className="text-xs font-medium mb-2 block text-muted-foreground uppercase tracking-wider">
+            {t('proposals.steps.selectCustomer')}
+          </Label>
+          <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'w-full justify-start text-left font-normal h-10 rounded-xl text-sm',
+                  !formData.customer.id && 'text-muted-foreground'
+                )}
+              >
+                <Building2 className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {formData.customer.id ? formData.customer.name : t('proposals.selectCustomer')}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0" align="start">
+              <Command shouldFilter={false}>
+                <CommandInput
+                  placeholder={t('proposals.searchCustomer')}
+                  value={customerSearch}
+                  onValueChange={setCustomerSearch}
+                />
+                <CommandList>
+                  <CommandEmpty>{t('proposals.noCustomer')}</CommandEmpty>
+                  <CommandGroup>
+                    {filteredCustomers.map((customer: Customer) => (
+                      <CommandItem key={customer.id} onSelect={() => handleSelectCustomer(customer)}>
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                            {customer.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{customer.name}</p>
+                            {customer.email && <p className="text-[11px] text-muted-foreground truncate">{customer.email}</p>}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {/* Selected customer info */}
+          {formData.customer.id && (
+            <div className="mt-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                  {formData.customer.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-emerald-900 dark:text-emerald-100 truncate">{formData.customer.name}</p>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 truncate">{formData.customer.email}</p>
+                </div>
+                <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+              </div>
+              {(formData.customer.phone || formData.customer.taxNumber) && (
+                <div className="flex flex-wrap gap-x-3 mt-1.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                  {formData.customer.phone && <span>{formData.customer.phone}</span>}
+                  {formData.customer.taxNumber && <span>VKN: {formData.customer.taxNumber}</span>}
+                </div>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-emerald-900 dark:text-emerald-100">{selectedCustomer.name}</h3>
-                <Check className="h-5 w-5 text-emerald-600" />
-              </div>
-              <p className="text-sm text-emerald-700 dark:text-emerald-300">{selectedCustomer.email}</p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-                {selectedCustomer.phone && <span>{selectedCustomer.phone}</span>}
-                {selectedCustomer.taxNumber && <span>{t('customersPage.taxNumberPrefix')}: {selectedCustomer.taxNumber}</span>}
-              </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Title */}
+        <div>
+          <Label htmlFor="title" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t('proposals.title')}
+          </Label>
+          <Input
+            id="title"
+            value={formData.title || ''}
+            onChange={(e) => onChange('title', e.target.value)}
+            placeholder={t('proposals.create.proposalTitle')}
+            className="mt-1.5 h-9 rounded-lg text-sm"
+          />
+        </div>
+
+        {/* Validity */}
+        <div>
+          <Label htmlFor="validity" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t('proposals.validityDays')}
+          </Label>
+          <div className="flex items-center gap-2 mt-1.5">
+            <Input
+              id="validity"
+              type="number"
+              min="1"
+              max="365"
+              value={formData.validityDays || 30}
+              onChange={(e) => onChange('validityDays', parseInt(e.target.value) || 30)}
+              className="h-9 rounded-lg text-sm flex-1"
+            />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{t('proposals.days')}</span>
+          </div>
+        </div>
+
+        {/* Payment Terms */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t('proposals.paymentTerms')}
+          </Label>
+          <Select
+            value={formData.paymentTerms || 'Net 30'}
+            onValueChange={(value) => onChange('paymentTerms', value)}
+          >
+            <SelectTrigger className="mt-1.5 h-9 rounded-lg text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Due Upon Receipt">Due Upon Receipt</SelectItem>
+              <SelectItem value="Net 15">Net 15</SelectItem>
+              <SelectItem value="Net 30">Net 30</SelectItem>
+              <SelectItem value="Net 45">Net 45</SelectItem>
+              <SelectItem value="Net 60">Net 60</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Delivery Terms */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t('proposals.deliveryTerms')}
+          </Label>
+          <Select
+            value={formData.deliveryTerms || 'Standard'}
+            onValueChange={(value) => onChange('deliveryTerms', value)}
+          >
+            <SelectTrigger className="mt-1.5 h-9 rounded-lg text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Standard">Standard</SelectItem>
+              <SelectItem value="Express">Express</SelectItem>
+              <SelectItem value="Overnight">Overnight</SelectItem>
+              <SelectItem value="Same Day">Same Day</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Dates */}
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {t('proposals.deliveryDate')}
+            </Label>
+            <div className="mt-1.5">
+              <DatePicker
+                value={formData.deliveryDate ?? undefined}
+                onChange={(date) => onDateChange('deliveryDate', date ?? null)}
+                disabledDates={disabledDeliveryDates}
+                placeholder={t('proposals.selectDeliveryDate')}
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {t('proposals.installationDate')}
+            </Label>
+            <div className="mt-1.5">
+              <DatePicker
+                value={formData.installationDate ?? undefined}
+                onChange={(date) => onDateChange('installationDate', date ?? null)}
+                disabledDates={disabledInstallationDates}
+                placeholder={t('proposals.selectInstallationDate')}
+                minDate={formData.deliveryDate ?? undefined}
+              />
             </div>
           </div>
         </div>
-      )}
+
+        {/* Notes */}
+        <div>
+          <Label htmlFor="notes" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t('proposals.notes')}
+          </Label>
+          <Textarea
+            id="notes"
+            value={formData.notes || ''}
+            onChange={(e) => onChange('notes', e.target.value)}
+            placeholder={t('proposals.create.notes')}
+            className="mt-1.5 h-20 resize-none rounded-lg text-sm"
+          />
+        </div>
+
+        {/* Terms & Conditions */}
+        <div>
+          <Label htmlFor="terms" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {t('proposals.termsConditions')}
+          </Label>
+          <Textarea
+            id="terms"
+            value={formData.termsAndConditions || ''}
+            onChange={(e) => onChange('termsAndConditions', e.target.value)}
+            className="mt-1.5 h-20 resize-none rounded-lg text-sm"
+          />
+        </div>
+
+        {/* Voice Note */}
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
+            <Mic className="h-3.5 w-3.5 text-blue-500" />
+            {t('proposals.voiceNote')}
+          </Label>
+          <p className="text-[11px] text-muted-foreground mb-2">{t('proposals.voiceNoteDesc')}</p>
+          <VoiceNoteRecorder
+            value={formData.voiceNoteData ?? null}
+            duration={formData.voiceNoteDuration ?? null}
+            onChange={onVoiceNoteChange}
+            maxDuration={60}
+            labels={{
+              record: t('proposals.voiceRecord'),
+              recording: t('proposals.voiceRecording'),
+              stop: t('proposals.voiceStop'),
+              play: t('proposals.voiceReady'),
+              reRecord: t('proposals.voiceReRecord'),
+              delete: t('proposals.voiceDelete'),
+              maxDurationLabel: t('proposals.voiceMaxDuration'),
+            }}
+          />
+        </div>
+      </div>
     </div>
   )
 }
 
-// ── Step 2: Product Selection (Redesigned) ────────────────
+// ── ProductTable ──────────────────────────────────────────
 
-function ProductSelectionStep({
+function ProductTable({
   items,
   onAddItem,
   onUpdateItem,
@@ -333,12 +585,12 @@ function ProductSelectionStep({
   onReorderItems: (items: ProposalFormData['items']) => void
   generalDiscount: ProposalFormData['generalDiscount']
   onGeneralDiscountChange: (gd: ProposalFormData['generalDiscount']) => void
-  proposalType?: string
+  proposalType: string
 }) {
   const t = useTranslations()
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const [expandedItem, setExpandedItem] = useState<number | null>(null)
+  const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [dragging, setDragging] = useState<number | null>(null)
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
 
@@ -356,8 +608,6 @@ function ProductSelectionStep({
 
   const handleAddProduct = (product: Product) => {
     if (replacingIndex !== null) {
-      // Replace: keep quantity and discount settings, swap product
-      const existing = items[replacingIndex]
       onUpdateItem(replacingIndex, {
         id: product.id,
         name: product.name,
@@ -392,195 +642,140 @@ function ProductSelectionStep({
     onAddItem({ ...item })
   }
 
-  const toggleExpand = (index: number) => {
-    const next = expandedItem === index ? null : index
-    setExpandedItem(next)
-    if (next !== null) scrollToCard(next)
-  }
-
-  // Convert fixed discounts to effective percent for calculation
-  const itemsForCalc = useMemo(() => items.map(item => {
-    if (item.discountType === 'fixed' && item.discountFixed > 0) {
-      const lineSubtotal = item.quantity * item.unitPrice
-      const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
-      return { ...item, discountPercent: Math.min(effectivePercent, 100) }
-    }
-    return item
-  }), [items])
-
-  const totals = useMemo(() => calculateProposalTotals(itemsForCalc, generalDiscount), [itemsForCalc, generalDiscount])
-
-  const getEffectiveItem = (item: ProposalFormData['items'][0]) => {
-    if (item.discountType === 'fixed' && item.discountFixed > 0) {
-      const lineSubtotal = item.quantity * item.unitPrice
-      const effectivePercent = lineSubtotal > 0 ? (item.discountFixed / lineSubtotal) * 100 : 0
-      return { ...item, discountPercent: Math.min(effectivePercent, 100) }
-    }
-    return item
-  }
-
-  // Select-all on focus for number inputs
-  const handleNumFocus = (e: React.FocusEvent<HTMLInputElement>) => e.target.select()
-
-  const scrollToCard = (index: number) => {
-    setTimeout(() => {
-      document.getElementById(`product-card-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }, 50)
-  }
+  const isUnofficial = proposalType === 'UNOFFICIAL'
 
   return (
-    <div className="space-y-5">
-      {/* KDV excluded notice for UNOFFICIAL */}
-      {proposalType === 'UNOFFICIAL' && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm font-medium">
-          <Eye className="h-4 w-4 shrink-0" />
-          {t('proposals.vatExcludedNotice')}
+    <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
+      {/* Header: search + add */}
+      <div className="p-3 md:p-4 border-b bg-gray-50/50 dark:bg-gray-800/30">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider hidden sm:block">
+            {t('proposals.steps.addProducts')}
+          </h2>
+          {isUnofficial && (
+            <Badge className="text-[10px] px-2 py-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800">
+              {t('proposals.vatExcludedNotice')}
+            </Badge>
+          )}
+          <div className="ml-auto">
+            <Popover open={searchOpen} onOpenChange={(open) => { setSearchOpen(open); if (!open) setReplacingIndex(null) }}>
+              <PopoverTrigger asChild>
+                <Button size="sm" className="gap-1.5 rounded-lg h-8 text-xs">
+                  <Plus className="h-3.5 w-3.5" />
+                  {t('proposals.create.addProduct')}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[340px] p-0" align="end">
+                <Command shouldFilter={false}>
+                  {replacingIndex !== null && (
+                    <div className="px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
+                      <p className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                        <ArrowLeftRight className="h-3 w-3" />
+                        {t('proposals.create.replaceSearch')}
+                      </p>
+                    </div>
+                  )}
+                  <CommandInput placeholder={t('proposals.searchProduct')} value={search} onValueChange={setSearch} />
+                  <CommandList>
+                    <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
+                    <CommandGroup>
+                      {filteredProducts.map((product: Product) => (
+                        <CommandItem key={product.id} onSelect={() => handleAddProduct(product)}>
+                          <div className="flex items-center gap-2 w-full py-0.5">
+                            <Package className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{product.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {product.code && `${product.code} · `}{formatCurrency(product.listPrice || 0)}
+                              </p>
+                            </div>
+                            <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
-      )}
-      {/* Product Search */}
-      <Popover open={searchOpen} onOpenChange={(open) => { setSearchOpen(open); if (!open) setReplacingIndex(null) }}>
-        <PopoverTrigger asChild>
-          <button className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all text-left group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Plus className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-blue-700 dark:text-blue-300 text-sm">{t('proposals.create.addProduct')}</p>
-              <p className="text-xs text-blue-500 dark:text-blue-400">{t('proposals.searchProduct')}</p>
-            </div>
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[360px] p-0" align="start">
-          <Command shouldFilter={false}>
-            {replacingIndex !== null && (
-              <div className="px-3 py-2 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                  <ArrowLeftRight className="h-3 w-3" />
-                  {t('proposals.create.replaceSearch')}
-                </p>
-              </div>
-            )}
-            <CommandInput placeholder={t('proposals.searchProduct')} value={search} onValueChange={setSearch} />
-            <CommandList>
-              <CommandEmpty>{t('proposals.noProduct')}</CommandEmpty>
-              <CommandGroup>
-                {filteredProducts.map((product: Product) => (
-                  <CommandItem key={product.id} onSelect={() => handleAddProduct(product)}>
-                    <div className="flex items-center gap-3 w-full py-1">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center">
-                        <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {product.code && `${product.code} · `}{formatCurrency(product.listPrice || 0)}
-                        </p>
-                      </div>
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      </div>
 
-      {/* Product Items */}
-      {items.length > 0 ? (
-        <div className="space-y-3">
-          {items.map((item, index) => {
-            const effectiveItem = getEffectiveItem(item)
-            const lineTotal = calculateLineTotal(effectiveItem, 'with_vat')
-            const lineTotalBeforeVat = calculateLineTotal(effectiveItem, 'before_vat')
-            const isExpanded = expandedItem === index
-            const hasDiscount = item.discountType === 'fixed' ? item.discountFixed > 0 : item.discountPercent > 0
-            const discountDisplay = item.discountType === 'fixed'
-              ? formatCurrency(item.discountFixed)
-              : `${item.discountPercent}%`
-            const discountAmount = item.quantity * item.unitPrice - lineTotalBeforeVat
+      {/* Table */}
+      <div className="flex-1 overflow-y-auto">
+        {items.length > 0 ? (
+          <div>
+            {/* Table header */}
+            <div className="hidden sm:grid grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px] gap-2 px-4 py-2 border-b bg-gray-50 dark:bg-gray-800/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider items-center">
+              <div className="w-6" />
+              <div>{t('proposals.product')}</div>
+              <div className="text-center">{t('proposals.qty')}</div>
+              <div className="text-right">{t('proposals.unitPrice')}</div>
+              <div className="text-center">{t('proposals.discount')}</div>
+              {!isUnofficial && <div className="text-center">{t('proposals.vat')}</div>}
+              <div className="text-right">{t('proposals.amount')}</div>
+              <div />
+            </div>
 
-            return (
-              <div
-                id={`product-card-${index}`}
-                key={index}
-                draggable
-                onDragStart={() => setDragging(index)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => {
-                  if (dragging === null || dragging === index) return
-                  const newItems = [...items]
-                  const [draggedItem] = newItems.splice(dragging, 1)
-                  newItems.splice(index, 0, draggedItem)
-                  onReorderItems(newItems)
-                  setDragging(null)
-                }}
-                className={cn(
-                  'rounded-2xl border bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all overflow-hidden',
-                  dragging === index && 'opacity-50 scale-[0.98]',
-                  isExpanded && 'ring-2 ring-blue-200 dark:ring-blue-800'
-                )}
-              >
-                {/* Main Row - Two-line layout on mobile for breathing room */}
-                <div className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2">
+            {/* Table rows */}
+            {items.map((item, index) => {
+              const effectiveItem = getEffectiveItem(item)
+              const lineTotal = calculateLineTotal(effectiveItem, isUnofficial ? 'before_vat' : 'with_vat')
+              const lineTotalBeforeVat = calculateLineTotal(effectiveItem, 'before_vat')
+              const hasDiscount = item.discountType === 'fixed' ? item.discountFixed > 0 : item.discountPercent > 0
+              const discountDisplay = item.discountType === 'fixed'
+                ? formatCurrency(item.discountFixed)
+                : `${item.discountPercent}%`
+              const discountAmount = item.quantity * item.unitPrice - lineTotalBeforeVat
+              const isExpanded = expandedRow === index
+
+              return (
+                <div
+                  key={index}
+                  draggable
+                  onDragStart={() => setDragging(index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => {
+                    if (dragging === null || dragging === index) return
+                    const newItems = [...items]
+                    const [draggedItem] = newItems.splice(dragging, 1)
+                    newItems.splice(index, 0, draggedItem)
+                    onReorderItems(newItems)
+                    setDragging(null)
+                  }}
+                  className={cn(
+                    'border-b transition-all',
+                    dragging === index && 'opacity-50',
+                    isExpanded && 'bg-blue-50/30 dark:bg-blue-950/10'
+                  )}
+                >
+                  {/* Desktop row */}
+                  <div className="hidden sm:grid grid-cols-[auto_1fr_80px_100px_80px_80px_100px_36px] gap-2 px-4 py-2 items-center">
                     {/* Drag handle */}
-                    <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 hidden sm:block">
-                      <GripVertical className="h-5 w-5" />
+                    <div className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 w-6">
+                      <GripVertical className="h-4 w-4" />
                     </div>
 
-                    {/* Item Number */}
-                    <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
-                      {index + 1}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">{item.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)}</span>
-                        {hasDiscount && (
-                          <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
-                            -{discountDisplay}
-                          </Badge>
-                        )}
-                        {proposalType !== 'UNOFFICIAL' && <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>}
-                      </div>
-                    </div>
-
-                    {/* Actions - always visible */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    {/* Product name */}
+                    <div className="min-w-0">
                       <button
                         type="button"
-                        onClick={() => toggleExpand(index)}
-                        className={cn(
-                          'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
-                          isExpanded
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
-                        )}
+                        onClick={() => setExpandedRow(isExpanded ? null : index)}
+                        className="text-left w-full"
                       >
-                        <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onRemoveItem(index)}
-                        className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
+                        <p className="font-medium text-sm truncate">{item.name}</p>
                       </button>
                     </div>
-                  </div>
 
-                  {/* Quantity + Total row */}
-                  <div className="flex items-center justify-between mt-3 gap-3">
-                    <div className="flex items-center gap-1">
+                    {/* Quantity */}
+                    <div className="flex items-center justify-center gap-0.5">
                       <button
                         type="button"
                         onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
-                        className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95"
+                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-3 w-3" />
                       </button>
                       <Input
                         type="number"
@@ -589,113 +784,58 @@ function ProductSelectionStep({
                         value={item.quantity}
                         onFocus={handleNumFocus}
                         onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
-                        className="w-16 h-9 text-center text-sm font-semibold rounded-lg border-gray-200 dark:border-gray-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-10 h-7 text-center text-xs font-semibold px-0 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <button
                         type="button"
                         onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })}
-                        className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95"
+                        className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3 w-3" />
                       </button>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-base">{formatCurrency(lineTotal)}</p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Expanded Detail Panel */}
-                {isExpanded && (
-                  <div className="border-t bg-gray-50/50 dark:bg-gray-800/30 p-4 space-y-4">
-                    {/* Unit Price - full width on mobile */}
+                    {/* Unit Price */}
                     <div>
-                      <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.unitPrice')}</Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onFocus={handleNumFocus}
-                          onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
-                          className="h-11 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₺</span>
-                      </div>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={item.unitPrice}
+                        onFocus={handleNumFocus}
+                        onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
+                        className="h-7 text-right text-xs font-medium rounded px-1.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                     </div>
 
-                    {/* Discount - with type toggle (% or ₺) */}
-                    <div>
-                      <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.discount')}</Label>
-                      <div className="flex gap-2">
-                        <div className="flex rounded-xl border overflow-hidden shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => onUpdateItem(index, { discountType: 'percent', discountFixed: 0 })}
-                            className={cn(
-                              'w-11 h-11 flex items-center justify-center text-sm font-bold transition-colors',
-                              item.discountType === 'percent'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100'
-                            )}
-                          >
-                            %
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onUpdateItem(index, { discountType: 'fixed', discountPercent: 0 })}
-                            className={cn(
-                              'w-11 h-11 flex items-center justify-center text-sm font-bold transition-colors',
-                              item.discountType === 'fixed'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100'
-                            )}
-                          >
-                            ₺
-                          </button>
-                        </div>
-                        <div className="relative flex-1">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            min="0"
-                            max={item.discountType === 'percent' ? 100 : undefined}
-                            value={item.discountType === 'percent' ? (item.discountPercent || '') : (item.discountFixed || '')}
-                            placeholder="0"
-                            onFocus={handleNumFocus}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value) || 0
-                              if (item.discountType === 'percent') {
-                                onUpdateItem(index, { discountPercent: Math.min(val, 100) })
-                              } else {
-                                onUpdateItem(index, { discountFixed: val })
-                              }
-                            }}
-                            className="h-11 rounded-xl pr-8 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                            {item.discountType === 'percent' ? '%' : '₺'}
-                          </span>
-                        </div>
-                      </div>
-                      {hasDiscount && (
-                        <p className="text-xs text-red-500 mt-1.5">
-                          {t('proposals.discount')}: -{formatCurrency(discountAmount)}
-                        </p>
+                    {/* Discount */}
+                    <div className="text-center">
+                      {hasDiscount ? (
+                        <Badge className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0 cursor-pointer"
+                          onClick={() => setExpandedRow(isExpanded ? null : index)}
+                        >
+                          -{discountDisplay}
+                        </Badge>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedRow(isExpanded ? null : index)}
+                          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          -
+                        </button>
                       )}
                     </div>
 
-                    {/* VAT + Total side by side */}
-                    <div className={`grid ${proposalType !== 'UNOFFICIAL' ? 'grid-cols-2' : 'grid-cols-1'} gap-3`}>
-                      {proposalType !== 'UNOFFICIAL' && <div>
-                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.vat')}</Label>
+                    {/* VAT */}
+                    {!isUnofficial && (
+                      <div className="text-center">
                         <Select
                           value={String(item.vatPercent)}
                           onValueChange={(v) => onUpdateItem(index, { vatPercent: Number(v) })}
                         >
-                          <SelectTrigger className="h-11 rounded-xl text-sm font-medium">
+                          <SelectTrigger className="h-7 rounded text-[11px] font-medium px-1.5 w-full">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -707,303 +847,261 @@ function ProductSelectionStep({
                             <SelectItem value="20">%20</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>}
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.total')}</Label>
-                        <div className="h-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
-                          <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">{formatCurrency(lineTotal)}</span>
+                      </div>
+                    )}
+
+                    {/* Line Total */}
+                    <div className="text-right">
+                      <span className="font-bold text-sm">{formatCurrency(lineTotal)}</span>
+                    </div>
+
+                    {/* Delete */}
+                    <button
+                      type="button"
+                      onClick={() => onRemoveItem(index)}
+                      className="w-7 h-7 rounded flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Mobile row */}
+                  <div className="sm:hidden p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-500 shrink-0">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{item.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)}</span>
+                          {hasDiscount && (
+                            <Badge className="text-[10px] px-1 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
+                              -{discountDisplay}
+                            </Badge>
+                          )}
+                          {!isUnofficial && <span className="text-[10px] text-muted-foreground">KDV %{item.vatPercent}</span>}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Price Breakdown */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <span>{t('proposals.subtotal')}: {formatCurrency(item.quantity * item.unitPrice)}</span>
-                      {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(discountAmount)}</span>}
-                      {proposalType !== 'UNOFFICIAL' && <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>}
-                    </div>
-
-                    {/* Item Actions */}
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReplaceProduct(index)}
-                        className="rounded-lg text-xs gap-1.5 h-9"
+                        onClick={() => setExpandedRow(isExpanded ? null : index)}
+                        className={cn(
+                          'w-7 h-7 rounded flex items-center justify-center transition-all',
+                          isExpanded ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
+                        )}
                       >
-                        <ArrowLeftRight className="h-3.5 w-3.5" />
-                        {t('proposals.create.replaceProduct')}
-                      </Button>
-                      <Button
+                        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-180')} />
+                      </button>
+                      <button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDuplicateItem(index)}
-                        className="rounded-lg text-xs gap-1.5 h-9"
-                      >
-                        <CopyIcon className="h-3.5 w-3.5" />
-                        {t('proposals.create.duplicateItem')}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
                         onClick={() => onRemoveItem(index)}
-                        className="rounded-lg text-xs gap-1.5 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800 ml-auto"
+                        className="w-7 h-7 rounded bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-400 hover:text-red-600 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                        {t('proposals.create.removeItem')}
-                      </Button>
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 gap-3">
+                      <div className="flex items-center gap-0.5">
+                        <button type="button" onClick={() => onUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })} className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center active:scale-95">
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                        <Input
+                          type="number" min="1" inputMode="numeric" value={item.quantity}
+                          onFocus={handleNumFocus}
+                          onChange={(e) => onUpdateItem(index, { quantity: parseInt(e.target.value) || 1 })}
+                          className="w-14 h-8 text-center text-sm font-semibold rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button type="button" onClick={() => onUpdateItem(index, { quantity: item.quantity + 1 })} className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center active:scale-95">
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <p className="font-bold text-base">{formatCurrency(lineTotal)}</p>
                     </div>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center mb-4">
-            <Package className="h-8 w-8 text-blue-500" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground">{t('proposals.noItems')}</p>
-        </div>
-      )}
 
-      {/* General Discount Section */}
-      {items.length > 0 && (
-        <div className="rounded-2xl border bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-800 p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                <Percent className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-violet-800 dark:text-violet-200">{t('proposals.generalDiscount')}</p>
+                  {/* Expanded detail row */}
+                  {isExpanded && (
+                    <div className="border-t bg-gray-50/50 dark:bg-gray-800/30 px-4 py-3 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Unit Price (mobile) */}
+                        <div className="sm:hidden">
+                          <Label className="text-xs text-muted-foreground mb-1 block">{t('proposals.unitPrice')}</Label>
+                          <div className="relative">
+                            <Input
+                              type="number" inputMode="decimal" min="0" step="0.01"
+                              value={item.unitPrice} onFocus={handleNumFocus}
+                              onChange={(e) => onUpdateItem(index, { unitPrice: parseFloat(e.target.value) || 0 })}
+                              className="h-9 rounded-lg pr-6 text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">&#8378;</span>
+                          </div>
+                        </div>
+
+                        {/* Discount */}
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">{t('proposals.discount')}</Label>
+                          <div className="flex gap-1.5">
+                            <div className="flex rounded-lg border overflow-hidden shrink-0">
+                              <button type="button"
+                                onClick={() => onUpdateItem(index, { discountType: 'percent', discountFixed: 0 })}
+                                className={cn('w-9 h-9 flex items-center justify-center text-xs font-bold transition-colors',
+                                  item.discountType === 'percent' ? 'bg-blue-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
+                                )}
+                              >%</button>
+                              <button type="button"
+                                onClick={() => onUpdateItem(index, { discountType: 'fixed', discountPercent: 0 })}
+                                className={cn('w-9 h-9 flex items-center justify-center text-xs font-bold transition-colors',
+                                  item.discountType === 'fixed' ? 'bg-blue-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
+                                )}
+                              >&#8378;</button>
+                            </div>
+                            <Input
+                              type="number" inputMode="decimal" min="0"
+                              max={item.discountType === 'percent' ? 100 : undefined}
+                              value={item.discountType === 'percent' ? (item.discountPercent || '') : (item.discountFixed || '')}
+                              placeholder="0" onFocus={handleNumFocus}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0
+                                if (item.discountType === 'percent') {
+                                  onUpdateItem(index, { discountPercent: Math.min(val, 100) })
+                                } else {
+                                  onUpdateItem(index, { discountFixed: val })
+                                }
+                              }}
+                              className="h-9 rounded-lg text-sm font-medium flex-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                          {hasDiscount && (
+                            <p className="text-[11px] text-red-500 mt-1">-{formatCurrency(discountAmount)}</p>
+                          )}
+                        </div>
+
+                        {/* VAT (mobile only if official) */}
+                        {!isUnofficial && (
+                          <div className="sm:hidden">
+                            <Label className="text-xs text-muted-foreground mb-1 block">{t('proposals.vat')}</Label>
+                            <Select
+                              value={String(item.vatPercent)}
+                              onValueChange={(v) => onUpdateItem(index, { vatPercent: Number(v) })}
+                            >
+                              <SelectTrigger className="h-9 rounded-lg text-sm font-medium">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0">%0</SelectItem>
+                                <SelectItem value="1">%1</SelectItem>
+                                <SelectItem value="8">%8</SelectItem>
+                                <SelectItem value="10">%10</SelectItem>
+                                <SelectItem value="18">%18</SelectItem>
+                                <SelectItem value="20">%20</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Price breakdown */}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <span>{t('proposals.subtotal')}: {formatCurrency(item.quantity * item.unitPrice)}</span>
+                        {hasDiscount && <span className="text-red-500">{t('proposals.discount')}: -{formatCurrency(discountAmount)}</span>}
+                        {!isUnofficial && <span>{t('proposals.vat')}: +{formatCurrency(lineTotal - lineTotalBeforeVat)}</span>}
+                      </div>
+
+                      {/* Item actions */}
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleReplaceProduct(index)} className="rounded-lg text-xs gap-1.5 h-7">
+                          <ArrowLeftRight className="h-3 w-3" />
+                          {t('proposals.create.replaceProduct')}
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleDuplicateItem(index)} className="rounded-lg text-xs gap-1.5 h-7">
+                          <CopyIcon className="h-3 w-3" />
+                          {t('proposals.create.duplicateItem')}
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => onRemoveItem(index)}
+                          className="rounded-lg text-xs gap-1.5 h-7 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800 ml-auto"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          {t('proposals.create.removeItem')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* General Discount Row */}
+            <div className="px-4 py-3 border-b bg-violet-50/50 dark:bg-violet-950/10">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  <span className="text-sm font-semibold text-violet-800 dark:text-violet-200">{t('proposals.generalDiscount')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={generalDiscount.type}
+                    onValueChange={(v) => onGeneralDiscountChange({ ...generalDiscount, type: v as 'percent' | 'fixed' })}
+                  >
+                    <SelectTrigger className="w-14 h-8 rounded-lg text-xs font-medium">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percent">%</SelectItem>
+                      <SelectItem value="fixed">&#8378;</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number" inputMode="decimal" min="0"
+                    value={generalDiscount.value || ''}
+                    onFocus={handleNumFocus}
+                    onChange={(e) => onGeneralDiscountChange({ ...generalDiscount, value: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="w-20 h-8 rounded-lg text-sm font-medium text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={generalDiscount.type}
-                onValueChange={(v) => onGeneralDiscountChange({ ...generalDiscount, type: v as 'percent' | 'fixed' })}
-              >
-                <SelectTrigger className="w-16 h-9 rounded-lg text-xs font-medium">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percent">%</SelectItem>
-                  <SelectItem value="fixed">₺</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                value={generalDiscount.value || ''}
-                onFocus={handleNumFocus}
-                onChange={(e) => onGeneralDiscountChange({ ...generalDiscount, value: parseFloat(e.target.value) || 0 })}
-                placeholder="0"
-                className="w-24 h-9 rounded-lg text-sm font-medium text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center py-20">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center mb-3">
+              <Package className="h-7 w-7 text-blue-500" />
             </div>
+            <p className="text-sm font-medium text-muted-foreground mb-3">{t('proposals.noItems')}</p>
+            <Button size="sm" className="gap-1.5 rounded-lg" onClick={() => setSearchOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              {t('proposals.create.addProduct')}
+            </Button>
           </div>
-          {generalDiscount.value > 0 && (
-            <p className="text-xs text-violet-600 dark:text-violet-400 mt-2 text-right">
-              -{formatCurrency(totals.discountAmount)}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Running Totals */}
-      {items.length > 0 && (
-        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 shadow-xl shadow-blue-500/20 relative overflow-hidden">
-          <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10" />
-          <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5" />
-          <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.subtotal')}</p>
-              <p className="text-lg font-bold">{formatCurrency(totals.subtotal)}</p>
-            </div>
-            {totals.discountAmount > 0 && (
-              <div>
-                <p className="text-xs text-blue-200 mb-0.5">{t('proposals.discount')}</p>
-                <p className="text-lg font-bold text-red-300">-{formatCurrency(totals.discountAmount)}</p>
-              </div>
-            )}
-            {proposalType !== 'UNOFFICIAL' && <div>
-              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.vat')}</p>
-              <p className="text-lg font-bold">{formatCurrency(totals.vatAmount)}</p>
-            </div>}
-            <div className="sm:text-right">
-              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.total')}</p>
-              <p className="text-2xl font-extrabold">{formatCurrency(totals.grandTotal)}</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Step 3: Details ───────────────────────────────────────
-
-function DetailsStep({
-  data,
-  onChange,
-  onDateChange,
-}: {
-  data: Partial<ProposalFormData>
-  onChange: (field: string, value: string | number | boolean | null) => void
-  onDateChange: (field: 'deliveryDate' | 'installationDate', value: Date | null) => void
-}) {
-  const t = useTranslations()
-
-  const { data: calendarData } = useSWR('/api/v1/calendar', apiFetcher, swrStaticOptions)
-  const disabledDeliveryDates: string[] = calendarData?.data?.disabledDeliveryDates ?? []
-  const disabledInstallationDates: string[] = calendarData?.data?.disabledInstallationDates ?? []
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <Label htmlFor="title">{t('proposals.title')}</Label>
-        <Input
-          id="title"
-          value={data.title || ''}
-          onChange={(e) => onChange('title', e.target.value)}
-          placeholder={t('proposals.create.proposalTitle')}
-          className="mt-2 h-12 rounded-xl"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="validity">{t('proposals.validityDays')}</Label>
-          <div className="flex items-center gap-2 mt-2">
-            <Input
-              id="validity"
-              type="number"
-              min="1"
-              max="365"
-              value={data.validityDays || 30}
-              onChange={(e) => onChange('validityDays', parseInt(e.target.value) || 30)}
-              className="h-11 rounded-xl"
-            />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">{t('proposals.days')}</span>
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="payment">{t('proposals.paymentTerms')}</Label>
-          <Select
-            value={data.paymentTerms || 'Net 30'}
-            onValueChange={(value) => onChange('paymentTerms', value)}
-          >
-            <SelectTrigger id="payment" className="mt-2 h-11 rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Due Upon Receipt">Due Upon Receipt</SelectItem>
-              <SelectItem value="Net 15">Net 15</SelectItem>
-              <SelectItem value="Net 30">Net 30</SelectItem>
-              <SelectItem value="Net 45">Net 45</SelectItem>
-              <SelectItem value="Net 60">Net 60</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="delivery">{t('proposals.deliveryTerms')}</Label>
-        <Select
-          value={data.deliveryTerms || 'Standard'}
-          onValueChange={(value) => onChange('deliveryTerms', value)}
-        >
-          <SelectTrigger id="delivery" className="mt-2 h-11 rounded-xl">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Standard">Standard</SelectItem>
-            <SelectItem value="Express">Express</SelectItem>
-            <SelectItem value="Overnight">Overnight</SelectItem>
-            <SelectItem value="Same Day">Same Day</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Delivery & Installation Dates */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <Label>{t('proposals.deliveryDate')}</Label>
-          <div className="mt-2">
-            <DatePicker
-              value={data.deliveryDate ?? undefined}
-              onChange={(date) => onDateChange('deliveryDate', date ?? null)}
-              disabledDates={disabledDeliveryDates}
-              placeholder={t('proposals.selectDeliveryDate')}
-            />
-          </div>
-        </div>
-        <div>
-          <Label>{t('proposals.installationDate')}</Label>
-          <div className="mt-2">
-            <DatePicker
-              value={data.installationDate ?? undefined}
-              onChange={(date) => onDateChange('installationDate', date ?? null)}
-              disabledDates={disabledInstallationDates}
-              placeholder={t('proposals.selectInstallationDate')}
-              minDate={data.deliveryDate ?? undefined}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="notes">{t('proposals.notes')}</Label>
-        <Textarea
-          id="notes"
-          value={data.notes || ''}
-          onChange={(e) => onChange('notes', e.target.value)}
-          placeholder={t('proposals.create.notes')}
-          className="mt-2 h-24 resize-none rounded-xl"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="terms">{t('proposals.termsConditions')}</Label>
-        <Textarea
-          id="terms"
-          value={data.termsAndConditions || ''}
-          onChange={(e) => onChange('termsAndConditions', e.target.value)}
-          className="mt-2 h-32 resize-none rounded-xl"
-        />
+        )}
       </div>
     </div>
   )
 }
 
-// ── Step 4: Preview & Send ────────────────────────────────
+// ── SummaryPanel ──────────────────────────────────────────
 
-function PreviewStep({
-  data,
+function SummaryPanel({
   totals,
-  onSaveAndSend,
+  proposalType,
+  itemCount,
+  customerName,
   isSending,
-  voiceNoteData,
-  voiceNoteDuration,
-  onVoiceNoteChange,
+  onSaveAndSend,
+  canSend,
 }: {
-  data: ProposalFormData
   totals: ReturnType<typeof calculateProposalTotals>
-  onSaveAndSend: (method: 'draft' | 'whatsapp' | 'email') => Promise<void>
+  proposalType: string
+  itemCount: number
+  customerName: string
   isSending: boolean
-  voiceNoteData: string | null
-  voiceNoteDuration: number | null
-  onVoiceNoteChange: (data: string | null, duration: number | null) => void
+  onSaveAndSend: (method: 'draft' | 'whatsapp' | 'email') => Promise<void>
+  canSend: boolean
 }) {
   const t = useTranslations()
-  const locale = useLocale()
   const [sendDialog, setSendDialog] = useState<'email' | 'whatsapp' | null>(null)
+  const isUnofficial = proposalType === 'UNOFFICIAL'
 
   const handleAction = async (method: 'draft' | 'whatsapp' | 'email') => {
     await onSaveAndSend(method)
@@ -1011,180 +1109,139 @@ function PreviewStep({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Voice Note Recorder */}
-      <div>
-        <Label className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Mic className="h-4 w-4 text-blue-500" />
-          {t('proposals.voiceNote')}
-        </Label>
-        <p className="text-xs text-muted-foreground mb-3">{t('proposals.voiceNoteDesc')}</p>
-        <VoiceNoteRecorder
-          value={voiceNoteData}
-          duration={voiceNoteDuration}
-          onChange={onVoiceNoteChange}
-          maxDuration={60}
-          labels={{
-            record: t('proposals.voiceRecord'),
-            recording: t('proposals.voiceRecording'),
-            stop: t('proposals.voiceStop'),
-            play: t('proposals.voiceReady'),
-            reRecord: t('proposals.voiceReRecord'),
-            delete: t('proposals.voiceDelete'),
-            maxDurationLabel: t('proposals.voiceMaxDuration'),
-          }}
-        />
-      </div>
-
-      <Card className="rounded-2xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Eye className="h-4 w-4" />
+    <div className="w-full xl:w-80 shrink-0 border-l bg-white dark:bg-gray-900 overflow-y-auto">
+      <div className="p-4 space-y-4">
+        {/* Summary Header */}
+        <div>
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
             {t('proposals.preview')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 pt-6">
-          <div className="border-b pb-6">
-            <h1 className="text-2xl font-bold mb-2">{data.title}</h1>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs mb-1">{t('proposals.customer')}</p>
-                <p className="font-semibold">{data.customer.name}</p>
-                <p className="text-xs text-muted-foreground">{data.customer.email}</p>
+          </h3>
+
+          {/* Totals */}
+          <div className="rounded-xl bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900 dark:to-gray-900 border p-4 space-y-2.5">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{t('proposals.subtotal')}</span>
+              <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
+            </div>
+            {totals.discountAmount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-red-600">{t('proposals.discount')}</span>
+                <span className="font-medium text-red-600">-{formatCurrency(totals.discountAmount)}</span>
               </div>
-              <div className="text-right">
-                <p className="text-muted-foreground text-xs mb-1">{t('proposals.date')}</p>
-                <p className="font-semibold">{new Date().toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US')}</p>
-                <p className="text-xs text-muted-foreground">{data.validityDays} {t('proposals.days')}</p>
+            )}
+            {!isUnofficial && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('proposals.vat')}</span>
+                <span className="font-medium">{formatCurrency(totals.vatAmount)}</span>
               </div>
+            )}
+            <Separator />
+            <div className="flex justify-between">
+              <span className="font-bold">{t('proposals.total')}</span>
+              <span className="text-xl font-extrabold text-blue-600 dark:text-blue-400">
+                {formatCurrency(totals.grandTotal)}
+              </span>
             </div>
           </div>
 
-          <div>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 font-semibold">{t('proposals.description')}</th>
-                  <th className="text-right py-2 font-semibold w-16">{t('proposals.qty')}</th>
-                  <th className="text-right py-2 font-semibold w-20">{t('proposals.unitPrice')}</th>
-                  <th className="text-right py-2 font-semibold w-20">{t('proposals.amount')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((item, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="py-3">{item.name}</td>
-                    <td className="text-right">{item.quantity}</td>
-                    <td className="text-right">{formatCurrency(item.unitPrice)}</td>
-                    <td className="text-right font-medium">{formatCurrency(calculateLineTotal(item, data.proposalType === 'UNOFFICIAL' ? 'before_vat' : 'with_vat'))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Item count */}
+          <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+            <Package className="h-3.5 w-3.5" />
+            <span>{itemCount} {t('proposals.product').toLowerCase()}</span>
           </div>
+        </div>
 
-          <div className="border-t pt-4 space-y-2">
-            <div className="flex justify-end text-sm">
-              <div className="w-48">
-                <div className="flex justify-between mb-2">
-                  <span className="text-muted-foreground">{t('proposals.subtotal')}</span>
-                  <span>{formatCurrency(totals.subtotal)}</span>
-                </div>
-                {totals.discountAmount > 0 && (
-                  <div className="flex justify-between mb-2 text-red-600">
-                    <span>{t('proposals.discount')}</span>
-                    <span>-{formatCurrency(totals.discountAmount)}</span>
-                  </div>
-                )}
-                {data.proposalType !== 'UNOFFICIAL' && <div className="flex justify-between mb-2">
-                  <span className="text-muted-foreground">{t('proposals.vat')}</span>
-                  <span>{formatCurrency(totals.vatAmount)}</span>
-                </div>}
-                <Separator className="my-2" />
-                <div className="flex justify-between text-base font-bold">
-                  <span>{t('proposals.total')}</span>
-                  <span>{formatCurrency(totals.grandTotal)}</span>
-                </div>
-              </div>
-            </div>
+        <Separator />
+
+        {/* Keyboard shortcuts hint */}
+        <div className="rounded-lg bg-gray-50 dark:bg-gray-800/50 p-2.5 text-[10px] text-muted-foreground space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Keyboard className="h-3 w-3" />
+            <span className="font-medium">Ctrl+S</span>
+            <span>{t('proposals.saveDraft')}</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Keyboard className="h-3 w-3" />
+            <span className="font-medium">Ctrl+Enter</span>
+            <span>{t('proposals.send')}</span>
+          </div>
+        </div>
 
-          {data.notes && (
-            <div className="bg-muted/50 p-4 rounded-xl border text-xs space-y-2">
-              <p className="font-semibold">{t('proposals.notes')}</p>
-              <p className="whitespace-pre-wrap">{data.notes}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <Separator />
 
-      {/* Send Actions */}
-      <div className="space-y-3">
-        {/* WhatsApp - Primary CTA */}
-        <Dialog open={sendDialog === 'whatsapp'} onOpenChange={(open) => setSendDialog(open ? 'whatsapp' : null)}>
+        {/* Action Buttons */}
+        <div className="space-y-2.5">
+          {/* Save Draft */}
           <Button
-            className="w-full gap-3 h-14 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25 text-base font-semibold"
-            onClick={() => setSendDialog('whatsapp')}
-            disabled={isSending || !data.customer.phone}
+            type="button"
+            variant="outline"
+            className="w-full gap-2 h-10 rounded-xl text-sm"
+            onClick={() => handleAction('draft')}
+            disabled={isSending || !canSend}
           >
-            <MessageSquare className="h-5 w-5" />
-            {t('proposals.sendWhatsApp')}
+            <Save className="h-4 w-4" />
+            {t('proposals.saveDraft')}
           </Button>
-          <DialogContent className="rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <MessageSquare className="h-5 w-5 text-green-600" />
-                </div>
-                {t('proposals.sendWhatsApp')}
-              </DialogTitle>
-              <DialogDescription className="pt-2">
-                {t('proposals.whatsappMessageWillSentTo')}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold shrink-0">
-                {data.customer.name.charAt(0)}
-              </div>
-              <div>
-                <p className="font-semibold text-sm">{data.customer.name}</p>
-                <p className="text-sm text-green-700 dark:text-green-400">{data.customer.phone}</p>
-              </div>
-            </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-4 text-xs space-y-1">
-              <p className="font-medium text-muted-foreground mb-2">{t('proposals.preview')}:</p>
-              <p className="font-semibold">{data.title}</p>
-              <p>{t('proposals.total')}: {formatCurrency(totals.grandTotal)}</p>
-              <p className="text-blue-600 dark:text-blue-400">teklifpro.vercel.app/proposals/...</p>
-            </div>
-            <Button
-              onClick={() => handleAction('whatsapp')}
-              disabled={isSending}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg gap-2"
-            >
-              {isSending ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ...
-                </span>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  {t('proposals.send')}
-                </>
-              )}
-            </Button>
-          </DialogContent>
-        </Dialog>
 
-        <div className="grid grid-cols-2 gap-3">
+          {/* WhatsApp */}
+          <Dialog open={sendDialog === 'whatsapp'} onOpenChange={(open) => setSendDialog(open ? 'whatsapp' : null)}>
+            <Button
+              type="button"
+              className="w-full gap-2 h-11 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20 text-sm font-semibold"
+              onClick={() => setSendDialog('whatsapp')}
+              disabled={isSending || !canSend}
+            >
+              <MessageSquare className="h-4 w-4" />
+              {t('proposals.sendWhatsApp')}
+            </Button>
+            <DialogContent className="rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <MessageSquare className="h-4 w-4 text-green-600" />
+                  </div>
+                  {t('proposals.sendWhatsApp')}
+                </DialogTitle>
+                <DialogDescription className="pt-2">
+                  {t('proposals.whatsappMessageWillSentTo')}
+                </DialogDescription>
+              </DialogHeader>
+              {customerName && (
+                <div className="rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                    {customerName.charAt(0)}
+                  </div>
+                  <p className="font-semibold text-sm">{customerName}</p>
+                </div>
+              )}
+              <Button
+                onClick={() => handleAction('whatsapp')}
+                disabled={isSending}
+                className="w-full h-11 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg gap-2"
+              >
+                {isSending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ...
+                  </span>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" />
+                    {t('proposals.send')}
+                  </>
+                )}
+              </Button>
+            </DialogContent>
+          </Dialog>
+
           {/* Email */}
           <Dialog open={sendDialog === 'email'} onOpenChange={(open) => setSendDialog(open ? 'email' : null)}>
             <Button
+              type="button"
               variant="outline"
-              className="gap-2 h-12 rounded-xl"
+              className="w-full gap-2 h-10 rounded-xl text-sm"
               onClick={() => setSendDialog('email')}
-              disabled={isSending || !data.customer.email}
+              disabled={isSending || !canSend}
             >
               <Send className="h-4 w-4" />
               {t('proposals.sendEmail')}
@@ -1192,30 +1249,110 @@ function PreviewStep({
             <DialogContent className="rounded-2xl">
               <DialogHeader>
                 <DialogTitle>{t('proposals.sendEmail')}</DialogTitle>
-                <DialogDescription>{t('proposals.emailWillSentTo')} {data.customer.email}</DialogDescription>
+                <DialogDescription>{t('proposals.emailWillSentTo')}</DialogDescription>
               </DialogHeader>
               <Button
                 onClick={() => handleAction('email')}
                 disabled={isSending}
-                className="w-full h-12 rounded-xl gap-2"
+                className="w-full h-11 rounded-xl gap-2"
               >
                 {isSending ? '...' : t('proposals.send')}
               </Button>
             </DialogContent>
           </Dialog>
-
-          {/* Save Draft */}
-          <Button
-            variant="outline"
-            className="gap-2 h-12 rounded-xl"
-            onClick={() => handleAction('draft')}
-            disabled={isSending}
-          >
-            <FileText className="h-4 w-4" />
-            {t('proposals.saveDraft')}
-          </Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── MobileBottomBar ──────────────────────────────────────
+
+function MobileBottomBar({
+  grandTotal,
+  isSending,
+  canSend,
+  onSaveDraft,
+  onSend,
+}: {
+  grandTotal: number
+  isSending: boolean
+  canSend: boolean
+  onSaveDraft: () => void
+  onSend: () => void
+}) {
+  const t = useTranslations()
+
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-950/95 backdrop-blur-lg border-t shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.total')}</p>
+          <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400 truncate">{formatCurrency(grandTotal)}</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-10 px-3 rounded-xl"
+          onClick={onSaveDraft}
+          disabled={isSending || !canSend}
+        >
+          <Save className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="h-10 px-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20 gap-1.5"
+          onClick={onSend}
+          disabled={isSending || !canSend}
+        >
+          <Send className="h-4 w-4" />
+          {t('proposals.send')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ── Mobile Accordion Sections ─────────────────────────────
+
+function MobileAccordionSection({
+  title,
+  icon: Icon,
+  children,
+  defaultOpen = false,
+  badge,
+}: {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  children: React.ReactNode
+  defaultOpen?: boolean
+  badge?: string
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div className="border rounded-xl bg-white dark:bg-gray-900 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 px-4 py-3 text-left"
+      >
+        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-semibold flex-1">{title}</span>
+        {badge && (
+          <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">
+            {badge}
+          </Badge>
+        )}
+        <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="px-4 pb-4 border-t">
+          {children}
+        </div>
+      )}
     </div>
   )
 }
@@ -1226,9 +1363,10 @@ export default function CreateProposalPage() {
   const t = useTranslations()
   const router = useRouter()
   const locale = useLocale()
-  const [currentStep, setCurrentStep] = useState(0)
-  const [selectedContact, setSelectedContact] = useState<Pick<CustomerContact, 'id' | 'name'> | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
+  const [sendDialogOpen, setSendDialogOpen] = useState(false)
+  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const {
     control,
@@ -1236,6 +1374,7 @@ export default function CreateProposalPage() {
     setValue,
     handleSubmit,
     formState: { errors, isValid, isDirty },
+    reset,
   } = useForm<ProposalFormData>({
     resolver: zodResolver(proposalFormSchema),
     mode: 'onChange',
@@ -1264,6 +1403,8 @@ export default function CreateProposalPage() {
   }, [isDirty, markDirty])
 
   const formData = watch()
+
+  // Effective items for calculation (convert fixed discounts)
   const itemsForCalcMain = useMemo(() => formData.items.map((item: ProposalFormData['items'][0]) => {
     if (item.discountType === 'fixed' && item.discountFixed > 0) {
       const lineSubtotal = item.quantity * item.unitPrice
@@ -1272,6 +1413,7 @@ export default function CreateProposalPage() {
     }
     return item
   }), [formData.items])
+
   const totals = useMemo(() => calculateProposalTotals(itemsForCalcMain, formData.generalDiscount), [itemsForCalcMain, formData.generalDiscount])
 
   const { fields: itemFields, append, update, remove } = useFieldArray({
@@ -1279,37 +1421,83 @@ export default function CreateProposalPage() {
     name: 'items',
   })
 
-  const handleAddItem = (item: ProposalFormData['items'][0]) => { append(item) }
+  const handleAddItem = useCallback((item: ProposalFormData['items'][0]) => { append(item) }, [append])
 
-  const handleUpdateItem = (index: number, updates: Partial<ProposalFormData['items'][0]>) => {
+  const handleUpdateItem = useCallback((index: number, updates: Partial<ProposalFormData['items'][0]>) => {
     const currentItem = itemFields[index]
     if (currentItem) update(index, { ...currentItem, ...updates })
-  }
+  }, [itemFields, update])
 
-  const handleRemoveItem = (index: number) => { remove(index) }
+  const handleRemoveItem = useCallback((index: number) => { remove(index) }, [remove])
 
-  const handleReorderItems = (items: ProposalFormData['items']) => {
+  const handleReorderItems = useCallback((items: ProposalFormData['items']) => {
     itemFields.forEach((_, index) => { if (items[index]) update(index, items[index]) })
-  }
+  }, [itemFields, update])
 
-  const handleSelectCustomer = (customer: ProposalFormData['customer'], contact: Pick<CustomerContact, 'id' | 'name'>) => {
+  const handleSelectCustomer = useCallback((customer: ProposalFormData['customer']) => {
     setValue('customer', customer)
-    setSelectedContact(contact)
-  }
+  }, [setValue])
 
-  const steps = [
-    { title: t('proposals.steps.selectCustomer'), icon: Building2, completed: !!formData.customer?.id },
-    { title: t('proposals.steps.addProducts'), icon: Package, completed: formData.items.length > 0 },
-    { title: t('proposals.steps.details'), icon: Settings, completed: !!formData.title },
-    { title: t('proposals.steps.preview'), icon: Eye, completed: false },
-  ]
+  const canSend = !!formData.customer?.id && formData.items.length > 0 && !!formData.title && formData.title.length >= 3
 
-  // Save proposal to DB, returns proposal ID
+  // ── Auto-save to localStorage ──────────────────────────
+
+  useEffect(() => {
+    // Restore from localStorage on mount
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Convert date strings back to Date objects
+        if (parsed.deliveryDate) parsed.deliveryDate = new Date(parsed.deliveryDate)
+        if (parsed.installationDate) parsed.installationDate = new Date(parsed.installationDate)
+        reset(parsed)
+        toast.info(t('proposals.saved'))
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    autoSaveTimerRef.current = setInterval(() => {
+      if (isDirty) {
+        try {
+          localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(formData))
+        } catch {
+          // Quota exceeded, ignore
+        }
+      }
+    }, AUTOSAVE_INTERVAL)
+
+    return () => {
+      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current)
+    }
+  }, [isDirty, formData])
+
+  // ── Keyboard shortcuts ─────────────────────────────────
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        if (canSend && !isSubmitting) handleSaveAndSend('draft')
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault()
+        if (canSend && !isSubmitting) setSendDialogOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [canSend, isSubmitting]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Save proposal to DB ────────────────────────────────
+
   const saveProposal = async (data: ProposalFormData): Promise<string> => {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + (data.validityDays || 30))
 
-    // Convert fixed discounts to effective percent for backend
     const items = data.items.map(item => {
       let discountRate = item.discountPercent || 0
       if (item.discountType === 'fixed' && item.discountFixed > 0) {
@@ -1355,7 +1543,8 @@ export default function CreateProposalPage() {
     return result.data.id
   }
 
-  // Send proposal via channel
+  // ── Send proposal via channel ──────────────────────────
+
   const sendProposal = async (proposalId: string, method: 'whatsapp' | 'email') => {
     const res = await fetch(`/api/v1/proposals/${proposalId}/send`, {
       method: 'POST',
@@ -1367,7 +1556,8 @@ export default function CreateProposalPage() {
     return result.data
   }
 
-  // Combined save & send handler for PreviewStep
+  // ── Combined save & send handler ───────────────────────
+
   const handleSaveAndSend = async (method: 'draft' | 'whatsapp' | 'email') => {
     if (isSubmitting) return
     setIsSubmitting(true)
@@ -1382,6 +1572,9 @@ export default function CreateProposalPage() {
         toast.success(t('proposals.saved'))
       }
 
+      // Clear autosave on successful save
+      try { localStorage.removeItem(AUTOSAVE_KEY) } catch { /* ignore */ }
+
       markClean()
       router.push(`/${locale}/proposals/${proposalId}`)
     } catch (error) {
@@ -1392,166 +1585,500 @@ export default function CreateProposalPage() {
     }
   }
 
-  const onSubmit = async (data: ProposalFormData) => {
-    await handleSaveAndSend('draft')
+  // ── Send dialog (Ctrl+Enter) ───────────────────────────
+
+  const handleSendDialogAction = async (method: 'whatsapp' | 'email') => {
+    setSendDialogOpen(false)
+    await handleSaveAndSend(method)
   }
 
   return (
-    <div className="min-h-screen py-4 md:py-8">
-      <div className="max-w-4xl mx-auto px-4 md:px-0">
-        {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            {t('proposals.createNew')}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">{t('proposals.createDescription')}</p>
-        </div>
+    <>
+      {/* Desktop + Tablet layout (md+) */}
+      <div className="hidden md:flex h-[calc(100vh-64px)] overflow-hidden">
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          onKeyDown={(e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement) e.preventDefault() }}
+          className="flex w-full h-full"
+        >
+          {/* Left Panel */}
+          {leftPanelCollapsed ? (
+            <LeftPanel
+              formData={formData}
+              onSelectCustomer={handleSelectCustomer}
+              onProposalTypeChange={(type) => setValue('proposalType', type)}
+              onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
+              onDateChange={(field, value) => setValue(field, value)}
+              onVoiceNoteChange={(data, dur) => { setValue('voiceNoteData', data); setValue('voiceNoteDuration', dur) }}
+              collapsed={true}
+              onToggleCollapse={() => setLeftPanelCollapsed(false)}
+            />
+          ) : (
+            <LeftPanel
+              formData={formData}
+              onSelectCustomer={handleSelectCustomer}
+              onProposalTypeChange={(type) => setValue('proposalType', type)}
+              onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
+              onDateChange={(field, value) => setValue(field, value)}
+              onVoiceNoteChange={(data, dur) => { setValue('voiceNoteData', data); setValue('voiceNoteDuration', dur) }}
+              collapsed={false}
+              onToggleCollapse={() => setLeftPanelCollapsed(true)}
+            />
+          )}
 
-        <form onSubmit={(e) => { e.preventDefault() }} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }} className="space-y-6">
-          {/* Stepper */}
-          <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm p-4 md:p-6">
-            <div className="flex justify-between items-center">
-              {steps.map((step, index) => {
-                const Icon = step.icon
-                const isActive = index === currentStep
-                const isCompleted = step.completed && index < currentStep
+          {/* Center Panel: Product Table */}
+          <ProductTable
+            items={formData.items}
+            onAddItem={handleAddItem}
+            onUpdateItem={handleUpdateItem}
+            onRemoveItem={handleRemoveItem}
+            onReorderItems={handleReorderItems}
+            generalDiscount={formData.generalDiscount}
+            onGeneralDiscountChange={(gd) => setValue('generalDiscount', gd)}
+            proposalType={formData.proposalType}
+          />
 
-                return (
-                  <div key={index} className="flex items-center flex-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (index < currentStep || steps[index - 1]?.completed || index === 0) setCurrentStep(index)
-                      }}
-                      className="flex flex-col items-center group"
-                    >
-                      <div
-                        className={cn(
-                          'w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-semibold transition-all mb-1.5',
-                          isActive && 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-110',
-                          isCompleted && 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20',
-                          !isActive && !isCompleted && 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'
-                        )}
-                      >
-                        {isCompleted ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
-                      </div>
-                      <p className={cn(
-                        'text-[10px] md:text-xs font-medium text-center max-w-20 md:max-w-24 leading-tight',
-                        isActive && 'text-blue-600 dark:text-blue-400',
-                        isCompleted && 'text-emerald-600 dark:text-emerald-400',
-                        !isActive && !isCompleted && 'text-muted-foreground'
-                      )}>
-                        {step.title}
-                      </p>
-                    </button>
-                    {index < steps.length - 1 && (
-                      <div className={cn(
-                        'flex-1 h-1 mx-2 md:mx-3 rounded-full transition-colors',
-                        isCompleted ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gray-200 dark:bg-gray-800'
-                      )} />
-                    )}
+          {/* Right Panel: Summary (visible on xl+, merged with center on md-lg) */}
+          <div className="hidden xl:block">
+            <SummaryPanel
+              totals={totals}
+              proposalType={formData.proposalType}
+              itemCount={formData.items.length}
+              customerName={formData.customer.name}
+              isSending={isSubmitting}
+              onSaveAndSend={handleSaveAndSend}
+              canSend={canSend}
+            />
+          </div>
+
+          {/* Tablet: Floating summary bar at bottom when xl panel is hidden */}
+          <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-950/95 backdrop-blur-lg border-t shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-50">
+            <div className="flex items-center gap-4 px-6 py-3">
+              <div className="flex-1 flex items-center gap-6">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.subtotal')}</p>
+                  <p className="text-sm font-semibold">{formatCurrency(totals.subtotal)}</p>
+                </div>
+                {totals.discountAmount > 0 && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.discount')}</p>
+                    <p className="text-sm font-semibold text-red-600">-{formatCurrency(totals.discountAmount)}</p>
                   </div>
-                )
-              })}
-            </div>
-            {/* Proposal type badge */}
-            <div className="flex justify-center mt-3">
-              <Badge className={cn(
-                'text-[10px] px-2.5 py-0.5 font-semibold',
-                formData.proposalType === 'UNOFFICIAL'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-              )}>
-                {formData.proposalType === 'UNOFFICIAL' ? t('proposals.proposalTypeUnofficial') : t('proposals.proposalTypeOfficial')}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Step Content */}
-          <div className="rounded-2xl bg-white dark:bg-gray-900 border shadow-sm overflow-hidden">
-            <div className="p-4 md:p-6 border-b bg-gray-50/50 dark:bg-gray-800/30">
-              <h2 className="text-lg font-bold">{steps[currentStep].title}</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {currentStep === 0 && t('proposals.selectCustomerDesc')}
-                {currentStep === 1 && t('proposals.addProductsDesc')}
-                {currentStep === 2 && t('proposals.detailsDesc')}
-                {currentStep === 3 && t('proposals.previewDesc')}
-              </p>
-            </div>
-            <div className="p-4 md:p-6">
-              {currentStep === 0 && (
-                <CustomerSelectionStep selectedCustomer={formData.customer} onSelect={handleSelectCustomer} proposalType={formData.proposalType || 'OFFICIAL'} onProposalTypeChange={(type) => setValue('proposalType', type as 'OFFICIAL' | 'UNOFFICIAL')} />
-              )}
-              {currentStep === 1 && (
-                <ProductSelectionStep
-                  items={formData.items}
-                  onAddItem={handleAddItem}
-                  onUpdateItem={handleUpdateItem}
-                  onRemoveItem={handleRemoveItem}
-                  onReorderItems={handleReorderItems}
-                  generalDiscount={formData.generalDiscount}
-                  onGeneralDiscountChange={(gd) => setValue('generalDiscount', gd)}
-                  proposalType={formData.proposalType}
-                />
-              )}
-              {currentStep === 2 && (
-                <DetailsStep data={formData} onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }} onDateChange={(field, value) => setValue(field, value)} />
-              )}
-              {currentStep === 3 && (
-                <PreviewStep
-                  data={formData}
-                  totals={totals}
-                  onSaveAndSend={handleSaveAndSend}
-                  isSending={isSubmitting}
-                  voiceNoteData={formData.voiceNoteData ?? null}
-                  voiceNoteDuration={formData.voiceNoteDuration ?? null}
-                  onVoiceNoteChange={(data, dur) => {
-                    setValue('voiceNoteData', data)
-                    setValue('voiceNoteDuration', dur)
-                  }}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Navigation - Mobile sticky bottom */}
-          <div className="sticky bottom-0 md:relative bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-t md:border md:rounded-2xl p-4 md:p-5 -mx-4 md:mx-0 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:shadow-sm">
-            <div className="flex justify-between gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                disabled={currentStep === 0}
-                className="gap-2 h-11 rounded-xl flex-1 md:flex-none"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('proposals.previous')}</span>
-              </Button>
-
-              {currentStep < steps.length - 1 ? (
+                )}
+                {formData.proposalType !== 'UNOFFICIAL' && (
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.vat')}</p>
+                    <p className="text-sm font-semibold">{formatCurrency(totals.vatAmount)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.total')}</p>
+                  <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400">{formatCurrency(totals.grandTotal)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
-                  onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
-                  disabled={!steps[currentStep].completed}
-                  className="gap-2 h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 flex-1 md:flex-none"
-                >
-                  <span>{t('proposals.next')}</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-xl"
                   onClick={() => handleSaveAndSend('draft')}
-                  className="gap-2 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 flex-1 md:flex-none"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !canSend}
                 >
-                  <Check className="h-4 w-4" />
-                  {isSubmitting ? '...' : t('proposals.createProposal')}
+                  <Save className="h-4 w-4 mr-1.5" />
+                  {t('proposals.saveDraft')}
                 </Button>
-              )}
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-9 px-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/20 gap-1.5"
+                  onClick={() => setSendDialogOpen(true)}
+                  disabled={isSubmitting || !canSend}
+                >
+                  <Send className="h-4 w-4" />
+                  {t('proposals.send')}
+                </Button>
+              </div>
             </div>
           </div>
         </form>
+      </div>
+
+      {/* Mobile layout (< md) */}
+      <div className="md:hidden min-h-screen pb-20">
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          onKeyDown={(e) => { if (e.key === 'Enter' && e.target instanceof HTMLInputElement) e.preventDefault() }}
+          className="px-4 py-4 space-y-3"
+        >
+          {/* Header */}
+          <div className="mb-2">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              {t('proposals.createNew')}
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('proposals.createDescription')}</p>
+          </div>
+
+          {/* Proposal Type */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setValue('proposalType', 'OFFICIAL')}
+              className={cn(
+                'flex items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                formData.proposalType === 'OFFICIAL'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-muted hover:border-muted-foreground/30'
+              )}
+            >
+              <FileText className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs font-semibold">{t('proposals.proposalTypeOfficial')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue('proposalType', 'UNOFFICIAL')}
+              className={cn(
+                'flex items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                formData.proposalType === 'UNOFFICIAL'
+                  ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-500/20'
+                  : 'border-muted hover:border-muted-foreground/30'
+              )}
+            >
+              <Eye className="h-4 w-4 text-amber-500 shrink-0" />
+              <span className="text-xs font-semibold">{t('proposals.proposalTypeUnofficial')}</span>
+            </button>
+          </div>
+
+          {/* Customer Section */}
+          <MobileAccordionSection
+            title={t('proposals.steps.selectCustomer')}
+            icon={Building2}
+            defaultOpen={true}
+            badge={formData.customer.id ? formData.customer.name : undefined}
+          >
+            <MobileCustomerSelect
+              formData={formData}
+              onSelectCustomer={handleSelectCustomer}
+            />
+          </MobileAccordionSection>
+
+          {/* Details Section */}
+          <MobileAccordionSection
+            title={t('proposals.steps.details')}
+            icon={FileText}
+            defaultOpen={true}
+            badge={formData.title || undefined}
+          >
+            <MobileDetailsSection
+              formData={formData}
+              onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
+              onDateChange={(field, value) => setValue(field, value)}
+              onVoiceNoteChange={(data, dur) => { setValue('voiceNoteData', data); setValue('voiceNoteDuration', dur) }}
+            />
+          </MobileAccordionSection>
+
+          {/* Products Section */}
+          <MobileAccordionSection
+            title={t('proposals.steps.addProducts')}
+            icon={Package}
+            defaultOpen={true}
+            badge={formData.items.length > 0 ? String(formData.items.length) : undefined}
+          >
+            <div className="pt-3">
+              <ProductTable
+                items={formData.items}
+                onAddItem={handleAddItem}
+                onUpdateItem={handleUpdateItem}
+                onRemoveItem={handleRemoveItem}
+                onReorderItems={handleReorderItems}
+                generalDiscount={formData.generalDiscount}
+                onGeneralDiscountChange={(gd) => setValue('generalDiscount', gd)}
+                proposalType={formData.proposalType}
+              />
+            </div>
+          </MobileAccordionSection>
+
+          {/* Mobile Summary */}
+          {formData.items.length > 0 && (
+            <div className="rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-4 shadow-xl shadow-blue-500/20">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-blue-200">{t('proposals.subtotal')}</p>
+                  <p className="text-sm font-bold">{formatCurrency(totals.subtotal)}</p>
+                </div>
+                {totals.discountAmount > 0 && (
+                  <div>
+                    <p className="text-[10px] text-blue-200">{t('proposals.discount')}</p>
+                    <p className="text-sm font-bold text-red-300">-{formatCurrency(totals.discountAmount)}</p>
+                  </div>
+                )}
+                {formData.proposalType !== 'UNOFFICIAL' && (
+                  <div>
+                    <p className="text-[10px] text-blue-200">{t('proposals.vat')}</p>
+                    <p className="text-sm font-bold">{formatCurrency(totals.vatAmount)}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-[10px] text-blue-200">{t('proposals.total')}</p>
+                  <p className="text-xl font-extrabold">{formatCurrency(totals.grandTotal)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </form>
+
+        {/* Mobile Bottom Bar */}
+        <MobileBottomBar
+          grandTotal={totals.grandTotal}
+          isSending={isSubmitting}
+          canSend={canSend}
+          onSaveDraft={() => handleSaveAndSend('draft')}
+          onSend={() => setSendDialogOpen(true)}
+        />
+      </div>
+
+      {/* Send Dialog (Ctrl+Enter) */}
+      <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('proposals.send')}</DialogTitle>
+            <DialogDescription>{t('proposals.previewDesc')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Button
+              className="w-full gap-3 h-12 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg shadow-green-500/25 font-semibold"
+              onClick={() => handleSendDialogAction('whatsapp')}
+              disabled={isSubmitting || !formData.customer.phone}
+            >
+              <MessageSquare className="h-5 w-5" />
+              {t('proposals.sendWhatsApp')}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full gap-2 h-11 rounded-xl"
+              onClick={() => handleSendDialogAction('email')}
+              disabled={isSubmitting || !formData.customer.email}
+            >
+              <Send className="h-4 w-4" />
+              {t('proposals.sendEmail')}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full gap-2 h-11 rounded-xl"
+              onClick={() => { setSendDialogOpen(false); handleSaveAndSend('draft') }}
+              disabled={isSubmitting}
+            >
+              <Save className="h-4 w-4" />
+              {t('proposals.saveDraft')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+// ── Mobile sub-components ─────────────────────────────────
+
+function MobileCustomerSelect({
+  formData,
+  onSelectCustomer,
+}: {
+  formData: ProposalFormData
+  onSelectCustomer: (customer: ProposalFormData['customer']) => void
+}) {
+  const t = useTranslations()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const { data: customersData } = useSWR('/api/v1/customers?limit=100', apiFetcher, swrStaticOptions)
+  const customers: Customer[] = customersData?.data?.customers ?? []
+
+  const filteredCustomers = useMemo(() => {
+    if (!search) return customers
+    const q = search.toLowerCase()
+    return customers.filter((c: Customer) =>
+      c.name.toLowerCase().includes(q) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (c.phone && c.phone.includes(search))
+    )
+  }, [search, customers])
+
+  const handleSelect = (customer: Customer) => {
+    onSelectCustomer({
+      id: customer.id,
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
+      taxNumber: customer.taxNumber || '',
+      contactPersonId: customer.id,
+    })
+    setOpen(false)
+    setSearch('')
+  }
+
+  return (
+    <div className="pt-3 space-y-3">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn('w-full justify-start text-left font-normal h-10 rounded-xl text-sm', !formData.customer.id && 'text-muted-foreground')}
+          >
+            <Building2 className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">{formData.customer.id ? formData.customer.name : t('proposals.selectCustomer')}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[calc(100vw-48px)] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder={t('proposals.searchCustomer')} value={search} onValueChange={setSearch} />
+            <CommandList>
+              <CommandEmpty>{t('proposals.noCustomer')}</CommandEmpty>
+              <CommandGroup>
+                {filteredCustomers.map((customer: Customer) => (
+                  <CommandItem key={customer.id} onSelect={() => handleSelect(customer)}>
+                    <div className="flex items-center gap-2 w-full">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        {customer.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{customer.name}</p>
+                        {customer.email && <p className="text-[11px] text-muted-foreground truncate">{customer.email}</p>}
+                      </div>
+                    </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      {formData.customer.id && (
+        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 p-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-xs shrink-0">
+              {formData.customer.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-emerald-900 dark:text-emerald-100 truncate">{formData.customer.name}</p>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300 truncate">{formData.customer.email}</p>
+            </div>
+            <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MobileDetailsSection({
+  formData,
+  onChange,
+  onDateChange,
+  onVoiceNoteChange,
+}: {
+  formData: ProposalFormData
+  onChange: (field: string, value: string | number | boolean | null) => void
+  onDateChange: (field: 'deliveryDate' | 'installationDate', value: Date | null) => void
+  onVoiceNoteChange: (data: string | null, duration: number | null) => void
+}) {
+  const t = useTranslations()
+
+  const { data: calendarData } = useSWR('/api/v1/calendar', apiFetcher, swrStaticOptions)
+  const disabledDeliveryDates: string[] = calendarData?.data?.disabledDeliveryDates ?? []
+  const disabledInstallationDates: string[] = calendarData?.data?.disabledInstallationDates ?? []
+
+  return (
+    <div className="pt-3 space-y-4">
+      <div>
+        <Label htmlFor="m-title" className="text-xs font-medium text-muted-foreground">{t('proposals.title')}</Label>
+        <Input id="m-title" value={formData.title || ''} onChange={(e) => onChange('title', e.target.value)}
+          placeholder={t('proposals.create.proposalTitle')} className="mt-1 h-9 rounded-lg text-sm" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">{t('proposals.validityDays')}</Label>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Input type="number" min="1" max="365" value={formData.validityDays || 30}
+              onChange={(e) => onChange('validityDays', parseInt(e.target.value) || 30)} className="h-9 rounded-lg text-sm" />
+            <span className="text-xs text-muted-foreground">{t('proposals.days')}</span>
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">{t('proposals.paymentTerms')}</Label>
+          <Select value={formData.paymentTerms || 'Net 30'} onValueChange={(v) => onChange('paymentTerms', v)}>
+            <SelectTrigger className="mt-1 h-9 rounded-lg text-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Due Upon Receipt">Due Upon Receipt</SelectItem>
+              <SelectItem value="Net 15">Net 15</SelectItem>
+              <SelectItem value="Net 30">Net 30</SelectItem>
+              <SelectItem value="Net 45">Net 45</SelectItem>
+              <SelectItem value="Net 60">Net 60</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground">{t('proposals.deliveryTerms')}</Label>
+        <Select value={formData.deliveryTerms || 'Standard'} onValueChange={(v) => onChange('deliveryTerms', v)}>
+          <SelectTrigger className="mt-1 h-9 rounded-lg text-sm"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Standard">Standard</SelectItem>
+            <SelectItem value="Express">Express</SelectItem>
+            <SelectItem value="Overnight">Overnight</SelectItem>
+            <SelectItem value="Same Day">Same Day</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">{t('proposals.deliveryDate')}</Label>
+          <div className="mt-1">
+            <DatePicker value={formData.deliveryDate ?? undefined} onChange={(d) => onDateChange('deliveryDate', d ?? null)}
+              disabledDates={disabledDeliveryDates} placeholder={t('proposals.selectDeliveryDate')} />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">{t('proposals.installationDate')}</Label>
+          <div className="mt-1">
+            <DatePicker value={formData.installationDate ?? undefined} onChange={(d) => onDateChange('installationDate', d ?? null)}
+              disabledDates={disabledInstallationDates} placeholder={t('proposals.selectInstallationDate')}
+              minDate={formData.deliveryDate ?? undefined} />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground">{t('proposals.notes')}</Label>
+        <Textarea value={formData.notes || ''} onChange={(e) => onChange('notes', e.target.value)}
+          placeholder={t('proposals.create.notes')} className="mt-1 h-16 resize-none rounded-lg text-sm" />
+      </div>
+
+      <div>
+        <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mb-1.5">
+          <Mic className="h-3.5 w-3.5 text-blue-500" />
+          {t('proposals.voiceNote')}
+        </Label>
+        <VoiceNoteRecorder
+          value={formData.voiceNoteData ?? null}
+          duration={formData.voiceNoteDuration ?? null}
+          onChange={onVoiceNoteChange}
+          maxDuration={60}
+          labels={{
+            record: t('proposals.voiceRecord'),
+            recording: t('proposals.voiceRecording'),
+            stop: t('proposals.voiceStop'),
+            play: t('proposals.voiceReady'),
+            reRecord: t('proposals.voiceReRecord'),
+            delete: t('proposals.voiceDelete'),
+            maxDurationLabel: t('proposals.voiceMaxDuration'),
+          }}
+        />
       </div>
     </div>
   )

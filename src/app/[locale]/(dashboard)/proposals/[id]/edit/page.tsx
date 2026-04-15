@@ -207,9 +207,7 @@ function CustomerSelectionStep({ selectedCustomer, onSelect, proposalType, onPro
 
   const handleTypeChange = (newType: string) => {
     if (newType !== proposalType) {
-      if (confirm(t('proposals.proposalTypeChangeConfirm'))) {
-        onProposalTypeChange(newType)
-      }
+      onProposalTypeChange(newType)
     }
   }
 
