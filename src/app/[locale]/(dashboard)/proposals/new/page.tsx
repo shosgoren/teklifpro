@@ -163,9 +163,11 @@ const apiFetcher = (url: string) =>
 
 // ── Step 1: Customer Selection ────────────────────────────
 
-function CustomerSelectionStep({ selectedCustomer, onSelect }: {
+function CustomerSelectionStep({ selectedCustomer, onSelect, proposalType, onProposalTypeChange }: {
   selectedCustomer: ProposalFormData['customer'] | null
   onSelect: (customer: ProposalFormData['customer'], contact: Pick<CustomerContact, 'id' | 'name'>) => void
+  proposalType: string
+  onProposalTypeChange: (type: string) => void
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -201,8 +203,52 @@ function CustomerSelectionStep({ selectedCustomer, onSelect }: {
     setSearch('')
   }
 
+  const handleTypeChange = (newType: string) => {
+    if (newType !== proposalType) {
+      if (confirm(t('proposals.proposalTypeChangeConfirm'))) {
+        onProposalTypeChange(newType)
+      }
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Proposal Type Toggle */}
+      <div>
+        <Label className="text-sm font-medium mb-2 block">{t('proposals.proposalType')}</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleTypeChange('OFFICIAL')}
+            className={cn(
+              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
+              proposalType === 'OFFICIAL'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                : 'border-muted hover:border-muted-foreground/30'
+            )}
+          >
+            <FileText className="h-5 w-5 text-primary" />
+            <span className="text-sm font-semibold">{t('proposals.proposalTypeOfficial')}</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.officialDescription')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTypeChange('UNOFFICIAL')}
+            className={cn(
+              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
+              proposalType === 'UNOFFICIAL'
+                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-500/20'
+                : 'border-muted hover:border-muted-foreground/30'
+            )}
+          >
+            <Eye className="h-5 w-5 text-amber-500" />
+            <span className="text-sm font-semibold">{t('proposals.proposalTypeUnofficial')}</span>
+            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.unofficialDescription')}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Customer Selection */}
       <div>
         <Label className="text-sm font-medium mb-2 block">
           {t('proposals.steps.selectCustomer')}
@@ -384,6 +430,13 @@ function ProductSelectionStep({
 
   return (
     <div className="space-y-5">
+      {/* KDV excluded notice for UNOFFICIAL */}
+      {proposalType === 'UNOFFICIAL' && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm font-medium">
+          <Eye className="h-4 w-4 shrink-0" />
+          {t('proposals.vatExcludedNotice')}
+        </div>
+      )}
       {/* Product Search */}
       <Popover open={searchOpen} onOpenChange={(open) => { setSearchOpen(open); if (!open) setReplacingIndex(null) }}>
         <PopoverTrigger asChild>
@@ -813,41 +866,6 @@ function DetailsStep({
 
   return (
     <div className="space-y-6">
-      {/* Proposal Type Toggle */}
-      <div>
-        <Label>{t('proposals.proposalType')}</Label>
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          <button
-            type="button"
-            onClick={() => onChange('proposalType', 'OFFICIAL')}
-            className={cn(
-              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
-              (data.proposalType || 'OFFICIAL') === 'OFFICIAL'
-                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                : 'border-muted hover:border-muted-foreground/30'
-            )}
-          >
-            <FileText className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold">{t('proposals.proposalTypeOfficial')}</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.officialDescription')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange('proposalType', 'UNOFFICIAL')}
-            className={cn(
-              'flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all text-center',
-              data.proposalType === 'UNOFFICIAL'
-                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-500/20'
-                : 'border-muted hover:border-muted-foreground/30'
-            )}
-          >
-            <Eye className="h-5 w-5 text-amber-500" />
-            <span className="text-sm font-semibold">{t('proposals.proposalTypeUnofficial')}</span>
-            <span className="text-[11px] text-muted-foreground leading-tight">{t('proposals.unofficialDescription')}</span>
-          </button>
-        </div>
-      </div>
-
       <div>
         <Label htmlFor="title">{t('proposals.title')}</Label>
         <Input
@@ -1436,6 +1454,17 @@ export default function CreateProposalPage() {
                 )
               })}
             </div>
+            {/* Proposal type badge */}
+            <div className="flex justify-center mt-3">
+              <Badge className={cn(
+                'text-[10px] px-2.5 py-0.5 font-semibold',
+                formData.proposalType === 'UNOFFICIAL'
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+              )}>
+                {formData.proposalType === 'UNOFFICIAL' ? t('proposals.proposalTypeUnofficial') : t('proposals.proposalTypeOfficial')}
+              </Badge>
+            </div>
           </div>
 
           {/* Step Content */}
@@ -1451,7 +1480,7 @@ export default function CreateProposalPage() {
             </div>
             <div className="p-4 md:p-6">
               {currentStep === 0 && (
-                <CustomerSelectionStep selectedCustomer={formData.customer} onSelect={handleSelectCustomer} />
+                <CustomerSelectionStep selectedCustomer={formData.customer} onSelect={handleSelectCustomer} proposalType={formData.proposalType || 'OFFICIAL'} onProposalTypeChange={(type) => setValue('proposalType', type as 'OFFICIAL' | 'UNOFFICIAL')} />
               )}
               {currentStep === 1 && (
                 <ProductSelectionStep
