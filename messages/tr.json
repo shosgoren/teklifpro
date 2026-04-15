@@ -454,6 +454,8 @@
     "view": "Goruntule",
     "fullScreenView": "Tam Ekran Goruntule",
     "liveLink": "Canli link mevcut",
+    "viewCount": "Görüntülenme",
+    "expiryDate": "Son Geçerlilik",
     "createdAt": "Olusturulma",
     "proposal": "Teklif",
     "errorLoading": "Veriler yüklenirken hata oluştu",

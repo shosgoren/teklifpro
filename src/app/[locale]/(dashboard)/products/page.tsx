@@ -27,7 +27,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/shared/components/ui/dialog';
 import { Label } from '@/shared/components/ui/label';
-import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
+import ProductDetailPanel from './components/ProductDetailPanel';
 import { toast } from 'sonner';
 import { cn } from '@/shared/utils/cn';
 
@@ -1199,156 +1199,14 @@ export default function ProductsPage() {
       </div>
       </div>
 
-      {/* ─── Quick Preview Sheet ─── */}
-      <Sheet open={!!selectedProduct} onOpenChange={(open) => { if (!open) setSelectedProduct(null); }}>
-        <SheetContent className="sm:max-w-[480px] p-0 flex flex-col">
-          {selectedProduct && (
-            <>
-              {/* Header */}
-              <div className="bg-gradient-to-br from-violet-600 to-purple-600 px-6 py-5">
-                <div className="flex items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate">{selectedProduct.name}</h3>
-                    <p className="text-sm text-white/70 mt-0.5">{selectedProduct.code ?? '-'}</p>
-                    <Badge className="mt-2 bg-white/20 text-white border-0 hover:bg-white/30 text-xs">
-                      {PRODUCT_TYPE_LABELS[selectedProduct.productType] || selectedProduct.productType}
-                    </Badge>
-                  </div>
-                  {selectedProduct.imageUrl && (
-                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/20 shrink-0 relative">
-                      <Image
-                        src={selectedProduct.imageUrl}
-                        alt={selectedProduct.name}
-                        width={56}
-                        height={56}
-                        className="w-full h-full object-cover"
-                        unoptimized={selectedProduct.imageUrl.startsWith('data:')}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-                {/* Pricing Card */}
-                <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-                    <Tag className="h-4 w-4" />
-                    {t('pricing')}
-                  </div>
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">{t('listPrice')}</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {formatPrice(selectedProduct.listPrice)}
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {t('vatRate')} %{selectedProduct.vatRate}
-                    </Badge>
-                  </div>
-                  {selectedProduct.costPrice > 0 && (
-                    <div>
-                      <p className="text-xs text-muted-foreground">{t('cost')}</p>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        {formatPrice(selectedProduct.costPrice)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Stock Card */}
-                {selectedProduct.trackStock && (
-                  <div className="rounded-2xl border p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-                      <Box className="h-4 w-4" />
-                      {t('stockStatus')}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground">{t('currentStock')}</p>
-                        <p className={cn(
-                          'text-xl font-bold',
-                          selectedProduct.minStockLevel > 0 && selectedProduct.stockQuantity < selectedProduct.minStockLevel
-                            ? 'text-red-600 dark:text-red-400'
-                            : 'text-emerald-600 dark:text-emerald-400'
-                        )}>
-                          {selectedProduct.stockQuantity} {selectedProduct.unit}
-                        </p>
-                      </div>
-                      {selectedProduct.minStockLevel > 0 && (
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">{t('minLevel')}</p>
-                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                            {selectedProduct.minStockLevel} {selectedProduct.unit}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {selectedProduct.minStockLevel > 0 && (
-                      <StockBar product={selectedProduct} />
-                    )}
-                  </div>
-                )}
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                      <Layers className="h-3.5 w-3.5" />
-                      {t('category')}
-                    </div>
-                    <p className="text-sm font-medium">{selectedProduct.category || '-'}</p>
-                  </div>
-                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-3">
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                      <Package className="h-3.5 w-3.5" />
-                      {t('unit')}
-                    </div>
-                    <p className="text-sm font-medium">{selectedProduct.unit}</p>
-                  </div>
-                </div>
-
-                {/* Description */}
-                {selectedProduct.description && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-muted-foreground">{t('descriptionLabel')}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                      {selectedProduct.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="sticky bottom-0 border-t bg-white dark:bg-gray-950 p-4 flex gap-3">
-                <Button
-                  variant="outline"
-                  className="flex-1 rounded-xl"
-                  onClick={() => {
-                    router.push(`/${locale}/products/${selectedProduct.id}`);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  {t('fullScreenView')}
-                </Button>
-                <Button
-                  className="flex-1 rounded-xl"
-                  onClick={() => {
-                    handleEditProduct(selectedProduct);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  {t('editBtn')}
-                </Button>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* ─── Detail Panel ─── */}
+      <ProductDetailPanel
+        product={selectedProduct}
+        open={!!selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onMutate={() => mutate()}
+        onEdit={(p) => handleEditProduct(p)}
+      />
     </div>
   );
 }

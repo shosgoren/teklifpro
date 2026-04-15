@@ -6,11 +6,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
 import { swrDefaultOptions } from '@/shared/utils/swrConfig';
-import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3, Calendar, User, ExternalLink, DollarSign, X, RefreshCw } from 'lucide-react';
+import { Plus, Search, ChevronDown, Eye, Edit, Copy, MessageCircle, Link, Trash2, ChevronLeft, ChevronRight, FileText, List, Columns3, Calendar, User, ExternalLink, DollarSign, RefreshCw } from 'lucide-react';
 import { FilterEmptyState } from '@/shared/components/FilterEmptyState';
 import { useCurrency } from '@/shared/hooks/useCurrency';
-import { Sheet, SheetContent } from '@/shared/components/ui/sheet';
 import KanbanBoard from './kanban-board';
+import ProposalDetailPanel from './components/ProposalDetailPanel';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import {
@@ -34,13 +34,34 @@ interface Proposal {
   proposalType?: ProposalType;
   status: ProposalStatus;
   grandTotal: number | string;
+  subtotal?: number | string;
+  vatTotal?: number | string;
+  discountAmount?: number | string;
+  currency?: string;
   createdAt: string;
+  expiresAt?: string;
+  sentAt?: string;
+  viewedAt?: string;
+  viewCount?: number;
   publicToken: string;
+  paymentTerms?: string;
+  deliveryTerms?: string;
+  notes?: string;
+  validityDays?: number;
   customer?: {
+    id?: string;
     name: string;
     email?: string;
     phone?: string;
   };
+  items?: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    unitPrice: number | string;
+    vatRate?: number;
+    discountRate?: number;
+  }>;
 }
 
 const fetcher = (url: string) =>
@@ -143,7 +164,10 @@ export default function ProposalsPage() {
   const pagination = data?.data?.pagination ?? { total: 0, totalPages: 1, page: 1 };
   const totalPages = pagination.totalPages;
 
-  const handleRowClick = (id: string) => router.push(`/${locale}/proposals/${id}`);
+  const handleRowClick = (id: string) => {
+    const p = proposals.find((p: Proposal) => p.id === id) ?? null;
+    setSelectedProposal(p);
+  };
 
   const handleCopyLink = (e: React.MouseEvent, token: string) => {
     e.stopPropagation();
@@ -634,126 +658,13 @@ export default function ProposalsPage() {
       </div>
       </div>
 
-      {/* ─── Quick Preview Sheet ─── */}
-      <Sheet open={!!selectedProposal} onOpenChange={(open) => !open && setSelectedProposal(null)}>
-        <SheetContent className="sm:max-w-[480px] p-0 flex flex-col">
-          {selectedProposal && (() => {
-            const previewStatus = STATUS_CONFIG[selectedProposal.status as ProposalStatus] ?? STATUS_CONFIG.DRAFT;
-            const gradientMap: Record<string, string> = {
-              DRAFT: 'from-slate-500 to-slate-700',
-              READY: 'from-cyan-500 to-cyan-700',
-              SENT: 'from-blue-500 to-blue-700',
-              VIEWED: 'from-amber-500 to-amber-700',
-              ACCEPTED: 'from-emerald-500 to-emerald-700',
-              REJECTED: 'from-red-500 to-red-700',
-              REVISION_REQUESTED: 'from-orange-500 to-orange-700',
-              EXPIRED: 'from-gray-400 to-gray-600',
-              INVOICED: 'from-indigo-500 to-indigo-700',
-            };
-            const gradient = gradientMap[selectedProposal.status] || 'from-violet-500 to-purple-700';
-
-            return (
-              <>
-                {/* Header */}
-                <div className={`relative bg-gradient-to-br ${gradient} px-6 py-6`}>
-                  <button
-                    onClick={() => setSelectedProposal(null)}
-                    className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                  >
-                    <X className="h-4 w-4 text-white" />
-                  </button>
-                  <Badge className="bg-white/20 text-white border-white/30 text-xs mb-3">
-                    {t(`status.${selectedProposal.status}` as Parameters<typeof t>[0])}
-                  </Badge>
-                  <p className="text-white/70 text-xs font-mono">{selectedProposal.proposalNumber}</p>
-                  <h2 className="text-white text-lg font-bold mt-1 pr-8">
-                    {selectedProposal.title || selectedProposal.proposalNumber}
-                  </h2>
-                </div>
-
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-                  {/* Customer Card */}
-                  <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('customer')}</span>
-                    </div>
-                    <p className="text-sm font-semibold">{selectedProposal.customer?.name ?? '-'}</p>
-                    {selectedProposal.customer?.email && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{selectedProposal.customer.email}</p>
-                    )}
-                    {selectedProposal.customer?.phone && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{selectedProposal.customer.phone}</p>
-                    )}
-                  </div>
-
-                  {/* Financial Card */}
-                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('totalAmount')}</span>
-                    </div>
-                    <p className="text-2xl font-bold">
-                      {Number(selectedProposal.grandTotal || 0).toLocaleString(dateLocale, {
-                        style: 'currency',
-                        currency: (selectedProposal as Proposal & { currency?: string }).currency || 'TRY',
-                      })}
-                    </p>
-                  </div>
-
-                  {/* Details Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{t('createdAt')}</span>
-                      </div>
-                      <p className="text-sm font-semibold">
-                        {new Date(selectedProposal.createdAt).toLocaleDateString(dateLocale)}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-900 p-4">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className={cn('h-2.5 w-2.5 rounded-full', previewStatus.dot)} />
-                        <span className="text-xs text-muted-foreground">{t('list.status')}</span>
-                      </div>
-                      <p className="text-sm font-semibold">{t(`status.${selectedProposal.status}` as Parameters<typeof t>[0])}</p>
-                    </div>
-                  </div>
-
-                  {/* Public Link Indicator */}
-                  {selectedProposal.publicToken && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                      <ExternalLink className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">{t('liveLink')}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="sticky bottom-0 border-t border-gray-200 dark:border-gray-800 p-4 flex gap-3 bg-background">
-                  <Button
-                    variant="outline"
-                    className="flex-1 rounded-xl h-11"
-                    onClick={() => router.push(`/${locale}/proposals/${selectedProposal.id}`)}
-                  >
-                    <Eye className="mr-2 h-4 w-4" />
-                    {t('fullScreenView')}
-                  </Button>
-                  <Button
-                    className="flex-1 rounded-xl h-11"
-                    onClick={() => router.push(`/${locale}/proposals/${selectedProposal.id}/edit`)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    {tc('edit')}
-                  </Button>
-                </div>
-              </>
-            );
-          })()}
-        </SheetContent>
-      </Sheet>
+      {/* ─── Detail Panel ─── */}
+      <ProposalDetailPanel
+        proposal={selectedProposal}
+        open={!!selectedProposal}
+        onClose={() => setSelectedProposal(null)}
+        onMutate={() => { mutate(); kanbanMutate?.(); }}
+      />
     </div>
   );
 }

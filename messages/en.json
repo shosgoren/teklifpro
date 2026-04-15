@@ -454,6 +454,8 @@
     "view": "View",
     "fullScreenView": "Full Screen View",
     "liveLink": "Live link available",
+    "viewCount": "Views",
+    "expiryDate": "Expiry Date",
     "createdAt": "Created",
     "proposal": "Proposal",
     "errorLoading": "Error loading data",
