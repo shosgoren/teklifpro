@@ -1428,7 +1428,13 @@ export default function CreateProposalPage() {
     return item
   }), [formData.items])
 
-  const totals = useMemo(() => calculateProposalTotals(itemsForCalcMain, formData.generalDiscount), [itemsForCalcMain, formData.generalDiscount])
+  const totals = useMemo(() => {
+    const raw = calculateProposalTotals(itemsForCalcMain, formData.generalDiscount)
+    if (formData.proposalType === 'UNOFFICIAL') {
+      return { ...raw, vatTotal: 0, vatAmount: 0, tax: 0, grandTotal: raw.subtotal - raw.discountAmount }
+    }
+    return raw
+  }, [itemsForCalcMain, formData.generalDiscount, formData.proposalType])
 
   const { fields: itemFields, append, update, remove } = useFieldArray({
     control,
