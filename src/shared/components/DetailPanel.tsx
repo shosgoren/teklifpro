@@ -155,34 +155,42 @@ export function InlineField({
 // ── DetailPanel Root ──────────────────────────────────────
 
 export function DetailPanel({ open, onClose, children, width = '520px' }: DetailPanelProps) {
+  const panelId = React.useId()
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
         />
-        <DialogPrimitive.Content
-          className={cn(
-            'fixed z-50 flex flex-col bg-background shadow-2xl',
-            'inset-0 w-full h-full',
-            'sm:inset-y-0 sm:right-0 sm:left-auto sm:h-full sm:rounded-none',
-            'data-[state=open]:animate-in data-[state=closed]:animate-out',
-            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-            'sm:data-[state=closed]:slide-out-to-right sm:data-[state=open]:slide-in-from-right',
-            'data-[state=closed]:duration-200 data-[state=open]:duration-300',
-          )}
-          style={{ maxWidth: undefined }}
-        >
-          <style>{`
-            @media (min-width: 640px) {
-              [data-detail-panel] { width: ${width}; max-width: 90vw; }
+        <style dangerouslySetInnerHTML={{ __html: `
+          [data-panel-id="${panelId}"] {
+            position: fixed;
+            z-index: 50;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            background: hsl(var(--background));
+            box-shadow: -4px 0 25px rgba(0,0,0,0.15);
+            outline: none;
+          }
+          @media (min-width: 640px) {
+            [data-panel-id="${panelId}"] {
+              width: ${width};
+              max-width: 90vw;
             }
-          `}</style>
-          <div data-detail-panel="" className="flex flex-col h-full w-full sm:w-auto">
-            <DialogPrimitive.Title className="sr-only">Detail</DialogPrimitive.Title>
-            <DialogPrimitive.Description className="sr-only">Detail panel</DialogPrimitive.Description>
-            {children}
-          </div>
+          }
+        `}} />
+        <DialogPrimitive.Content
+          data-panel-id={panelId}
+          className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right"
+        >
+          <DialogPrimitive.Title className="sr-only">Detail</DialogPrimitive.Title>
+          <DialogPrimitive.Description className="sr-only">Detail panel</DialogPrimitive.Description>
+          {children}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
