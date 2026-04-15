@@ -450,13 +450,7 @@ export default function ProposalContent({
         html { scroll-behavior: smooth; }
       `}</style>
 
-      {/* ─── UNOFFICIAL Watermark Banner ─── */}
-      {isUnofficial && (
-        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white py-3 px-4 text-center">
-          <p className="text-sm sm:text-base font-extrabold uppercase tracking-widest">{t.draftProposal}</p>
-          <p className="text-xs opacity-90 mt-0.5">{t.draftProposalNote}</p>
-        </div>
-      )}
+      {/* ─── UNOFFICIAL Watermark Banner ─── removed per user request */}
 
       {/* ─── Header ─── */}
       <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 text-white overflow-hidden">
@@ -713,7 +707,7 @@ export default function ProposalContent({
                   {item.discountRate > 0 && (
                     <span className="text-orange-600 font-semibold">-{item.discountRate}%</span>
                   )}
-                  <span className="text-gray-400">{t.vat} {item.vatRate}%</span>
+                  {!isUnofficial && <span className="text-gray-400">{t.vat} {item.vatRate}%</span>}
                 </div>
               </div>
             ))}
@@ -728,7 +722,7 @@ export default function ProposalContent({
                   <th className="px-3 py-3 text-center font-semibold w-20">{t.quantity}</th>
                   <th className="px-3 py-3 text-right font-semibold w-24">{t.unitPrice}</th>
                   <th className="px-3 py-3 text-center font-semibold w-16">{t.discount}</th>
-                  <th className="px-3 py-3 text-center font-semibold w-14">{t.vat}</th>
+                  {!isUnofficial && <th className="px-3 py-3 text-center font-semibold w-14">{t.vat}</th>}
                   <th className="px-5 py-3 text-right font-semibold w-28">{t.total}</th>
                 </tr>
               </thead>
@@ -748,7 +742,7 @@ export default function ProposalContent({
                         <span className="text-gray-300">–</span>
                       )}
                     </td>
-                    <td className="px-3 py-3.5 text-center">{item.vatRate}%</td>
+                    {!isUnofficial && <td className="px-3 py-3.5 text-center">{item.vatRate}%</td>}
                     <td className="px-5 py-3.5 text-right">
                       {item.discountRate > 0 && (
                         <span className="text-xs text-gray-400 line-through mr-1">{fmt(item.quantity * item.unitPrice)}</span>
