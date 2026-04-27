@@ -226,7 +226,7 @@ export default function CustomersPage() {
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-        <div className="md:shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+        <div className="md:shrink-0 bg-gradient-to-br from-mint-500 to-mint-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
             <div className="h-4 w-64 bg-white/10 animate-pulse rounded-lg mt-2" />
@@ -247,7 +247,7 @@ export default function CustomersPage() {
   if (error) {
     return (
       <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-        <div className="md:shrink-0 bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+        <div className="md:shrink-0 bg-gradient-to-br from-mint-500 to-mint-600 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{t('title')}</h1>
           </div>
@@ -270,7 +270,7 @@ export default function CustomersPage() {
   return (
     <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
       {/* Gradient Hero */}
-      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-mint-500 to-mint-600 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />

@@ -84,7 +84,7 @@ export function ProposalSidebar({ proposal }: ProposalSidebarProps) {
             <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">{t('customerInfo')}</h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center text-white shrink-0">
                   <User className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">

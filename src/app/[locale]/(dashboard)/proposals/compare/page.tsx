@@ -597,7 +597,7 @@ export default function ProposalComparePage() {
               icon={BarChart3}
               label={t('summaryAverage')}
               value={formatCurrency(avgTotal, summaryCurrency, dateLocale)}
-              gradient="bg-gradient-to-br from-purple-500 to-mint-700 dark:from-purple-600 dark:to-mint-800"
+              gradient="bg-gradient-to-br from-mint-500 to-mint-700 dark:from-mint-600 dark:to-mint-800"
             />
             <SummaryCard
               icon={Users}

@@ -214,7 +214,7 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
       ? [{
           icon: Copy,
           label: cloning ? '...' : t('copyLastProposal'),
-          color: 'from-violet-500 to-purple-600',
+          color: 'from-mint-500 to-mint-600',
           onClick: handleClone,
         }]
       : []),
@@ -526,7 +526,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     onClick={() => router.push(`/${locale}/proposals/${proposal.id}`)}
-                    className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-900 border border-violet-200 dark:border-violet-800 px-4 py-3 hover:shadow-md transition-all group text-left"
+                    className="flex items-center gap-3 rounded-xl bg-white dark:bg-gray-900 border border-mint-200 dark:border-mint-800 px-4 py-3 hover:shadow-md transition-all group text-left"
                   >
                     <div className="h-2.5 w-2.5 rounded-full bg-orange-500 shrink-0 animate-pulse" />
                     <div className="flex-1 min-w-0">

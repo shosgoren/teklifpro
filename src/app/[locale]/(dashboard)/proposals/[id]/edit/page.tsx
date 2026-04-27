@@ -757,7 +757,7 @@ function ProductSelectionStep({
 
       {/* General Discount Section */}
       {items.length > 0 && (
-        <div className="rounded-2xl border bg-gradient-to-r from-violet-50/50 to-purple-50/50 dark:from-violet-950/20 dark:to-purple-950/20 border-violet-200 dark:border-violet-800 p-4">
+        <div className="rounded-2xl border bg-gradient-to-r from-mint-50/50 to-mint-50/50 dark:from-mint-950/20 dark:to-mint-950/20 border-mint-200 dark:border-mint-800 p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">

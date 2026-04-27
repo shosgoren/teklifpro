@@ -34,7 +34,7 @@ const DEMO_STEPS_CONFIG = [
     titleKey: 'stepDashboardTitle',
     subtitleKey: 'stepDashboardSubtitle',
     descriptionKey: 'stepDashboardDescription',
-    color: 'from-blue-500 to-indigo-600',
+    color: 'from-mint-500 to-mint-600',
     icon: Home,
   },
   {
@@ -50,7 +50,7 @@ const DEMO_STEPS_CONFIG = [
     titleKey: 'stepCustomersTitle',
     subtitleKey: 'stepCustomersSubtitle',
     descriptionKey: 'stepCustomersDescription',
-    color: 'from-violet-500 to-purple-600',
+    color: 'from-mint-500 to-mint-600',
     icon: Users,
   },
   {
@@ -118,8 +118,8 @@ function DashboardScreen() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         {[
-          { label: t('revenue'), value: '₺284K', color: 'from-blue-500 to-indigo-500', icon: TrendingUp },
-          { label: t('proposals'), value: '47', color: 'from-violet-500 to-purple-500', icon: FileText },
+          { label: t('revenue'), value: '₺284K', color: 'from-mint-500 to-mint-500', icon: TrendingUp },
+          { label: t('proposals'), value: '47', color: 'from-mint-500 to-mint-500', icon: FileText },
           { label: t('acceptance'), value: '%72', color: 'from-emerald-500 to-teal-500', icon: CheckCircle },
           { label: t('customerLabel'), value: '128', color: 'from-amber-500 to-orange-500', icon: Users },
         ].map((kpi, i) => (
@@ -151,7 +151,7 @@ function DashboardScreen() {
               initial={{ height: 0 }}
               animate={{ height: `${h}%` }}
               transition={{ delay: 0.8 + i * 0.05, duration: 0.4 }}
-              className="flex-1 bg-gradient-to-t from-blue-500 to-indigo-400 rounded-sm"
+              className="flex-1 bg-gradient-to-t from-mint-500 to-mint-400 rounded-sm"
             />
           ))}
         </div>
@@ -163,10 +163,10 @@ function DashboardScreen() {
 function ProductsScreen() {
   const t = useTranslations('demoPage');
   const products = [
-    { name: 'Paslanmaz Çelik Boru', code: 'PCB-001', price: '₺245', stock: 128, color: 'bg-blue-500' },
+    { name: 'Paslanmaz Çelik Boru', code: 'PCB-001', price: '₺245', stock: 128, color: 'bg-mint-500' },
     { name: 'Alüminyum Profil', code: 'ALP-003', price: '₺180', stock: 64, color: 'bg-emerald-500' },
     { name: 'Bakır Levha', code: 'BKL-012', price: '₺520', stock: 15, color: 'bg-amber-500' },
-    { name: 'Galvaniz Sac', code: 'GLS-007', price: '₺310', stock: 89, color: 'bg-violet-500' },
+    { name: 'Galvaniz Sac', code: 'GLS-007', price: '₺310', stock: 89, color: 'bg-mint-500' },
   ];
   return (
     <div className="flex flex-col h-full bg-gray-50 p-3">
@@ -176,7 +176,7 @@ function ProductsScreen() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.3, type: 'spring' }}
-          className="w-6 h-6 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center"
+          className="w-6 h-6 rounded-lg bg-gradient-to-r from-mint-500 to-mint-500 flex items-center justify-center"
         >
           <Plus className="w-3.5 h-3.5 text-white" />
         </motion.div>
@@ -306,7 +306,7 @@ function CreateProposalScreen() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1 }}
-        className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl p-3 text-white text-center"
+        className="bg-gradient-to-r from-mint-500 to-mint-500 rounded-xl p-3 text-white text-center"
       >
         <p className="text-[9px] opacity-80">{t('totalWithVat')}</p>
         <p className="text-sm font-extrabold">₺51.035,00</p>
@@ -348,7 +348,7 @@ function WhatsAppScreen() {
           transition={{ delay: 0.8 }}
           className="self-end bg-[#dcf8c6] rounded-xl rounded-tr-sm px-3 py-2 max-w-[85%] shadow-sm"
         >
-          <p className="text-[9px] text-blue-600 font-medium">🔗 {t('viewAndApprove')}</p>
+          <p className="text-[9px] text-mint-600 font-medium">🔗 {t('viewAndApprove')}</p>
           <p className="text-[8px] text-gray-400 text-right mt-1">21:42 ✓✓</p>
         </motion.div>
         <motion.div
@@ -399,7 +399,7 @@ function AnalyticsScreen() {
               initial={{ height: 0 }}
               animate={{ height: `${h}%` }}
               transition={{ delay: 0.4 + i * 0.05, duration: 0.3 }}
-              className={`flex-1 rounded-sm ${i >= 10 ? 'bg-gradient-to-t from-emerald-500 to-emerald-400' : 'bg-gradient-to-t from-blue-500 to-indigo-400'}`}
+              className={`flex-1 rounded-sm ${i >= 10 ? 'bg-gradient-to-t from-emerald-500 to-emerald-400' : 'bg-gradient-to-t from-mint-500 to-mint-400'}`}
             />
           ))}
         </div>
@@ -413,8 +413,8 @@ function AnalyticsScreen() {
       >
         <p className="text-[10px] font-semibold text-gray-700 mb-2">{t('bestSelling')}</p>
         {[
-          { name: 'Çelik Boru', pct: 85, color: 'bg-blue-500' },
-          { name: 'Alüminyum Profil', pct: 65, color: 'bg-violet-500' },
+          { name: 'Çelik Boru', pct: 85, color: 'bg-mint-500' },
+          { name: 'Alüminyum Profil', pct: 65, color: 'bg-mint-500' },
           { name: 'Bakır Levha', pct: 45, color: 'bg-amber-500' },
         ].map((p, i) => (
           <div key={i} className="mb-1.5 last:mb-0">
@@ -441,7 +441,7 @@ function AnalyticsScreen() {
         className="grid grid-cols-2 gap-2 flex-1"
       >
         <div className="bg-white rounded-xl p-2.5 flex flex-col items-center justify-center">
-          <Clock className="w-4 h-4 text-blue-500 mb-1" />
+          <Clock className="w-4 h-4 text-mint-500 mb-1" />
           <p className="text-sm font-extrabold text-gray-900">2.4dk</p>
           <p className="text-[8px] text-gray-400">{t('avgProposalTime')}</p>
         </div>
@@ -491,16 +491,16 @@ export default function DemoPage() {
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <Link href={`/${locale}`} className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-mint-600 to-mint-600 flex items-center justify-center">
               <Sparkles className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-lg font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
               TeklifPro
             </span>
           </Link>
           <Link
             href={`/${locale}/register`}
-            className="inline-flex items-center px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/25 transition-all"
+            className="inline-flex items-center px-5 py-2 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 text-white text-sm font-semibold hover:from-mint-700 hover:to-mint-700 shadow-lg shadow-mint-500/25 transition-all"
           >
             {t('startFree')}
             <ArrowRight className="ml-1.5 w-4 h-4" />
@@ -516,13 +516,13 @@ export default function DemoPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-mint-100 dark:bg-mint-900/50 text-mint-700 dark:text-mint-300 text-sm font-medium mb-4">
             <Play className="w-4 h-4" />
             {t('interactiveDemo')}
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 dark:text-white mb-3">
             {t('heroTitle')}{' '}
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
               {t('heroTitleHighlight')}
             </span>
           </h1>
@@ -641,14 +641,14 @@ export default function DemoPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={`/${locale}/register`}
-                className="group inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5"
+                className="group inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-gradient-to-r from-mint-600 to-mint-600 text-white font-semibold hover:from-mint-700 hover:to-mint-700 shadow-xl shadow-mint-500/25 hover:shadow-mint-500/40 transition-all hover:-translate-y-0.5"
               >
                 {t('tryFree14')}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
                 href={`/${locale}#pricing`}
-                className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-mint-400 hover:text-mint-600 dark:hover:text-mint-400 transition-all"
               >
                 {t('seePricing')}
               </Link>
@@ -670,14 +670,14 @@ export default function DemoPage() {
               onClick={() => goToStep(i)}
               className={`p-4 rounded-2xl border-2 transition-all text-center ${
                 i === currentStep
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-500 shadow-lg'
+                  ? 'border-mint-500 bg-mint-50 dark:bg-mint-950/30 dark:border-mint-500 shadow-lg'
                   : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 bg-white dark:bg-gray-900'
               }`}
             >
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-white mx-auto mb-2`}>
                 <s.icon className="w-5 h-5" />
               </div>
-              <p className={`text-xs font-semibold ${i === currentStep ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
+              <p className={`text-xs font-semibold ${i === currentStep ? 'text-mint-700 dark:text-mint-300' : 'text-gray-700 dark:text-gray-300'}`}>
                 {s.title}
               </p>
             </button>

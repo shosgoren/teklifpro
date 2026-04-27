@@ -31,7 +31,7 @@ export function CustomerFilters({
   const filterLabels: Record<FilterStatus, string> = { all: t('all'), active: t('active'), inactive: t('inactive') };
 
   return (
-    <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-teal-500 to-cyan-600 pb-6 px-4 md:px-8">
+    <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-mint-500 to-mint-600 pb-6 px-4 md:px-8">
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
       <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />

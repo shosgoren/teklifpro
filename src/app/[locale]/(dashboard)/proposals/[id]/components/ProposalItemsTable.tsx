@@ -184,7 +184,7 @@ export function ProposalItemsTable({ proposal, items, status, statusLabel, forma
               </div>
             )}
             {/* Grand total with gradient bg */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 mt-2">
+            <div className="bg-gradient-to-r from-mint-50 to-mint-50 dark:from-mint-950/30 dark:to-mint-950/30 rounded-xl p-4 mt-2">
               <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
                 <span>{t('genelToplam')}</span>
                 <span>{formatAmount(Number(proposal.grandTotal) || 0)}</span>

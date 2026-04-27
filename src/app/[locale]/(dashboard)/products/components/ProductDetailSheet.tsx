@@ -29,7 +29,7 @@ export function ProductDetailSheet({ product, onClose, onEdit, formatPrice, prod
         {product && (
           <>
             {/* Header */}
-            <div className="bg-gradient-to-br from-violet-600 to-purple-600 px-6 py-5">
+            <div className="bg-gradient-to-br from-mint-600 to-mint-700 px-6 py-5">
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold text-white truncate">{product.name}</h3>

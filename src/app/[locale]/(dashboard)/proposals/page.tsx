@@ -204,7 +204,7 @@ export default function ProposalsPage() {
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-        <div className="md:shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+        <div className="md:shrink-0 bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto space-y-3">
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg" />
             <div className="h-11 bg-white/10 animate-pulse rounded-xl" />
@@ -231,7 +231,7 @@ export default function ProposalsPage() {
   if (error) {
     return (
       <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-        <div className="md:shrink-0 bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+        <div className="md:shrink-0 bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <p className="text-white/70 text-sm">{t('heroSubtitle')}</p>
           </div>
@@ -271,7 +271,7 @@ export default function ProposalsPage() {
   return (
     <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
       {/* ─── Gradient Hero ─── */}
-      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-violet-600 to-purple-700 pb-6 px-4 md:px-8">
+      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
 

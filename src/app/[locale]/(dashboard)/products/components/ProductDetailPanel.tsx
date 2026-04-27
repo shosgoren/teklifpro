@@ -83,7 +83,7 @@ export default function ProductDetailPanel({ product, open, onClose, onMutate, o
 
   return (
     <DetailPanel open={open} onClose={onClose} width="520px">
-      <DetailPanelHeader gradient="from-violet-600 to-purple-600" onClose={onClose}>
+      <DetailPanelHeader gradient="from-mint-600 to-mint-700" onClose={onClose}>
         <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-white truncate pr-8">{product.name}</h2>

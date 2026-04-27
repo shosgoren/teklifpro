@@ -35,7 +35,7 @@ export function ProposalHeader({
 
   return (
     <div className="relative overflow-hidden rounded-b-3xl md:rounded-b-none">
-      <div className="relative rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">
+      <div className="relative rounded-2xl bg-gradient-to-br from-mint-600 to-mint-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">
         {/* Decorative circle */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-10 -translate-x-6" />

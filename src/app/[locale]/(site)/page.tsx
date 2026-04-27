@@ -85,14 +85,14 @@ const LandingPage = () => {
   const features = [
     { icon: <Zap className="w-6 h-6" />, title: t('features.parasut.title'), desc: t('features.parasut.desc'), gradient: 'from-amber-500 to-orange-600' },
     { icon: <MessageCircle className="w-6 h-6" />, title: t('features.whatsapp.title'), desc: t('features.whatsapp.desc'), gradient: 'from-green-500 to-emerald-600' },
-    { icon: <Eye className="w-6 h-6" />, title: t('features.tracking.title'), desc: t('features.tracking.desc'), gradient: 'from-blue-500 to-indigo-600' },
-    { icon: <Clock className="w-6 h-6" />, title: t('features.fast.title'), desc: t('features.fast.desc'), gradient: 'from-violet-500 to-purple-600' },
+    { icon: <Eye className="w-6 h-6" />, title: t('features.tracking.title'), desc: t('features.tracking.desc'), gradient: 'from-mint-500 to-mint-600' },
+    { icon: <Clock className="w-6 h-6" />, title: t('features.fast.title'), desc: t('features.fast.desc'), gradient: 'from-mint-500 to-mint-600' },
     { icon: <CheckCircle className="w-6 h-6" />, title: t('features.response.title'), desc: t('features.response.desc'), gradient: 'from-pink-500 to-rose-600' },
     { icon: <BarChart3 className="w-6 h-6" />, title: t('features.analytics.title'), desc: t('features.analytics.desc'), gradient: 'from-cyan-500 to-teal-600' },
   ];
 
   const steps = [
-    { number: 1, title: t('steps.1.title'), desc: t('steps.1.desc'), icon: <FileText className="w-6 h-6" />, color: 'from-blue-500 to-indigo-600' },
+    { number: 1, title: t('steps.1.title'), desc: t('steps.1.desc'), icon: <FileText className="w-6 h-6" />, color: 'from-mint-500 to-mint-600' },
     { number: 2, title: t('steps.2.title'), desc: t('steps.2.desc'), icon: <Zap className="w-6 h-6" />, color: 'from-amber-500 to-orange-600' },
     { number: 3, title: t('steps.3.title'), desc: t('steps.3.desc'), icon: <Package className="w-6 h-6" />, color: 'from-emerald-500 to-teal-600' },
     { number: 4, title: t('steps.4.title'), desc: t('steps.4.desc'), icon: <MessageCircle className="w-6 h-6" />, color: 'from-green-500 to-green-600' },
@@ -115,10 +115,10 @@ const LandingPage = () => {
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href={`/${locale}`} className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-mint-600 to-mint-600 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
               TeklifPro
             </span>
           </Link>
@@ -143,7 +143,7 @@ const LandingPage = () => {
             </Link>
             <Link
               href={`/${locale}/login`}
-              className="inline-flex items-center justify-center px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+              className="inline-flex items-center justify-center px-5 py-2 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 text-white text-sm font-semibold hover:from-mint-700 hover:to-mint-700 transition-all shadow-lg shadow-mint-500/25 hover:shadow-mint-500/40"
             >
               {t('nav.login')}
             </Link>
@@ -154,22 +154,22 @@ const LandingPage = () => {
       {/* ─── Hero Section ─── */}
       <section className="relative overflow-hidden">
         {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 dark:from-gray-950 dark:via-blue-950/30 dark:to-indigo-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-mint-50 via-mint-50 to-mint-50 dark:from-gray-950 dark:via-mint-950/30 dark:to-mint-950/20" />
         {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" />
         {/* Floating orbs with smooth movement */}
         <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          className="absolute top-20 left-10 w-72 h-72 bg-mint-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
           animate={{ x: [0, 30, -20, 0], y: [0, -25, 15, 0], scale: [1, 1.1, 0.95, 1] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute top-40 right-10 w-72 h-72 bg-violet-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
+          className="absolute top-40 right-10 w-72 h-72 bg-mint-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
           animate={{ x: [0, -25, 20, 0], y: [0, 20, -30, 0], scale: [1, 0.95, 1.1, 1] }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute bottom-20 left-1/3 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-15"
+          className="absolute bottom-20 left-1/3 w-72 h-72 bg-mint-400 rounded-full mix-blend-multiply filter blur-3xl opacity-15"
           animate={{ x: [0, 20, -15, 0], y: [0, -20, 25, 0], scale: [1, 1.05, 0.9, 1] }}
           transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -182,7 +182,7 @@ const LandingPage = () => {
             animate="visible"
           >
             {/* Badge */}
-            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-8">
+            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-mint-100 dark:bg-mint-900/50 text-mint-700 dark:text-mint-300 text-sm font-medium mb-8">
               <Sparkles className="w-4 h-4" />
               {t('heroBadge')}
             </motion.div>
@@ -194,7 +194,7 @@ const LandingPage = () => {
               <span className="text-gray-900 dark:text-white">{t('heroTitle1')} </span>
               <motion.span
                 variants={gradientTextVariants}
-                className="inline-block bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent bg-[size:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]"
+                className="inline-block bg-gradient-to-r from-mint-600 via-mint-600 to-mint-600 bg-clip-text text-transparent bg-[size:200%_100%] animate-[shimmer_3s_ease-in-out_infinite]"
               >
                 {t('heroTitle2')}
               </motion.span>
@@ -212,14 +212,14 @@ const LandingPage = () => {
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Link
                 href={`/${locale}/register`}
-                className="group inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5"
+                className="group inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-mint-600 to-mint-600 text-white font-semibold hover:from-mint-700 hover:to-mint-700 transition-all shadow-xl shadow-mint-500/30 hover:shadow-mint-500/50 hover:-translate-y-0.5"
               >
                 {t('hero.cta')}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href={`/${locale}/demo`}
-                className="inline-flex items-center justify-center px-8 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center px-8 py-4 rounded-2xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-mint-400 hover:text-mint-600 dark:hover:text-mint-400 transition-all hover:-translate-y-0.5"
               >
                 {t('hero.ctaSecondary')}
               </Link>
@@ -238,7 +238,7 @@ const LandingPage = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: 1 + i * 0.15, ease: [0.25, 0.4, 0.25, 1] }}
                 >
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-gray-900 shadow-md mb-2 text-blue-600 dark:text-blue-400">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-gray-900 shadow-md mb-2 text-mint-600 dark:text-mint-400">
                     {stat.icon}
                   </div>
                   <p className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
@@ -262,7 +262,7 @@ const LandingPage = () => {
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-mint-100 dark:bg-mint-900/50 text-mint-700 dark:text-mint-300 text-sm font-medium mb-4">
               <Zap className="w-4 h-4" />
               {t('featuresBadge')}
             </div>
@@ -288,7 +288,7 @@ const LandingPage = () => {
                 className="group relative bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-200 dark:border-gray-800 hover:border-transparent hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
               >
                 {/* Hover gradient border effect */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-xl from-mint-100 to-mint-100 dark:from-mint-900/30 dark:to-mint-900/30" />
                 <div className={cn('w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white mb-5 shadow-lg group-hover:scale-110 transition-transform', feature.gradient)}>
                   {feature.icon}
                 </div>
@@ -333,7 +333,7 @@ const LandingPage = () => {
               <motion.div key={index} variants={itemVariants} className="relative text-center">
                 {/* Connector line */}
                 {index < steps.length - 1 && (
-                  <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-blue-300 to-transparent dark:from-blue-700" />
+                  <div className="hidden lg:block absolute top-10 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-mint-300 to-transparent dark:from-mint-700" />
                 )}
                 <div className={cn(
                   'relative w-20 h-20 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white mx-auto mb-5 shadow-xl',
@@ -413,7 +413,7 @@ const LandingPage = () => {
             {/* Starter */}
             <motion.div
               variants={itemVariants}
-              className="bg-white dark:bg-gray-900 rounded-3xl p-8 border-2 border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-all hover:shadow-xl"
+              className="bg-white dark:bg-gray-900 rounded-3xl p-8 border-2 border-gray-200 dark:border-gray-800 hover:border-mint-300 dark:hover:border-mint-700 transition-all hover:shadow-xl"
             >
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{t('pricing.starter.name')}</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">{t('pricing.starter.desc')}</p>
@@ -425,7 +425,7 @@ const LandingPage = () => {
               </div>
               <Link
                 href={`/${locale}/register`}
-                className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all mb-8"
+                className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-2xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:border-mint-500 hover:text-mint-600 dark:hover:text-mint-400 transition-all mb-8"
               >
                 {t('pricing.starter.cta')}
               </Link>
@@ -444,22 +444,22 @@ const LandingPage = () => {
             {/* Professional */}
             <motion.div
               variants={itemVariants}
-              className="relative bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-2xl shadow-blue-500/30 md:scale-105"
+              className="relative bg-gradient-to-br from-mint-600 to-mint-700 rounded-3xl p-8 text-white shadow-2xl shadow-mint-500/30 md:scale-105"
             >
               <div className="absolute top-6 right-6 bg-amber-400 text-amber-900 text-xs font-bold px-4 py-1 rounded-full">
                 {t('pricing.professional.popular')}
               </div>
               <h3 className="text-2xl font-bold mb-1">{t('pricing.professional.name')}</h3>
-              <p className="text-blue-200 text-sm mb-6">{t('pricing.professional.desc')}</p>
+              <p className="text-mint-200 text-sm mb-6">{t('pricing.professional.desc')}</p>
               <div className="mb-6">
                 <span className="text-5xl font-extrabold">
                   {isMonthly ? t('pricing.professional.price') : t('pricing.professional.priceYearly')}
                 </span>
-                <span className="text-blue-200 ml-2">{t('pricing.professional.period')}</span>
+                <span className="text-mint-200 ml-2">{t('pricing.professional.period')}</span>
               </div>
               <Link
                 href={`/${locale}/register`}
-                className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-white text-blue-600 font-semibold hover:bg-blue-50 transition-all shadow-lg mb-8"
+                className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-2xl bg-white text-mint-600 font-semibold hover:bg-mint-50 transition-all shadow-lg mb-8"
               >
                 {t('pricing.professional.cta')}
               </Link>
@@ -469,7 +469,7 @@ const LandingPage = () => {
                     <div className="mt-0.5 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                       <Check className="w-3 h-3 text-white" />
                     </div>
-                    <span className="text-blue-50 text-sm">{feature}</span>
+                    <span className="text-mint-50 text-sm">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -504,7 +504,7 @@ const LandingPage = () => {
               <motion.div
                 key={index}
                 variants={itemVariants}
-                className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-mint-300 dark:hover:border-mint-700 transition-colors"
               >
                 <button
                   onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
@@ -516,7 +516,7 @@ const LandingPage = () => {
                   <ChevronDown
                     className={cn(
                       'w-5 h-5 text-gray-400 transition-transform duration-300 shrink-0 ml-4',
-                      expandedFAQ === index && 'rotate-180 text-blue-500'
+                      expandedFAQ === index && 'rotate-180 text-mint-500'
                     )}
                   />
                 </button>
@@ -541,7 +541,7 @@ const LandingPage = () => {
 
       {/* ─── Final CTA ─── */}
       <section className="relative py-20 sm:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700" />
+        <div className="absolute inset-0 bg-gradient-to-br from-mint-600 via-mint-600 to-mint-700" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
         {/* Floating circles */}
         <div className="absolute top-10 left-10 w-40 h-40 bg-white/5 rounded-full" />
@@ -558,17 +558,17 @@ const LandingPage = () => {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold mb-6">
             {t('cta.title')}
           </h2>
-          <p className="text-lg sm:text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl text-mint-100 mb-10 max-w-2xl mx-auto leading-relaxed">
             {t('cta.subtitle')}
           </p>
           <Link
             href={`/${locale}/register`}
-            className="group inline-flex items-center justify-center px-10 py-4 rounded-2xl bg-white text-blue-600 font-bold hover:bg-blue-50 transition-all shadow-2xl shadow-black/20 hover:shadow-black/30 hover:-translate-y-0.5 text-lg"
+            className="group inline-flex items-center justify-center px-10 py-4 rounded-2xl bg-white text-mint-600 font-bold hover:bg-mint-50 transition-all shadow-2xl shadow-black/20 hover:shadow-black/30 hover:-translate-y-0.5 text-lg"
           >
             {t('cta.button')}
             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
-          <p className="mt-6 text-sm text-blue-200 flex items-center justify-center gap-2">
+          <p className="mt-6 text-sm text-mint-200 flex items-center justify-center gap-2">
             <Shield className="w-4 h-4" />
             {t('ctaTrialNote')}
           </p>
@@ -581,7 +581,7 @@ const LandingPage = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center">
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-lg font-bold text-white">TeklifPro</span>

@@ -870,7 +870,7 @@ const SettingsPage = () => {
                     </div>
                     <input ref={sealInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleImageSelect(e, setCompanySeal)} />
                     <button
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-medium rounded-xl hover:opacity-90 shadow-md text-xs"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-mint-500 to-mint-600 text-white font-medium rounded-xl hover:opacity-90 shadow-md text-xs"
                       onClick={() => sealInputRef.current?.click()}
                     >
                       <Upload className="w-3.5 h-3.5" />
@@ -1200,10 +1200,10 @@ const SettingsPage = () => {
 
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="relative mb-8">
-                  <div className="w-28 h-28 bg-gradient-to-br from-violet-100 to-purple-200 dark:from-violet-950/40 dark:to-purple-950/40 rounded-3xl flex items-center justify-center">
+                  <div className="w-28 h-28 bg-gradient-to-br from-mint-50 to-mint-100 dark:from-violet-950/40 dark:to-purple-950/40 rounded-3xl flex items-center justify-center">
                     <UserPlus className="w-14 h-14 text-violet-500 dark:text-violet-400" />
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-mint-500 to-mint-600 rounded-xl flex items-center justify-center shadow-lg">
                     <Plus className="w-5 h-5 text-white" />
                   </div>
                 </div>
