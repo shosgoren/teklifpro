@@ -1593,7 +1593,8 @@
     "navAnalytics": "Analytics",
     "navSettings": "Settings",
     "navMore": "More",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "searchPlaceholder": "Search or run a command..."
   },
   "notificationsPage": {
     "title": "Notifications",

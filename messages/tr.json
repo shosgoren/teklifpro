@@ -1593,7 +1593,8 @@
     "navAnalytics": "Analitik",
     "navSettings": "Ayarlar",
     "navMore": "Diğer",
-    "toggleTheme": "Temayı değiştir"
+    "toggleTheme": "Temayı değiştir",
+    "searchPlaceholder": "Ara veya komut çalıştır..."
   },
   "notificationsPage": {
     "title": "Bildirimler",
