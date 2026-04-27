@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useConfirm } from '@/shared/components/confirm-dialog';
 import useSWR from 'swr';
@@ -13,6 +12,7 @@ import KanbanBoard from './kanban-board';
 import ProposalDetailPanel from './components/ProposalDetailPanel';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
+import { VoiceProposalModal } from '@/presentation/components/organisms/VoiceProposalModal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,7 +90,6 @@ const STATUS_CONFIG: Record<ProposalStatus, { color: string; dot: string; border
 const ITEMS_PER_PAGE = 10;
 
 export default function ProposalsPage() {
-  const router = useRouter();
   const locale = useLocale();
   const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR';
   const t = useTranslations('proposals');
@@ -104,6 +103,7 @@ export default function ProposalsPage() {
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [mounted, setMounted] = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -300,7 +300,7 @@ export default function ProposalsPage() {
                 </button>
               </div>
               <Button
-                onClick={() => router.push(`/${locale}/proposals/new`)}
+                onClick={() => setVoiceModalOpen(true)}
                 className="rounded-xl bg-white/20 hover:bg-white/30 text-white shadow-lg shadow-black/10 backdrop-blur-sm border border-white/20 h-11 px-6"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -444,7 +444,7 @@ export default function ProposalsPage() {
             <p className="text-base font-semibold">{t('noProposals')}</p>
             <p className="text-sm text-muted-foreground mt-1">{t('noProposalsHint')}</p>
             <Button
-              onClick={() => router.push(`/${locale}/proposals/new`)}
+              onClick={() => setVoiceModalOpen(true)}
               className="mt-6 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 h-11 px-6"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -664,6 +664,12 @@ export default function ProposalsPage() {
         open={!!selectedProposal}
         onClose={() => setSelectedProposal(null)}
         onMutate={() => { mutate(); kanbanMutate?.(); }}
+      />
+
+      <VoiceProposalModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        locale={locale}
       />
     </div>
   );
