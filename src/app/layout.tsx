@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import { getLocale } from 'next-intl/server';
 import './globals.css';
 import { Toaster } from 'sonner';
 import CookieConsent from '@/presentation/components/CookieConsent';
 import ThemeProvider from '@/shared/providers/ThemeProvider';
 import { DynamicFavicon } from '@/shared/components/DynamicFavicon';
-
-const inter = Inter({ subsets: ['latin'] });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://teklifpro.com';
 const siteTitle = 'TeklifPro';
@@ -219,7 +218,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content={siteTitle} />
       </head>
-      <body className={inter.className}>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <DynamicFavicon />
           {children}

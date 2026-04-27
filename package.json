@@ -44,6 +44,7 @@
     "date-fns": "^3.6.0",
     "framer-motion": "^11.0.0",
     "fuse.js": "^7.2.0",
+    "geist": "^1.7.0",
     "html2canvas": "^1.4.0",
     "jspdf": "^2.5.0",
     "lucide-react": "^0.370.0",
