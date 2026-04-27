@@ -197,7 +197,7 @@ export function NotificationCenter({
                     className={`px-4 py-3 transition-colors duration-200 cursor-pointer ${
                       notification.isRead
                         ? 'hover:bg-gray-50'
-                        : 'bg-blue-50 hover:bg-blue-100'
+                        : 'bg-mint-50 hover:bg-mint-100'
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -224,7 +224,7 @@ export function NotificationCenter({
                             {notification.title}
                           </h4>
                           {!notification.isRead && (
-                            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-600 mt-1.5" />
+                            <div className="flex-shrink-0 w-2 h-2 rounded-full bg-mint-600 mt-1.5" />
                           )}
                         </div>
                         <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">
@@ -249,7 +249,7 @@ export function NotificationCenter({
                         {notification.isRead ? (
                           <CheckCheck className="w-4 h-4 text-gray-400" />
                         ) : (
-                          <Check className="w-4 h-4 text-blue-600" />
+                          <Check className="w-4 h-4 text-mint-700" />
                         )}
                       </button>
                     </div>
@@ -265,13 +265,13 @@ export function NotificationCenter({
               <button
                 onClick={handleMarkAllAsRead}
                 disabled={unreadCount === 0}
-                className="flex-1 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+                className="flex-1 text-sm font-medium text-mint-700 hover:text-mint-800 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 {t('markAllRead')}
               </button>
               <a
                 href={`/${locale}/notifications`}
-                className="flex-1 text-sm font-medium text-blue-600 hover:text-blue-700 text-right transition-colors duration-200"
+                className="flex-1 text-sm font-medium text-mint-700 hover:text-mint-800 text-right transition-colors duration-200"
               >
                 {t('viewAll')}
               </a>
@@ -307,7 +307,7 @@ function getNotificationIcon(
     case 'revised':
       return <Bell {...iconProps} className="w-5 h-5 text-orange-600" />;
     case 'viewed':
-      return <Bell {...iconProps} className="w-5 h-5 text-blue-600" />;
+      return <Bell {...iconProps} className="w-5 h-5 text-mint-700" />;
     case 'synced':
       return <CheckCheck {...iconProps} className="w-5 h-5 text-purple-600" />;
     case 'expiring':
@@ -326,7 +326,7 @@ function getNotificationIconBg(type: Notification['type']): string {
     case 'revised':
       return 'bg-orange-100';
     case 'viewed':
-      return 'bg-blue-100';
+      return 'bg-mint-50';
     case 'synced':
       return 'bg-purple-100';
     case 'expiring':

@@ -66,11 +66,23 @@ const RECENT_SEARCHES_KEY = 'teklifpro:recent-searches';
 function getTypeIcon(type: 'proposal' | 'customer' | 'product') {
   switch (type) {
     case 'proposal':
-      return <FileText className="w-4 h-4 text-blue-500" />;
+      return (
+        <span className="flex items-center justify-center w-7 h-7 rounded-md bg-sky-50">
+          <FileText className="w-4 h-4 text-sky-600" />
+        </span>
+      );
     case 'customer':
-      return <Users className="w-4 h-4 text-green-500" />;
+      return (
+        <span className="flex items-center justify-center w-7 h-7 rounded-md bg-rose-50">
+          <Users className="w-4 h-4 text-rose-600" />
+        </span>
+      );
     case 'product':
-      return <Package className="w-4 h-4 text-orange-500" />;
+      return (
+        <span className="flex items-center justify-center w-7 h-7 rounded-md bg-amber-50">
+          <Package className="w-4 h-4 text-amber-600" />
+        </span>
+      );
     default:
       return null;
   }
@@ -210,8 +222,8 @@ function ResultGroup({
             className={cn(
               'w-full flex items-start gap-3 px-4 py-2 text-left text-sm rounded-md transition-colors',
               highlighted === index + 1
-                ? 'bg-slate-100 dark:bg-slate-800'
-                : 'hover:bg-slate-50 dark:hover:bg-slate-900'
+                ? 'bg-mint-50 text-mint-900'
+                : 'hover:bg-secondary'
             )}
           >
             <div className="flex-shrink-0 mt-0.5">
@@ -346,7 +358,7 @@ export function GlobalSearch() {
   }, [query, performSearch]);
 
   /**
-   * Klavye kısayollarını işle
+   * Klavye kısayollarını ve harici "tp:open-palette" tetiğini dinle
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -357,8 +369,14 @@ export function GlobalSearch() {
       }
     };
 
+    const handleOpenEvent = () => setOpen(true);
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('tp:open-palette', handleOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('tp:open-palette', handleOpenEvent);
+    };
   }, [open]);
 
   /**
@@ -445,21 +463,7 @@ export function GlobalSearch() {
   let currentIndex = 0;
 
   return (
-    <>
-      {/* Arama tetikleyici butonu */}
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-md hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-        title={t('searchTooltip')}
-      >
-        <span className="hidden sm:inline">{t('searchButton')}</span>
-        <kbd className="hidden sm:inline px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded">
-          ⌘K
-        </kbd>
-      </button>
-
-      {/* Arama dialog'u */}
-      <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="top-[20%] sm:w-full sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="sr-only">{t('searchTitle')}</DialogTitle>
@@ -583,9 +587,8 @@ export function GlobalSearch() {
               </span>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -26,6 +26,7 @@ import {
   Search,
 } from 'lucide-react'
 import { NotificationCenter } from '@/presentation/components/organisms/NotificationCenter'
+import { GlobalSearch } from '@/presentation/components/organisms/GlobalSearch'
 import useSWR from 'swr'
 
 const tenantFetcher = (url: string) => fetch(url).then(r => r.ok ? r.json() : null)
@@ -339,6 +340,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             {/* Search trigger (desktop) */}
             <button
               type="button"
+              onClick={() => window.dispatchEvent(new Event('tp:open-palette'))}
               className="hidden md:flex items-center gap-2 flex-1 max-w-sm h-9 px-3 rounded-lg border border-border bg-secondary/50 hover:bg-secondary text-muted-foreground text-sm transition-colors"
               aria-label={t('searchPlaceholder') ?? 'Search'}
             >
@@ -500,6 +502,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </nav>
+
+      {/* Global command palette (Cmd+K or topbar search button) */}
+      <GlobalSearch />
     </div>
   )
 }
