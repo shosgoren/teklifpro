@@ -139,7 +139,7 @@ export default function NotificationsPage() {
         {unreadCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-mint-600 bg-mint-50 hover:bg-mint-100 dark:bg-mint-900/20 dark:text-mint-400 dark:hover:bg-mint-900/30 rounded-lg transition-colors"
           >
             <CheckCheck className="w-4 h-4" />
             {t('markAllRead')}
@@ -157,7 +157,7 @@ export default function NotificationsPage() {
             placeholder={t('searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-mint-500 focus:border-transparent"
           />
         </div>
 
@@ -171,7 +171,7 @@ export default function NotificationsPage() {
               aria-pressed={filter === opt.value}
               className={`px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                 filter === opt.value
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-mint-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -190,7 +190,7 @@ export default function NotificationsPage() {
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            <Loader2 className="w-6 h-6 text-mint-500 animate-spin" />
             <span className="ml-2 text-sm text-gray-500">{t('loading')}</span>
           </div>
         ) : paginated.length === 0 ? (
@@ -223,7 +223,7 @@ export default function NotificationsPage() {
                 className={`flex items-start gap-4 px-4 md:px-6 py-4 transition-colors cursor-pointer ${
                   notification.isRead
                     ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                    : 'bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                    : 'bg-mint-50/50 dark:bg-mint-900/10 hover:bg-mint-50 dark:hover:bg-mint-900/20'
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -260,7 +260,7 @@ export default function NotificationsPage() {
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {!notification.isRead && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-blue-600 mr-1" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-mint-600 mr-1" />
                       )}
                       <button
                         onClick={(e) => {
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
                         {notification.isRead ? (
                           <CheckCheck className="w-4 h-4 text-gray-400" />
                         ) : (
-                          <Check className="w-4 h-4 text-blue-600" />
+                          <Check className="w-4 h-4 text-mint-600" />
                         )}
                       </button>
                     </div>
@@ -327,7 +327,7 @@ function getIcon(type: Notification['type']): JSX.Element {
     case 'revised':
       return <RotateCcw className="w-5 h-5 text-orange-600" />
     case 'viewed':
-      return <Eye className="w-5 h-5 text-blue-600" />
+      return <Eye className="w-5 h-5 text-mint-600" />
     case 'synced':
       return <CheckCheck className="w-5 h-5 text-purple-600" />
     case 'expiring':
@@ -346,7 +346,7 @@ function getIconBg(type: Notification['type']): string {
     case 'revised':
       return 'bg-orange-100 dark:bg-orange-900/30'
     case 'viewed':
-      return 'bg-blue-100 dark:bg-blue-900/30'
+      return 'bg-mint-100 dark:bg-mint-900/30'
     case 'synced':
       return 'bg-purple-100 dark:bg-purple-900/30'
     case 'expiring':

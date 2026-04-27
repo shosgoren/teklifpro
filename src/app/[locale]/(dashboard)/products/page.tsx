@@ -67,7 +67,7 @@ const fetcher = (url: string) =>
   });
 
 const PRODUCT_TYPE_COLORS: Record<string, string> = {
-  COMMERCIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  COMMERCIAL: 'bg-mint-100 text-mint-800 dark:bg-mint-900 dark:text-mint-200',
   RAW_MATERIAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
   SEMI_FINISHED: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   CONSUMABLE: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
@@ -130,7 +130,7 @@ const ProductThumbnail = memo(function ProductThumbnail({ product, size = 'sm' }
   }
 
   const colors: Record<string, string> = {
-    COMMERCIAL: 'from-blue-400 to-blue-600',
+    COMMERCIAL: 'from-mint-400 to-mint-600',
     RAW_MATERIAL: 'from-amber-400 to-amber-600',
     SEMI_FINISHED: 'from-purple-400 to-purple-600',
     CONSUMABLE: 'from-slate-400 to-slate-600',
@@ -678,9 +678,9 @@ export default function ProductsPage() {
         return (
           <div className="flex flex-wrap items-center gap-2">
             {activeFilters.map((f) => (
-              <span key={f.key} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+              <span key={f.key} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-mint-100 text-mint-800 dark:bg-mint-900/40 dark:text-mint-300">
                 {f.label}: {f.value}
-                <button onClick={() => { f.onClear(); setCurrentPage(1); }} className="ml-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors" aria-label={`${t('remove')} ${f.label}`}>
+                <button onClick={() => { f.onClear(); setCurrentPage(1); }} className="ml-0.5 hover:bg-mint-200 dark:hover:bg-mint-800 rounded-full p-0.5 transition-colors" aria-label={`${t('remove')} ${f.label}`}>
                   <X className="h-3 w-3" />
                 </button>
               </span>

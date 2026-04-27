@@ -384,10 +384,10 @@ export default function AnalyticsDashboard() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-8">
         {isEmpty && (
           <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
+            <div className="h-1 bg-gradient-to-r from-mint-500 to-mint-500" />
             <div className="py-16 text-center px-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-7 h-7 text-blue-500" />
+              <div className="bg-mint-50 dark:bg-mint-900/20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-7 h-7 text-mint-500" />
               </div>
               <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                 {t('emptyState')}
@@ -402,8 +402,8 @@ export default function AnalyticsDashboard() {
             title={t('kpi.totalProposals')}
             value={stats.totalProposals}
             icon={<FileText className="w-5 h-5 text-white" />}
-            gradient="from-blue-500 to-blue-700"
-            shadowColor="shadow-blue-500/20"
+            gradient="from-mint-500 to-mint-700"
+            shadowColor="shadow-mint-500/20"
           />
           <KPICard
             title={t('kpi.acceptanceRate')}
@@ -451,7 +451,7 @@ export default function AnalyticsDashboard() {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                   {t('charts.proposalTrend')}
                 </h3>
-                <div className="h-1 w-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mt-2" />
+                <div className="h-1 w-16 bg-gradient-to-r from-mint-500 to-mint-500 rounded-full mt-2" />
                 <p className="text-sm text-gray-500 mt-2">{t('charts.proposalTrendDesc')}</p>
               </div>
               <div className="p-6 pt-2">
@@ -639,7 +639,7 @@ export default function AnalyticsDashboard() {
           <div className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden">
             <div className="p-6 pb-2">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('tables.productsByPrice')}</h3>
-              <div className="h-1 w-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full mt-2" />
+              <div className="h-1 w-16 bg-gradient-to-r from-cyan-500 to-mint-500 rounded-full mt-2" />
               <p className="text-sm text-gray-500 mt-2">{t('tables.highestPriced')}</p>
             </div>
             <div className="p-6 pt-3">
@@ -663,7 +663,7 @@ export default function AnalyticsDashboard() {
                       {topProductsList.map((product, index) => (
                         <tr
                           key={product.id}
-                          className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors"
+                          className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-mint-50/50 dark:hover:bg-mint-900/10 transition-colors"
                         >
                           <td className="py-3.5 px-3 text-gray-400 font-medium">{index + 1}</td>
                           <td className="py-3.5 px-3 font-medium text-gray-900 dark:text-white">

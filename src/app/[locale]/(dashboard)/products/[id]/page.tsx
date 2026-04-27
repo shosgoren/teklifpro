@@ -181,7 +181,7 @@ const PRODUCT_TYPE_LABEL_KEYS: Record<string, string> = {
 };
 
 const PRODUCT_TYPE_COLORS: Record<string, string> = {
-  COMMERCIAL: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  COMMERCIAL: 'bg-mint-100 text-mint-800 dark:bg-mint-900 dark:text-mint-200',
   RAW_MATERIAL: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
   SEMI_FINISHED: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   CONSUMABLE: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
@@ -190,7 +190,7 @@ const PRODUCT_TYPE_COLORS: Record<string, string> = {
 const MOVEMENT_TYPE_CONFIG: Record<string, { labelKey: string; color: string; positive: boolean }> = {
   IN: { labelKey: 'movementTypes.in', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', positive: true },
   OUT: { labelKey: 'movementTypes.out', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', positive: false },
-  ADJUSTMENT: { labelKey: 'movementTypes.adjustment', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', positive: true },
+  ADJUSTMENT: { labelKey: 'movementTypes.adjustment', color: 'bg-mint-100 text-mint-800 dark:bg-mint-900 dark:text-mint-200', positive: true },
   PRODUCTION_IN: { labelKey: 'movementTypes.productionIn', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200', positive: true },
   PRODUCTION_OUT: { labelKey: 'movementTypes.productionOut', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', positive: false },
 };
@@ -709,7 +709,7 @@ export default function ProductDetailPage() {
                 movementDialogType && MOVEMENT_TYPE_CONFIG[movementDialogType]?.positive
                   ? 'bg-green-600 hover:bg-green-700 text-white'
                   : movementDialogType === 'ADJUSTMENT'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-mint-600 hover:bg-mint-700 text-white'
                     : 'bg-red-600 hover:bg-red-700 text-white'
               )}
             >
@@ -1266,7 +1266,7 @@ function StockTab({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onMovement('ADJUSTMENT')}>
-                  <RotateCcw className="mr-2 h-4 w-4 text-blue-500" />
+                  <RotateCcw className="mr-2 h-4 w-4 text-mint-500" />
                   {t('stock.stockAdjustment')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onMovement('PRODUCTION_IN')}>
@@ -1336,7 +1336,7 @@ function StockTab({
                   <div className="flex items-center gap-3 min-w-0">
                     {mov.type === 'IN' && <ArrowDownCircle className="h-5 w-5 shrink-0 text-green-500" />}
                     {mov.type === 'OUT' && <ArrowUpCircle className="h-5 w-5 shrink-0 text-red-500" />}
-                    {mov.type === 'ADJUSTMENT' && <RotateCcw className="h-5 w-5 shrink-0 text-blue-500" />}
+                    {mov.type === 'ADJUSTMENT' && <RotateCcw className="h-5 w-5 shrink-0 text-mint-500" />}
                     {mov.type === 'PRODUCTION_IN' && <Factory className="h-5 w-5 shrink-0 text-emerald-500" />}
                     {mov.type === 'PRODUCTION_OUT' && <Factory className="h-5 w-5 shrink-0 text-orange-500" />}
                     <div className="min-w-0">

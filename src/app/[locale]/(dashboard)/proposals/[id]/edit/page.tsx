@@ -272,7 +272,7 @@ function CustomerSelectionStep({ selectedCustomer, onSelect, proposalType, onPro
                   {filteredCustomers.map((customer: Customer) => (
                     <CommandItem key={customer.id} onSelect={() => handleSelectCustomer(customer)}>
                       <div className="flex items-center gap-3 w-full">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                           {customer.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -436,13 +436,13 @@ function ProductSelectionStep({
       {/* Product Search */}
       <Popover open={searchOpen} onOpenChange={(open) => { setSearchOpen(open); if (!open) setReplacingIndex(null) }}>
         <PopoverTrigger asChild>
-          <button className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all text-left group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+          <button className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 border-dashed border-mint-300 dark:border-mint-700 bg-mint-50/50 dark:bg-mint-950/20 hover:border-mint-400 hover:bg-mint-50 dark:hover:bg-mint-950/30 transition-all text-left group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center shadow-lg shadow-mint-500/20 group-hover:scale-105 transition-transform">
               <Plus className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-blue-700 dark:text-blue-300 text-sm">{t('proposals.create.addProduct')}</p>
-              <p className="text-xs text-blue-500 dark:text-blue-400">{t('proposals.searchProduct')}</p>
+              <p className="font-semibold text-mint-700 dark:text-mint-300 text-sm">{t('proposals.create.addProduct')}</p>
+              <p className="text-xs text-mint-500 dark:text-mint-400">{t('proposals.searchProduct')}</p>
             </div>
           </button>
         </PopoverTrigger>
@@ -514,7 +514,7 @@ function ProductSelectionStep({
                 className={cn(
                   'rounded-2xl border bg-white dark:bg-gray-900 shadow-sm hover:shadow-md transition-all overflow-hidden',
                   dragging === index && 'opacity-50 scale-[0.98]',
-                  isExpanded && 'ring-2 ring-blue-200 dark:ring-blue-800'
+                  isExpanded && 'ring-2 ring-mint-200 dark:ring-mint-800'
                 )}
               >
                 {/* Main Row */}
@@ -545,7 +545,7 @@ function ProductSelectionStep({
                         className={cn(
                           'w-8 h-8 rounded-lg flex items-center justify-center transition-all',
                           isExpanded
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+                            ? 'bg-mint-100 dark:bg-mint-900/30 text-mint-600'
                             : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
                         )}
                       >
@@ -624,7 +624,7 @@ function ProductSelectionStep({
                             className={cn(
                               'w-11 h-11 flex items-center justify-center text-sm font-bold transition-colors',
                               item.discountType === 'percent'
-                                ? 'bg-blue-500 text-white'
+                                ? 'bg-mint-500 text-white'
                                 : 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100'
                             )}
                           >
@@ -636,7 +636,7 @@ function ProductSelectionStep({
                             className={cn(
                               'w-11 h-11 flex items-center justify-center text-sm font-bold transition-colors',
                               item.discountType === 'fixed'
-                                ? 'bg-blue-500 text-white'
+                                ? 'bg-mint-500 text-white'
                                 : 'bg-gray-50 dark:bg-gray-800 text-gray-500 hover:bg-gray-100'
                             )}
                           >
@@ -696,8 +696,8 @@ function ProductSelectionStep({
                       </div>}
                       <div>
                         <Label className="text-xs text-muted-foreground mb-1.5 block">{t('proposals.total')}</Label>
-                        <div className="h-11 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center justify-center">
-                          <span className="font-bold text-blue-700 dark:text-blue-300 text-sm">{formatCurrency(lineTotal)}</span>
+                        <div className="h-11 rounded-xl bg-mint-50 dark:bg-mint-900/20 border border-mint-200 dark:border-mint-800 flex items-center justify-center">
+                          <span className="font-bold text-mint-700 dark:text-mint-300 text-sm">{formatCurrency(lineTotal)}</span>
                         </div>
                       </div>
                     </div>
@@ -748,8 +748,8 @@ function ProductSelectionStep({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center mb-4">
-            <Package className="h-8 w-8 text-blue-500" />
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-mint-100 to-mint-100 dark:from-mint-950 dark:to-mint-950 flex items-center justify-center mb-4">
+            <Package className="h-8 w-8 text-mint-500" />
           </div>
           <p className="text-sm font-medium text-muted-foreground">{t('proposals.noItems')}</p>
         </div>
@@ -802,26 +802,26 @@ function ProductSelectionStep({
 
       {/* Running Totals */}
       {items.length > 0 && (
-        <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 shadow-xl shadow-blue-500/20 relative overflow-hidden">
+        <div className="rounded-2xl bg-gradient-to-br from-mint-600 to-mint-700 text-white p-5 shadow-xl shadow-mint-500/20 relative overflow-hidden">
           <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10" />
           <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-white/5" />
           <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div>
-              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.subtotal')}</p>
+              <p className="text-xs text-mint-200 mb-0.5">{t('proposals.subtotal')}</p>
               <p className="text-lg font-bold">{formatCurrency(totals.subtotal)}</p>
             </div>
             {totals.discountAmount > 0 && (
               <div>
-                <p className="text-xs text-blue-200 mb-0.5">{t('proposals.discount')}</p>
+                <p className="text-xs text-mint-200 mb-0.5">{t('proposals.discount')}</p>
                 <p className="text-lg font-bold text-red-300">-{formatCurrency(totals.discountAmount)}</p>
               </div>
             )}
             {proposalType !== 'UNOFFICIAL' && <div>
-              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.vat')}</p>
+              <p className="text-xs text-mint-200 mb-0.5">{t('proposals.vat')}</p>
               <p className="text-lg font-bold">{formatCurrency(totals.vatAmount)}</p>
             </div>}
             <div className="sm:text-right">
-              <p className="text-xs text-blue-200 mb-0.5">{t('proposals.total')}</p>
+              <p className="text-xs text-mint-200 mb-0.5">{t('proposals.total')}</p>
               <p className="text-2xl font-extrabold">{formatCurrency(totals.grandTotal)}</p>
             </div>
           </div>
@@ -999,7 +999,7 @@ function PreviewStep({
       {/* Voice Note Recorder */}
       <div>
         <Label className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Mic className="h-4 w-4 text-blue-500" />
+          <Mic className="h-4 w-4 text-mint-500" />
           {t('proposals.voiceNote')}
         </Label>
         <p className="text-xs text-muted-foreground mb-3">{t('proposals.voiceNoteDesc')}</p>
@@ -1139,7 +1139,7 @@ function PreviewStep({
               <p className="font-medium text-muted-foreground mb-2">{t('proposals.preview')}:</p>
               <p className="font-semibold">{data.title}</p>
               <p>{t('proposals.total')}: {formatCurrency(totals.grandTotal)}</p>
-              <p className="text-blue-600 dark:text-blue-400">teklifpro.vercel.app/proposals/...</p>
+              <p className="text-mint-600 dark:text-mint-400">teklifpro.vercel.app/proposals/...</p>
             </div>
             <Button
               onClick={() => handleAction('whatsapp')}
@@ -1560,7 +1560,7 @@ export default function EditProposalPage() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
               {t('proposals.editProposal')}
             </h1>
             <Badge variant="outline" className="ml-2 text-xs">
@@ -1591,7 +1591,7 @@ export default function EditProposalPage() {
                       <div
                         className={cn(
                           'w-11 h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-semibold transition-all mb-1.5',
-                          isActive && 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-110',
+                          isActive && 'bg-gradient-to-br from-mint-500 to-mint-600 text-white shadow-lg shadow-mint-500/25 scale-110',
                           isCompleted && 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20',
                           !isActive && !isCompleted && 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'
                         )}
@@ -1600,7 +1600,7 @@ export default function EditProposalPage() {
                       </div>
                       <p className={cn(
                         'text-[10px] md:text-xs font-medium text-center max-w-20 md:max-w-24 leading-tight',
-                        isActive && 'text-blue-600 dark:text-blue-400',
+                        isActive && 'text-mint-600 dark:text-mint-400',
                         isCompleted && 'text-emerald-600 dark:text-emerald-400',
                         !isActive && !isCompleted && 'text-muted-foreground'
                       )}>
@@ -1623,7 +1623,7 @@ export default function EditProposalPage() {
                 'text-[10px] px-2.5 py-0.5 font-semibold',
                 formData.proposalType === 'UNOFFICIAL'
                   ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                  : 'bg-mint-100 text-mint-700 dark:bg-mint-900/30 dark:text-mint-400 border-mint-200 dark:border-mint-800'
               )}>
                 {formData.proposalType === 'UNOFFICIAL' ? t('proposals.proposalTypeUnofficial') : t('proposals.proposalTypeOfficial')}
               </Badge>
@@ -1696,7 +1696,7 @@ export default function EditProposalPage() {
                   type="button"
                   onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
                   disabled={!steps[currentStep].completed}
-                  className="gap-2 h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 flex-1 md:flex-none"
+                  className="gap-2 h-11 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 flex-1 md:flex-none"
                 >
                   <span>{t('proposals.next')}</span>
                   <ChevronRight className="h-4 w-4" />

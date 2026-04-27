@@ -62,7 +62,7 @@ const fetcher = (url: string) =>
 const STATUS_COLORS: Record<ProposalStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-800',
   READY: 'bg-cyan-100 text-cyan-800',
-  SENT: 'bg-blue-100 text-blue-800',
+  SENT: 'bg-mint-100 text-mint-800',
   VIEWED: 'bg-yellow-100 text-yellow-800',
   ACCEPTED: 'bg-green-100 text-green-800',
   REJECTED: 'bg-red-100 text-red-800',
@@ -70,7 +70,7 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   REVISED: 'bg-purple-100 text-purple-800',
   EXPIRED: 'bg-slate-700 text-white',
   CANCELLED: 'bg-gray-200 text-gray-600',
-  INVOICED: 'bg-indigo-100 text-indigo-800',
+  INVOICED: 'bg-mint-100 text-mint-800',
 };
 
 
@@ -93,7 +93,7 @@ interface ProposalActivity {
 }
 
 const ACTIVITY_ICON_COLORS: Record<string, string> = {
-  CREATED: 'from-blue-500 to-blue-600',
+  CREATED: 'from-mint-500 to-mint-600',
   READY: 'from-cyan-500 to-cyan-600',
   SENT: 'from-indigo-500 to-indigo-600',
   VIEWED: 'from-amber-500 to-amber-600',
@@ -485,7 +485,7 @@ export default function ProposalDetailPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-4 md:p-6">
         <div className="space-y-6 max-w-7xl mx-auto">
           {/* Header skeleton */}
-          <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 shadow-lg">
+          <div className="rounded-2xl bg-gradient-to-br from-mint-600 to-mint-700 p-6 shadow-lg">
             <div className="h-4 w-32 bg-white/20 rounded-full animate-pulse mb-4" />
             <div className="h-8 w-72 bg-white/20 rounded-2xl animate-pulse mb-2" />
             <div className="h-5 w-48 bg-white/20 rounded-2xl animate-pulse mb-6" />
@@ -536,7 +536,7 @@ export default function ProposalDetailPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* ===== Gradient Header ===== */}
       <div className="relative overflow-hidden rounded-b-3xl md:rounded-b-none">
-        <div className="relative rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">
+        <div className="relative rounded-2xl bg-gradient-to-br from-mint-600 to-mint-700 p-6 mx-4 mt-4 md:mx-6 md:mt-6 shadow-lg">
           {/* Decorative circle */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-10 -translate-x-6" />
@@ -784,7 +784,7 @@ export default function ProposalDetailPage() {
                       </div>
                     )}
                     {/* Grand total with gradient bg */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl p-4 mt-2">
+                    <div className="bg-gradient-to-r from-mint-50 to-mint-50 dark:from-mint-950/30 dark:to-mint-950/30 rounded-xl p-4 mt-2">
                       <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
                         <span>{t('genelToplam')}</span>
                         <span>{formatAmount(Number(proposal.grandTotal) || 0)}</span>
@@ -820,8 +820,8 @@ export default function ProposalDetailPage() {
               <div className="p-5">
                 <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">{t('analytics.title')}</h3>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
-                    <Eye className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                  <div className="text-center p-3 bg-mint-50 dark:bg-mint-950/30 rounded-xl">
+                    <Eye className="h-4 w-4 text-mint-500 mx-auto mb-1" />
                     <p className="text-lg font-bold text-gray-900 dark:text-white">{proposal.viewCount || 0}</p>
                     <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t('analytics.views')}</p>
                   </div>
@@ -857,9 +857,9 @@ export default function ProposalDetailPage() {
                   </h3>
                   <div className="space-y-3">
                     {proposal.deliveryDate && (
-                      <div className={`flex items-center justify-between p-3 rounded-xl ${proposal.deliveryCompleted ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800' : 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'}`}>
+                      <div className={`flex items-center justify-between p-3 rounded-xl ${proposal.deliveryCompleted ? 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800' : 'bg-mint-50 dark:bg-mint-950/30 border border-mint-200 dark:border-mint-800'}`}>
                         <div className="flex items-center gap-2.5">
-                          <Truck className={`h-4 w-4 ${proposal.deliveryCompleted ? 'text-emerald-600' : 'text-blue-600'}`} />
+                          <Truck className={`h-4 w-4 ${proposal.deliveryCompleted ? 'text-emerald-600' : 'text-mint-600'}`} />
                           <div>
                             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('deliveryDate')}</p>
                             <p className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -876,7 +876,7 @@ export default function ProposalDetailPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-xs h-7 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                            className="text-xs h-7 text-mint-600 hover:text-mint-700 hover:bg-mint-100 dark:hover:bg-mint-900/30"
                             onClick={async () => {
                               try {
                                 const res = await fetch(`/api/v1/proposals/${proposalId}`, {
@@ -962,7 +962,7 @@ export default function ProposalDetailPage() {
                         PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
                         APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
                         REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
-                        COUNTER_OFFERED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+                        COUNTER_OFFERED: 'bg-mint-100 text-mint-700 dark:bg-mint-900/50 dark:text-mint-300',
                       };
 
                       return (
@@ -996,7 +996,7 @@ export default function ProposalDetailPage() {
                                 </p>
                               )}
                               {req.counterDate && (
-                                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium">
+                                <p className="text-xs text-mint-600 dark:text-mint-400 mt-1 font-medium">
                                   <RefreshCw className="h-3 w-3 inline mr-1" />
                                   {t('dateChange.counterDate')}: {new Date(req.counterDate).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
                                 </p>
@@ -1007,7 +1007,7 @@ export default function ProposalDetailPage() {
                           {isPending && (
                             <>
                               {counterFormId === req.id ? (
-                                <div className="mt-2 p-2.5 bg-white dark:bg-gray-900 rounded-lg border border-blue-200 dark:border-blue-800 space-y-2">
+                                <div className="mt-2 p-2.5 bg-white dark:bg-gray-900 rounded-lg border border-mint-200 dark:border-mint-800 space-y-2">
                                   <input
                                     type="date"
                                     value={counterDate}
@@ -1024,7 +1024,7 @@ export default function ProposalDetailPage() {
                                   <div className="flex gap-1.5">
                                     <Button
                                       size="sm"
-                                      className="flex-1 h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                                      className="flex-1 h-7 text-xs bg-mint-600 hover:bg-mint-700 text-white"
                                       disabled={!counterDate || dateChangeLoading === req.id}
                                       onClick={() => handleDateChangeAction(req.id, 'COUNTER', counterNote || undefined, counterDate)}
                                     >
@@ -1064,7 +1064,7 @@ export default function ProposalDetailPage() {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="flex-1 h-7 text-xs text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                                    className="flex-1 h-7 text-xs text-mint-600 border-mint-300 hover:bg-mint-50 dark:hover:bg-mint-950/30"
                                     disabled={dateChangeLoading === req.id}
                                     onClick={() => setCounterFormId(req.id)}
                                   >
@@ -1215,7 +1215,7 @@ export default function ProposalDetailPage() {
                       <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('parasut.invoice')}</p>
                       {proposal.parasutInvoiceId ? (
                         <div className="space-y-2">
-                          <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                          <div className="p-2 bg-mint-50 dark:bg-mint-950/30 rounded-lg">
                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('parasut.invoiceId')}</p>
                             <p className="text-sm font-mono font-medium text-gray-900 dark:text-white">{proposal.parasutInvoiceId}</p>
                           </div>
@@ -1254,7 +1254,7 @@ export default function ProposalDetailPage() {
                         </div>
                       ) : (
                         <Button
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full bg-mint-600 hover:bg-mint-700 text-white"
                           size="sm"
                           disabled={!!parasutLoading || (proposal.status !== 'ACCEPTED' && proposal.status !== 'INVOICED')}
                           onClick={handleParasutInvoice}
@@ -1328,12 +1328,12 @@ export default function ProposalDetailPage() {
 
             {/* Customer Info Card */}
             {proposal.customer && (
-              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-blue-500">
+              <Card className="rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden border-t-4 border-t-mint-500">
                 <div className="p-5">
                   <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-5">{t('customerInfo')}</h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center text-white shrink-0">
                         <User className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
@@ -1344,7 +1344,7 @@ export default function ProposalDetailPage() {
                     {proposal.customer.email && (
                       <div className="flex items-center gap-3 pl-1">
                         <Mail className="h-4 w-4 text-gray-400 shrink-0" />
-                        <a href={`mailto:${proposal.customer.email}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm truncate">
+                        <a href={`mailto:${proposal.customer.email}`} className="text-mint-600 dark:text-mint-400 hover:underline text-sm truncate">
                           {proposal.customer.email}
                         </a>
                       </div>
@@ -1352,7 +1352,7 @@ export default function ProposalDetailPage() {
                     {proposal.customer.phone && (
                       <div className="flex items-center gap-3 pl-1">
                         <Phone className="h-4 w-4 text-gray-400 shrink-0" />
-                        <a href={`tel:${proposal.customer.phone}`} className="text-blue-600 dark:text-blue-400 hover:underline text-sm">
+                        <a href={`tel:${proposal.customer.phone}`} className="text-mint-600 dark:text-mint-400 hover:underline text-sm">
                           {proposal.customer.phone}
                         </a>
                       </div>
@@ -1416,7 +1416,7 @@ export default function ProposalDetailPage() {
         )}
         <button
           onClick={handleEdit}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors text-sm font-medium"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-mint-600 hover:bg-mint-700 text-white rounded-xl transition-colors text-sm font-medium"
         >
           <Edit className="h-4 w-4" />
           Duzenle

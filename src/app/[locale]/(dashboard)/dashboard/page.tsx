@@ -99,7 +99,7 @@ const fetcher = (url: string) =>
 
 const statusConfig: Record<string, { color: string; dot: string }> = {
   DRAFT: { color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400' },
-  SENT: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500' },
+  SENT: { color: 'bg-mint-100 text-mint-700 dark:bg-mint-900 dark:text-mint-300', dot: 'bg-mint-500' },
   VIEWED: { color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500' },
   ACCEPTED: { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500' },
   REJECTED: { color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
@@ -207,7 +207,7 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
     {
       icon: Plus,
       label: t('newProposal'),
-      color: 'from-blue-500 to-indigo-600',
+      color: 'from-mint-500 to-mint-600',
       onClick: () => router.push(`/${locale}/proposals/new`),
     },
     ...(lastProposalId
@@ -267,8 +267,8 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
           whileTap={{ scale: 0.95 }}
           className={cn(
             'w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300',
-            'bg-gradient-to-r from-blue-600 to-indigo-600 text-white',
-            'dark:shadow-blue-500/30 dark:shadow-xl',
+            'bg-gradient-to-r from-mint-600 to-mint-600 text-white',
+            'dark:shadow-mint-500/30 dark:shadow-xl',
             open && 'rotate-45'
           )}
         >
@@ -393,7 +393,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-        <div className="md:shrink-0 bg-gradient-to-br from-blue-600 to-indigo-700 pb-6 px-4 md:px-8">
+        <div className="md:shrink-0 bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl" />
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg mt-2" />
@@ -422,7 +422,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
-          className="overflow-hidden rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10 p-4 md:p-5 text-white shadow-lg dark:shadow-[0_0_40px_-8px_rgba(59,130,246,0.5)] hover:scale-[1.02] transition-transform cursor-default"
+          className="overflow-hidden rounded-2xl bg-white/15 backdrop-blur-sm border border-white/10 p-4 md:p-5 text-white shadow-lg dark:shadow-[0_0_40px_-8px_rgba(54,156,112,0.5)] hover:scale-[1.02] transition-transform cursor-default"
         >
           <div className="flex items-center gap-2 text-white/70 text-xs font-medium">
             <Wallet className="h-3.5 w-3.5" />
@@ -599,7 +599,7 @@ export default function DashboardPage() {
         className="grid gap-6 lg:grid-cols-3"
       >
         {/* Chart */}
-        <div className="lg:col-span-2 rounded-2xl border bg-card p-4 md:p-5 dark:shadow-[0_0_20px_-8px_rgba(59,130,246,0.2)]">
+        <div className="lg:col-span-2 rounded-2xl border bg-card p-4 md:p-5 dark:shadow-[0_0_20px_-8px_rgba(54,156,112,0.2)]">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold">{t('proposalTrend')}</h3>
@@ -646,7 +646,7 @@ export default function DashboardPage() {
           <h3 className="font-semibold mb-4">{t('quickActions')}</h3>
           <div className="flex flex-col gap-3 flex-1">
             {[
-              { onClick: () => router.push(`/${locale}/proposals/new`), icon: Plus, label: t('newProposal'), desc: t('createQuickProposal'), from: 'from-blue-50 dark:from-blue-950', to: 'to-indigo-50 dark:to-indigo-950', border: 'border-blue-200 dark:border-blue-800', bg: 'bg-blue-500', text: 'text-blue-', glow: 'dark:shadow-[0_0_15px_-5px_rgba(59,130,246,0.4)]' },
+              { onClick: () => router.push(`/${locale}/proposals/new`), icon: Plus, label: t('newProposal'), desc: t('createQuickProposal'), from: 'from-mint-50 dark:from-mint-950', to: 'to-mint-50 dark:to-mint-950', border: 'border-mint-200 dark:border-mint-800', bg: 'bg-mint-500', text: 'text-mint-', glow: 'dark:shadow-[0_0_15px_-5px_rgba(54,156,112,0.4)]' },
               { onClick: () => router.push(`/${locale}/customers`), icon: Users, label: t('customers'), desc: `${customerTotal} ${t('customerCount')}`, from: 'from-emerald-50 dark:from-emerald-950', to: 'to-teal-50 dark:to-teal-950', border: 'border-emerald-200 dark:border-emerald-800', bg: 'bg-emerald-500', text: 'text-emerald-', glow: 'dark:shadow-[0_0_15px_-5px_rgba(16,185,129,0.4)]' },
               { onClick: () => router.push(`/${locale}/products`), icon: Package, label: t('products'), desc: t('stockAndProductMgmt'), from: 'from-amber-50 dark:from-amber-950', to: 'to-orange-50 dark:to-orange-950', border: 'border-amber-200 dark:border-amber-800', bg: 'bg-amber-500', text: 'text-amber-', glow: 'dark:shadow-[0_0_15px_-5px_rgba(245,158,11,0.4)]' },
               { onClick: handleSyncParasut, icon: RefreshCw, label: t('parasutSync'), desc: t('updateData'), from: 'from-slate-50 dark:from-slate-950', to: 'to-gray-50 dark:to-gray-950', border: 'border-slate-200 dark:border-slate-800', bg: 'bg-slate-500', text: 'text-slate-', glow: '' },
@@ -694,7 +694,7 @@ export default function DashboardPage() {
             variant="ghost"
             size="sm"
             onClick={() => router.push(`/${locale}/proposals`)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950 rounded-xl"
+            className="text-mint-600 hover:text-mint-700 hover:bg-mint-50 dark:text-mint-400 dark:hover:bg-mint-950 rounded-xl"
           >
             {t('viewAll')}
             <ArrowRight className="ml-1 h-4 w-4" />
@@ -778,11 +778,11 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="rounded-2xl border bg-card dark:shadow-[0_0_20px_-8px_rgba(59,130,246,0.1)]"
+          className="rounded-2xl border bg-card dark:shadow-[0_0_20px_-8px_rgba(54,156,112,0.1)]"
         >
           <div className="flex items-center justify-between p-4 md:p-5 border-b">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-blue-500" />
+              <CalendarDays className="h-4 w-4 text-mint-500" />
               <h3 className="font-semibold">{t('calendarTitle')}</h3>
             </div>
             <div className="flex items-center gap-1">
@@ -814,14 +814,14 @@ export default function DashboardPage() {
                     key={day}
                     className={cn(
                       'relative flex flex-col items-center justify-center h-9 rounded-lg text-xs transition-colors',
-                      isToday && 'ring-1 ring-blue-500 font-bold',
+                      isToday && 'ring-1 ring-mint-500 font-bold',
                       (hasDelivery || hasInstallation) && 'bg-gray-50 dark:bg-gray-800/50',
                     )}
                   >
-                    <span className={cn('text-xs', isToday ? 'text-blue-600 dark:text-blue-400' : '')}>{day}</span>
+                    <span className={cn('text-xs', isToday ? 'text-mint-600 dark:text-mint-400' : '')}>{day}</span>
                     {(hasDelivery || hasInstallation) && (
                       <div className="flex gap-0.5 mt-0.5">
-                        {hasDelivery && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" title={t('delivery')} />}
+                        {hasDelivery && <div className="h-1.5 w-1.5 rounded-full bg-mint-500" title={t('delivery')} />}
                         {hasInstallation && <div className="h-1.5 w-1.5 rounded-full bg-green-500" title={t('installation')} />}
                       </div>
                     )}
@@ -831,7 +831,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-4 mt-3 pt-3 border-t">
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                <div className="h-2 w-2 rounded-full bg-mint-500" />
                 <Truck className="h-3 w-3" /> {t('delivery')}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -848,7 +848,7 @@ export default function DashboardPage() {
   return (
     <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
       {/* Gradient Hero */}
-      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 pb-6 px-4 md:px-8">
+      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />

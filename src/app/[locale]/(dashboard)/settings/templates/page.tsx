@@ -43,7 +43,7 @@ export default function TemplatesPage() {
           <DialogTrigger asChild>
             <Button
               onClick={handleOpenDialog}
-              className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:shadow-blue-500/30"
+              className="gap-2 rounded-xl bg-gradient-to-r from-mint-500 to-mint-600 text-white shadow-lg shadow-mint-500/20 transition-all hover:from-mint-600 hover:to-mint-700 hover:shadow-xl hover:shadow-mint-500/30"
             >
               <Plus className="h-4 w-4" />
               {t('create')}
@@ -96,7 +96,7 @@ export default function TemplatesPage() {
                 </Button>
                 <Button
                   disabled
-                  className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-mint-500 to-mint-600 text-white shadow-lg shadow-mint-500/20"
                 >
                   {t('createBtn')}
                 </Button>
@@ -109,8 +109,8 @@ export default function TemplatesPage() {
       {/* Empty State */}
       <Card className="border-0 shadow-none">
         <CardContent className="flex flex-col items-center justify-center py-20">
-          <div className="mb-6 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 p-8 dark:from-blue-950 dark:to-indigo-950">
-            <FileText className="h-12 w-12 text-blue-500" />
+          <div className="mb-6 rounded-2xl bg-gradient-to-br from-mint-100 to-mint-100 p-8 dark:from-mint-950 dark:to-mint-950">
+            <FileText className="h-12 w-12 text-mint-500" />
           </div>
           <h3 className="mb-3 text-xl font-bold">
             {t('emptyTitle')}
@@ -120,7 +120,7 @@ export default function TemplatesPage() {
           </p>
           <Button
             onClick={handleOpenDialog}
-            className="gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:shadow-blue-500/30"
+            className="gap-2 rounded-xl bg-gradient-to-r from-mint-500 to-mint-600 text-white shadow-lg shadow-mint-500/20 transition-all hover:from-mint-600 hover:to-mint-700 hover:shadow-xl hover:shadow-mint-500/30"
           >
             <Plus className="h-4 w-4" />
             {t('create')}

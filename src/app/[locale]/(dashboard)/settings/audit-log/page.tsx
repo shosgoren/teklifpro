@@ -66,7 +66,7 @@ interface AuditLogsResponse {
 
 const ACTION_COLORS: Record<ActionType, string> = {
   CREATE: 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 dark:from-emerald-900/40 dark:to-green-900/40 dark:text-emerald-300',
-  UPDATE: 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 dark:from-blue-900/40 dark:to-indigo-900/40 dark:text-blue-300',
+  UPDATE: 'bg-gradient-to-r from-mint-100 to-mint-100 text-mint-800 dark:from-mint-900/40 dark:to-mint-900/40 dark:text-mint-300',
   DELETE: 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 dark:from-red-900/40 dark:to-rose-900/40 dark:text-red-300',
   SEND: 'bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 dark:from-purple-900/40 dark:to-violet-900/40 dark:text-purple-300',
   LOGIN: 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 dark:from-gray-800/40 dark:to-slate-800/40 dark:text-gray-300',
@@ -202,7 +202,7 @@ export default function AuditLogPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-mint-600 via-mint-600 to-violet-600 bg-clip-text text-transparent">
             {t('title')}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -247,7 +247,7 @@ export default function AuditLogPage() {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t('searchPlaceholder')}
-                  className="pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  className="pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 focus:ring-2 focus:ring-mint-500/20 transition-all"
                   value={searchDetails}
                   onChange={(e) => {
                     setSearchDetails(e.target.value);
@@ -360,8 +360,8 @@ export default function AuditLogPage() {
           {/* Loading State */}
           {isLoading && !data && (
             <div className="flex flex-col items-center justify-center py-20">
-              <div className="rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 p-5">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+              <div className="rounded-2xl bg-gradient-to-br from-mint-100 to-mint-100 dark:from-mint-900/30 dark:to-mint-900/30 p-5">
+                <Loader2 className="h-8 w-8 animate-spin text-mint-600 dark:text-mint-400" />
               </div>
               <p className="mt-5 text-sm font-medium text-muted-foreground">{t('loading')}</p>
               <div className="mt-6 w-full max-w-md space-y-3 px-8">
@@ -419,7 +419,7 @@ export default function AuditLogPage() {
                     <>
                       <TableRow
                         key={log.id}
-                        className="cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors duration-150"
+                        className="cursor-pointer hover:bg-mint-50/50 dark:hover:bg-mint-950/30 transition-colors duration-150"
                         onClick={() => toggleRowExpansion(log.id)}
                       >
                         <TableCell className="text-sm text-gray-600 dark:text-gray-300">
@@ -528,7 +528,7 @@ export default function AuditLogPage() {
                         onClick={() => setCurrentPage(pageNum)}
                         className={`h-9 w-9 flex items-center justify-center text-sm font-medium transition-all duration-200 ${
                           currentPage === pageNum
-                            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full shadow-md shadow-blue-500/25'
+                            ? 'bg-gradient-to-r from-mint-500 to-mint-600 text-white rounded-full shadow-md shadow-mint-500/25'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700'
                         }`}
                       >

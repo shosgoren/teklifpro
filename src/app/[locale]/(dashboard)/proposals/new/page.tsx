@@ -254,7 +254,7 @@ function LeftPanel({
           className={cn(
             'w-10 h-10 rounded-lg flex items-center justify-center transition-colors',
             formData.proposalType === 'OFFICIAL'
-              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+              ? 'bg-mint-100 dark:bg-mint-900/30 text-mint-600'
               : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'
           )}
           title={formData.proposalType === 'OFFICIAL' ? t('proposals.proposalTypeOfficial') : t('proposals.proposalTypeUnofficial')}
@@ -365,7 +365,7 @@ function LeftPanel({
                     {filteredCustomers.map((customer: Customer) => (
                       <CommandItem key={customer.id} onSelect={() => handleSelectCustomer(customer)}>
                         <div className="flex items-center gap-2 w-full">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                             {customer.name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -543,7 +543,7 @@ function LeftPanel({
         {/* Voice Note */}
         <div>
           <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2">
-            <Mic className="h-3.5 w-3.5 text-blue-500" />
+            <Mic className="h-3.5 w-3.5 text-mint-500" />
             {t('proposals.voiceNote')}
           </Label>
           <p className="text-[11px] text-muted-foreground mb-2">{t('proposals.voiceNoteDesc')}</p>
@@ -747,7 +747,7 @@ function ProductTable({
                   className={cn(
                     'border-b transition-all',
                     dragging === index && 'opacity-50',
-                    isExpanded && 'bg-blue-50/30 dark:bg-blue-950/10'
+                    isExpanded && 'bg-mint-50/30 dark:bg-mint-950/10'
                   )}
                 >
                   {/* Desktop row - two-line card */}
@@ -902,7 +902,7 @@ function ProductTable({
                         onClick={() => setExpandedRow(isExpanded ? null : index)}
                         className={cn(
                           'w-7 h-7 rounded flex items-center justify-center transition-all',
-                          isExpanded ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
+                          isExpanded ? 'bg-mint-100 dark:bg-mint-900/30 text-mint-600' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'
                         )}
                       >
                         <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-180')} />
@@ -960,13 +960,13 @@ function ProductTable({
                               <button type="button"
                                 onClick={() => onUpdateItem(index, { discountType: 'percent', discountFixed: 0 })}
                                 className={cn('w-9 h-9 flex items-center justify-center text-xs font-bold transition-colors',
-                                  item.discountType === 'percent' ? 'bg-blue-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
+                                  item.discountType === 'percent' ? 'bg-mint-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
                                 )}
                               >%</button>
                               <button type="button"
                                 onClick={() => onUpdateItem(index, { discountType: 'fixed', discountPercent: 0 })}
                                 className={cn('w-9 h-9 flex items-center justify-center text-xs font-bold transition-colors',
-                                  item.discountType === 'fixed' ? 'bg-blue-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
+                                  item.discountType === 'fixed' ? 'bg-mint-500 text-white' : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
                                 )}
                               >&#8378;</button>
                             </div>
@@ -1079,8 +1079,8 @@ function ProductTable({
           </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center py-20">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center mb-3">
-              <Package className="h-7 w-7 text-blue-500" />
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-mint-100 to-mint-100 dark:from-mint-950 dark:to-mint-950 flex items-center justify-center mb-3">
+              <Package className="h-7 w-7 text-mint-500" />
             </div>
             <p className="text-sm font-medium text-muted-foreground mb-3">{t('proposals.noItems')}</p>
             <Button size="sm" className="gap-1.5 rounded-lg" onClick={() => setSearchOpen(true)}>
@@ -1152,7 +1152,7 @@ function SummaryPanel({
             <Separator />
             <div className="flex justify-between">
               <span className="font-bold">{t('proposals.total')}</span>
-              <span className="text-xl font-extrabold text-blue-600 dark:text-blue-400">
+              <span className="text-xl font-extrabold text-mint-600 dark:text-mint-400">
                 {formatCurrency(totals.grandTotal)}
               </span>
             </div>
@@ -1302,7 +1302,7 @@ function MobileBottomBar({
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.total')}</p>
-          <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400 truncate">{formatCurrency(grandTotal)}</p>
+          <p className="text-lg font-extrabold text-mint-600 dark:text-mint-400 truncate">{formatCurrency(grandTotal)}</p>
         </div>
         <Button
           type="button"
@@ -1356,7 +1356,7 @@ function MobileAccordionSection({
         <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
         <span className="text-sm font-semibold flex-1">{title}</span>
         {badge && (
-          <Badge className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">
+          <Badge className="text-[10px] px-1.5 py-0 bg-mint-100 text-mint-700 dark:bg-mint-900/30 dark:text-mint-400 border-0">
             {badge}
           </Badge>
         )}
@@ -1702,7 +1702,7 @@ export default function CreateProposalPage() {
                 )}
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t('proposals.total')}</p>
-                  <p className="text-lg font-extrabold text-blue-600 dark:text-blue-400">{formatCurrency(totals.grandTotal)}</p>
+                  <p className="text-lg font-extrabold text-mint-600 dark:text-mint-400">{formatCurrency(totals.grandTotal)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1742,7 +1742,7 @@ export default function CreateProposalPage() {
         >
           {/* Header */}
           <div className="mb-2">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
               {t('proposals.createNew')}
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">{t('proposals.createDescription')}</p>
@@ -1829,26 +1829,26 @@ export default function CreateProposalPage() {
 
           {/* Mobile Summary */}
           {formData.items.length > 0 && (
-            <div className="rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-4 shadow-xl shadow-blue-500/20">
+            <div className="rounded-xl bg-gradient-to-br from-mint-600 to-mint-700 text-white p-4 shadow-xl shadow-mint-500/20">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[10px] text-blue-200">{t('proposals.subtotal')}</p>
+                  <p className="text-[10px] text-mint-200">{t('proposals.subtotal')}</p>
                   <p className="text-sm font-bold">{formatCurrency(totals.subtotal)}</p>
                 </div>
                 {totals.discountAmount > 0 && (
                   <div>
-                    <p className="text-[10px] text-blue-200">{t('proposals.discount')}</p>
+                    <p className="text-[10px] text-mint-200">{t('proposals.discount')}</p>
                     <p className="text-sm font-bold text-red-300">-{formatCurrency(totals.discountAmount)}</p>
                   </div>
                 )}
                 {formData.proposalType !== 'UNOFFICIAL' && (
                   <div>
-                    <p className="text-[10px] text-blue-200">{t('proposals.vat')}</p>
+                    <p className="text-[10px] text-mint-200">{t('proposals.vat')}</p>
                     <p className="text-sm font-bold">{formatCurrency(totals.vatAmount)}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-[10px] text-blue-200">{t('proposals.total')}</p>
+                  <p className="text-[10px] text-mint-200">{t('proposals.total')}</p>
                   <p className="text-xl font-extrabold">{formatCurrency(totals.grandTotal)}</p>
                 </div>
               </div>
@@ -1968,7 +1968,7 @@ function MobileCustomerSelect({
                 {filteredCustomers.map((customer: Customer) => (
                   <CommandItem key={customer.id} onSelect={() => handleSelect(customer)}>
                     <div className="flex items-center gap-2 w-full">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-mint-500 to-mint-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                         {customer.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2090,7 +2090,7 @@ function MobileDetailsSection({
 
       <div>
         <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mb-1.5">
-          <Mic className="h-3.5 w-3.5 text-blue-500" />
+          <Mic className="h-3.5 w-3.5 text-mint-500" />
           {t('proposals.voiceNote')}
         </Label>
         <VoiceNoteRecorder

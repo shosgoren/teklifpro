@@ -47,7 +47,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 type TabKey = 'general' | 'parasut' | 'whatsapp' | 'team' | 'subscription';
 
 const TAB_COLORS: Record<TabKey, { from: string; to: string; shadow: string; light: string; border: string }> = {
-  general: { from: 'from-blue-500', to: 'to-indigo-600', shadow: 'shadow-blue-500/25', light: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-500' },
+  general: { from: 'from-mint-500', to: 'to-mint-600', shadow: 'shadow-mint-500/25', light: 'bg-mint-50 dark:bg-mint-950/30', border: 'border-mint-500' },
   parasut: { from: 'from-emerald-500', to: 'to-teal-600', shadow: 'shadow-emerald-500/25', light: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-500' },
   whatsapp: { from: 'from-green-500', to: 'to-green-600', shadow: 'shadow-green-500/25', light: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-500' },
   team: { from: 'from-violet-500', to: 'to-purple-600', shadow: 'shadow-violet-500/25', light: 'bg-violet-50 dark:bg-violet-950/30', border: 'border-violet-500' },
@@ -428,12 +428,12 @@ const SettingsPage = () => {
   const colors = TAB_COLORS[activeTab];
 
   const inputClass =
-    'h-11 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-sm';
+    'h-11 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-mint-500/20 focus:border-mint-400 transition-all text-sm';
 
   if (!session) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 px-4 pb-8 md:px-8">
+        <div className="bg-gradient-to-br from-mint-600 via-mint-600 to-violet-700 px-4 pb-8 md:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="h-8 w-48 bg-white/20 animate-pulse rounded-xl mb-2" />
             <div className="h-4 w-72 bg-white/10 animate-pulse rounded-lg" />
@@ -519,15 +519,15 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-blue-50/30 dark:from-gray-800/50 dark:to-blue-950/20 border border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-mint-50/30 dark:from-gray-800/50 dark:to-mint-950/20 border border-gray-100 dark:border-gray-800">
                   {/* Logo Preview */}
                   <div className="relative group">
-                    <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-blue-300 dark:border-blue-700 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-400 group-hover:shadow-lg">
+                    <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-mint-300 dark:border-mint-700 bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden transition-all group-hover:border-mint-400 group-hover:shadow-lg">
                       {logo ? (
                         <img src={logo} alt="Logo" className="w-full h-full object-contain p-3" />
                       ) : (
                         <div className="text-center">
-                          <ImageIcon className="w-10 h-10 text-blue-200 dark:text-blue-800 mx-auto mb-1" />
+                          <ImageIcon className="w-10 h-10 text-mint-200 dark:text-mint-800 mx-auto mb-1" />
                           <span className="text-[10px] text-gray-400">{t('brand.noLogo')}</span>
                         </div>
                       )}
@@ -567,10 +567,10 @@ const SettingsPage = () => {
 
             {/* Company Info Card */}
             <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
-              <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-blue-500 to-cyan-500" />
+              <div className="h-1.5 bg-gradient-to-r from-mint-500 via-mint-500 to-cyan-500" />
               <div className="p-6 md:p-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-mint-500 to-mint-600">
                     <Building2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -716,8 +716,8 @@ const SettingsPage = () => {
 
                 {bankAccounts.length === 0 ? (
                   <div className="flex flex-col items-center py-8 text-center">
-                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/30 rounded-2xl flex items-center justify-center mb-3">
-                      <Landmark className="w-8 h-8 text-blue-400" />
+                    <div className="w-16 h-16 bg-mint-50 dark:bg-mint-950/30 rounded-2xl flex items-center justify-center mb-3">
+                      <Landmark className="w-8 h-8 text-mint-400" />
                     </div>
                     <p className="text-sm text-gray-400">{t('bank.empty')}</p>
                   </div>
@@ -1000,13 +1000,13 @@ const SettingsPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-l-4 border-blue-400">
-                  <Globe className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 p-4 rounded-2xl bg-gradient-to-r from-mint-50 to-mint-50 dark:from-mint-950/20 dark:to-mint-950/20 border-l-4 border-mint-400">
+                  <Globe className="w-5 h-5 text-mint-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">{t('parasut.credentialsHint')}</p>
+                    <p className="text-sm font-medium text-mint-700 dark:text-mint-300 mb-2">{t('parasut.credentialsHint')}</p>
                     <ul className="text-sm space-y-1">
-                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-blue-600">{t('parasut.apiInfo')}</a></li>
-                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-blue-600">{t('parasut.oauthSettings')}</a></li>
+                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-mint-600">{t('parasut.apiInfo')}</a></li>
+                      <li><a href="https://api.parasut.com" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline text-mint-600">{t('parasut.oauthSettings')}</a></li>
                     </ul>
                   </div>
                 </div>
@@ -1287,13 +1287,13 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Professional */}
-                  <div className="relative rounded-2xl border-2 border-blue-500 p-6 bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 shadow-xl shadow-blue-500/10">
-                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg">
+                  <div className="relative rounded-2xl border-2 border-mint-500 p-6 bg-gradient-to-br from-mint-50/80 to-mint-50/80 dark:from-mint-950/30 dark:to-mint-950/30 shadow-xl shadow-mint-500/10">
+                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-mint-600 to-mint-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-lg">
                       <Star className="w-3 h-3 inline mr-1 -mt-0.5" />
                       {t('subscription.recommended')}
                     </span>
                     <div className="flex items-center gap-3 mb-5">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                      <div className="w-10 h-10 bg-gradient-to-br from-mint-500 to-mint-600 rounded-xl flex items-center justify-center shadow-lg shadow-mint-500/25">
                         <Crown className="w-5 h-5 text-white" />
                       </div>
                       <div>
@@ -1309,7 +1309,7 @@ const SettingsPage = () => {
                         </li>
                       ))}
                     </ul>
-                    <button className="w-full mt-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-blue-500/25 transition-all text-sm flex items-center justify-center gap-2">
+                    <button className="w-full mt-6 py-3 bg-gradient-to-r from-mint-600 to-mint-600 text-white font-semibold rounded-xl hover:opacity-90 shadow-lg shadow-mint-500/25 transition-all text-sm flex items-center justify-center gap-2">
                       {t('subscription.upgradeToPro')}
                       <ArrowRight className="w-4 h-4" />
                     </button>

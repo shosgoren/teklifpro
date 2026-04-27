@@ -76,7 +76,7 @@ const fetcher = (url: string) =>
 const STATUS_CONFIG: Record<ProposalStatus, { color: string; dot: string; border: string }> = {
   DRAFT: { color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400', border: 'border-l-slate-400' },
   READY: { color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300', dot: 'bg-cyan-500', border: 'border-l-cyan-500' },
-  SENT: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500', border: 'border-l-blue-500' },
+  SENT: { color: 'bg-mint-100 text-mint-700 dark:bg-mint-900 dark:text-mint-300', dot: 'bg-mint-500', border: 'border-l-mint-500' },
   VIEWED: { color: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300', dot: 'bg-amber-500', border: 'border-l-amber-500' },
   ACCEPTED: { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500', border: 'border-l-emerald-500' },
   REJECTED: { color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500', border: 'border-l-red-500' },
@@ -84,7 +84,7 @@ const STATUS_CONFIG: Record<ProposalStatus, { color: string; dot: string; border
   REVISED: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300', dot: 'bg-purple-500', border: 'border-l-purple-500' },
   EXPIRED: { color: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-l-gray-400' },
   CANCELLED: { color: 'bg-gray-200 text-gray-500 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-l-gray-400' },
-  INVOICED: { color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300', dot: 'bg-indigo-500', border: 'border-l-indigo-500' },
+  INVOICED: { color: 'bg-mint-100 text-mint-700 dark:bg-mint-900 dark:text-mint-300', dot: 'bg-mint-500', border: 'border-l-mint-500' },
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -438,14 +438,14 @@ export default function ProposalsPage() {
           />
         ) : (
           <div className="flex flex-col items-center justify-center py-20 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20 mb-5">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-mint-500 to-mint-600 shadow-lg shadow-mint-500/20 mb-5">
               <FileText className="h-10 w-10 text-white" />
             </div>
             <p className="text-base font-semibold">{t('noProposals')}</p>
             <p className="text-sm text-muted-foreground mt-1">{t('noProposalsHint')}</p>
             <Button
               onClick={() => router.push(`/${locale}/proposals/new`)}
-              className="mt-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11 px-6"
+              className="mt-6 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 h-11 px-6"
             >
               <Plus className="mr-2 h-4 w-4" />
               {t('createFirst')}
@@ -473,7 +473,7 @@ export default function ProposalsPage() {
                   <tr
                     key={proposal.id}
                     onClick={() => setSelectedProposal(proposal)}
-                    className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 cursor-pointer transition-colors duration-150"
+                    className="hover:bg-mint-50/50 dark:hover:bg-mint-950/30 cursor-pointer transition-colors duration-150"
                   >
                     <td className="px-5 py-4">
                       <p className="text-sm font-semibold">{proposal.title || proposal.proposalNumber}</p>
@@ -534,7 +534,7 @@ export default function ProposalsPage() {
                   onClick={() => setSelectedProposal(proposal)}
                   className={cn(
                     'flex items-center gap-3 p-4 w-full text-left transition-colors duration-150',
-                    'border-l-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/30',
+                    'border-l-4 hover:bg-mint-50/50 dark:hover:bg-mint-950/30',
                     status.border
                   )}
                 >
@@ -586,7 +586,7 @@ export default function ProposalsPage() {
                       className={cn(
                         'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
                         currentPage === page
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                          ? 'bg-gradient-to-r from-mint-600 to-mint-600 text-white shadow-md shadow-mint-500/25'
                           : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                       )}
                     >
@@ -604,7 +604,7 @@ export default function ProposalsPage() {
                         className={cn(
                           'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
                           currentPage === page
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                            ? 'bg-gradient-to-r from-mint-600 to-mint-600 text-white shadow-md shadow-mint-500/25'
                             : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                         )}
                       >
@@ -617,7 +617,7 @@ export default function ProposalsPage() {
                         onClick={() => setCurrentPage(currentPage)}
                         aria-label={t('goToPage', { page: currentPage })}
                         aria-current="page"
-                        className="h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25"
+                        className="h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium bg-gradient-to-r from-mint-600 to-mint-600 text-white shadow-md shadow-mint-500/25"
                       >
                         {currentPage}
                       </button>
@@ -632,7 +632,7 @@ export default function ProposalsPage() {
                         className={cn(
                           'h-8 min-w-[2rem] px-2 rounded-full text-xs font-medium transition-all',
                           currentPage === page
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
+                            ? 'bg-gradient-to-r from-mint-600 to-mint-600 text-white shadow-md shadow-mint-500/25'
                             : 'text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800'
                         )}
                       >

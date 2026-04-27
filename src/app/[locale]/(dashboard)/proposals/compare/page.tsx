@@ -69,7 +69,7 @@ const formatDate = (dateStr: string, dateLocale = 'tr-TR'): string => {
 const STATUS_COLORS: Record<ProposalStatus, string> = {
   DRAFT: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
   READY: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
-  SENT: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+  SENT: 'bg-mint-100 text-mint-800 dark:bg-mint-900/40 dark:text-mint-300',
   VIEWED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
   ACCEPTED: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   REJECTED: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
@@ -77,7 +77,7 @@ const STATUS_COLORS: Record<ProposalStatus, string> = {
   REVISED: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
   EXPIRED: 'bg-slate-700 text-white dark:bg-slate-600 dark:text-slate-200',
   CANCELLED: 'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  INVOICED: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
+  INVOICED: 'bg-mint-100 text-mint-800 dark:bg-mint-900/40 dark:text-mint-300',
 };
 
 const STATUS_LABEL_KEYS: Record<ProposalStatus, string> = {
@@ -146,7 +146,7 @@ function SelectProposalsDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg rounded-2xl bg-white dark:bg-gray-900 border-0 shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
             {t('dialogTitle')}
           </DialogTitle>
         </DialogHeader>
@@ -157,7 +157,7 @@ function SelectProposalsDialog({
               placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all"
+              className="pl-10 rounded-xl border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-mint-500 dark:focus:ring-mint-400 transition-all"
             />
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -171,7 +171,7 @@ function SelectProposalsDialog({
                   onClick={() => onToggle(proposal.id)}
                   className={`w-full text-left p-3 rounded-2xl border-2 hover:shadow-lg transition-all duration-200 flex items-center gap-3 ${
                     selectedIds.has(proposal.id)
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-md'
+                      ? 'border-mint-500 bg-mint-50 dark:bg-mint-950/20 shadow-md'
                       : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800/50'
                   }`}
                 >
@@ -355,7 +355,7 @@ function ProposalColumn({
             </div>}
             <div className="flex justify-between font-bold text-base border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
               <span className="text-gray-900 dark:text-gray-100">{t('total')}</span>
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
                 {formatCurrency(Number(proposal.grandTotal), proposal.currency, dateLocale)}
               </span>
             </div>
@@ -445,7 +445,7 @@ export default function ProposalComparePage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
             {t('title')}
           </h1>
         </div>
@@ -456,7 +456,7 @@ export default function ProposalComparePage() {
         </div>
         <div className="flex items-center justify-center py-20">
           <div className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-2xl px-6 py-4 shadow-lg">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-mint-500" />
             <span className="text-gray-600 dark:text-gray-400 font-medium">{t('loading')}</span>
           </div>
         </div>
@@ -469,7 +469,7 @@ export default function ProposalComparePage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
             {t('title')}
           </h1>
         </div>
@@ -491,14 +491,14 @@ export default function ProposalComparePage() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
             {t('title')}
           </h1>
         </div>
         <Card className="text-center py-16 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
           <CardContent>
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-800/30 flex items-center justify-center">
-              <BarChart3 className="w-10 h-10 text-blue-500 dark:text-blue-400" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-mint-100 to-mint-200 dark:from-mint-900/30 dark:to-mint-800/30 flex items-center justify-center">
+              <BarChart3 className="w-10 h-10 text-mint-500 dark:text-mint-400" />
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               {t('minTwoRequired')}
@@ -527,7 +527,7 @@ export default function ProposalComparePage() {
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
             {t('title')}
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
@@ -539,7 +539,7 @@ export default function ProposalComparePage() {
             onClick={() => setIsDialogOpen(true)}
             variant="outline"
             size="sm"
-            className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
+            className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-mint-500 dark:hover:border-mint-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
           >
             <Plus className="w-4 h-4" />
             {t('selectProposalsCount', { count: selectedIds.size })}
@@ -548,7 +548,7 @@ export default function ProposalComparePage() {
             onClick={handlePrint}
             variant="outline"
             size="sm"
-            className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
+            className="gap-2 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-mint-500 dark:hover:border-mint-400 hover:shadow-lg transition-all duration-200 bg-white dark:bg-gray-900 dark:text-gray-200"
             disabled={selectedIds.size < 2}
           >
             <Printer className="w-4 h-4" />
@@ -560,8 +560,8 @@ export default function ProposalComparePage() {
       {selectedIds.size < 2 ? (
         <Card className="text-center py-16 rounded-2xl border-0 shadow-lg bg-white dark:bg-gray-900">
           <CardContent>
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/30 dark:to-indigo-800/30 flex items-center justify-center">
-              <BarChart3 className="w-10 h-10 text-blue-500 dark:text-blue-400" />
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-mint-100 to-mint-200 dark:from-mint-900/30 dark:to-mint-800/30 flex items-center justify-center">
+              <BarChart3 className="w-10 h-10 text-mint-500 dark:text-mint-400" />
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg">
               {selectedIds.size === 0
@@ -570,7 +570,7 @@ export default function ProposalComparePage() {
             </p>
             <Button
               onClick={() => setIsDialogOpen(true)}
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6"
+              className="rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 px-6"
             >
               <Plus className="w-4 h-4 mr-2" />
               {t('selectProposals')}
@@ -585,7 +585,7 @@ export default function ProposalComparePage() {
               icon={FileText}
               label={t('summaryCompared')}
               value={t('summaryComparedValue', { count: selectedProposals.length })}
-              gradient="bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-800"
+              gradient="bg-gradient-to-br from-mint-500 to-mint-700 dark:from-mint-600 dark:to-mint-800"
             />
             <SummaryCard
               icon={TrendingDown}
@@ -597,7 +597,7 @@ export default function ProposalComparePage() {
               icon={BarChart3}
               label={t('summaryAverage')}
               value={formatCurrency(avgTotal, summaryCurrency, dateLocale)}
-              gradient="bg-gradient-to-br from-purple-500 to-indigo-700 dark:from-purple-600 dark:to-indigo-800"
+              gradient="bg-gradient-to-br from-purple-500 to-mint-700 dark:from-purple-600 dark:to-mint-800"
             />
             <SummaryCard
               icon={Users}
@@ -658,7 +658,7 @@ export default function ProposalComparePage() {
                       </td>
                     ))}
                   </tr>
-                  <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+                  <tr className="bg-gradient-to-r from-mint-50 to-mint-50 dark:from-mint-950/30 dark:to-mint-950/30">
                     <td className="p-4 text-gray-900 dark:text-gray-100 font-bold">{t('tableTotal')}</td>
                     {selectedProposals.map((p) => {
                       const total = Number(p.grandTotal);
