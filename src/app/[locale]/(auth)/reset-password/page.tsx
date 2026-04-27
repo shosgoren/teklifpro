@@ -47,7 +47,7 @@ type RequestResetValues = z.infer<typeof requestResetSchema>;
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 const inputClassName =
-  'pl-10 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 h-11 transition-all';
+  'pl-10 rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-mint-500/20 h-11 transition-all';
 
 const labelClassName =
   'text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider';
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
 
   if (success && !token) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-mint-50 via-mint-50 to-mint-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
         <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white dark:bg-gray-900 backdrop-blur-sm">
           <div className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
@@ -134,7 +134,7 @@ export default function ResetPasswordPage() {
               {tReset('emailSentDescription')}
             </p>
             <Link href={`/${locale}/login`}>
-              <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all">
+              <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 transition-all">
                 {tReset('backToLogin')}
               </Button>
             </Link>
@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
 
   if (success && token) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-mint-50 via-mint-50 to-mint-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
         <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white dark:bg-gray-900 backdrop-blur-sm">
           <div className="p-8 text-center">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
@@ -157,7 +157,7 @@ export default function ResetPasswordPage() {
               {tReset('passwordResetDescription')}
             </p>
             <Link href={`/${locale}/login`}>
-              <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all">
+              <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 transition-all">
                 {tReset('login')}
               </Button>
             </Link>
@@ -168,11 +168,11 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-mint-50 via-mint-50 to-mint-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
       <Card className="relative w-full max-w-md shadow-2xl border-0 bg-white dark:bg-gray-900 backdrop-blur-sm">
         <div className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent mb-2">
               TeklifPro
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -236,7 +236,7 @@ export default function ResetPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all"
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 transition-all"
                 >
                   {isLoading ? tReset('updating') : tReset('updatePassword')}
                 </Button>
@@ -270,7 +270,7 @@ export default function ResetPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 transition-all"
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white shadow-lg shadow-mint-500/25 transition-all"
                 >
                   {isLoading ? tReset('sending') : tReset('sendResetButton')}
                 </Button>
@@ -281,7 +281,7 @@ export default function ResetPasswordPage() {
           <p className="mt-6 text-center">
             <Link
               href={`/${locale}/login`}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium inline-flex items-center gap-1 transition-colors"
+              className="text-sm text-mint-600 dark:text-mint-400 hover:text-mint-700 dark:hover:text-mint-300 font-medium inline-flex items-center gap-1 transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               {tReset('backToLoginLink')}

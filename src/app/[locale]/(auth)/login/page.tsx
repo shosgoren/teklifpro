@@ -86,7 +86,7 @@ export default function LoginPage() {
   return (
     <div className="h-dvh w-full flex bg-white dark:bg-gray-950">
       {/* Left Panel - Brand (desktop only) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-mint-600 via-mint-600 to-mint-700 items-center justify-center p-12">
         {/* Background patterns */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
         <div className="absolute top-20 left-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
@@ -102,7 +102,7 @@ export default function LoginPage() {
           <h2 className="text-4xl font-extrabold mb-4 leading-tight">
             {tLogin('heroTitle')}
           </h2>
-          <p className="text-blue-100 text-lg mb-10 leading-relaxed">
+          <p className="text-mint-100 text-lg mb-10 leading-relaxed">
             {tLogin('heroSubtitle')}
           </p>
 
@@ -116,7 +116,7 @@ export default function LoginPage() {
                 <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
                   <item.icon className="w-4 h-4" />
                 </div>
-                <span className="text-blue-50 text-sm">{item.text}</span>
+                <span className="text-mint-50 text-sm">{item.text}</span>
               </div>
             ))}
           </div>
@@ -128,10 +128,10 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mint-600 to-mint-600 flex items-center justify-center">
               <Sparkles className="w-4.5 h-4.5 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent">
               TeklifPro
             </span>
           </div>
@@ -195,7 +195,7 @@ export default function LoginPage() {
                           type="email"
                           placeholder="john@example.com"
                           className={cn(
-                            'pl-10 h-11 rounded-xl border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 focus:ring-blue-500/20 transition-colors',
+                            'pl-10 h-11 rounded-xl border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-mint-500 focus:ring-mint-500/20 transition-colors',
                             form.formState.errors.email && 'border-red-500'
                           )}
                           {...field}
@@ -218,7 +218,7 @@ export default function LoginPage() {
                       </FormLabel>
                       <Link
                         href={`/${locale}/reset-password`}
-                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
+                        className="text-xs text-mint-600 dark:text-mint-400 hover:text-mint-700 font-medium"
                       >
                         {t('login.forgotPassword')}
                       </Link>
@@ -230,7 +230,7 @@ export default function LoginPage() {
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
                           className={cn(
-                            'pl-10 pr-10 h-11 rounded-xl border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-blue-500 focus:ring-blue-500/20 transition-colors',
+                            'pl-10 pr-10 h-11 rounded-xl border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 focus:bg-white dark:focus:bg-gray-950 focus:border-mint-500 focus:ring-mint-500/20 transition-colors',
                             form.formState.errors.password && 'border-red-500'
                           )}
                           {...field}
@@ -272,7 +272,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all group"
+                className="w-full h-11 bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white font-semibold rounded-xl shadow-lg shadow-mint-500/25 hover:shadow-mint-500/40 transition-all group"
               >
                 {isLoading ? t('login.logging') : t('login.login')}
                 {!isLoading && <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-0.5 transition-transform" />}
@@ -284,7 +284,7 @@ export default function LoginPage() {
             {t('login.noAccount')}{' '}
             <Link
               href={`/${locale}/register`}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-semibold"
+              className="text-mint-600 dark:text-mint-400 hover:text-mint-700 font-semibold"
             >
               {t('login.register')}
             </Link>

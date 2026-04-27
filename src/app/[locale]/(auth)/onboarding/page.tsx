@@ -37,13 +37,13 @@ const logger = new Logger('OnboardingPage');
 
 // Shared style constants
 const inputClasses =
-  'rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 h-11 transition-all';
+  'rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-mint-500/20 h-11 transition-all';
 const inputWithIconClasses = `pl-10 ${inputClasses}`;
 const textareaClasses =
-  'pl-10 p-2 w-full border rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-gray-900 dark:text-gray-100';
+  'pl-10 p-2 w-full border rounded-xl bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:ring-2 focus:ring-mint-500/20 transition-all resize-none text-gray-900 dark:text-gray-100';
 const labelClasses = 'text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider';
 const primaryBtnClasses =
-  'w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 transform hover:scale-[1.02] active:scale-95';
+  'w-full h-11 bg-gradient-to-r from-mint-600 to-mint-600 hover:from-mint-700 hover:to-mint-700 text-white font-semibold rounded-xl shadow-lg shadow-mint-500/25 transition-all duration-200 transform hover:scale-[1.02] active:scale-95';
 const iconClasses = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500';
 
 // Step 1: Company Info Schema
@@ -136,7 +136,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                 className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300',
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 scale-110'
+                    ? 'bg-gradient-to-r from-mint-600 to-mint-600 text-white shadow-lg shadow-mint-500/25 scale-110'
                     : isCompleted
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-2 border-green-300 dark:border-green-700'
                     : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-2 border-gray-200 dark:border-gray-700'
@@ -154,7 +154,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                   className={cn(
                     'flex-1 h-1 mx-2 rounded-full transition-all duration-300',
                     isCompleted || currentStep > step.number
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600'
+                      ? 'bg-gradient-to-r from-mint-600 to-mint-600'
                       : 'bg-gray-200 dark:bg-gray-700'
                   )}
                 />
@@ -416,21 +416,21 @@ export default function OnboardingPage() {
 
   if (currentStep === 4) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
+      <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-mint-50 via-mint-50 to-mint-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4">
         <Confetti />
 
         <Card className="relative w-full max-w-lg shadow-2xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl">
           <div className="p-12 text-center">
             <div className="mb-6 flex justify-center">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur-2xl opacity-50" />
-                <div className="relative w-24 h-24 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-r from-mint-600 to-mint-600 rounded-full blur-2xl opacity-50" />
+                <div className="relative w-24 h-24 bg-gradient-to-r from-mint-600 to-mint-600 rounded-full flex items-center justify-center">
                   <CheckCircle className="w-12 h-12 text-white" />
                 </div>
               </div>
             </div>
 
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-mint-600 to-mint-600 bg-clip-text text-transparent mb-4">
               {t('success.title')}
             </h1>
 
@@ -466,10 +466,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4 py-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-mint-50 via-mint-50 to-mint-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-4 py-8">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-200 dark:bg-purple-900 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-mint-200 dark:bg-mint-900 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-mint-200 dark:bg-mint-900 rounded-full mix-blend-multiply dark:mix-blend-normal filter blur-3xl opacity-20 animate-pulse" />
       </div>
 
       <Card className="relative w-full max-w-lg shadow-2xl border-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl">
@@ -614,7 +614,7 @@ export default function OnboardingPage() {
                         {t('step1.logo')} ({t('step1.optional')})
                       </FormLabel>
                       <FormControl>
-                        <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors duration-200">
+                        <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-mint-500 dark:hover:border-mint-400 hover:bg-mint-50 dark:hover:bg-mint-950/30 transition-colors duration-200">
                           <div className="flex flex-col items-center justify-center">
                             <Upload className="w-6 h-6 text-gray-400 dark:text-gray-500 mb-2" />
                             <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -656,8 +656,8 @@ export default function OnboardingPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('step2.title')}</h2>
               <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">{t('step2.description')}</p>
 
-              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
-                <p className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed">
+              <div className="bg-mint-50 dark:bg-mint-950/30 border border-mint-200 dark:border-mint-800 rounded-xl p-4 mb-4">
+                <p className="text-xs text-mint-800 dark:text-mint-300 leading-relaxed">
                   {t('step2.help')}
                 </p>
               </div>
@@ -800,7 +800,7 @@ export default function OnboardingPage() {
                   onClick={handleTestConnection}
                   disabled={testingConnection}
                   variant="outline"
-                  className="w-full h-11 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 font-semibold rounded-xl transition-colors duration-200"
+                  className="w-full h-11 border-mint-300 dark:border-mint-700 text-mint-600 dark:text-mint-400 hover:bg-mint-50 dark:hover:bg-mint-950/30 font-semibold rounded-xl transition-colors duration-200"
                 >
                   {testingConnection ? t('step2.testing') : t('step2.testConnection')}
                 </Button>
