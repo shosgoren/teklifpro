@@ -45,6 +45,9 @@ interface NavItem {
   iconBg: string
   iconColor: string
   badge?: { text: string; bg: string; color: string }
+  /** When true, badge text is sourced dynamically from real proposal counts */
+  badgeKey?: 'proposals' | 'orders'
+  badgeTone?: { bg: string; color: string }
   /** Optional matcher for active state when href includes search params */
   matchType?: string
 }
@@ -76,16 +79,18 @@ const NAV_SECTIONS: NavSection[] = [
         icon: FileText,
         iconBg: 'bg-sky-100',
         iconColor: 'text-sky-600',
-        badge: { text: '12', bg: 'bg-emerald-100', color: 'text-emerald-700' },
+        badgeKey: 'proposals',
+        badgeTone: { bg: 'bg-emerald-100', color: 'text-emerald-700' },
       },
       {
         nameKey: 'navOrders',
         fallbackLabel: 'Siparişler',
-        href: '/proposals?status=approved',
+        href: '/proposals?status=ACCEPTED',
         icon: Package,
         iconBg: 'bg-amber-100',
         iconColor: 'text-amber-600',
-        badge: { text: '4', bg: 'bg-amber-100', color: 'text-amber-700' },
+        badgeKey: 'orders',
+        badgeTone: { bg: 'bg-amber-100', color: 'text-amber-700' },
       },
       {
         nameKey: 'navDelivery',
@@ -209,6 +214,39 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const tenantLogo: string | null = tenantData?.data?.logo || null
   const tenantName: string | null = tenantData?.data?.name || null
 
+  // Real proposal counts for sidebar badges + plan card
+  const { data: proposalsAll } = useSWR(
+    '/api/v1/proposals?limit=1',
+    tenantFetcher,
+    { revalidateOnFocus: false, refreshInterval: 60_000 }
+  )
+  const { data: proposalsAccepted } = useSWR(
+    '/api/v1/proposals?limit=1&status=ACCEPTED',
+    tenantFetcher,
+    { revalidateOnFocus: false, refreshInterval: 60_000 }
+  )
+  const totalProposals: number | null =
+    typeof proposalsAll?.data?.pagination?.total === 'number'
+      ? proposalsAll.data.pagination.total
+      : null
+  const acceptedProposals: number | null =
+    typeof proposalsAccepted?.data?.pagination?.total === 'number'
+      ? proposalsAccepted.data.pagination.total
+      : null
+
+  const formatBadgeCount = (n: number | null): string | null => {
+    if (n === null || n === 0) return null
+    if (n > 99) return '99+'
+    return String(n)
+  }
+
+  const dynamicBadgeText = (item: NavItem): string | null => {
+    if (!item.badgeKey) return null
+    if (item.badgeKey === 'proposals') return formatBadgeCount(totalProposals)
+    if (item.badgeKey === 'orders') return formatBadgeCount(acceptedProposals)
+    return null
+  }
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -282,14 +320,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       return pathname.includes('/tracking') && currentTypeParam === item.matchType
     }
 
-    // Orders placeholder under /proposals?status=approved
-    if (hrefPath === '/proposals' && hrefQuery && hrefQuery.includes('status=approved')) {
-      return pathname.startsWith(localizedHref) && currentStatusParam === 'approved'
+    // Orders placeholder under /proposals?status=ACCEPTED
+    if (hrefPath === '/proposals' && hrefQuery && hrefQuery.includes('status=ACCEPTED')) {
+      return pathname.startsWith(localizedHref) && currentStatusParam === 'ACCEPTED'
     }
 
-    // Plain proposals — must NOT match when status=approved (so "Siparişler" doesn't conflict)
+    // Plain proposals — must NOT match when status=ACCEPTED (so "Siparişler" doesn't conflict)
     if (item.href === '/proposals') {
-      return pathname.startsWith(localizedHref) && currentStatusParam !== 'approved'
+      return pathname.startsWith(localizedHref) && currentStatusParam !== 'ACCEPTED'
     }
 
     return pathname.startsWith(localizedHref)
@@ -367,11 +405,16 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Plan usage card values (mock)
-  const planName = 'Professional'
-  const planUsedCount = 42
-  const planTotalCount = 200
-  const planPercent = Math.round((planUsedCount / planTotalCount) * 100)
+  // Plan usage card — real data from session + proposal count
+  const PLAN_LABELS: Record<string, string> = {
+    STARTER: 'Starter',
+    PROFESSIONAL: 'Professional',
+    ENTERPRISE: 'Enterprise',
+  }
+  const sessionPlan = (session?.user as { tenantPlan?: string } | undefined)?.tenantPlan || 'STARTER'
+  const planName = PLAN_LABELS[sessionPlan] || 'Starter'
+  const planUsedCount = totalProposals ?? 0
+  const planLoaded = totalProposals !== null
 
   // Render a single nav row
   const renderNavRow = (item: NavItem) => {
@@ -401,13 +444,28 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           {!collapsed && (
             <>
               <span className="text-sm flex-1 truncate">{label}</span>
-              {item.badge && (
-                <span
-                  className={`ml-auto inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[10px] font-semibold ${item.badge.bg} ${item.badge.color}`}
-                >
-                  {item.badge.text}
-                </span>
-              )}
+              {(() => {
+                const dynText = dynamicBadgeText(item)
+                if (dynText && item.badgeTone) {
+                  return (
+                    <span
+                      className={`ml-auto inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[10px] font-semibold ${item.badgeTone.bg} ${item.badgeTone.color}`}
+                    >
+                      {dynText}
+                    </span>
+                  )
+                }
+                if (item.badge) {
+                  return (
+                    <span
+                      className={`ml-auto inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[10px] font-semibold ${item.badge.bg} ${item.badge.color}`}
+                    >
+                      {item.badge.text}
+                    </span>
+                  )
+                }
+                return null
+              })()}
             </>
           )}
         </Link>
@@ -519,40 +577,38 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        {/* Plan usage card (replaces user profile card) */}
+        {/* Plan card — real plan + total proposal count */}
         <div className={`border-t border-border ${collapsed ? 'p-2' : 'p-3'}`}>
           {collapsed ? (
             <div className="relative group flex flex-col items-center gap-1">
               <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-emerald-600" />
               </div>
-              <span className="text-[10px] font-semibold text-slate-500">{planPercent}%</span>
+              <span className="text-[10px] font-semibold text-slate-500">
+                {planLoaded ? planUsedCount : '—'}
+              </span>
               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-slate-900 text-white text-xs font-medium rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
-                {planName} — {planUsedCount}/{planTotalCount}
+                {planName} — {planLoaded ? planUsedCount : '—'} {safeT('planUsageProposals', 'teklif')}
                 <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 p-3">
+            <Link
+              href={getLocalizedHref('/proposals')}
+              className="block rounded-xl border border-emerald-100 bg-emerald-50/30 p-3 hover:bg-emerald-50/60 transition-colors"
+            >
               <div className="flex items-center gap-2 mb-1.5">
                 <Sparkles className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                 <span className="text-sm font-semibold text-foreground">{planName}</span>
-                <span className="ml-auto text-xs text-slate-500">{planPercent}%</span>
               </div>
-              <p className="text-xs text-slate-600 mb-2">
-                {safeT('planUsageThisMonth', 'Bu ay')}{' '}
-                <span className="text-slate-900 font-semibold">{planUsedCount}</span>
-                {' / '}
-                {planTotalCount}{' '}
+              <p className="text-xs text-slate-600">
+                {safeT('planUsageTotal', 'Toplam')}{' '}
+                <span className="text-slate-900 font-semibold tabular-nums">
+                  {planLoaded ? planUsedCount : '—'}
+                </span>{' '}
                 {safeT('planUsageProposals', 'teklif')}
               </p>
-              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${planPercent}%` }}
-                />
-              </div>
-            </div>
+            </Link>
           )}
         </div>
       </aside>
