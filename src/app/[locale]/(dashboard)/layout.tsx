@@ -24,9 +24,12 @@ import {
   PanelLeftOpen,
   MoreHorizontal,
   Search,
+  MapPin,
 } from 'lucide-react'
 import { NotificationCenter } from '@/presentation/components/organisms/NotificationCenter'
 import { GlobalSearch } from '@/presentation/components/organisms/GlobalSearch'
+import { WorkspaceProvider } from '@/presentation/components/dashboard/WorkspaceProvider'
+import { WorkspaceSwitcher } from '@/presentation/components/dashboard/WorkspaceSwitcher'
 import useSWR from 'swr'
 
 const tenantFetcher = (url: string) => fetch(url).then(r => r.ok ? r.json() : null)
@@ -53,6 +56,13 @@ const navigationItems: NavItem[] = [
     icon: FileText,
     iconBg: 'bg-sky-50',
     iconColor: 'text-sky-600',
+  },
+  {
+    nameKey: 'tracking',
+    href: '/tracking',
+    icon: MapPin,
+    iconBg: 'bg-orange-50',
+    iconColor: 'text-orange-600',
   },
   {
     nameKey: 'customers',
@@ -90,7 +100,9 @@ const SIDEBAR_COLLAPSED_KEY = 'teklifpro-sidebar-collapsed'
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <ConfirmProvider>
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+      <WorkspaceProvider>
+        <DashboardLayoutInner>{children}</DashboardLayoutInner>
+      </WorkspaceProvider>
     </ConfirmProvider>
   )
 }
@@ -110,9 +122,19 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme()
   const t = useTranslations('layout')
 
+  const safeT = (key: string, fallback: string) => {
+    try {
+      const value = t(key as Parameters<typeof t>[0])
+      return value || fallback
+    } catch {
+      return fallback
+    }
+  }
+
   const labels: Record<string, string> = {
     dashboard: t('navDashboard'),
     proposals: t('navProposals'),
+    tracking: safeT('navTracking', 'Takip'),
     customers: t('navCustomers'),
     products: t('navProducts'),
     analytics: t('navAnalytics'),
@@ -247,6 +269,13 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
+
+        {/* Workspace Switcher (only when expanded) */}
+        {!collapsed && (
+          <div className="px-3 py-3 border-b border-border">
+            <WorkspaceSwitcher />
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className={`flex-1 py-4 space-y-1 overflow-y-auto overflow-x-hidden ${collapsed ? 'px-2' : 'px-3'}`} role="navigation" aria-label={t('mainNavigation')}>

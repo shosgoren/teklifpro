@@ -90,6 +90,18 @@
     border: 2px solid hsl(140 20% 99%);
   }
   *::-webkit-scrollbar-track { background: transparent; }
+
+  /* Workspace accent system — drives mint tokens from a single hue.
+     The active workspace updates --accent-hue on <html>; all derived
+     mint variables below recompute via oklch(). Default = 165 (green). */
+  :root {
+    --accent-hue: 165;
+    --mint-accent: oklch(0.78 0.12 var(--accent-hue));
+    --mint-deep: oklch(0.56 0.14 var(--accent-hue));
+    --mint-ink: oklch(0.32 0.08 var(--accent-hue));
+    --mint-bg: oklch(0.96 0.04 var(--accent-hue));
+    --mint-ring: oklch(0.88 0.08 var(--accent-hue));
+  }
 }
 
 @keyframes blob {

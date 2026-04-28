@@ -281,6 +281,110 @@ function FloatingActionButton({ locale, lastProposalId }: { locale: string; last
   );
 }
 
+// ─── Voice Hero (mic-first gradient mint card matching Claude prototype) ───
+interface VoiceHeroSectionProps {
+  onVoice: () => void;
+  onTemplate: () => void;
+  proposals: DashboardProposal[];
+  t: ReturnType<typeof useTranslations>;
+}
+
+const VoiceHeroSection = memo(function VoiceHeroSection({ onVoice, onTemplate, proposals, t }: VoiceHeroSectionProps) {
+  // Surface up to 3 most recent proposals as "recent voice notes" for prototype parity
+  const recentNotes = proposals.slice(0, 3);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="md:shrink-0 px-4 md:px-8 pt-6"
+    >
+      <div className="max-w-7xl mx-auto">
+        <div
+          className="relative overflow-hidden rounded-2xl border border-mint-200 dark:border-mint-800 shadow-tp-card bg-gradient-to-br from-mint-50 via-white to-mint-100 dark:from-mint-950 dark:via-slate-900 dark:to-mint-900 p-5 md:p-6"
+        >
+          <div className="flex flex-col md:flex-row md:items-center gap-5">
+            {/* Mic button */}
+            <button
+              onClick={onVoice}
+              aria-label={t('voiceProposal')}
+              className="group relative shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-mint-500 to-mint-700 text-white shadow-[0_10px_30px_rgba(54,156,112,0.35)] flex items-center justify-center transition-transform hover:scale-105 active:scale-95 self-start md:self-auto focus:outline-none focus:ring-4 focus:ring-mint-300/60"
+            >
+              <span className="absolute inset-0 rounded-full bg-mint-300/40 animate-ping opacity-50" aria-hidden />
+              <Mic className="relative w-7 h-7 md:w-9 md:h-9" />
+            </button>
+
+            {/* Copy */}
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-mint-700 dark:text-mint-400">
+                {t('quickStart')}
+              </div>
+              <h2 className="mt-1 text-lg md:text-2xl font-semibold tracking-tight text-foreground leading-snug">
+                {t('voiceHeroTitle')}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('voiceHeroSubtitle')}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-2 md:flex-nowrap">
+              <Button
+                onClick={onTemplate}
+                variant="outline"
+                size="sm"
+                className="rounded-xl border-mint-200 dark:border-mint-800 bg-white dark:bg-slate-900 text-foreground hover:bg-mint-50 dark:hover:bg-mint-950"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                {t('startFromTemplate')}
+              </Button>
+              <Button
+                onClick={onVoice}
+                size="sm"
+                className="rounded-xl bg-gradient-to-r from-mint-600 to-mint-700 hover:from-mint-700 hover:to-mint-800 text-white shadow-tp-card"
+              >
+                <Mic className="mr-2 h-4 w-4" />
+                {t('startWithVoice')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Recent voice notes / proposals strip */}
+          {recentNotes.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-mint-200/70 dark:border-mint-800/70">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-mint-700 dark:text-mint-400">
+                  {t('recentVoiceNotes')}
+                </span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
+                {recentNotes.map((p) => (
+                  <div
+                    key={p.id}
+                    className="snap-start shrink-0 min-w-[200px] max-w-[260px] flex items-center gap-2.5 rounded-xl border border-mint-200/80 dark:border-mint-800/80 bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm px-3 py-2.5 shadow-sm"
+                  >
+                    <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-mint-100 dark:bg-mint-900 shrink-0">
+                      <Mic className="w-4 h-4 text-mint-700 dark:text-mint-300" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {p.title || p.proposalNumber}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {p.customer?.name ?? p.proposalNumber}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+
 export default function DashboardPage() {
   const router = useRouter();
   const locale = useLocale();
@@ -291,6 +395,7 @@ export default function DashboardPage() {
   const [widgetOrder, setWidgetOrder] = useState<string[]>(DEFAULT_WIDGETS);
   const [mounted, setMounted] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
+  const [heroVoiceModalOpen, setHeroVoiceModalOpen] = useState(false);
 
   const { data: proposalsData, isLoading: proposalsLoading } = useSWR('/api/v1/proposals?limit=10', fetcher, swrDefaultOptions);
   const { data: customersData, isLoading: customersLoading } = useSWR('/api/v1/customers?limit=1', fetcher, swrDefaultOptions);
@@ -847,8 +952,23 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto md:overflow-hidden md:flex md:flex-col">
-      {/* Gradient Hero */}
-      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8">
+      {/* Voice Hero — mic-first gradient mint card */}
+      <VoiceHeroSection
+        onVoice={() => setHeroVoiceModalOpen(true)}
+        onTemplate={() => router.push(`/${locale}/proposals/new`)}
+        proposals={proposals}
+        t={t}
+      />
+
+      {/* Hero voice modal */}
+      <VoiceProposalModal
+        isOpen={heroVoiceModalOpen}
+        onClose={() => setHeroVoiceModalOpen(false)}
+        locale={locale}
+      />
+
+      {/* Gradient KPI Hero */}
+      <div className="md:shrink-0 relative overflow-hidden bg-gradient-to-br from-mint-600 to-mint-700 pb-6 px-4 md:px-8 pt-6">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-white/3 rounded-full -translate-x-1/2 -translate-y-1/2" />
