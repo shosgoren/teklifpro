@@ -33,7 +33,6 @@ import {
 import { NotificationCenter } from '@/presentation/components/organisms/NotificationCenter'
 import { GlobalSearch } from '@/presentation/components/organisms/GlobalSearch'
 import { WorkspaceProvider } from '@/presentation/components/dashboard/WorkspaceProvider'
-import { WorkspaceSwitcher } from '@/presentation/components/dashboard/WorkspaceSwitcher'
 import useSWR from 'swr'
 
 const tenantFetcher = (url: string) => fetch(url).then(r => r.ok ? r.json() : null)
@@ -472,13 +471,6 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </div>
-
-        {/* Workspace Switcher (only when expanded) */}
-        {!collapsed && (
-          <div className="px-3 py-3 border-b border-border">
-            <WorkspaceSwitcher />
-          </div>
-        )}
 
         {/* Navigation */}
         <nav
