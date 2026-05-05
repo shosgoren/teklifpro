@@ -91,15 +91,6 @@ const NAV_SECTIONS: NavSection[] = [
         iconBg: 'bg-cyan-100',
         iconColor: 'text-cyan-600',
       },
-      {
-        nameKey: 'navAppointments',
-        fallbackLabel: 'Randevular',
-        href: '/tracking?type=appointment',
-        icon: Calendar,
-        iconBg: 'bg-purple-100',
-        iconColor: 'text-purple-600',
-        matchType: 'appointment',
-      },
     ],
   },
   {
@@ -371,7 +362,6 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   ]
   const mobileSecondaryItems: NavItem[] = [
     NAV_SECTIONS[0].items[1], // Teslim & Kurulum
-    NAV_SECTIONS[0].items[2], // Randevular
     NAV_SECTIONS[2].items[0], // Ayarlar
   ]
   const isSecondaryActive = mobileSecondaryItems.some((item) => isActive(item))
