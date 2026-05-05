@@ -29,6 +29,7 @@ import {
   User,
   Box,
   Sparkles,
+  Shield,
 } from 'lucide-react'
 import { NotificationCenter } from '@/presentation/components/organisms/NotificationCenter'
 import { GlobalSearch } from '@/presentation/components/organisms/GlobalSearch'
@@ -154,6 +155,14 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Settings,
         iconBg: 'bg-slate-100',
         iconColor: 'text-slate-600',
+      },
+      {
+        nameKey: 'navSecurity',
+        fallbackLabel: 'Güvenlik & Passkey',
+        href: '/settings/security',
+        icon: Shield,
+        iconBg: 'bg-amber-100',
+        iconColor: 'text-amber-600',
       },
     ],
   },
