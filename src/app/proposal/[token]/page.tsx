@@ -104,7 +104,10 @@ async function renderProposalPage(params: ProposalPageProps['params']) {
       customer: { include: { contacts: { orderBy: { isPrimary: 'desc' } } } },
       contact: true,
       user: true,
-      items: { orderBy: { sortOrder: 'asc' } },
+      items: {
+        orderBy: { sortOrder: 'asc' },
+        include: { product: { select: { imageUrl: true } } },
+      },
       activities: { orderBy: { createdAt: 'desc' } },
     },
   })
@@ -158,7 +161,10 @@ async function renderProposalPage(params: ProposalPageProps['params']) {
       customer: { include: { contacts: { orderBy: { isPrimary: 'desc' } } } },
       contact: true,
       user: true,
-      items: { orderBy: { sortOrder: 'asc' } },
+      items: {
+        orderBy: { sortOrder: 'asc' },
+        include: { product: { select: { imageUrl: true } } },
+      },
     },
   })
 
@@ -283,9 +289,15 @@ async function renderProposalPage(params: ProposalPageProps['params']) {
         discountType: updatedProposal.discountType,
         discountValue: Number(updatedProposal.discountValue),
         deliveryDate: (updatedProposal as Record<string, unknown>).deliveryDate
-          ? ((updatedProposal as Record<string, unknown>).deliveryDate as Date).toISOString()
+          ? format((updatedProposal as Record<string, unknown>).deliveryDate as Date, 'dd MMMM yyyy', { locale: dateFnsLocale })
           : null,
         installationDate: (updatedProposal as Record<string, unknown>).installationDate
+          ? format((updatedProposal as Record<string, unknown>).installationDate as Date, 'dd MMMM yyyy', { locale: dateFnsLocale })
+          : null,
+        deliveryDateRaw: (updatedProposal as Record<string, unknown>).deliveryDate
+          ? ((updatedProposal as Record<string, unknown>).deliveryDate as Date).toISOString()
+          : null,
+        installationDateRaw: (updatedProposal as Record<string, unknown>).installationDate
           ? ((updatedProposal as Record<string, unknown>).installationDate as Date).toISOString()
           : null,
       }}
@@ -343,6 +355,7 @@ async function renderProposalPage(params: ProposalPageProps['params']) {
         lineTotal: item.lineTotal,
         subtotalAfterDiscount: item.subtotalAfterDiscount,
         vat: item.vat,
+        imageUrl: (item as { product?: { imageUrl: string | null } }).product?.imageUrl ?? null,
       }))}
       financials={{
         subtotal,

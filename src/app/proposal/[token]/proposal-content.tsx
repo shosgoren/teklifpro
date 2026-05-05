@@ -27,7 +27,7 @@ import {
   Send,
   AlertCircle,
 } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import ProposalActions from './proposal-actions'
 import { VoiceNotePlayer } from '@/presentation/components/molecules/VoiceNotePlayer'
 
@@ -53,6 +53,8 @@ interface ProposalContentProps {
     discountValue: number
     deliveryDate?: string | null
     installationDate?: string | null
+    deliveryDateRaw?: string | null
+    installationDateRaw?: string | null
   }
   tenant: {
     name: string
@@ -86,6 +88,7 @@ interface ProposalContentProps {
     lineTotal: number
     subtotalAfterDiscount: number
     vat: number
+    imageUrl?: string | null
   }[]
   financials: {
     subtotal: number
@@ -103,7 +106,7 @@ const proposalDict = {
   tr: {
     proposalPresentation: 'Teklif Sunumu',
     proposal: 'Teklif',
-    validUntil: 'Geçerli:',
+    validUntil: 'Teklif Geçerlilik Tarihi:',
     proposalDate: 'Teklif Tarihi:',
     voiceMessageLeft: 'size sesli mesaj bıraktı',
     proposalStatus: 'Teklif Durumu:',
@@ -179,7 +182,7 @@ const proposalDict = {
   en: {
     proposalPresentation: 'Proposal Presentation',
     proposal: 'Proposal',
-    validUntil: 'Valid until:',
+    validUntil: 'Proposal Validity Date:',
     proposalDate: 'Proposal Date:',
     voiceMessageLeft: 'left you a voice message',
     proposalStatus: 'Proposal Status:',
@@ -298,6 +301,16 @@ export default function ProposalContent({
   const [showBankInfo, setShowBankInfo] = useState(false)
   const [copiedIban, setCopiedIban] = useState<string | null>(null)
   const [showDateChangeForm, setShowDateChangeForm] = useState(false)
+  const dateChangeFormRef = useRef<HTMLDivElement>(null)
+
+  const openDateChangeFormFor = (type: 'DELIVERY' | 'INSTALLATION') => {
+    if (!hasDateChangeFeature) return
+    setDateRequestType(type)
+    setShowDateChangeForm(true)
+    setTimeout(() => {
+      dateChangeFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
   const [dateRequestType, setDateRequestType] = useState<'DELIVERY' | 'INSTALLATION'>(
     proposal.deliveryDate ? 'DELIVERY' : 'INSTALLATION'
   )
@@ -500,16 +513,30 @@ export default function ProposalContent({
               </div>
             )}
             {proposal.deliveryDate && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/30 backdrop-blur-sm border border-white/20 text-sm">
+              <button
+                type="button"
+                onClick={() => openDateChangeFormFor('DELIVERY')}
+                disabled={!hasDateChangeFeature}
+                title={hasDateChangeFeature ? 'Tarih değişikliği talep et' : undefined}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/30 backdrop-blur-sm border border-white/20 text-sm hover:bg-blue-500/50 transition-colors disabled:opacity-80 disabled:cursor-default"
+              >
                 <Truck className="w-3.5 h-3.5" />
                 {t.deliveryDate}: {proposal.deliveryDate}
-              </div>
+                {hasDateChangeFeature && <span className="ml-1 text-[10px] opacity-80">değiştir</span>}
+              </button>
             )}
             {proposal.installationDate && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500/30 backdrop-blur-sm border border-white/20 text-sm">
+              <button
+                type="button"
+                onClick={() => openDateChangeFormFor('INSTALLATION')}
+                disabled={!hasDateChangeFeature}
+                title={hasDateChangeFeature ? 'Tarih değişikliği talep et' : undefined}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500/30 backdrop-blur-sm border border-white/20 text-sm hover:bg-violet-500/50 transition-colors disabled:opacity-80 disabled:cursor-default"
+              >
                 <Wrench className="w-3.5 h-3.5" />
                 {t.installationDate}: {proposal.installationDate}
-              </div>
+                {hasDateChangeFeature && <span className="ml-1 text-[10px] opacity-80">değiştir</span>}
+              </button>
             )}
           </div>
         </div>
@@ -528,6 +555,63 @@ export default function ProposalContent({
                 : `${tenant.name} ${t.voiceMessageLeft}`
               }
             />
+          </div>
+        )}
+
+        {/* ─── EFT / Havale (taşındı: artık üstte) ─── */}
+        {!isUnofficial && tenant.bankAccounts && tenant.bankAccounts.length > 0 && (
+          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
+            <button
+              onClick={() => setShowBankInfo(!showBankInfo)}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-sm text-gray-900">{t.bankPayment}</p>
+                  <p className="text-xs text-gray-400">{tenant.bankAccounts.length} {t.bankAccounts}</p>
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showBankInfo ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showBankInfo && (
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
+                <div className="pt-3">
+                  <p className="text-xs text-gray-500 mb-3">{t.bankPaymentInfo}</p>
+                </div>
+                {tenant.bankAccounts.map((bank, idx) => (
+                  <div key={idx} className="p-4 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Landmark className="w-4 h-4 text-blue-600" />
+                        <span className="font-bold text-sm text-gray-900">{bank.bankName}</span>
+                      </div>
+                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{bank.currency}</span>
+                    </div>
+                    {bank.branchName && (
+                      <p className="text-xs text-gray-500">{t.branch} {bank.branchName}</p>
+                    )}
+                    <p className="text-xs text-gray-500">{t.accountHolder} <span className="font-medium text-gray-700">{bank.accountHolder || tenant.name}</span></p>
+                    <button
+                      onClick={() => copyIban(bank.iban)}
+                      className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors group"
+                    >
+                      <span className="font-mono text-xs sm:text-sm text-gray-900 tracking-normal sm:tracking-wider break-all">{bank.iban}</span>
+                      <span className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-blue-600">
+                        {copiedIban === bank.iban ? (
+                          <><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> {t.copied}</>
+                        ) : (
+                          <><Copy className="w-3.5 h-3.5" /> {t.copy}</>
+                        )}
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -696,16 +780,30 @@ export default function ProposalContent({
             {items.map((item, index) => (
               <div key={item.id} className="px-3 sm:px-5 py-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center shrink-0">
-                        {index + 1}
-                      </span>
-                      <p className="font-semibold text-gray-900 text-sm truncate">{item.name}</p>
-                    </div>
-                    {item.description && (
-                      <p className="text-xs text-gray-400 mt-1 ml-7">{item.description}</p>
+                  <div className="flex-1 min-w-0 flex gap-3">
+                    {item.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-14 h-14 rounded-lg object-cover border border-gray-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <span className="text-[10px] text-gray-400">No img</span>
+                      </div>
                     )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {index + 1}
+                        </span>
+                        <p className="font-semibold text-gray-900 text-sm truncate">{item.name}</p>
+                      </div>
+                      {item.description && (
+                        <p className="text-xs text-gray-400 mt-1 ml-7">{item.description}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right shrink-0">
                     {item.discountRate > 0 && (
@@ -714,7 +812,7 @@ export default function ProposalContent({
                     <span className="font-bold text-gray-900 text-sm">{fmt(item.lineTotal)}</span>
                   </div>
                 </div>
-                <div className="flex items-center flex-wrap gap-2 sm:gap-4 mt-2 ml-0 sm:ml-7 text-xs text-gray-500">
+                <div className="flex items-center flex-wrap gap-2 sm:gap-4 mt-2 ml-0 text-xs text-gray-500">
                   <span>{item.quantity} {item.unit}</span>
                   <span>×</span>
                   <span>{fmt(item.unitPrice)}</span>
@@ -744,8 +842,24 @@ export default function ProposalContent({
                 {items.map((item) => (
                   <tr key={item.id} className="even:bg-gray-50/50 hover:bg-blue-50/80 transition-colors">
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      {item.description && <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>}
+                      <div className="flex items-start gap-3">
+                        {item.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-12 h-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] text-gray-400">No img</span>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-900">{item.name}</p>
+                          {item.description && <p className="text-xs text-gray-400 mt-0.5">{item.description}</p>}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-3.5 text-center">{item.quantity} {item.unit}</td>
                     <td className="px-3 py-3.5 text-right font-medium">{fmt(item.unitPrice)}</td>
@@ -864,63 +978,6 @@ export default function ProposalContent({
           </div>
         )}
 
-        {/* ─── EFT / Havale Bank Info ─── */}
-        {!isUnofficial && tenant.bankAccounts && tenant.bankAccounts.length > 0 && (
-          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
-            <button
-              onClick={() => setShowBankInfo(!showBankInfo)}
-              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-bold text-sm text-gray-900">{t.bankPayment}</p>
-                  <p className="text-xs text-gray-400">{tenant.bankAccounts.length} {t.bankAccounts}</p>
-                </div>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showBankInfo ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showBankInfo && (
-              <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
-                <div className="pt-3">
-                  <p className="text-xs text-gray-500 mb-3">{t.bankPaymentInfo}</p>
-                </div>
-                {tenant.bankAccounts.map((bank, idx) => (
-                  <div key={idx} className="p-4 bg-gradient-to-br from-gray-50 to-blue-50/30 rounded-xl border border-gray-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Landmark className="w-4 h-4 text-blue-600" />
-                        <span className="font-bold text-sm text-gray-900">{bank.bankName}</span>
-                      </div>
-                      <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{bank.currency}</span>
-                    </div>
-                    {bank.branchName && (
-                      <p className="text-xs text-gray-500">{t.branch} {bank.branchName}</p>
-                    )}
-                    <p className="text-xs text-gray-500">{t.accountHolder} <span className="font-medium text-gray-700">{bank.accountHolder || tenant.name}</span></p>
-                    <button
-                      onClick={() => copyIban(bank.iban)}
-                      className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-colors group"
-                    >
-                      <span className="font-mono text-xs sm:text-sm text-gray-900 tracking-normal sm:tracking-wider break-all">{bank.iban}</span>
-                      <span className="flex items-center gap-1 text-xs text-gray-400 group-hover:text-blue-600">
-                        {copiedIban === bank.iban ? (
-                          <><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> {t.copied}</>
-                        ) : (
-                          <><Copy className="w-3.5 h-3.5" /> {t.copy}</>
-                        )}
-                      </span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ─── Response Info (Rejection/Revision/Acceptance) ─── */}
         {isResponded && proposal.status === 'REJECTED' && proposal.rejectionReason && (
           <div className={`bg-white rounded-2xl ${cardShadow} border border-red-100 p-5 mb-4 ${cardClass}`}>
@@ -1015,7 +1072,7 @@ export default function ProposalContent({
 
         {/* ─── Date Change Request ─── */}
         {hasDateChangeFeature && (
-          <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
+          <div ref={dateChangeFormRef} className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden mb-4 ${cardClass}`}>
             <button
               onClick={() => setShowDateChangeForm(!showDateChangeForm)}
               className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
