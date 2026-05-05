@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useTranslations, useLocale } from 'next-intl'
 import { startRegistration } from '@simplewebauthn/browser'
 import { Fingerprint } from 'lucide-react'
 
@@ -15,14 +16,37 @@ interface Passkey {
 
 export default function PasskeyManager({
   initialPasskeys,
+  embedded,
 }: {
-  initialPasskeys: Passkey[]
+  initialPasskeys?: Passkey[]
+  embedded?: boolean
 }) {
-  const [passkeys, setPasskeys] = useState(initialPasskeys)
+  const t = useTranslations('settings.security.passkey')
+  const locale = useLocale()
+  const [passkeys, setPasskeys] = useState<Passkey[]>(initialPasskeys ?? [])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [name, setName] = useState('')
+
+  // Embedded modda (settings içinde) initialPasskeys gelmez, fetch'le
+  useEffect(() => {
+    if (initialPasskeys || !embedded) return
+    fetch('/api/auth/passkey/list')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.authenticators) {
+          setPasskeys(
+            data.authenticators.map((p: Passkey & { createdAt: string }) => ({
+              ...p,
+              createdAt: p.createdAt,
+              lastUsedAt: p.lastUsedAt ?? null,
+            })),
+          )
+        }
+      })
+      .catch(() => {})
+  }, [initialPasskeys, embedded])
 
   async function addPasskey() {
     setBusy(true)
@@ -33,7 +57,7 @@ export default function PasskeyManager({
         method: 'POST',
       })
       if (!optsRes.ok) {
-        setError('Sunucu kayıt seçeneklerini hazırlayamadı')
+        setError(t('serverError'))
         return
       }
       const opts = await optsRes.json()
@@ -44,11 +68,11 @@ export default function PasskeyManager({
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string }
         if (e.name === 'InvalidStateError') {
-          setError('Bu cihazda zaten passkey kayıtlı.')
+          setError(t('alreadyRegistered'))
         } else if (e.name === 'NotAllowedError') {
-          setError('İptal edildi.')
+          setError(t('cancelled'))
         } else {
-          setError(e.message ?? 'Cihaz passkey oluşturmadı')
+          setError(e.message ?? t('deviceCreateFailed'))
         }
         return
       }
@@ -63,7 +87,7 @@ export default function PasskeyManager({
       })
       const data = await verifyRes.json()
       if (!verifyRes.ok) {
-        setError(data.message ?? data.error ?? 'Doğrulama başarısız')
+        setError(data.message ?? data.error ?? t('verifyFailed'))
         return
       }
 
@@ -78,10 +102,10 @@ export default function PasskeyManager({
         },
         ...passkeys,
       ])
-      setSuccess('✓ Passkey eklendi. Bir sonraki girişte yüz/parmak izinle gireceksin.')
+      setSuccess(t('addedToast'))
       setName('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Bir şeyler ters gitti')
+      setError(err instanceof Error ? err.message : t('serverError'))
     } finally {
       setBusy(false)
     }
@@ -97,17 +121,23 @@ export default function PasskeyManager({
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? 'Silme başarısız')
+        setError(data.error ?? t('deleteFailed'))
         return
       }
       setPasskeys(passkeys.filter((p) => p.id !== id))
-      setSuccess('Passkey silindi.')
+      setSuccess(t('deletedToast'))
     } catch {
-      setError('Sunucuya ulaşılamadı')
+      setError(t('serverError'))
     } finally {
       setBusy(false)
     }
   }
+
+  const dateFormatter = new Intl.DateTimeFormat(locale, { dateStyle: 'short' })
+  const dateTimeFormatter = new Intl.DateTimeFormat(locale, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
 
   return (
     <div>
@@ -116,7 +146,7 @@ export default function PasskeyManager({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Cihaz adı (örn: iPhone Sercan)"
+          placeholder={t('deviceNamePlaceholder')}
           maxLength={40}
           className="flex-1 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-transparent px-3 py-2.5 text-sm"
         />
@@ -127,7 +157,7 @@ export default function PasskeyManager({
           className="rounded-lg bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:hover:bg-white text-white dark:text-gray-900 disabled:opacity-50 font-medium px-4 py-2.5 min-h-[44px] inline-flex items-center justify-center gap-2"
         >
           <Fingerprint className="w-4 h-4" />
-          {busy ? '…' : 'Passkey ekle'}
+          {busy ? '…' : t('addButton')}
         </button>
       </div>
 
@@ -144,8 +174,7 @@ export default function PasskeyManager({
 
       {passkeys.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-200 dark:border-gray-800 p-6 text-center text-sm text-gray-500">
-          Henüz passkey kayıtlı değil. Yukarıdan ekle, bir sonraki girişte
-          parolasız gir.
+          {t('noKeys')}
         </div>
       ) : (
         <ul className="space-y-2">
@@ -160,23 +189,16 @@ export default function PasskeyManager({
                   {p.name}
                   {p.backedUp && (
                     <span className="text-[10px] rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 px-2 py-0.5 font-medium">
-                      Cloud yedek
+                      {t('cloudBackup')}
                     </span>
                   )}
                 </div>
                 <div className="text-xs text-gray-500">
-                  Eklendi:{' '}
-                  {new Intl.DateTimeFormat('tr-TR', { dateStyle: 'short' }).format(
-                    new Date(p.createdAt),
-                  )}
+                  {t('addedAt')}: {dateFormatter.format(new Date(p.createdAt))}
                   {p.lastUsedAt && (
                     <>
                       {' · '}
-                      Son kullanım:{' '}
-                      {new Intl.DateTimeFormat('tr-TR', {
-                        dateStyle: 'short',
-                        timeStyle: 'short',
-                      }).format(new Date(p.lastUsedAt))}
+                      {t('lastUsedAt')}: {dateTimeFormatter.format(new Date(p.lastUsedAt))}
                     </>
                   )}
                 </div>
@@ -187,7 +209,7 @@ export default function PasskeyManager({
                 disabled={busy}
                 className="rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-red-50 hover:border-red-200 hover:text-red-700 disabled:opacity-50 px-3 py-1.5 text-sm"
               >
-                Sil
+                {t('deleteButton')}
               </button>
             </li>
           ))}
@@ -195,13 +217,13 @@ export default function PasskeyManager({
       )}
 
       <details className="mt-4 text-xs text-gray-500">
-        <summary className="cursor-pointer font-medium">Nasıl çalışır?</summary>
+        <summary className="cursor-pointer font-medium">{t('howItWorks')}</summary>
         <ul className="mt-2 space-y-1 list-disc pl-5">
-          <li>Passkey ekledikten sonra çıkış yap, tekrar giriş ekranına gel.</li>
-          <li>&quot;Passkey ile giriş&quot; butonuna bas — cihazın yüz/parmak izini ister.</li>
-          <li>Tek seferde girersin, şifre yok.</li>
-          <li>Birden fazla cihazda kayıtlı olabilir (telefon + bilgisayar).</li>
-          <li>iCloud Keychain veya Google Password Manager ile cihazlar arası senkron olur.</li>
+          <li>{t('step1')}</li>
+          <li>{t('step2')}</li>
+          <li>{t('step3')}</li>
+          <li>{t('step4')}</li>
+          <li>{t('step5')}</li>
         </ul>
       </details>
     </div>

@@ -770,7 +770,36 @@
       "desc": "Ekibinizi yönetin ve yeni üyeler ekleyin",
       "emptyTitle": "Henüz ekip üyesi eklenmemiş",
       "emptyDesc": "Ekibinize üye ekleyerek teklifleri birlikte yönetebilirsiniz. Her üye kendi tekliflerini oluşturabilir.",
-      "addMember": "Ekip Üyesi Ekle"
+      "addMember": "Ekip Üyesi Ekle",
+      "personalSection": "Kişisel hesap ayarları",
+      "personalDesc": "Sadece sen görür, kendi cihazlarını yönetirsin"
+    },
+    "security": {
+      "passkey": {
+        "title": "Passkey ile parolasız giriş",
+        "desc": "Şifre yerine telefonunun yüz tanıma / parmak izi ile giriş yap. Cihaz çalınamaz, çok daha güvenli.",
+        "deviceNamePlaceholder": "Cihaz adı (örn: iPhone Sercan)",
+        "addButton": "Passkey ekle",
+        "addedToast": "✓ Passkey eklendi. Bir sonraki girişte yüz/parmak izinle gireceksin.",
+        "deletedToast": "Passkey silindi.",
+        "alreadyRegistered": "Bu cihazda zaten passkey kayıtlı.",
+        "cancelled": "İptal edildi.",
+        "deviceCreateFailed": "Cihaz passkey oluşturmadı",
+        "verifyFailed": "Doğrulama başarısız",
+        "deleteFailed": "Silme başarısız",
+        "serverError": "Sunucuya ulaşılamadı",
+        "noKeys": "Henüz passkey kayıtlı değil. Yukarıdan ekle, bir sonraki girişte parolasız gir.",
+        "addedAt": "Eklendi",
+        "lastUsedAt": "Son kullanım",
+        "cloudBackup": "Cloud yedek",
+        "deleteButton": "Sil",
+        "howItWorks": "Nasıl çalışır?",
+        "step1": "Passkey ekledikten sonra çıkış yap, tekrar giriş ekranına gel.",
+        "step2": "\"Passkey ile giriş\" butonuna bas — cihazın yüz/parmak izini ister.",
+        "step3": "Tek seferde girersin, şifre yok.",
+        "step4": "Birden fazla cihazda kayıtlı olabilir (telefon + bilgisayar).",
+        "step5": "iCloud Keychain veya Google Password Manager ile cihazlar arası senkron olur."
+      }
     },
     "subscription": {
       "title": "Abonelik",
@@ -1603,6 +1632,8 @@
     "navProducts": "Ürünler",
     "navAnalytics": "Analitik",
     "navSettings": "Ayarlar",
+    "navSecurity": "Güvenlik & Passkey",
+    "userMenu": "Hesap menüsü",
     "navMore": "Diğer",
     "sectionSales": "SATIŞ",
     "sectionRecords": "KAYITLAR",

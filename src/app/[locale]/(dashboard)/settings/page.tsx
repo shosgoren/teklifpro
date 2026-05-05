@@ -41,6 +41,8 @@ import {
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
+import PasskeyManager from './security/passkey-manager';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -72,7 +74,13 @@ const TAB_TRANSLATION_KEYS: Record<TabKey, string> = {
 
 const SettingsPage = () => {
   const t = useTranslations('settings');
-  const [activeTab, setActiveTab] = useState<TabKey>('general');
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams?.get('tab') as TabKey) ?? 'general';
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    ['general', 'parasut', 'whatsapp', 'team', 'subscription'].includes(initialTab)
+      ? initialTab
+      : 'general',
+  );
   const [saving, setSaving] = useState(false);
   const { markDirty, markClean } = useUnsavedChanges();
   const [showPasswords, setShowPasswords] = useState({
@@ -1185,36 +1193,64 @@ const SettingsPage = () => {
 
         {/* ===== Team Tab ===== */}
         {activeTab === 'team' && (
-          <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden" role="tabpanel" id="tabpanel-team" aria-labelledby="tab-team">
-            <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
-            <div className="p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`p-2 rounded-xl bg-gradient-to-br ${colors.from} ${colors.to}`}>
-                  <Users className="w-5 h-5 text-white" />
+          <div className="space-y-6" role="tabpanel" id="tabpanel-team" aria-labelledby="tab-team">
+            {/* Personal account settings — Passkey */}
+            <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+              <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
+              <div className="p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500`}>
+                    <Shield className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('team.personalSection')}</h3>
+                    <p className="text-xs text-gray-400">{t('team.personalDesc')}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('team.title')}</h3>
-                  <p className="text-xs text-gray-400">{t('team.desc')}</p>
+                <div className="mb-5 mt-4">
+                  <h4 className="font-semibold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                    🔐 {t('security.passkey.title')}
+                  </h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('security.passkey.desc')}
+                  </p>
                 </div>
+                <PasskeyManager embedded />
               </div>
+            </div>
 
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="relative mb-8">
-                  <div className="w-28 h-28 bg-gradient-to-br from-mint-50 to-mint-100 dark:from-violet-950/40 dark:to-purple-950/40 rounded-3xl flex items-center justify-center">
-                    <UserPlus className="w-14 h-14 text-violet-500 dark:text-violet-400" />
+            {/* Team management — placeholder kept */}
+            <div className="rounded-2xl shadow-xl bg-white dark:bg-gray-900 overflow-hidden">
+              <div className={`h-1.5 bg-gradient-to-r ${colors.from} ${colors.to}`} />
+              <div className="p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className={`p-2 rounded-xl bg-gradient-to-br ${colors.from} ${colors.to}`}>
+                    <Users className="w-5 h-5 text-white" />
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-mint-500 to-mint-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Plus className="w-5 h-5 text-white" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('team.title')}</h3>
+                    <p className="text-xs text-gray-400">{t('team.desc')}</p>
                   </div>
                 </div>
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t('team.emptyTitle')}</p>
-                <p className="text-sm text-gray-400 mb-8 max-w-sm">
-                  {t('team.emptyDesc')}
-                </p>
-                <button className={`inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} transition-all text-sm`}>
-                  <UserPlus className="w-4 h-4" />
-                  {t('team.addMember')}
-                </button>
+
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="relative mb-6">
+                    <div className="w-24 h-24 bg-gradient-to-br from-mint-50 to-mint-100 dark:from-violet-950/40 dark:to-purple-950/40 rounded-3xl flex items-center justify-center">
+                      <UserPlus className="w-12 h-12 text-violet-500 dark:text-violet-400" />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 w-9 h-9 bg-gradient-to-br from-mint-500 to-mint-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Plus className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('team.emptyTitle')}</p>
+                  <p className="text-sm text-gray-400 mb-6 max-w-sm">
+                    {t('team.emptyDesc')}
+                  </p>
+                  <button className={`inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r ${colors.from} ${colors.to} text-white font-semibold rounded-xl hover:opacity-90 shadow-lg ${colors.shadow} transition-all text-sm`}>
+                    <UserPlus className="w-4 h-4" />
+                    {t('team.addMember')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

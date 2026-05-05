@@ -770,7 +770,36 @@
       "desc": "Manage your team and add new members",
       "emptyTitle": "No team members added yet",
       "emptyDesc": "Add team members to manage proposals together. Each member can create their own proposals.",
-      "addMember": "Add Team Member"
+      "addMember": "Add Team Member",
+      "personalSection": "Personal account settings",
+      "personalDesc": "Only you see this — manage your own devices"
+    },
+    "security": {
+      "passkey": {
+        "title": "Passwordless login with passkey",
+        "desc": "Sign in with your phone's face/touch recognition instead of a password. Device-bound, can't be stolen.",
+        "deviceNamePlaceholder": "Device name (e.g., Sercan's iPhone)",
+        "addButton": "Add passkey",
+        "addedToast": "✓ Passkey added. Next sign-in will use face/touch.",
+        "deletedToast": "Passkey deleted.",
+        "alreadyRegistered": "A passkey is already registered on this device.",
+        "cancelled": "Cancelled.",
+        "deviceCreateFailed": "Device didn't create the passkey",
+        "verifyFailed": "Verification failed",
+        "deleteFailed": "Delete failed",
+        "serverError": "Server unreachable",
+        "noKeys": "No passkeys yet. Add one above to sign in passwordlessly next time.",
+        "addedAt": "Added",
+        "lastUsedAt": "Last used",
+        "cloudBackup": "Cloud backup",
+        "deleteButton": "Delete",
+        "howItWorks": "How does it work?",
+        "step1": "After adding a passkey, sign out and return to the login screen.",
+        "step2": "Click \"Sign in with passkey\" — your device will request face/touch.",
+        "step3": "One step in, no password.",
+        "step4": "Can be registered on multiple devices (phone + computer).",
+        "step5": "Syncs across devices via iCloud Keychain or Google Password Manager."
+      }
     },
     "subscription": {
       "title": "Subscription",
@@ -1603,6 +1632,8 @@
     "navProducts": "Products",
     "navAnalytics": "Analytics",
     "navSettings": "Settings",
+    "navSecurity": "Security & Passkey",
+    "userMenu": "Account menu",
     "navMore": "More",
     "sectionSales": "SALES",
     "sectionRecords": "RECORDS",

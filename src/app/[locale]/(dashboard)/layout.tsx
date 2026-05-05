@@ -156,14 +156,6 @@ const NAV_SECTIONS: NavSection[] = [
         iconBg: 'bg-slate-100',
         iconColor: 'text-slate-600',
       },
-      {
-        nameKey: 'navSecurity',
-        fallbackLabel: 'Güvenlik & Passkey',
-        href: '/settings/security',
-        icon: Shield,
-        iconBg: 'bg-amber-100',
-        iconColor: 'text-amber-600',
-      },
     ],
   },
 ]
@@ -192,10 +184,12 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [langMenuOpen, setLangMenuOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [recentPages, setRecentPages] = useState<RecentPage[]>([])
   const langMenuRef = useRef<HTMLDivElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
   const locale = useLocale()
@@ -286,6 +280,9 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
       }
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
         setMoreMenuOpen(false)
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -698,19 +695,58 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                 )}
               </div>
 
-              {/* Desktop user menu */}
-              <button
-                onClick={handleLogout}
-                className="hidden md:flex p-2 rounded-lg transition-colors duration-200 text-muted-foreground hover:bg-muted hover:text-foreground"
-                title={safeT('signOut', 'Çıkış yap')}
-                aria-label={safeT('signOut', 'Çıkış yap')}
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-
-              {/* Initials avatar (visual only, no menu) */}
-              <div className="hidden md:flex w-8 h-8 rounded-full bg-gradient-to-br from-mint-400 to-mint-600 items-center justify-center shadow-tp-card ml-1" title={userName}>
-                <span className="text-white font-semibold text-xs">{userInitials}</span>
+              {/* User dropdown menu */}
+              <div className="relative hidden md:block ml-1" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-1.5 p-1 rounded-full transition-colors hover:bg-muted"
+                  title={userName}
+                  aria-label={safeT('userMenu', 'Hesap menüsü')}
+                  aria-expanded={userMenuOpen}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-mint-400 to-mint-600 flex items-center justify-center shadow-tp-card">
+                    <span className="text-white font-semibold text-xs">{userInitials}</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-border rounded-xl shadow-tp-elevated overflow-hidden z-50">
+                    <div className="px-4 py-3 border-b border-border">
+                      <p className="font-semibold text-sm text-foreground truncate">{userName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <Link
+                        href={`/${locale}/settings`}
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted"
+                      >
+                        <Settings className="w-4 h-4 text-muted-foreground" />
+                        {safeT('navSettings', 'Ayarlar')}
+                      </Link>
+                      <Link
+                        href={`/${locale}/settings?tab=team`}
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-muted"
+                      >
+                        <Shield className="w-4 h-4 text-muted-foreground" />
+                        {safeT('navSecurity', 'Güvenlik & Passkey')}
+                      </Link>
+                    </div>
+                    <div className="py-1 border-t border-border">
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false)
+                          handleLogout()
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        {safeT('signOut', 'Çıkış yap')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
