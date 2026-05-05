@@ -67,6 +67,7 @@ import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
 import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNoteRecorder'
 import { DatePicker } from '@/shared/components/ui/date-picker'
+import DateConflictWarning from '@/presentation/components/molecules/DateConflictWarning'
 
 const logger = new Logger('ProposalNewPage')
 
@@ -191,6 +192,7 @@ function LeftPanel({
   onVoiceNoteChange,
   collapsed,
   onToggleCollapse,
+  onDateConflict,
 }: {
   formData: ProposalFormData
   onSelectCustomer: (customer: ProposalFormData['customer']) => void
@@ -200,6 +202,7 @@ function LeftPanel({
   onVoiceNoteChange: (data: string | null, duration: number | null) => void
   collapsed: boolean
   onToggleCollapse: () => void
+  onDateConflict?: (field: 'delivery' | 'installation', hasHard: boolean) => void
 }) {
   const t = useTranslations()
   const [customerOpen, setCustomerOpen] = useState(false)
@@ -496,6 +499,11 @@ function LeftPanel({
                 placeholder={t('proposals.selectDeliveryDate')}
               />
             </div>
+            <DateConflictWarning
+              date={formData.deliveryDate ?? null}
+              type="delivery"
+              onConflictChange={(hard) => onDateConflict?.('delivery', hard)}
+            />
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -510,6 +518,11 @@ function LeftPanel({
                 minDate={formData.deliveryDate ?? undefined}
               />
             </div>
+            <DateConflictWarning
+              date={formData.installationDate ?? null}
+              type="installation"
+              onConflictChange={(hard) => onDateConflict?.('installation', hard)}
+            />
           </div>
         </div>
 
@@ -1380,7 +1393,12 @@ export default function CreateProposalPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false)
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
+  const [dateConflictBlock, setDateConflictBlock] = useState<{ delivery: boolean; installation: boolean }>({ delivery: false, installation: false })
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const handleDateConflict = useCallback((field: 'delivery' | 'installation', hasHard: boolean) => {
+    setDateConflictBlock((prev) => (prev[field] === hasHard ? prev : { ...prev, [field]: hasHard }))
+  }, [])
+  const hasDateConflict = dateConflictBlock.delivery || dateConflictBlock.installation
 
   const {
     control,
@@ -1458,7 +1476,7 @@ export default function CreateProposalPage() {
     setValue('customer', customer)
   }, [setValue])
 
-  const canSend = !!formData.customer?.id && formData.items.length > 0 && !!formData.title && formData.title.length >= 3
+  const canSend = !!formData.customer?.id && formData.items.length > 0 && !!formData.title && formData.title.length >= 3 && !hasDateConflict
 
   // ── Auto-save to localStorage ──────────────────────────
 
@@ -1638,6 +1656,7 @@ export default function CreateProposalPage() {
               onProposalTypeChange={(type) => setValue('proposalType', type)}
               onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
               onDateChange={(field, value) => setValue(field, value)}
+              onDateConflict={handleDateConflict}
               onVoiceNoteChange={(data, dur) => { setValue('voiceNoteData', data); setValue('voiceNoteDuration', dur) }}
               collapsed={true}
               onToggleCollapse={() => setLeftPanelCollapsed(false)}
@@ -1649,6 +1668,7 @@ export default function CreateProposalPage() {
               onProposalTypeChange={(type) => setValue('proposalType', type)}
               onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
               onDateChange={(field, value) => setValue(field, value)}
+              onDateConflict={handleDateConflict}
               onVoiceNoteChange={(data, dur) => { setValue('voiceNoteData', data); setValue('voiceNoteDuration', dur) }}
               collapsed={false}
               onToggleCollapse={() => setLeftPanelCollapsed(true)}
@@ -1802,6 +1822,7 @@ export default function CreateProposalPage() {
               formData={formData}
               onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
               onDateChange={(field, value) => setValue(field, value)}
+              onDateConflict={handleDateConflict}
               onVoiceNoteChange={(data, dur) => { setValue('voiceNoteData', data); setValue('voiceNoteDuration', dur) }}
             />
           </MobileAccordionSection>
@@ -2007,11 +2028,13 @@ function MobileDetailsSection({
   onChange,
   onDateChange,
   onVoiceNoteChange,
+  onDateConflict,
 }: {
   formData: ProposalFormData
   onChange: (field: string, value: string | number | boolean | null) => void
   onDateChange: (field: 'deliveryDate' | 'installationDate', value: Date | null) => void
   onVoiceNoteChange: (data: string | null, duration: number | null) => void
+  onDateConflict?: (field: 'delivery' | 'installation', hasHard: boolean) => void
 }) {
   const t = useTranslations()
 
@@ -2064,13 +2087,18 @@ function MobileDetailsSection({
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <Label className="text-xs font-medium text-muted-foreground">{t('proposals.deliveryDate')}</Label>
           <div className="mt-1">
             <DatePicker value={formData.deliveryDate ?? undefined} onChange={(d) => onDateChange('deliveryDate', d ?? null)}
               disabledDates={disabledDeliveryDates} placeholder={t('proposals.selectDeliveryDate')} />
           </div>
+          <DateConflictWarning
+            date={formData.deliveryDate ?? null}
+            type="delivery"
+            onConflictChange={(hard) => onDateConflict?.('delivery', hard)}
+          />
         </div>
         <div>
           <Label className="text-xs font-medium text-muted-foreground">{t('proposals.installationDate')}</Label>
@@ -2079,6 +2107,11 @@ function MobileDetailsSection({
               disabledDates={disabledInstallationDates} placeholder={t('proposals.selectInstallationDate')}
               minDate={formData.deliveryDate ?? undefined} />
           </div>
+          <DateConflictWarning
+            date={formData.installationDate ?? null}
+            type="installation"
+            onConflictChange={(hard) => onDateConflict?.('installation', hard)}
+          />
         </div>
       </div>
 

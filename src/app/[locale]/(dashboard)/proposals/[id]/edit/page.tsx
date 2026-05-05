@@ -69,6 +69,7 @@ import { cn } from '@/shared/utils/cn'
 import { calculateLineTotal, calculateProposalTotals, formatCurrency } from '@/shared/utils/proposal'
 import { VoiceNoteRecorder } from '@/presentation/components/molecules/VoiceNoteRecorder'
 import { DatePicker } from '@/shared/components/ui/date-picker'
+import DateConflictWarning from '@/presentation/components/molecules/DateConflictWarning'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
 const logger = new Logger('ProposalEditPage')
@@ -837,10 +838,14 @@ function DetailsStep({
   data,
   onChange,
   onDateChange,
+  proposalId,
+  onDateConflict,
 }: {
   data: Partial<ProposalFormData>
   onChange: (field: string, value: string | number | boolean | null) => void
   onDateChange: (field: 'deliveryDate' | 'installationDate', value: Date | null) => void
+  proposalId?: string
+  onDateConflict?: (field: 'delivery' | 'installation', hasHard: boolean) => void
 }) {
   const t = useTranslations()
 
@@ -927,6 +932,12 @@ function DetailsStep({
               placeholder={t('proposals.selectDeliveryDate')}
             />
           </div>
+          <DateConflictWarning
+            date={data.deliveryDate ?? null}
+            type="delivery"
+            excludeId={proposalId}
+            onConflictChange={(hard) => onDateConflict?.('delivery', hard)}
+          />
         </div>
         <div>
           <Label>{t('proposals.installationDate')}</Label>
@@ -939,6 +950,12 @@ function DetailsStep({
               minDate={data.deliveryDate ?? undefined}
             />
           </div>
+          <DateConflictWarning
+            date={data.installationDate ?? null}
+            type="installation"
+            excludeId={proposalId}
+            onConflictChange={(hard) => onDateConflict?.('installation', hard)}
+          />
         </div>
       </div>
 
@@ -1259,6 +1276,11 @@ export default function EditProposalPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDataLoaded, setIsDataLoaded] = useState(false)
   const [proposalStatus, setProposalStatus] = useState<string>('DRAFT')
+  const [dateConflictBlock, setDateConflictBlock] = useState<{ delivery: boolean; installation: boolean }>({ delivery: false, installation: false })
+  const handleDateConflict = useCallback((field: 'delivery' | 'installation', hasHard: boolean) => {
+    setDateConflictBlock((prev) => (prev[field] === hasHard ? prev : { ...prev, [field]: hasHard }))
+  }, [])
+  const hasDateConflict = dateConflictBlock.delivery || dateConflictBlock.installation
 
   const {
     control,
@@ -1658,7 +1680,13 @@ export default function EditProposalPage() {
                 />
               )}
               {currentStep === 2 && (
-                <DetailsStep data={formData} onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }} onDateChange={(field, value) => setValue(field, value)} />
+                <DetailsStep
+                  data={formData}
+                  onChange={(field, value) => { (setValue as (field: string, value: string | number | boolean | null) => void)(field, value) }}
+                  onDateChange={(field, value) => setValue(field, value)}
+                  proposalId={proposalId}
+                  onDateConflict={handleDateConflict}
+                />
               )}
               {currentStep === 3 && (
                 <PreviewStep
@@ -1706,7 +1734,8 @@ export default function EditProposalPage() {
                   type="button"
                   onClick={() => handleSaveAndSend('draft')}
                   className="gap-2 h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25 flex-1 md:flex-none"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || hasDateConflict}
+                  title={hasDateConflict ? 'Tarih çakışması — kabul edilmiş başka teklif aynı güne sabitlenmiş' : undefined}
                 >
                   <Check className="h-4 w-4" />
                   {isSubmitting ? '...' : t('proposals.updateProposal')}
