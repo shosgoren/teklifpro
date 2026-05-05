@@ -13,6 +13,7 @@ export const CreateProposalSchema = z.object({
   installationDate: z.string().optional(),
   items: z.array(
     z.object({
+      productId: z.string().optional().nullable(),
       name: z.string(),
       description: z.string().optional(),
       unit: z.string().default('Adet'),

@@ -245,6 +245,7 @@ async function handlePost(request: NextRequest): Promise<NextResponse<ApiRespons
         voiceNoteDuration: payload.voiceNoteDuration || null,
         items: {
           create: payload.items.map((item, index) => ({
+            productId: item.productId ?? null,
             name: item.name,
             description: item.description,
             unit: item.unit,

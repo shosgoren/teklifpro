@@ -1552,6 +1552,7 @@ export default function CreateProposalPage() {
         discountRate = lineSubtotal > 0 ? Math.min((item.discountFixed / lineSubtotal) * 100, 100) : 0
       }
       return {
+        productId: item.id,
         name: item.name,
         description: '',
         unit: item.unit || 'Adet',
