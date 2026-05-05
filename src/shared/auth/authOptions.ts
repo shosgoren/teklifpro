@@ -2,8 +2,11 @@ import { type NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import bcrypt from 'bcryptjs'
+import { verifyAuthenticationResponse } from '@simplewebauthn/server'
+import type { AuthenticationResponseJSON } from '@simplewebauthn/server'
 import { prisma } from '@/shared/utils/prisma'
 import { Logger } from '@/infrastructure/logger'
+import { getRpConfig } from '@/shared/auth/webauthn'
 
 const logger = new Logger('Auth')
 
@@ -22,6 +25,98 @@ export const authOptions: NextAuthOptions = {
           access_type: 'offline',
           response_type: 'code',
         },
+      },
+    }),
+    CredentialsProvider({
+      id: 'passkey',
+      name: 'Passkey',
+      credentials: {
+        response: { label: 'WebAuthn response', type: 'text' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.response) {
+          throw new Error('Passkey response missing')
+        }
+
+        let response: AuthenticationResponseJSON
+        try {
+          response = JSON.parse(credentials.response) as AuthenticationResponseJSON
+        } catch {
+          throw new Error('Invalid passkey response')
+        }
+
+        const auth = await prisma.authenticator.findUnique({
+          where: { credentialID: response.id },
+          include: { user: { include: { tenant: true } } },
+        })
+        if (!auth) {
+          logger.warn('Passkey not found', { credentialId: response.id })
+          throw new Error('Passkey not found')
+        }
+        if (!auth.user.isActive || auth.user.deletedAt) {
+          throw new Error('Account is disabled')
+        }
+        if (!auth.user.tenant?.isActive) {
+          throw new Error('Tenant account is not active')
+        }
+
+        const challenge = await prisma.webAuthnChallenge.findFirst({
+          where: {
+            kind: 'AUTHENTICATION',
+            expiresAt: { gt: new Date() },
+            OR: [{ userId: auth.userId }, { userId: null }],
+          },
+          orderBy: { createdAt: 'desc' },
+        })
+        if (!challenge) {
+          throw new Error('Challenge not found or expired')
+        }
+
+        const { rpID, origin } = getRpConfig()
+
+        let verification
+        try {
+          verification = await verifyAuthenticationResponse({
+            response,
+            expectedChallenge: challenge.challenge,
+            expectedOrigin: origin,
+            expectedRPID: rpID,
+            credential: {
+              id: auth.credentialID,
+              publicKey: new Uint8Array(auth.publicKey),
+              counter: Number(auth.counter),
+              transports: auth.transports as AuthenticatorTransport[],
+            },
+            requireUserVerification: false,
+          })
+        } catch (err) {
+          logger.warn('Passkey verification error', err)
+          throw new Error('Passkey verification failed')
+        }
+
+        if (!verification.verified) {
+          throw new Error('Passkey not verified')
+        }
+
+        // Counter güncelle (replay önleme), challenge tüket
+        await prisma.$transaction([
+          prisma.authenticator.update({
+            where: { id: auth.id },
+            data: {
+              counter: BigInt(verification.authenticationInfo.newCounter),
+              lastUsedAt: new Date(),
+            },
+          }),
+          prisma.webAuthnChallenge.delete({ where: { id: challenge.id } }),
+        ])
+
+        return {
+          id: auth.user.id,
+          email: auth.user.email,
+          name: auth.user.name,
+          tenantId: auth.user.tenantId,
+          role: auth.user.role,
+        }
       },
     }),
     CredentialsProvider({

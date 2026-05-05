@@ -114,6 +114,7 @@ model User {
   auditLogs               AuditLog[]
   emailVerificationTokens EmailVerificationToken[]
   customerNotes           CustomerNote[]
+  authenticators          Authenticator[]
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -137,6 +138,42 @@ model EmailVerificationToken {
   user      User     @relation(fields: [userId], references: [id])
 
   @@map("email_verification_tokens")
+}
+
+// ==================== WEBAUTHN / PASSKEY ====================
+
+model Authenticator {
+  // Kullanıcı başına çoklu cihaz: iPhone + Mac + iPad ayrı ayrı kayıt
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  name         String    // "iPhone Sercan", "MacBook Touch ID"
+  credentialID String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  counter      BigInt    @default(0)
+  transports   String[]  @default([]) // internal, hybrid, usb, nfc, ble
+  deviceType   String?   @map("device_type")
+  backedUp     Boolean   @default(false) @map("backed_up")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("authenticators")
+}
+
+model WebAuthnChallenge {
+  // Replay önleme — 5 dakika TTL
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  email     String?
+  challenge String   @unique
+  kind      String   // REGISTRATION | AUTHENTICATION
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("webauthn_challenges")
 }
 
 // ==================== CUSTOMERS (Parasut Sync) ====================

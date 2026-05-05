@@ -8,7 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, Zap, Shield, BarChart3 } from 'lucide-react';
+import { startAuthentication } from '@simplewebauthn/browser';
+import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight, Zap, Shield, BarChart3, Fingerprint } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -83,6 +84,52 @@ export default function LoginPage() {
     }
   };
 
+  const handlePasskeyLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const email = form.getValues('email');
+      const optsRes = await fetch('/api/auth/passkey/login/options', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(email ? { email } : {}),
+      });
+      if (!optsRes.ok) {
+        throw new Error('Sunucu hazır değil');
+      }
+      const opts = await optsRes.json();
+
+      let asseResp;
+      try {
+        asseResp = await startAuthentication({ optionsJSON: opts });
+      } catch (err: unknown) {
+        const e = err as { name?: string; message?: string };
+        if (e.name === 'NotAllowedError') {
+          throw new Error('İptal edildi.');
+        }
+        throw new Error(
+          'Passkey bulunamadı. Önce giriş yapıp Ayarlar → Güvenlik bölümünden passkey kaydet.',
+        );
+      }
+
+      const result = await signIn('passkey', {
+        response: JSON.stringify(asseResp),
+        redirect: false,
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      router.push(`/${locale}/dashboard`);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Passkey login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="h-dvh w-full flex bg-white dark:bg-gray-950">
       {/* Left Panel - Brand (desktop only) */}
@@ -145,13 +192,24 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Google OAuth - top for prominence */}
+          {/* Passkey login - en öncelikli */}
+          <Button
+            type="button"
+            onClick={handlePasskeyLogin}
+            disabled={isLoading}
+            className="w-full h-11 bg-gray-900 hover:bg-gray-800 dark:bg-gray-100 dark:hover:bg-white text-white dark:text-gray-900 font-medium rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            <Fingerprint className="w-5 h-5" aria-hidden />
+            Passkey ile giriş
+          </Button>
+
+          {/* Google OAuth */}
           <Button
             type="button"
             variant="outline"
             onClick={handleGoogleAuth}
             disabled={isLoading}
-            className="w-full h-11 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-all flex items-center justify-center gap-3"
+            className="w-full h-11 mt-3 border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-all flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
