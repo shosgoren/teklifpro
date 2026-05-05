@@ -104,6 +104,7 @@ const proposalDict = {
     proposalPresentation: 'Teklif Sunumu',
     proposal: 'Teklif',
     validUntil: 'Geçerli:',
+    proposalDate: 'Teklif Tarihi:',
     voiceMessageLeft: 'size sesli mesaj bıraktı',
     proposalStatus: 'Teklif Durumu:',
     digitalSignature: 'Dijital İmza',
@@ -179,6 +180,7 @@ const proposalDict = {
     proposalPresentation: 'Proposal Presentation',
     proposal: 'Proposal',
     validUntil: 'Valid until:',
+    proposalDate: 'Proposal Date:',
     voiceMessageLeft: 'left you a voice message',
     proposalStatus: 'Proposal Status:',
     digitalSignature: 'Digital Signature',
@@ -489,12 +491,24 @@ export default function ProposalContent({
           <div className="flex flex-wrap gap-2 mt-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-sm">
               <Calendar className="w-3.5 h-3.5" />
-              {proposal.createdDate}
+              {t.proposalDate} {proposal.createdDate}
             </div>
             {proposal.expiresDate && (
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/30 backdrop-blur-sm border border-white/20 text-sm">
                 <Clock className="w-3.5 h-3.5" />
                 {t.validUntil} {proposal.expiresDate}
+              </div>
+            )}
+            {proposal.deliveryDate && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/30 backdrop-blur-sm border border-white/20 text-sm">
+                <Truck className="w-3.5 h-3.5" />
+                {t.deliveryDate}: {proposal.deliveryDate}
+              </div>
+            )}
+            {proposal.installationDate && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-500/30 backdrop-blur-sm border border-white/20 text-sm">
+                <Wrench className="w-3.5 h-3.5" />
+                {t.installationDate}: {proposal.installationDate}
               </div>
             )}
           </div>
