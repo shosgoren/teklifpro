@@ -84,32 +84,12 @@ const NAV_SECTIONS: NavSection[] = [
         badgeTone: { bg: 'bg-emerald-100', color: 'text-emerald-700' },
       },
       {
-        nameKey: 'navOrders',
-        fallbackLabel: 'Siparişler',
-        href: '/proposals?status=ACCEPTED',
-        icon: Package,
-        iconBg: 'bg-amber-100',
-        iconColor: 'text-amber-600',
-        badgeKey: 'orders',
-        badgeTone: { bg: 'bg-amber-100', color: 'text-amber-700' },
-      },
-      {
-        nameKey: 'navDelivery',
-        fallbackLabel: 'Teslimat',
-        href: '/tracking?type=delivery',
+        nameKey: 'navTracking',
+        fallbackLabel: 'Teslim & Kurulum',
+        href: '/tracking',
         icon: Truck,
         iconBg: 'bg-cyan-100',
         iconColor: 'text-cyan-600',
-        matchType: 'delivery',
-      },
-      {
-        nameKey: 'navInstall',
-        fallbackLabel: 'Kurulum',
-        href: '/tracking?type=install',
-        icon: Wrench,
-        iconBg: 'bg-orange-100',
-        iconColor: 'text-orange-600',
-        matchType: 'install',
       },
       {
         nameKey: 'navAppointments',
@@ -366,7 +346,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     return [
       { pathname: '/products', label: safeT('navProducts', 'Ürünler') },
       { pathname: '/customers', label: safeT('navCustomers', 'Müşteriler') },
-      { pathname: '/proposals?status=approved', label: safeT('navOrders', 'Siparişler') },
+      { pathname: '/tracking', label: safeT('navTracking', 'Teslim & Kurulum') },
       { pathname: '/settings', label: safeT('navSettings', 'Ayarlar') },
     ]
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -390,10 +370,8 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     NAV_SECTIONS[1].items[1], // Ürünler
   ]
   const mobileSecondaryItems: NavItem[] = [
-    NAV_SECTIONS[0].items[1], // Siparişler
-    NAV_SECTIONS[0].items[2], // Teslimat
-    NAV_SECTIONS[0].items[3], // Kurulum
-    NAV_SECTIONS[0].items[4], // Randevular
+    NAV_SECTIONS[0].items[1], // Teslim & Kurulum
+    NAV_SECTIONS[0].items[2], // Randevular
     NAV_SECTIONS[2].items[0], // Ayarlar
   ]
   const isSecondaryActive = mobileSecondaryItems.some((item) => isActive(item))
