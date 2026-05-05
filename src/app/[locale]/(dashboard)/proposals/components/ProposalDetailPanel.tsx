@@ -1,17 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import useSWR from 'swr'
+import { swrStaticOptions } from '@/shared/utils/swrConfig'
 import { toast } from 'sonner'
 import {
-  User, DollarSign, Calendar, ExternalLink, FileText, Package, Send,
-  Copy, Eye, Edit, Trash2, Clock, MessageCircle, ArrowRightLeft, Hash,
-  ChevronRight, CreditCard, Truck, CheckCircle2,
+  User, Calendar, ExternalLink, FileText, Package,
+  Copy, Eye, Edit, Trash2, Clock, MessageCircle,
+  ChevronRight, CreditCard, Truck, Plus, Minus, Search,
+  Banknote, ArrowRightLeft, Percent,
 } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
+import { Input } from '@/shared/components/ui/input'
 import { Separator } from '@/shared/components/ui/separator'
 import {
   Select,
@@ -20,6 +23,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/shared/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/shared/components/ui/command'
 import { useConfirm } from '@/shared/components/confirm-dialog'
 import { usePermissions } from '@/shared/hooks/usePermissions'
 import { useCurrency } from '@/shared/hooks/useCurrency'
@@ -34,6 +50,8 @@ import {
 import { cn } from '@/shared/utils/cn'
 
 type ProposalStatus = 'DRAFT' | 'READY' | 'SENT' | 'VIEWED' | 'ACCEPTED' | 'REJECTED' | 'REVISION_REQUESTED' | 'REVISED' | 'EXPIRED' | 'CANCELLED' | 'INVOICED'
+
+const EDITABLE_STATUSES = ['DRAFT', 'READY', 'REVISION_REQUESTED']
 
 const STATUS_GRADIENT: Record<string, string> = {
   DRAFT: 'from-slate-500 to-slate-700',
@@ -50,23 +68,26 @@ const STATUS_GRADIENT: Record<string, string> = {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  DRAFT: 'bg-slate-400',
-  READY: 'bg-cyan-500',
-  SENT: 'bg-blue-500',
-  VIEWED: 'bg-amber-500',
-  ACCEPTED: 'bg-emerald-500',
-  REJECTED: 'bg-red-500',
-  REVISION_REQUESTED: 'bg-orange-500',
-  REVISED: 'bg-purple-500',
-  EXPIRED: 'bg-gray-400',
-  CANCELLED: 'bg-gray-400',
-  INVOICED: 'bg-indigo-500',
+  DRAFT: 'bg-slate-400', READY: 'bg-cyan-500', SENT: 'bg-blue-500',
+  VIEWED: 'bg-amber-500', ACCEPTED: 'bg-emerald-500', REJECTED: 'bg-red-500',
+  REVISION_REQUESTED: 'bg-orange-500', REVISED: 'bg-purple-500',
+  EXPIRED: 'bg-gray-400', CANCELLED: 'bg-gray-400', INVOICED: 'bg-indigo-500',
 }
 
 const ALL_STATUSES: ProposalStatus[] = [
   'DRAFT', 'READY', 'SENT', 'VIEWED', 'ACCEPTED', 'REJECTED',
   'REVISION_REQUESTED', 'REVISED', 'EXPIRED', 'CANCELLED', 'INVOICED',
 ]
+
+interface ProposalItem {
+  id: string
+  name: string
+  quantity: number
+  unitPrice: number | string
+  vatRate?: number
+  discountRate?: number
+  unit?: string
+}
 
 interface ProposalDetailPanelProps {
   proposal: {
@@ -96,21 +117,14 @@ interface ProposalDetailPanelProps {
       email?: string
       phone?: string
     }
-    items?: Array<{
-      id: string
-      name: string
-      quantity: number
-      unitPrice: number | string
-      vatRate?: number
-      discountRate?: number
-    }>
+    items?: ProposalItem[]
   } | null
   open: boolean
   onClose: () => void
   onMutate?: () => void
 }
 
-const apiFetcher = (url: string) => fetch(url).then(r => r.json())
+const apiFetcher = (url: string) => fetch(url).then(r => { if (!r.ok) throw new Error(); return r.json() })
 
 export default function ProposalDetailPanel({ proposal, open, onClose, onMutate }: ProposalDetailPanelProps) {
   const router = useRouter()
@@ -122,12 +136,45 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
   const { formatCurrency } = useCurrency()
   const dateLocale = locale === 'en' ? 'en-US' : 'tr-TR'
 
+  // Customer search
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
+  // Product add
+  const [productSearchOpen, setProductSearchOpen] = useState(false)
+  const [productSearch, setProductSearch] = useState('')
+
+  // Customer list for switching
+  const { data: customersData } = useSWR(
+    customerSearchOpen ? '/api/v1/customers?limit=50' : null,
+    apiFetcher, swrStaticOptions
+  )
+  const customers = customersData?.data?.customers ?? []
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch) return customers
+    const q = customerSearch.toLowerCase()
+    return customers.filter((c: { name: string }) => c.name.toLowerCase().includes(q))
+  }, [customerSearch, customers])
+
+  // Product list for adding
+  const { data: productsData } = useSWR(
+    productSearchOpen ? '/api/v1/products?limit=100' : null,
+    apiFetcher, swrStaticOptions
+  )
+  const products = productsData?.data?.products ?? []
+  const filteredProducts = useMemo(() => {
+    if (!productSearch) return products
+    const q = productSearch.toLowerCase()
+    return products.filter((p: { name: string; code?: string }) =>
+      p.name.toLowerCase().includes(q) || (p.code && p.code.toLowerCase().includes(q))
+    )
+  }, [productSearch, products])
+
   const canUpdate = can('proposal.update')
   const canDelete = can('proposal.delete')
-  const canSend = can('proposal.send')
 
   if (!proposal) return null
 
+  const isEditable = canUpdate && EDITABLE_STATUSES.includes(proposal.status)
   const gradient = STATUS_GRADIENT[proposal.status] || 'from-violet-500 to-purple-700'
   const isUnofficial = proposal.proposalType === 'UNOFFICIAL'
   const items = proposal.items || []
@@ -136,19 +183,23 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
   const vatTotal = Number(proposal.vatTotal || 0)
   const discountAmount = Number(proposal.discountAmount || 0)
 
+  // ── API helpers ─────────────────────────────────────────
+
+  const updateProposal = async (body: Record<string, unknown>) => {
+    const res = await fetch(`/api/v1/proposals/${proposal.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) throw new Error()
+    onMutate?.()
+  }
+
   const handleStatusChange = async (newStatus: string) => {
     try {
-      const res = await fetch(`/api/v1/proposals/${proposal.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (!res.ok) throw new Error()
+      await updateProposal({ status: newStatus })
       toast.success(t('updated'))
-      onMutate?.()
-    } catch {
-      toast.error(tc('error'))
-    }
+    } catch { toast.error(tc('error')) }
   }
 
   const handleDelete = async () => {
@@ -159,29 +210,90 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
       toast.success(t('deleted'))
       onClose()
       onMutate?.()
-    } catch {
-      toast.error(t('deleteError'))
-    }
+    } catch { toast.error(t('deleteError')) }
   }
 
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/proposal/${proposal.publicToken}`
-    navigator.clipboard.writeText(link)
+    navigator.clipboard.writeText(`${window.location.origin}/proposal/${proposal.publicToken}`)
     toast.success(t('linkCopied'))
   }
 
   const handleFieldUpdate = async (field: string, value: string) => {
+    try { await updateProposal({ [field]: value }) }
+    catch { toast.error(tc('error')) }
+  }
+
+  // ── Customer change ──────────────────────────────────────
+
+  const handleCustomerChange = async (customerId: string) => {
     try {
-      const res = await fetch(`/api/v1/proposals/${proposal.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+      await updateProposal({ customerId })
+      toast.success(t('updated'))
+      setCustomerSearchOpen(false)
+    } catch { toast.error(tc('error')) }
+  }
+
+  // ── Item operations ──────────────────────────────────────
+
+  const handleItemUpdate = async (itemId: string, updates: Record<string, number>) => {
+    try {
+      // Update item via proposal update - send all items with the modification
+      const updatedItems = items.map(item =>
+        item.id === itemId ? { ...item, ...updates } : item
+      ).map(item => ({
+        name: item.name,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        vatRate: item.vatRate ?? 18,
+        discountRate: item.discountRate ?? 0,
+        unit: item.unit || 'Adet',
+        description: '',
+      }))
+      await updateProposal({ items: updatedItems })
+    } catch { toast.error(tc('error')) }
+  }
+
+  const handleItemRemove = async (itemId: string) => {
+    try {
+      const updatedItems = items.filter(item => item.id !== itemId).map(item => ({
+        name: item.name,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        vatRate: item.vatRate ?? 18,
+        discountRate: item.discountRate ?? 0,
+        unit: item.unit || 'Adet',
+        description: '',
+      }))
+      await updateProposal({ items: updatedItems })
+      toast.success(t('updated'))
+    } catch { toast.error(tc('error')) }
+  }
+
+  const handleAddProduct = async (product: { name: string; listPrice?: number; vatRate?: number; unit?: string }) => {
+    try {
+      const currentItems = items.map(item => ({
+        name: item.name,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        vatRate: item.vatRate ?? 18,
+        discountRate: item.discountRate ?? 0,
+        unit: item.unit || 'Adet',
+        description: '',
+      }))
+      currentItems.push({
+        name: product.name,
+        quantity: 1,
+        unitPrice: product.listPrice || 0,
+        vatRate: product.vatRate || 18,
+        discountRate: 0,
+        unit: product.unit || 'Adet',
+        description: '',
       })
-      if (!res.ok) throw new Error()
-      onMutate?.()
-    } catch {
-      toast.error(tc('error'))
-    }
+      await updateProposal({ items: currentItems })
+      toast.success(t('updated'))
+      setProductSearchOpen(false)
+      setProductSearch('')
+    } catch { toast.error(tc('error')) }
   }
 
   return (
@@ -239,13 +351,33 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
             {proposal.customer?.phone && (
               <p className="text-xs text-muted-foreground">{proposal.customer.phone}</p>
             )}
-            {proposal.customer?.id && (
-              <button
-                onClick={() => router.push(`/${locale}/customers`)}
-                className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-1"
-              >
-                {tc('edit')} <ChevronRight className="h-3 w-3" />
-              </button>
+            {isEditable && (
+              <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                <PopoverTrigger asChild>
+                  <button className="text-[11px] text-primary hover:underline flex items-center gap-1 mt-1.5">
+                    <ArrowRightLeft className="h-3 w-3" />
+                    Müşteri Değiştir
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput placeholder="Müşteri ara..." value={customerSearch} onValueChange={setCustomerSearch} />
+                    <CommandList>
+                      <CommandEmpty>Müşteri bulunamadı</CommandEmpty>
+                      <CommandGroup>
+                        {filteredCustomers.map((c: { id: string; name: string; email?: string }) => (
+                          <CommandItem key={c.id} onSelect={() => handleCustomerChange(c.id)}>
+                            <div>
+                              <p className="text-sm font-medium">{c.name}</p>
+                              {c.email && <p className="text-xs text-muted-foreground">{c.email}</p>}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
         </DetailPanelSection>
@@ -253,7 +385,7 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
         {/* Financial Summary */}
         <DetailPanelSection
           title={t('totalAmount')}
-          icon={<DollarSign className="h-3.5 w-3.5 text-muted-foreground" />}
+          icon={<Banknote className="h-3.5 w-3.5 text-muted-foreground" />}
           className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
         >
           <div className="space-y-2">
@@ -285,36 +417,121 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
           </div>
         </DetailPanelSection>
 
-        {/* Items */}
-        {items.length > 0 && (
-          <DetailPanelSection
-            title={`${t('product')} (${items.length})`}
-            icon={<Package className="h-3.5 w-3.5 text-muted-foreground" />}
-          >
-            <div className="space-y-2">
-              {items.map((item, i) => {
-                const lineTotal = item.quantity * Number(item.unitPrice)
-                const discount = item.discountRate ? lineTotal * (item.discountRate / 100) : 0
-                const afterDiscount = lineTotal - discount
-                return (
-                  <div key={item.id || i} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+        {/* Items — editable */}
+        <DetailPanelSection
+          title={`${t('product')} (${items.length})`}
+          icon={<Package className="h-3.5 w-3.5 text-muted-foreground" />}
+        >
+          <div className="space-y-2">
+            {items.map((item, i) => {
+              const lineTotal = item.quantity * Number(item.unitPrice)
+              const discount = item.discountRate ? lineTotal * (item.discountRate / 100) : 0
+              const afterDiscount = lineTotal - discount
+              return (
+                <div key={item.id || i} className="py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{item.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {item.quantity} × {formatCurrency(Number(item.unitPrice))}
-                        {item.discountRate ? ` (-${item.discountRate}%)` : ''}
-                        {!isUnofficial && item.vatRate ? ` · KDV %${item.vatRate}` : ''}
-                      </p>
+                      <p className="text-sm font-medium">{item.name}</p>
                     </div>
-                    <span className="text-sm font-semibold shrink-0 ml-3">
-                      {formatCurrency(afterDiscount)}
-                    </span>
+                    <span className="text-sm font-semibold shrink-0">{formatCurrency(afterDiscount)}</span>
+                    {isEditable && (
+                      <button
+                        onClick={() => handleItemRemove(item.id)}
+                        className="shrink-0 p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
-                )
-              })}
-            </div>
-          </DetailPanelSection>
-        )}
+                  {isEditable ? (
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      {/* Quantity */}
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => handleItemUpdate(item.id, { quantity: Math.max(1, item.quantity - 1) })}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <Input
+                          type="number" min="1" inputMode="numeric"
+                          value={item.quantity}
+                          onChange={(e) => handleItemUpdate(item.id, { quantity: parseInt(e.target.value) || 1 })}
+                          className="w-12 h-6 text-center text-xs font-semibold px-0 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          onClick={() => handleItemUpdate(item.id, { quantity: item.quantity + 1 })}
+                          className="w-6 h-6 rounded flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">×</span>
+                      {/* Unit Price */}
+                      <Input
+                        type="number" inputMode="decimal" min="0" step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) => handleItemUpdate(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                        className="w-20 h-6 text-right text-xs font-medium px-1.5 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      {/* Discount */}
+                      {(item.discountRate || 0) > 0 && (
+                        <Badge className="text-[10px] px-1 py-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">
+                          -{item.discountRate}%
+                        </Badge>
+                      )}
+                      {!isUnofficial && item.vatRate && (
+                        <span className="text-[10px] text-muted-foreground">KDV %{item.vatRate}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {item.quantity} × {formatCurrency(Number(item.unitPrice))}
+                      {item.discountRate ? ` (-${item.discountRate}%)` : ''}
+                      {!isUnofficial && item.vatRate ? ` · KDV %${item.vatRate}` : ''}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+
+            {/* Add product */}
+            {isEditable && (
+              <Popover open={productSearchOpen} onOpenChange={(open) => { setProductSearchOpen(open); if (!open) setProductSearch('') }}>
+                <PopoverTrigger asChild>
+                  <button className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors">
+                    <Plus className="h-3.5 w-3.5" />
+                    {t('create.addProduct')}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput placeholder={t('searchProduct')} value={productSearch} onValueChange={setProductSearch} />
+                    <CommandList>
+                      <CommandEmpty>{t('noProduct')}</CommandEmpty>
+                      <CommandGroup>
+                        {filteredProducts.map((p: { id: string; name: string; code?: string; listPrice?: number; vatRate?: number; unit?: string }) => (
+                          <CommandItem key={p.id} onSelect={() => handleAddProduct(p)}>
+                            <div className="flex items-center gap-2 w-full">
+                              <Package className="h-4 w-4 text-amber-600 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{p.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {p.code && `${p.code} · `}{formatCurrency(p.listPrice || 0)}
+                                </p>
+                              </div>
+                              <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </DetailPanelSection>
 
         {/* Details Grid */}
         <div className="grid grid-cols-2 gap-3">
@@ -325,17 +542,6 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
               icon={<Calendar className="h-3.5 w-3.5 text-muted-foreground" />}
             />
           </DetailPanelSection>
-          <DetailPanelSection>
-            <InlineField
-              label={t('list.status')}
-              value={t(`status.${proposal.status}` as Parameters<typeof t>[0])}
-              icon={<div className={cn('h-2.5 w-2.5 rounded-full', STATUS_DOT[proposal.status] || 'bg-gray-400')} />}
-            />
-          </DetailPanelSection>
-        </div>
-
-        {/* Extra Info */}
-        <div className="grid grid-cols-2 gap-3">
           {proposal.expiresAt && (
             <DetailPanelSection>
               <InlineField
@@ -357,35 +563,34 @@ export default function ProposalDetailPanel({ proposal, open, onClose, onMutate 
         </div>
 
         {/* Editable Fields */}
-        {(proposal.paymentTerms || proposal.deliveryTerms || proposal.notes || canUpdate) && (
+        {(proposal.paymentTerms || proposal.deliveryTerms || proposal.notes || isEditable) && (
           <DetailPanelSection title={t('steps.details')} icon={<FileText className="h-3.5 w-3.5 text-muted-foreground" />}>
             <div className="space-y-3">
               <InlineField
                 label={t('paymentTerms')}
                 value={proposal.paymentTerms}
-                editable={canUpdate}
-                onSave={canUpdate ? (v) => handleFieldUpdate('paymentTerms', v) : undefined}
+                editable={isEditable}
+                onSave={isEditable ? (v) => handleFieldUpdate('paymentTerms', v) : undefined}
                 icon={<CreditCard className="h-3.5 w-3.5 text-muted-foreground" />}
                 placeholder="-"
               />
               <InlineField
                 label={t('deliveryTerms')}
                 value={proposal.deliveryTerms}
-                editable={canUpdate}
-                onSave={canUpdate ? (v) => handleFieldUpdate('deliveryTerms', v) : undefined}
+                editable={isEditable}
+                onSave={isEditable ? (v) => handleFieldUpdate('deliveryTerms', v) : undefined}
                 icon={<Truck className="h-3.5 w-3.5 text-muted-foreground" />}
                 placeholder="-"
               />
-              {proposal.notes && (
-                <InlineField
-                  label={t('notes')}
-                  value={proposal.notes}
-                  editable={canUpdate}
-                  onSave={canUpdate ? (v) => handleFieldUpdate('notes', v) : undefined}
-                  type="textarea"
-                  icon={<MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />}
-                />
-              )}
+              <InlineField
+                label={t('notes')}
+                value={proposal.notes}
+                editable={isEditable}
+                onSave={isEditable ? (v) => handleFieldUpdate('notes', v) : undefined}
+                type="textarea"
+                icon={<MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                placeholder="-"
+              />
             </div>
           </DetailPanelSection>
         )}

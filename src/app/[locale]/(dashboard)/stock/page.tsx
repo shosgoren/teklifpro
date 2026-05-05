@@ -11,10 +11,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  RotateCcw,
-  Factory,
   Loader2,
   Package,
   XCircle,
@@ -37,7 +33,7 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import { Badge } from '@/shared/components/ui/badge';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet';
+import StockDetailPanel from './components/StockDetailPanel';
 import {
   Dialog,
   DialogContent,
@@ -833,170 +829,18 @@ export default function StockPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Product Detail Sheet ── */}
-      <Sheet
+      {/* ── Product Detail Panel ── */}
+      <StockDetailPanel
+        product={selectedProduct}
         open={selectedProduct !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedProduct(null);
-        }}
-      >
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          {selectedProduct && (
-            <>
-              <SheetHeader>
-                <SheetTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {selectedProduct.name}
-                </SheetTitle>
-              </SheetHeader>
-
-              <div className="mt-6 flex flex-col gap-6">
-                {/* Product Info */}
-                <div className="rounded-2xl border p-4 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
-                  <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('table.product')}
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('table.product')}</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{selectedProduct.code ?? '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('table.type')}</p>
-                      <Badge className={cn('text-xs', PRODUCT_TYPE_COLORS[selectedProduct.productType])}>
-                        {PRODUCT_TYPE_LABELS[selectedProduct.productType] ?? selectedProduct.productType}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('detail.unit')}</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{selectedProduct.unit}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('detail.costPrice')}</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(selectedProduct.costPrice)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stock Info */}
-                <div
-                  className={cn(
-                    'rounded-2xl border p-4',
-                    isOutOfStock(selectedProduct)
-                      ? 'border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/30'
-                      : isLowStock(selectedProduct)
-                        ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30'
-                        : 'border-gray-200 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50'
-                  )}
-                >
-                  <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('table.status')}
-                  </h3>
-                  <div className="grid grid-cols-3 gap-3 text-sm">
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('detail.currentStock')}</p>
-                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {selectedProduct.stockQuantity}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('detail.minLevel')}</p>
-                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{selectedProduct.minStockLevel}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 dark:text-gray-400">{t('table.status')}</p>
-                      {isOutOfStock(selectedProduct) ? (
-                        <Badge className="mt-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                          <XCircle className="mr-1 h-3 w-3" />
-                          {t('table.outOfStock')}
-                        </Badge>
-                      ) : isLowStock(selectedProduct) ? (
-                        <Badge className="mt-1 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                          <AlertTriangle className="mr-1 h-3 w-3" />
-                          {t('table.low')}
-                        </Badge>
-                      ) : (
-                        <Badge className="mt-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          {t('table.ok')}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Movements */}
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('detail.movements')}
-                  </h3>
-                  {movements.length === 0 ? (
-                    <div className="flex flex-col items-center py-8">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700">
-                        <RotateCcw className="h-6 w-6 text-gray-400 dark:text-gray-500" />
-                      </div>
-                      <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-                        {t('detail.noMovements')}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {movements.map((mov) => {
-                        const config = MOVEMENT_TYPE_CONFIG[mov.type] ?? {
-                          label: mov.type,
-                          color: 'bg-gray-100 text-gray-800',
-                        };
-                        const isPositive = ['IN', 'PRODUCTION_IN', 'ADJUSTMENT'].includes(mov.type);
-                        return (
-                          <div
-                            key={mov.id}
-                            className="flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm dark:border-gray-800 bg-white dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              {mov.type === 'IN' && <ArrowDownCircle className="h-4 w-4 shrink-0 text-green-500" />}
-                              {mov.type === 'OUT' && <ArrowUpCircle className="h-4 w-4 shrink-0 text-red-500" />}
-                              {mov.type === 'ADJUSTMENT' && <RotateCcw className="h-4 w-4 shrink-0 text-blue-500" />}
-                              {mov.type === 'PRODUCTION_IN' && <Factory className="h-4 w-4 shrink-0 text-emerald-500" />}
-                              {mov.type === 'PRODUCTION_OUT' && <Factory className="h-4 w-4 shrink-0 text-orange-500" />}
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <Badge className={cn('text-xs', config.color)}>
-                                    {config.label}
-                                  </Badge>
-                                  {mov.reference && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                      {mov.reference}
-                                    </span>
-                                  )}
-                                </div>
-                                {mov.notes && (
-                                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate">
-                                    {mov.notes}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="ml-3 shrink-0 text-right">
-                              <p
-                                className={cn(
-                                  'font-medium',
-                                  isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                )}
-                              >
-                                {isPositive ? '+' : '-'}{mov.quantity}
-                              </p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500">{formatDate(mov.createdAt)}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+        onClose={() => setSelectedProduct(null)}
+        movements={movements}
+        formatCurrency={formatCurrency}
+        formatDate={formatDate}
+        productTypeLabels={PRODUCT_TYPE_LABELS}
+        productTypeColors={PRODUCT_TYPE_COLORS}
+        movementTypeConfig={MOVEMENT_TYPE_CONFIG}
+      />
     </div>
   );
 }

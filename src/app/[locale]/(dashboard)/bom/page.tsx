@@ -10,7 +10,6 @@ import {
   Search,
   Trash2,
   Edit,
-  Calculator,
   ChevronDown,
   X,
   Package,
@@ -23,7 +22,6 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Badge } from '@/shared/components/ui/badge';
 import { Label } from '@/shared/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet';
+import BomDetailPanel from './components/BomDetailPanel';
 import {
   Dialog,
   DialogContent,
@@ -104,33 +102,6 @@ interface BomDetail {
   updatedAt: string;
 }
 
-interface CostBreakdownItem {
-  materialId: string;
-  materialCode: string | null;
-  materialName: string;
-  unit: string;
-  quantity: number;
-  wasteRate: number;
-  effectiveQuantity: number;
-  unitPrice: number;
-  totalCost: number;
-}
-
-interface CostSummary {
-  totalMaterialCost: number;
-  laborCost: number;
-  overheadRate: number;
-  overheadCost: number;
-  totalProductionCost: number;
-}
-
-interface CostData {
-  bomId: string;
-  product: { id: string; code: string | null; name: string };
-  version: number;
-  materialBreakdown: CostBreakdownItem[];
-  summary: CostSummary;
-}
 
 interface FormMaterialRow {
   materialId: string;
@@ -180,10 +151,8 @@ export default function BomPage() {
   // List state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Detail sheet
+  // Detail panel
   const [selectedBomId, setSelectedBomId] = useState<string | null>(null);
-  const [costData, setCostData] = useState<CostData | null>(null);
-  const [isCalculatingCost, setIsCalculatingCost] = useState(false);
 
   // Create / Edit dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -292,15 +261,6 @@ export default function BomPage() {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
-  const computeRowTotalCost = (item: BomItem) => {
-    const effectiveQty = item.quantity * (1 + item.wasteRate / 100);
-    return (item.material.listPrice || 0) * effectiveQty;
-  };
-
-  const totalMaterialCost = useMemo(() => {
-    if (!bomDetail) return 0;
-    return bomDetail.items.reduce((sum, item) => sum + computeRowTotalCost(item), 0);
-  }, [bomDetail]);
 
   // ─── Actions ─────────────────────────────────────────────────────────────
 
@@ -443,24 +403,6 @@ export default function BomPage() {
     },
     [mutateBomList],
   );
-
-  const handleCalculateCost = useCallback(async (bomId: string) => {
-    setIsCalculatingCost(true);
-    setCostData(null);
-    try {
-      const response = await fetch(`/api/v1/bom/${bomId}/cost`);
-      const data = await response.json();
-      if (data.success) {
-        setCostData(data.data);
-      } else {
-        toast.error(data.error || t('createError'));
-      }
-    } catch {
-      toast.error(t('createError'));
-    } finally {
-      setIsCalculatingCost(false);
-    }
-  }, []);
 
   // ─── Loading state ──────────────────────────────────────────────────────
 
@@ -621,7 +563,7 @@ export default function BomPage() {
                 )}
                 onClick={() => {
                   setSelectedBomId(bom.id);
-                  setCostData(null);
+
                 }}
               >
                 <div className="flex items-start justify-between">
@@ -679,7 +621,7 @@ export default function BomPage() {
                       className="cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors"
                       onClick={() => {
                         setSelectedBomId(bom.id);
-                        setCostData(null);
+      
                       }}
                     >
                       <TableCell className="font-medium text-sm text-gray-700 dark:text-gray-300">
@@ -731,7 +673,7 @@ export default function BomPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedBomId(bom.id);
-                                setCostData(null);
+              
                               }}
                             >
                               <Layers className="mr-2 h-4 w-4" />
@@ -759,159 +701,15 @@ export default function BomPage() {
         </>
       )}
 
-      {/* ── BOM Detail Sheet ─────────────────────────────────────────────────── */}
-      <Sheet open={!!selectedBomId} onOpenChange={(open) => !open && setSelectedBomId(null)}>
-        <SheetContent side="right" className="w-full max-w-2xl overflow-y-auto">
-          {bomDetail ? (
-            <>
-              <SheetHeader className="mb-6">
-                <SheetTitle className="text-xl">{bomDetail.product.name}</SheetTitle>
-                <div className="flex items-center gap-3 mt-2">
-                  <Badge
-                    variant={bomDetail.isActive ? 'default' : 'secondary'}
-                    className={cn(
-                      bomDetail.isActive && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-                    )}
-                  >
-                    {bomDetail.isActive ? t('table.active') : t('table.inactive')}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {t('detail.version')} {bomDetail.version}
-                  </span>
-                  {bomDetail.product.code && (
-                    <span className="text-sm text-muted-foreground">
-                      {bomDetail.product.code}
-                    </span>
-                  )}
-                </div>
-              </SheetHeader>
-
-              {/* Materials table */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('form.materials')}</h3>
-                <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50/80 dark:bg-gray-900/80">
-                        <TableHead>{t('detail.material')}</TableHead>
-                        <TableHead>{t('table.product')}</TableHead>
-                        <TableHead className="text-right">{t('detail.quantity')}</TableHead>
-                        <TableHead>{t('detail.material')}</TableHead>
-                        <TableHead className="text-right">{t('detail.waste')}</TableHead>
-                        <TableHead className="text-right">{t('detail.unitPrice')}</TableHead>
-                        <TableHead className="text-right">{t('detail.totalCost')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {bomDetail.items.map((item) => (
-                        <TableRow key={item.id} className="hover:bg-blue-50/50 dark:hover:bg-blue-950/30 transition-colors">
-                          <TableCell className="font-medium text-sm">{item.material.name}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {item.material.code ?? '-'}
-                          </TableCell>
-                          <TableCell className="text-right text-sm">{item.quantity}</TableCell>
-                          <TableCell className="text-sm">{item.unit}</TableCell>
-                          <TableCell className="text-right text-sm">%{item.wasteRate}</TableCell>
-                          <TableCell className="text-right text-sm">
-                            {formatPrice(item.material.listPrice)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-sm">
-                            {formatPrice(computeRowTotalCost(item))}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Inline totals */}
-                <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t('detail.totalMaterialCost')}</span>
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">{formatPrice(totalMaterialCost)}</span>
-                  </div>
-                </div>
-
-                {/* Cost Calculation Section */}
-                {costData && (
-                  <Card className="rounded-xl border-gray-200 dark:border-gray-800">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{t('detail.costBreakdown')}</CardTitle>
-                      <CardDescription>{t('detail.costBreakdown')}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 font-mono text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">{t('detail.totalMaterialCost')}:</span>
-                          <span className="text-gray-900 dark:text-gray-100">{formatPrice(costData.summary.totalMaterialCost)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">{t('detail.laborCost')}:</span>
-                          <span className="text-gray-900 dark:text-gray-100">{formatPrice(costData.summary.laborCost)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">{t('detail.overheadCost')} (%{costData.summary.overheadRate}):</span>
-                          <span className="text-gray-900 dark:text-gray-100">{formatPrice(costData.summary.overheadCost)}</span>
-                        </div>
-                        <div className="border-t border-dashed border-gray-300 dark:border-gray-700 pt-2 mt-2" />
-                        <div className="flex justify-between font-bold text-base">
-                          <span className="text-gray-900 dark:text-gray-100">{t('detail.totalProductionCost')}:</span>
-                          <span className="text-blue-600 dark:text-blue-400">{formatPrice(costData.summary.totalProductionCost)}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Notes */}
-                {bomDetail.notes && (
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{t('detail.notes')}</h3>
-                    <p className="text-sm text-muted-foreground rounded-lg bg-gray-50 dark:bg-gray-900 p-3">
-                      {bomDetail.notes}
-                    </p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 pt-4">
-                  <Button
-                    onClick={() => handleCalculateCost(bomDetail.id)}
-                    disabled={isCalculatingCost}
-                    variant="outline"
-                    className="flex-1 rounded-lg"
-                  >
-                    <Calculator className="mr-2 h-4 w-4" />
-                    {isCalculatingCost ? t('detail.calculating') : t('detail.calculateCost')}
-                  </Button>
-                  <Button
-                    onClick={() => openEditDialog(bomDetail)}
-                    variant="outline"
-                    className="flex-1 rounded-lg"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    {t('editBtn')}
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(bomDetail.id)}
-                    variant="outline"
-                    className="flex-1 rounded-lg text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:hover:border-red-700 dark:hover:bg-red-950"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t('deleteBtn')}
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="space-y-4 mt-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-10 rounded-2xl bg-gray-200 dark:bg-gray-800 animate-pulse" />
-              ))}
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* ── BOM Detail Panel ─────────────────────────────────────────────────── */}
+      <BomDetailPanel
+        bom={bomDetail}
+        open={!!selectedBomId}
+        onClose={() => setSelectedBomId(null)}
+        onMutate={() => { mutateBomList(); mutateBomDetail(); }}
+        onEdit={(bom) => openEditDialog(bom)}
+        formatPrice={formatPrice}
+      />
 
       {/* ── Create / Edit Dialog ─────────────────────────────────────────────── */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
